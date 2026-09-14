@@ -1,0 +1,16 @@
+# Normalize to LF in the repository so Linux containers and CI see the same bytes a
+# Windows workstation edits. This matches .editorconfig.
+* text=auto eol=lf
+
+# PowerShell is Windows-native tooling; keep CRLF in the working tree.
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+
+# Binary assets must never be converted.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
