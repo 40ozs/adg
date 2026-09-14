@@ -271,21 +271,27 @@ Two live measurements corrected the implementation before the tests existed:
 
 ## Prerequisites for the next prompt
 
-1. **Phase 1 (AD collector) was not present when this phase ran.** The last commit was
-   Phase 0B; `docs/handoffs/` held only bootstrap, 0A, and 0B. Phase 2A depends only on the
-   Phase 0B contracts, so it was built on those. Share ACEs reference trustee SIDs that
-   **no collector yet resolves to principals** except as `unresolved`.
-2. **A second session was editing this working tree concurrently**, building the AD
-   collector (`collector/powershell/ad/`, `collector/powershell/common/`), an ingestion and
-   repository layer, and a Phase 4A rights model. Only the paths listed above were staged
-   and committed here. Anyone running the repo-wide suites should expect unrelated failures
-   from that in-flight work; gate with scoped commands.
-3. **`collector/powershell/common/` overlaps this module.** The other session's shared
-   module duplicates timestamp, source-key, batching, and transport helpers that
-   `AdgSmbCollector` also implements. They should be reconciled onto one shared module once
-   that work lands — deliberately not attempted here, against a half-written, currently
-   failing tree. The source-key derivations are the part that must not diverge; both are
-   pinned to `backend/app/contracts/v1/keys.py` by tests.
+1. **Phases are being run out of order, and a second session shared this working tree.**
+   When Phase 2A began, `HEAD` was Phase 0B and `docs/handoffs/` held only bootstrap, 0A,
+   and 0B — no Phase 1. Phase 2A depends only on the Phase 0B contracts, so it was built on
+   those. While it was being written, another session committed Phase 4A
+   (`0b4bb5b`) and then Phase 1A (`c301f6c`), both of which landed *before* this commit.
+   Check `git log` and `docs/handoffs/` for the real state rather than assuming the package
+   sequence.
+2. **Only this phase's paths were staged and committed.** The shared index carried the
+   other session's in-flight work throughout; every `git add` here named explicit paths and
+   the staged list was checked before committing.
+3. **`collector/powershell/common/` overlaps this module.** The Phase 1A shared module
+   duplicates timestamp, source-key, batching, and transport helpers that `AdgSmbCollector`
+   also implements. They should be reconciled onto one shared module. This was deliberately
+   not attempted here: for most of this phase that tree was half-written and its suite was
+   failing, and folding a working collector onto a moving target would have risked both.
+   The source-key derivations are the part that must not diverge, and both implementations
+   are pinned to `backend/app/contracts/v1/keys.py` by tests — so the duplication is
+   currently safe, merely wasteful.
+
+   After both landed, the combined collector suite (`scripts\collector-test.ps1`, no path
+   filter) is **245 passed, 0 failed, of 245**.
 4. **Phase 2B (NTFS) must stream**, not collect-then-build. See decision 6.
 5. **Validate against a live file server** before trusting collection in an estate.
 
