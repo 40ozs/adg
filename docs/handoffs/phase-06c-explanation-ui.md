@@ -207,10 +207,17 @@ Not a claim from a stub. The screen was rendered by a real Next.js server (`next
 against a real API (`uvicorn`), a real PostgreSQL, and the `04-multiple-membership-paths`
 transcript replayed through the ingestion endpoints.
 
-The dev database was two migrations behind (`0003_smb_resources`); `alembic upgrade head`
-brought it to `0006_effective_access`. Seeding and the direct API call used an administrator
-token from the development login; the browser session used the **auditor** account, so the
-page was rendered under the capability set a real reader has.
+Seeding and the direct API call used an administrator token from the development login; the
+browser session used the **auditor** account, so the page was rendered under the capability
+set a real reader has.
+
+**One deviation from the recipe, recorded because the recipe is better.** The shared `adg`
+database was two migrations behind (`0003_smb_resources`) and was migrated in place to
+`0006_effective_access`. It held no scan run and no concurrent session was using it, so
+nothing was disturbed — but the established practice is to create a phase-scoped database on
+the same container (`CREATE DATABASE adg_<phase>`), migrate and seed *that*, and drop it
+afterwards. Two sessions have been working this tree; in-place migration of the shared
+database is a gamble that did not need taking.
 
 What the live API returned for Alice against `\\FS01\Finance`:
 
@@ -241,13 +248,13 @@ Two variants were rendered from the same live server:
 * an unknown principal — the not-found state with the API's own message, no verdict and no
   route table.
 
-**A local-run trap worth recording.** Recent uvicorn installs a `ProactorEventLoop` on
-Windows and psycopg refuses it in async mode, so every request 500s with
-`Psycopg cannot use the 'ProactorEventLoop'`. The API is deployed in a Linux container so
-this is not a product defect, but a local run needs
-`asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())` **and**
-`uvicorn.Config(..., loop="none")` — setting the policy alone does not work, because
-uvicorn's own loop setup overrides it.
+**Start the API the way the project already provides for.** Recent uvicorn builds its loop
+from a factory and ignores the asyncio policy, so a bare
+`python -m uvicorn app.main:app` on Windows gets a `ProactorEventLoop`, which psycopg
+refuses in async mode — every request 500s with `Psycopg cannot use the
+'ProactorEventLoop'`. `app/runtime.py` exists for exactly this: run `python -m app`, or pass
+`--loop app.runtime:event_loop_factory`. This phase's first live attempt reinvented the
+workaround by hand before finding it; the module's docstring says it plainly.
 
 ### Where each acceptance criterion is checked
 
