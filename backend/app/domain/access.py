@@ -249,6 +249,41 @@ class NtfsAce:
         return bool(self.flags & (AceFlag.OBJECT_INHERIT | AceFlag.CONTAINER_INHERIT))
 
 
+def share_ace_right_token(access_mask: int | None, permission: SharePermission | None) -> str:
+    """The granted right, rendered in whichever form the source reported it.
+
+    A permission level and a mask are two readings of the same ACL, and *which* reading was
+    taken is itself part of the observation: ``Get-SmbShareAccess`` can only say ``change``,
+    while a security descriptor says ``0x001301bf``. Rendering one as the other would claim
+    precision the source did not provide, so the token keeps them distinct and the Phase 4
+    algebra reconciles them.
+
+    Tolerates a missing right — ``0x00000000`` — because this is also how an identity is
+    derived for an ACE that has not been validated yet. :class:`SmbShareAce` refuses such an
+    ACE outright.
+    """
+    if permission is not None:
+        return permission.value
+    return f"0x{access_mask or 0:08x}"
+
+
+def share_ace_identity_key(
+    share_key: str, trustee_sid: Sid, ace_type: AceType, right_token: str
+) -> str:
+    """Uniqueness of a share ACE: one row per (share, trustee, type, right).
+
+    ``order_index`` is deliberately absent, for the same reason it is absent from an NTFS
+    ACE key: two entries identical in trustee, type, and right are duplicates of one
+    another, and an administrator reordering an ACL must not look like every entry being
+    deleted and recreated.
+
+    This is the only implementation of the format. :meth:`SmbShareAce.identity_key` and the
+    contract's ``smb_ace`` source key both call it, so a stored ACE and the key its
+    collector sent cannot come to describe different entries.
+    """
+    return f"{share_key.casefold()}|{trustee_sid.value}|{ace_type.value}|{right_token}"
+
+
 @dataclass(frozen=True, slots=True)
 class SmbShareAce:
     """One ACE from a share-level ACL.
@@ -284,6 +319,15 @@ class SmbShareAce:
     @property
     def layer(self) -> AclLayer:
         return AclLayer.SMB_SHARE
+
+    @property
+    def right_token(self) -> str:
+        """See :func:`share_ace_right_token`."""
+        return share_ace_right_token(self.access_mask, self.permission)
+
+    def identity_key(self, share_key: str) -> str:
+        """See :func:`share_ace_identity_key`. ``share_key`` is ``SmbShare.identity_key``."""
+        return share_ace_identity_key(share_key, self.trustee_sid, self.ace_type, self.right_token)
 
 
 @dataclass(frozen=True, slots=True)

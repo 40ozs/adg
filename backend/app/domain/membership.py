@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from app.domain.errors import DomainValidationError
-from app.domain.identity import PrincipalKind, Sid
+from app.domain.identity import PrincipalKind, Sid, referenced_principal_key
 
 
 class MembershipEdgeKind(StrEnum):
@@ -112,11 +112,11 @@ class MembershipEdge:
         """Storage key of the member.
 
         A member is only host-scoped when it is itself a local principal of that host;
-        domain principals keep their global key even inside a local group.
+        domain principals keep their global key even inside a local group. That is the same
+        rule a share ACE's trustee follows, so both ask
+        :func:`app.domain.identity.referenced_principal_key` rather than restating it.
         """
-        if self.host_key is not None and self.member_sid.is_builtin:
-            return f"{self.host_key.casefold()}|{self.member_sid.value}"
-        return self.member_sid.value
+        return referenced_principal_key(self.member_sid, self.host_key)
 
     @property
     def identity_key(self) -> str:

@@ -9,10 +9,11 @@ retry logic branches on them:
 * ``409`` the request contradicts an existing run — never retried unchanged.
 * ``422`` the payload is wrong — never retried unchanged either.
 
-Phase 1B stores ``principal`` and ``membership_edge`` observations. A batch carrying any
-other kind is rejected with a message naming the kinds, rather than accepted with those
-observations quietly dropped: a collector told "accepted" would go on to report coverage
-that ADG does not actually hold.
+This endpoint stores ``principal``, ``membership_edge``, ``server``, ``smb_share``, and
+``smb_ace`` observations. A batch carrying an NTFS kind is rejected with a message naming
+the kinds and listing what is accepted, rather than accepted with those observations quietly
+dropped: a collector told "accepted" would go on to report coverage that ADG does not
+actually hold.
 """
 
 from __future__ import annotations
@@ -57,6 +58,9 @@ class BatchAcceptedResponse(BaseModel):
     duplicate: bool = Field(description="True when this batch_id had already been applied.")
     principals_written: int = 0
     edges_written: int = 0
+    servers_written: int = 0
+    shares_written: int = 0
+    share_aces_written: int = 0
 
 
 class ScanRunCompletedResponse(BaseModel):
@@ -179,6 +183,9 @@ async def submit_batch(
         duplicate=outcome.duplicate,
         principals_written=outcome.principals_written,
         edges_written=outcome.edges_written,
+        servers_written=outcome.servers_written,
+        shares_written=outcome.shares_written,
+        share_aces_written=outcome.share_aces_written,
     )
 
 

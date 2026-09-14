@@ -130,6 +130,23 @@ Identity and membership graph (see
 > semantics are documented in
 > [`docs/architecture/membership-graph.md`](docs/architecture/membership-graph.md).
 
+Resources and raw share ACLs (see
+[`docs/architecture/resource-inventory.md`](docs/architecture/resource-inventory.md)):
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/v1/servers` | Every known server, with its share count. |
+| `GET /api/v1/servers/{server}` | One server, with provenance. |
+| `GET /api/v1/servers/{server}/shares` | Shares published by one server, keyset-paginated. |
+| `GET /api/v1/shares/{share}` | One share by key (`fs01\|finance`) or UNC path, with its server and ACE count. |
+| `GET /api/v1/shares/{share}/acl` | That share's ACL in DACL order, trustees resolved where known. |
+| `GET /api/v1/principals/{sid}/shares` | Shares whose ACL names a SID. |
+
+> The ACL responses carry `kind: "raw_smb_acl"`. **These are observed share-layer facts, not
+> effective access** — that additionally requires the NTFS layer and group expansion, and
+> arrives as its own representation. A trustee with `resolved: false` is an orphaned SID on
+> a live ACL, which is a finding rather than an error.
+
 The web application's **System status** page (`http://localhost:3000/status`) renders the
 same information from the browser's point of view.
 

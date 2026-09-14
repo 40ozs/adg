@@ -562,3 +562,23 @@ class WellKnownPrincipal(Principal):
             )
         if self.conventional_name is None:
             object.__setattr__(self, "conventional_name", self.sid.well_known_name)
+
+
+def referenced_principal_key(sid: Sid, host_key: str | None) -> str:
+    """The storage key a reference to ``sid`` from ``host_key`` resolves to.
+
+    A share ACL and a local group are both read *on a machine*, so a trustee they name is
+    interpreted in that machine's context. Only a BUILTIN SID actually needs that context:
+    ``S-1-5-32-544`` is byte-identical everywhere, so ``BUILTIN\\Administrators`` on FS01
+    and on FS02 are different groups. Every other SID — a domain principal, a well-known
+    SID such as ``Everyone``, or an account issued by the machine's own SID namespace — is
+    globally unique and keeps its global key even when it appears on one server's ACL.
+
+    Host-scoping a domain SID would split one group into one row per server that mentions
+    it; failing to host-scope a BUILTIN SID would merge every server's local administrators
+    into a single group that nobody is actually in. Both are wrong answers about who has
+    access, which is why this rule has exactly one implementation.
+    """
+    if host_key and sid.is_builtin:
+        return f"{host_key.casefold()}|{sid.value}"
+    return sid.value

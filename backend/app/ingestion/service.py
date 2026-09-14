@@ -14,9 +14,13 @@ late cannot overwrite a newer one with stale names or a stale ``is_deleted`` fla
 tool that let a late-arriving old scan resurrect a deleted group would report access that
 no longer exists.
 
-**Nothing is ever marked absent.** There is no delete path in this module. Reconciled scopes
-are recorded as evidence for Phase 7, which owns absence; a partial run cannot reconcile at
-all, and the contract models refuse to build one that tries.
+**Nothing is ever marked absent.** There is no delete path in this module — no share, no
+share ACE, no principal is ever removed because a run did not mention it. A failed scan, a
+server that was rebooted mid-enumeration, and an ACL the collector lacked rights to read all
+produce *fewer observations*, not evidence of removal, and an audit tool that deleted on
+that basis would report access as revoked while it is still in force. Reconciled scopes are
+recorded as evidence for Phase 7, which owns absence; a partial run cannot reconcile at all,
+and the contract models refuse to build one that tries.
 """
 
 from __future__ import annotations
@@ -39,11 +43,15 @@ from app.models.schema import (
     membership_edges,
     observations,
     principal_aliases,
+    principal_references,
     principals,
     scan_run_batches,
     scan_run_errors,
     scan_run_scopes,
     scan_runs,
+    servers,
+    smb_share_aces,
+    smb_shares,
 )
 
 __all__ = [
@@ -102,6 +110,49 @@ _EDGE_MUTABLE: Final[tuple[str, ...]] = (
     "source_key",
 )
 
+_SERVER_MUTABLE: Final[tuple[str, ...]] = (
+    "name",
+    "dns_host_name",
+    "netbios_name",
+    "computer_sid",
+    "domain_sid",
+    "is_domain_member",
+    "operating_system",
+    "source_key",
+)
+
+# server_key is here on purpose. A share cannot move between servers — that would change
+# share_key and make it a different row — but the column is rewritten from the newest
+# observation anyway so that no upsert path can leave it disagreeing with the key.
+_SHARE_MUTABLE: Final[tuple[str, ...]] = (
+    "server_key",
+    "name",
+    "local_path",
+    "share_type",
+    "description",
+    "concurrent_user_limit",
+    "caching_mode",
+    "is_special",
+    "source_key",
+)
+
+# Everything but order_index is fixed by the identity key; order_index is not, because an
+# administrator can reorder an ACL without changing any entry, and the newest reading of
+# the position is the true one.
+_SHARE_ACE_MUTABLE: Final[tuple[str, ...]] = (
+    "share_key",
+    "trustee_sid",
+    "trustee_key",
+    "ace_type",
+    "access_mask",
+    "permission",
+    "right_token",
+    "order_index",
+    "source_key",
+)
+
+_REFERENCE_MUTABLE: Final[tuple[str, ...]] = ("sid", "host_key")
+
 
 @dataclass(frozen=True, slots=True)
 class StartOutcome:
@@ -126,6 +177,9 @@ class BatchOutcome:
     duplicate: bool
     principals_written: int = 0
     edges_written: int = 0
+    servers_written: int = 0
+    shares_written: int = 0
+    share_aces_written: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -344,6 +398,9 @@ class IngestionService:
 
         await self._write_principals(plan, now)
         await self._write_edges(plan, now)
+        await self._write_servers(plan, now)
+        await self._write_shares(plan, now)
+        await self._write_share_aces(plan, now)
         await self._write_observations(plan, now)
 
         await session.execute(
@@ -365,6 +422,9 @@ class IngestionService:
             duplicate=False,
             principals_written=len(plan.principals),
             edges_written=len(plan.edges),
+            servers_written=len(plan.servers),
+            shares_written=len(plan.shares),
+            share_aces_written=len(plan.share_aces),
         )
 
     async def _write_principals(self, plan: BatchPlan, now: dt.datetime) -> None:
@@ -472,6 +532,140 @@ class IngestionService:
             statement.on_conflict_do_update(
                 index_elements=[membership_edges.c.edge_key],
                 set_=_newest_wins(statement, membership_edges, _EDGE_MUTABLE, now),
+            )
+        )
+
+    async def _write_servers(self, plan: BatchPlan, now: dt.datetime) -> None:
+        if not plan.servers:
+            return
+        rows = [
+            {
+                "server_key": row.server_key,
+                "name": row.name,
+                "dns_host_name": row.dns_host_name,
+                "netbios_name": row.netbios_name,
+                "computer_sid": row.computer_sid,
+                "domain_sid": row.domain_sid,
+                "is_domain_member": row.is_domain_member,
+                "operating_system": row.operating_system,
+                "source_key": row.source_key,
+                "first_observed_at": row.observed_at,
+                "first_observed_run_id": row.run_id,
+                "last_observed_at": row.observed_at,
+                "last_observed_run_id": row.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for row in plan.servers
+        ]
+        statement = pg_insert(servers).values(rows)
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[servers.c.server_key],
+                set_=_newest_wins(statement, servers, _SERVER_MUTABLE, now),
+            )
+        )
+
+    async def _write_shares(self, plan: BatchPlan, now: dt.datetime) -> None:
+        if not plan.shares:
+            return
+        rows = [
+            {
+                "share_key": row.share_key,
+                "server_key": row.server_key,
+                "name": row.name,
+                "local_path": row.local_path,
+                "share_type": row.share_type,
+                "description": row.description,
+                "concurrent_user_limit": row.concurrent_user_limit,
+                "caching_mode": row.caching_mode,
+                "is_special": row.is_special,
+                "source_key": row.source_key,
+                "first_observed_at": row.observed_at,
+                "first_observed_run_id": row.run_id,
+                "last_observed_at": row.observed_at,
+                "last_observed_run_id": row.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for row in plan.shares
+        ]
+        statement = pg_insert(smb_shares).values(rows)
+        # Upsert, never insert-or-delete. A share re-pointed at a different local path is
+        # the same share with a new backing directory, and a share the newest scan did not
+        # mention keeps its row: absence is inferred only from a reconciled scope, by
+        # Phase 7, and never from a partial or failed run.
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[smb_shares.c.share_key],
+                set_=_newest_wins(statement, smb_shares, _SHARE_MUTABLE, now),
+            )
+        )
+
+    async def _write_share_aces(self, plan: BatchPlan, now: dt.datetime) -> None:
+        if not plan.share_aces:
+            return
+        rows = [
+            {
+                "ace_key": row.ace_key,
+                "share_key": row.share_key,
+                "trustee_sid": row.trustee_sid,
+                "trustee_key": row.trustee_key,
+                "ace_type": row.ace_type,
+                "access_mask": row.access_mask,
+                "permission": row.permission,
+                "right_token": row.right_token,
+                "order_index": row.order_index,
+                "source_key": row.source_key,
+                "first_observed_at": row.observed_at,
+                "first_observed_run_id": row.run_id,
+                "last_observed_at": row.observed_at,
+                "last_observed_run_id": row.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for row in plan.share_aces
+        ]
+        statement = pg_insert(smb_share_aces).values(rows)
+        # An ACE removed from an ACL is not deleted here either. A share ACL that shrank
+        # between runs is a change Phase 7 detects from the run that reconciled the share
+        # scope; deleting on sight would let one failed read erase a recorded grant.
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[smb_share_aces.c.ace_key],
+                set_=_newest_wins(statement, smb_share_aces, _SHARE_ACE_MUTABLE, now),
+            )
+        )
+        await self._write_references(plan, now)
+
+    async def _write_references(self, plan: BatchPlan, now: dt.datetime) -> None:
+        if not plan.references:
+            return
+        rows = [
+            {
+                "principal_key": row.principal_key,
+                "sid": row.sid,
+                "host_key": row.host_key,
+                "reference_kind": row.reference_kind,
+                "reference_key": row.reference_key,
+                "first_observed_at": row.observed_at,
+                "first_observed_run_id": row.run_id,
+                "last_observed_at": row.observed_at,
+                "last_observed_run_id": row.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for row in plan.references
+        ]
+        statement = pg_insert(principal_references).values(rows)
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[
+                    principal_references.c.principal_key,
+                    principal_references.c.reference_kind,
+                    principal_references.c.reference_key,
+                ],
+                set_=_newest_wins(statement, principal_references, _REFERENCE_MUTABLE, now),
             )
         )
 

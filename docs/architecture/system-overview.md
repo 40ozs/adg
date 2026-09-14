@@ -96,6 +96,18 @@ traversal performed at query time, and every such answer states whether it is co
 Query semantics, cycle reporting, limits, and pagination are in
 [membership-graph.md](membership-graph.md); the reasoning is ADR-0002 and ADR-0006.
 
+## Resources
+
+Servers, SMB shares, and raw share-level ACEs are stored as what a collector observed and
+nothing more. A share is a publication of a directory rather than the directory itself; a
+share ACL is kept in the form its source reported, level or mask, with no conversion between
+them; and whether an ACE's trustee resolves to a known principal is computed by a join at
+query time rather than stored, because the SMB and AD collectors run independently and a
+stored flag would be stale the moment either one ran. Nothing here can mark an object
+absent: a share a failed scan did not mention keeps its row. Identity, derivation, the API
+surface, and the pagination choices are in [resource-inventory.md](resource-inventory.md);
+the reasoning is ADR-0003 and ADR-0007.
+
 ## Security posture
 
 - **Read-only by default.** No ACL writes, no membership changes, no deletions on target

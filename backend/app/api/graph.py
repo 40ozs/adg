@@ -46,7 +46,7 @@ from app.services.graph import (
 
 router = APIRouter(prefix="/api/v1", tags=["graph"])
 
-__all__ = ["router"]
+__all__ = ["PrincipalSummary", "principal_summary", "router"]
 
 IdentifierPath = Annotated[
     str,
@@ -280,7 +280,7 @@ async def group_members(
     page_size = normalize_limit(limit)
     page = await repository.direct_members(key, limit=page_size, after=decode_keyset_cursor(cursor))
     return DirectMembersResponse(
-        group=_summary(key, record),
+        group=principal_summary(key, record),
         items=[_direct_view(item) for item in page.items],
         page=PageInfo(
             limit=page_size,
@@ -322,7 +322,7 @@ async def group_effective_members(
     matching = [node for node in result.nodes if node.matches(include)]
     items, page = _slice(matching, limit, cursor)
     return EffectiveMembersResponse(
-        group=_summary(key, record),
+        group=principal_summary(key, record),
         include=include.value,
         items=[_effective_view(node) for node in items],
         page=page,
@@ -364,7 +364,7 @@ async def principal_groups(
             key, limit=page_size, after=decode_keyset_cursor(cursor)
         )
         return DirectGroupsResponse(
-            principal=_summary(key, record),
+            principal=principal_summary(key, record),
             items=[_direct_view(item) for item in page.items],
             page=PageInfo(
                 limit=page_size,
@@ -377,7 +377,7 @@ async def principal_groups(
     result = await GraphService(repository).effective_groups(key, limits)
     items, page_info = _slice(list(result.nodes), limit, cursor)
     return EffectiveGroupsResponse(
-        principal=_summary(key, record),
+        principal=principal_summary(key, record),
         items=[_effective_view(node) for node in items],
         page=page_info,
         traversal=_traversal_view(result, limits),
@@ -422,8 +422,8 @@ async def membership_paths(
         member_key, group_key, limits
     )
     return MembershipPathsResponse(
-        principal=_summary(member_key, member_record),
-        group=_summary(group_key, group_record),
+        principal=principal_summary(member_key, member_record),
+        group=principal_summary(group_key, group_record),
         is_member=result.is_member,
         paths=[_path_view(path, result) for path in result.paths],
         traversal=TraversalView(
@@ -490,7 +490,13 @@ def _candidate_key(identifier: str, host: str | None) -> str:
     return f"{host.casefold()}|{value}" if host else value
 
 
-def _summary(key: str, record: PrincipalRecord | None) -> PrincipalSummary:
+def principal_summary(key: str, record: PrincipalRecord | None) -> PrincipalSummary:
+    """Render a principal, or the honest absence of one.
+
+    Public because the resource endpoints render the trustee of a share ACE the same
+    way. A second implementation would be free to drift into reporting an unresolved
+    SID as a resolved principal with no name, which is a different claim entirely.
+    """
     if record is None:
         host, sid = split_key(key)
         return PrincipalSummary(key=key, sid=sid, host_key=host, resolved=False)
@@ -522,7 +528,7 @@ def _principal_detail(
     direct_member_count: int,
     direct_group_count: int,
 ) -> PrincipalDetail:
-    summary = _summary(key, record)
+    summary = principal_summary(key, record)
     return PrincipalDetail(
         **summary.model_dump(),
         domain_sid=record.domain_sid if record else None,
@@ -546,7 +552,7 @@ def _principal_detail(
 
 def _direct_view(item: DirectEdgeRecord) -> DirectMemberView:
     return DirectMemberView(
-        principal=_summary(item.counterpart_key, item.counterpart),
+        principal=principal_summary(item.counterpart_key, item.counterpart),
         edge_kind=item.edge.kind.value,
         edge_key=item.edge.edge_key,
         host_key=item.edge.host_key,
@@ -558,7 +564,7 @@ def _direct_view(item: DirectEdgeRecord) -> DirectMemberView:
 
 
 def _effective_view(node: ResolvedNode) -> EffectiveMemberView:
-    summary = _summary(node.key, node.principal)
+    summary = principal_summary(node.key, node.principal)
     if node.principal is None and node.reported_kind is not None:
         # The edge said what the member is even though nothing has described it. Reporting
         # that beats reporting nothing, as long as `resolved` still says it is second-hand.
@@ -577,7 +583,7 @@ def _effective_view(node: ResolvedNode) -> EffectiveMemberView:
 def _path_view(path: MembershipPath, result: PathResult) -> MembershipPathView:
     return MembershipPathView(
         nodes=list(path.nodes),
-        principals=[_summary(node, result.labels.get(node)) for node in path.nodes],
+        principals=[principal_summary(node, result.labels.get(node)) for node in path.nodes],
         edge_kinds=[kind.value for kind in path.edge_kinds],
         length=path.length,
     )

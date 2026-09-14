@@ -18,7 +18,7 @@ from enum import StrEnum
 
 from app.domain.errors import DomainValidationError
 from app.domain.identity import Sid
-from app.domain.paths import LocalPath, UncPath
+from app.domain.paths import LocalPath, UncPath, parse_unc_path
 
 
 class ShareType(StrEnum):
@@ -170,3 +170,87 @@ class DirectoryResource:
     @property
     def is_share_root(self) -> bool:
         return self.path.is_share_root
+
+
+@dataclass(frozen=True, slots=True)
+class ShareIdentity:
+    r"""A share named from outside: the two parts that identify one ``\\server\share``.
+
+    Callers name a share in whatever form is convenient — a UNC path from a ticket, a
+    storage key copied out of an earlier response — and both have to land on exactly one
+    row. This type is the single normalized result of that parsing, so no endpoint invents
+    its own rule.
+    """
+
+    server: str
+    name: str
+
+    @property
+    def identity_key(self) -> str:
+        """Matches :attr:`SmbShare.identity_key`, which is the stored key."""
+        return f"{self.server.casefold()}|{self.name.casefold()}"
+
+    @property
+    def unc_path(self) -> UncPath:
+        return UncPath(server=self.server, share=self.name)
+
+    def __str__(self) -> str:
+        return self.unc_path.value
+
+
+def parse_share_identifier(raw: str) -> ShareIdentity:
+    r"""Normalize a share identifier, or reject it as ambiguous.
+
+    Accepts the two forms a caller actually has to hand:
+
+    * a storage key, ``fs01|finance``;
+    * a UNC path, ``\\FS01\Finance`` — in any of the spellings
+      :func:`app.domain.paths.parse_unc_path` canonicalizes (forward slashes, extended
+      prefixes, a trailing separator).
+
+    Everything else is refused rather than guessed at. Two refusals are load bearing:
+
+    * ``\\FS01\Finance\Reports`` names a **directory**, not a share. Silently truncating it
+      to the share would answer a question about the share ACL when the caller asked about
+      a folder, and the two grant different access.
+    * a bare ``FS01`` names no share, and a key with extra ``|`` segments names nothing at
+      all. Picking an interpretation would return one share's ACL under another's name.
+
+    Raises:
+        DomainValidationError: if the identifier is empty, malformed, or ambiguous.
+    """
+    if not isinstance(raw, str) or not raw.strip():
+        raise DomainValidationError(
+            "A share identifier must be a non-empty string.", value=raw, field="share"
+        )
+
+    text = raw.strip()
+    if "|" in text:
+        parts = text.split("|")
+        if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
+            raise DomainValidationError(
+                f"{raw!r} is not a share key. Expected exactly 'server|share', or a UNC "
+                "path such as \\\\FS01\\Finance.",
+                value=raw,
+                field="share",
+            )
+        server, name = (part.strip() for part in parts)
+        if any(char in server + name for char in "\\/"):
+            raise DomainValidationError(
+                f"{raw!r} mixes a share key with a path. Send either 'server|share' or a "
+                "UNC path, not both.",
+                value=raw,
+                field="share",
+            )
+        return ShareIdentity(server=server, name=name)
+
+    path = parse_unc_path(text)
+    if not path.is_share_root:
+        raise DomainValidationError(
+            f"{raw!r} names a directory inside a share, not the share itself. A share and "
+            "a folder beneath it have different ACLs; ask for "
+            f"{path.share_root.value} to get the share.",
+            value=raw,
+            field="share",
+        )
+    return ShareIdentity(server=path.server, name=path.share)

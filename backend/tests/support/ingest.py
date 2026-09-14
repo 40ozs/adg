@@ -1,13 +1,15 @@
 """Replaying canonical scan-run transcripts through the ingestion API.
 
-Phase 0B's fixtures are complete transcripts covering all seven observation kinds. Phase 1B
-stores two of them, so replaying a fixture verbatim would be rejected — correctly, since the
-endpoint refuses to acknowledge observations it cannot persist.
+Phase 0B's fixtures are complete transcripts covering all seven observation kinds. The
+ingestion endpoint stores five of them — the AD pair plus the three SMB kinds — so replaying
+a fixture verbatim is still rejected, correctly, since the endpoint refuses to acknowledge
+observations it cannot persist.
 
-These helpers therefore send the AD half of a transcript and adjust the completion's counts
-to what was actually sent, so a run's reported coverage still matches its observations. They
-deliberately go through HTTP rather than calling the service: the status codes are part of
-the collector contract, and a test that bypassed them would not be testing the contract.
+These helpers therefore send a chosen subset of a transcript and adjust the completion's
+counts to what was actually sent, so a run's reported coverage still matches its
+observations. They deliberately go through HTTP rather than calling the service: the status
+codes are part of the collector contract, and a test that bypassed them would not be testing
+the contract.
 """
 
 from __future__ import annotations
@@ -21,15 +23,17 @@ from httpx import AsyncClient
 from tests.fixtures import Scenario, load_raw
 
 AD_KINDS = frozenset({"principal", "membership_edge"})
+SMB_KINDS = frozenset({"server", "smb_share", "smb_ace"})
+STORABLE_KINDS = AD_KINDS | SMB_KINDS
 
 
-def ad_only(document: dict[str, Any]) -> dict[str, Any]:
-    """A transcript reduced to the observation kinds this phase stores."""
+def of_kinds(document: dict[str, Any], kinds: frozenset[str]) -> dict[str, Any]:
+    """A transcript reduced to the given observation kinds."""
     reduced = copy.deepcopy(document)
     batches = []
     observations_sent = 0
     for batch in reduced["batches"]:
-        kept = [item for item in batch["observations"] if item["kind"] in AD_KINDS]
+        kept = [item for item in batch["observations"] if item["kind"] in kinds]
         if not kept:
             continue
         batch["observations"] = kept
@@ -41,6 +45,20 @@ def ad_only(document: dict[str, Any]) -> dict[str, Any]:
     reduced["completion"]["batch_count"] = len(batches)
     reduced["completion"]["observation_count"] = observations_sent
     return reduced
+
+
+def ad_only(document: dict[str, Any]) -> dict[str, Any]:
+    """A transcript reduced to the AD observation kinds."""
+    return of_kinds(document, AD_KINDS)
+
+
+def storable(document: dict[str, Any]) -> dict[str, Any]:
+    """A transcript reduced to everything the ingestion endpoint can persist.
+
+    The two NTFS kinds are dropped, so this is what a Phase 2B collector may legitimately
+    send today; the file-system phase relaxes it to the whole transcript.
+    """
+    return of_kinds(document, STORABLE_KINDS)
 
 
 def with_run_id(document: dict[str, Any], run_id: str | None = None) -> dict[str, Any]:
@@ -85,9 +103,21 @@ async def ingest_scenario(
     return await replay(client, document)
 
 
+async def ingest_storable_scenario(
+    client: AsyncClient, name: str, *, run_id: str | None = None
+) -> dict[str, Any]:
+    """Load a canonical scenario, drop only what cannot yet be stored, and replay it."""
+    return await replay(client, with_run_id(storable(load_raw(name)), run_id))
+
+
 def scenario_document(name: str, run_id: str | None = None) -> dict[str, Any]:
     """The AD half of a scenario, ready to post, without sending it."""
     return with_run_id(ad_only(load_raw(name)), run_id)
+
+
+def storable_document(name: str, run_id: str | None = None) -> dict[str, Any]:
+    """The storable part of a scenario, ready to post, without sending it."""
+    return with_run_id(storable(load_raw(name)), run_id)
 
 
 def edge_count(scenario: Scenario) -> int:

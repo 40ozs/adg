@@ -63,6 +63,7 @@ from app.domain.identity import (
     UnresolvedReason,
     User,
     WellKnownPrincipal,
+    referenced_principal_key,
 )
 from app.domain.membership import MembershipEdge, MembershipEdgeKind
 from app.domain.observation import (
@@ -79,7 +80,14 @@ from app.domain.paths import (
     parse_unc_path,
     parse_windows_path,
 )
-from app.domain.resources import DirectoryResource, Server, ShareType, SmbShare
+from app.domain.resources import (
+    DirectoryResource,
+    Server,
+    ShareIdentity,
+    ShareType,
+    SmbShare,
+    parse_share_identifier,
+)
 
 __all__ = [
     "DEFAULT_LIMITS",
@@ -129,6 +137,7 @@ __all__ = [
     "ScanStatus",
     "SecurityDescriptorFacts",
     "Server",
+    "ShareIdentity",
     "SharePermission",
     "ShareType",
     "Sid",
@@ -145,6 +154,8 @@ __all__ = [
     "find_cycles",
     "find_paths",
     "parse_local_path",
+    "parse_share_identifier",
     "parse_unc_path",
     "parse_windows_path",
+    "referenced_principal_key",
 ]

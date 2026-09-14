@@ -154,6 +154,11 @@ class TestBatchIdempotency:
             "duplicate": False,
             "principals_written": 3,
             "edges_written": 2,
+            # This transcript is the AD half only; the SMB counters exist because the same
+            # endpoint stores share facts, and report zero when none were sent.
+            "servers_written": 0,
+            "shares_written": 0,
+            "share_aces_written": 0,
         }
         assert second.json()["duplicate"] is True
         assert second.json()["applied"] == 0
@@ -263,9 +268,11 @@ class TestBatchIdempotency:
 
 
 class TestUnsupportedKinds:
-    async def test_a_batch_with_an_smb_observation_is_rejected_not_silently_dropped(
+    async def test_a_batch_with_an_ntfs_observation_is_rejected_not_silently_dropped(
         self, client: AsyncClient, session: AsyncSession
     ) -> None:
+        # The SMB kinds are stored now; the two NTFS kinds are what is still unstorable, and
+        # the whole batch is refused rather than partly applied.
         from tests.fixtures import load_raw
         from tests.support.ingest import with_run_id
 
@@ -280,6 +287,7 @@ class TestUnsupportedKinds:
         assert response.status_code == 422
         detail = response.json()["detail"]
         assert "later phase" in detail["message"]
+        assert "ntfs_resource" in detail["message"]
         # Nothing at all was written: a partially applied batch would be worse than a
         # rejected one, because the collector would believe the whole batch landed.
         assert await count(session, principals) == 0

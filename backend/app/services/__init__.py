@@ -14,11 +14,23 @@ from app.services.graph import (
     PathResult,
     ResolvedNode,
 )
+from app.services.resources import (
+    ResolvedAce,
+    ResourceService,
+    ShareAcl,
+    ShareDetail,
+    TrusteeShares,
+)
 
 __all__ = [
     "EffectiveMembership",
     "GraphService",
     "MemberInclusion",
     "PathResult",
+    "ResolvedAce",
     "ResolvedNode",
+    "ResourceService",
+    "ShareAcl",
+    "ShareDetail",
+    "TrusteeShares",
 ]

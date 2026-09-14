@@ -20,7 +20,18 @@ restates them for collector authors, and a test pins the two together.
 
 from __future__ import annotations
 
-from app.domain import MembershipEdge, MembershipEdgeKind, PrincipalKind, Sid, parse_unc_path
+from app.domain import (
+    AceType,
+    MembershipEdge,
+    MembershipEdgeKind,
+    PrincipalKind,
+    Server,
+    SharePermission,
+    Sid,
+    SmbShare,
+    parse_unc_path,
+)
+from app.domain.access import share_ace_identity_key, share_ace_right_token
 
 
 def principal_key(sid: Sid, kind: PrincipalKind, host_key: str | None = None) -> str:
@@ -57,13 +68,17 @@ def membership_key(
 
 
 def server_key(name: str) -> str:
-    """``server|<case-folded name>``."""
-    return f"server|{name.casefold()}"
+    """``server|<case-folded name>``, from :attr:`app.domain.Server.identity_key`."""
+    return f"server|{Server(name=name).identity_key}"
 
 
 def share_key(server_name: str, share_name: str) -> str:
-    """``share|<case-folded server>|<case-folded share>``."""
-    return f"share|{server_name.casefold()}|{share_name.casefold()}"
+    """``share|<case-folded server>|<case-folded share>``.
+
+    Derived from :attr:`app.domain.SmbShare.identity_key`, which is also the stored key, so
+    the contract key and the row it identifies cannot drift apart.
+    """
+    return f"share|{SmbShare(server_key=server_name, name=share_name).identity_key}"
 
 
 def smb_ace_key(
@@ -79,10 +94,22 @@ def smb_ace_key(
     The right form is part of the key because a share ACL reported as levels and the same
     ACL reported as masks are different observations of the same entry; keeping them
     distinct is honest, and the Phase 4 algebra reconciles them.
+
+    Formatted by :func:`app.domain.access.share_ace_identity_key`, the same function
+    :meth:`app.domain.SmbShareAce.identity_key` uses. The arguments are the raw contract
+    values rather than a built ACE, because this must be able to derive a key for a payload
+    that is about to be *rejected* — the caller has not yet been told that an ACE carrying
+    neither a mask nor a permission is invalid.
     """
-    right = permission if permission is not None else f"0x{access_mask or 0:08x}"
-    share = f"{server_name.casefold()}|{share_name.casefold()}"
-    return f"smb_ace|{share}|{trustee_sid.value}|{ace_type}|{right}"
+    ace = share_ace_identity_key(
+        share_key=SmbShare(server_key=server_name, name=share_name).identity_key,
+        trustee_sid=trustee_sid,
+        ace_type=AceType(ace_type),
+        right_token=share_ace_right_token(
+            access_mask, SharePermission(permission) if permission is not None else None
+        ),
+    )
+    return f"smb_ace|{ace}"
 
 
 def ntfs_resource_key(path: str) -> str:

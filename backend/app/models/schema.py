@@ -1,4 +1,4 @@
-"""Physical schema for AD principals, membership edges, and their provenance.
+"""Physical schema for principals, membership edges, SMB resources, and their provenance.
 
 This module is the single description of the tables; the Alembic revision under
 ``database/migrations/versions`` creates exactly what is declared here, and a smoke test
@@ -18,10 +18,18 @@ node. See ADR-0001 and ADR-0002.
 enums. A PostgreSQL ``enum`` type would make adding a value a migration with a lock, and the
 authoritative list already lives in :mod:`app.domain`.
 
-**Current state and provenance are separate tables.** ``principals`` and
-``membership_edges`` hold the latest known state of each object; ``observations`` holds one
-row per ``(run_id, source_key)``, which is what makes re-ingesting a batch a no-op and what
-keeps "which run saw this, and when" answerable before Phase 7 adds full history.
+**Current state and provenance are separate tables.** ``principals``,
+``membership_edges``, ``servers``, ``smb_shares``, and ``smb_share_aces`` hold the latest
+known state of each object; ``observations`` holds one row per ``(run_id, source_key)``,
+which is what makes re-ingesting a batch a no-op and what keeps "which run saw this, and
+when" answerable before Phase 7 adds full history.
+
+**Resource tables carry no foreign keys to each other.** A share whose server no run has
+described, and an ACE whose share arrived in a later batch, are both real observations, and
+a foreign key would reject them at exactly the moment a partial scan most needs to record
+what it did manage to read. The keys are still the domain's own identity strings, so the
+joins are exact; what is absent is reported as absent rather than refused on arrival —
+the same shape ``membership_edges`` already has toward ``principals``.
 """
 
 from __future__ import annotations
@@ -49,11 +57,14 @@ from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 from app.contracts.v1.common import ObservationKind, ScopeKind
 from app.domain import (
+    AceType,
     GroupScope,
     GroupType,
     MembershipEdgeKind,
     PrincipalKind,
     ScanStatus,
+    SharePermission,
+    ShareType,
     UnresolvedReason,
 )
 from app.domain.observation import CollectorKind
@@ -64,19 +75,29 @@ metadata = MetaData()
 # app/contracts/v1/keys.py cap at this length, and the contract models enforce it.
 KEY_LENGTH = 512
 
+MAX_ACCESS_MASK_VALUE = 0xFFFFFFFF
+"""An access mask is an unsigned 32-bit value, which does not fit PostgreSQL's signed
+``integer``. The columns holding one are ``bigint`` with a range check."""
+
 __all__ = [
     "KEY_LENGTH",
+    "MAX_ACCESS_MASK_VALUE",
     "AliasKind",
+    "ReferenceKind",
     "collector_sources",
     "membership_edges",
     "metadata",
     "observations",
     "principal_aliases",
+    "principal_references",
     "principals",
     "scan_run_batches",
     "scan_run_errors",
     "scan_run_scopes",
     "scan_runs",
+    "servers",
+    "smb_share_aces",
+    "smb_shares",
 ]
 
 
@@ -94,6 +115,18 @@ class AliasKind(StrEnum):
     USER_PRINCIPAL_NAME = "user_principal_name"
     DISTINGUISHED_NAME = "distinguished_name"
     LAST_KNOWN_NAME = "last_known_name"
+
+
+class ReferenceKind(StrEnum):
+    """What kind of thing named a principal on an access-control list.
+
+    A SID on an ACL is a reference, and a reference to a principal nothing has described is
+    the orphaned-SID finding this tool exists to report. Recording the references in one
+    table — rather than joining across every ACL table there will eventually be — is what
+    keeps "which resources name this SID" a single indexed lookup as the NTFS layer arrives.
+    """
+
+    SMB_ACE = "smb_ace"
 
 
 def _enum_check(column: str, enum: type[StrEnum], *, nullable: bool = False) -> CheckConstraint:
@@ -377,4 +410,177 @@ observations = Table(
     Index("ix_observations_subject", "subject_key", "observed_at"),
     Index("ix_observations_kind", "kind"),
     comment="Provenance: which run saw which object, when, in which batch.",
+)
+
+
+servers = Table(
+    "servers",
+    metadata,
+    # Server.identity_key: the case-folded name the collector addressed the machine as.
+    # Not the computer SID: a server is often reachable before anything has resolved its
+    # SID, and a share ACL read from it is a fact whether or not that resolution happened.
+    Column("server_key", String(KEY_LENGTH), primary_key=True),
+    # Case-preserving, for display. Comparison always goes through server_key.
+    Column("name", Text, nullable=False),
+    Column("dns_host_name", Text, nullable=True),
+    Column("netbios_name", Text, nullable=True),
+    Column("computer_sid", String(200), nullable=True),
+    Column("domain_sid", String(200), nullable=True),
+    Column("is_domain_member", Boolean, nullable=True),
+    Column("operating_system", Text, nullable=True),
+    Column("source_key", String(KEY_LENGTH), nullable=False),
+    _timestamp("first_observed_at"),
+    Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("last_observed_at"),
+    Column("last_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    # A DNS alias cannot be proven equivalent to a host name without resolving it, so two
+    # names for one machine stay two rows until something proves otherwise. The computer
+    # SID is indexed because it is the evidence that would prove it.
+    Index("ix_servers_computer_sid", "computer_sid"),
+    Index("ix_servers_last_observed_run", "last_observed_run_id"),
+    comment="Windows computers that have reported shares, keyed by the name collected.",
+)
+
+
+smb_shares = Table(
+    "smb_shares",
+    metadata,
+    # SmbShare.identity_key: '<server>|<share>', case-folded. The UNC path is exactly
+    # \\<server>\<share> and is therefore derived, never stored: a second spelling of one
+    # identity is a second thing that can disagree with the first.
+    Column("share_key", String(KEY_LENGTH), primary_key=True),
+    # Deliberately not a foreign key to servers.server_key. Batches may arrive in any
+    # order, and a share ACL read from a machine no run has described as a server is still
+    # a fact worth keeping -- exactly as membership_edges records an edge to a principal
+    # nothing has described. Absence of the server row shows up as server: null in the API.
+    Column("server_key", String(KEY_LENGTH), nullable=False),
+    Column("name", Text, nullable=False),
+    Column("local_path", Text, nullable=True),
+    Column("share_type", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("concurrent_user_limit", Integer, nullable=True),
+    Column("caching_mode", Text, nullable=True),
+    # Contract 1.1. NULL means the source did not say, which is not the same as false:
+    # an ordinary hidden share such as Data$ is hidden and not Special.
+    Column("is_special", Boolean, nullable=True),
+    Column("source_key", String(KEY_LENGTH), nullable=False),
+    _timestamp("first_observed_at"),
+    Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("last_observed_at"),
+    Column("last_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    _enum_check("share_type", ShareType),
+    CheckConstraint(
+        "strpos(share_key, server_key || '|') = 1",
+        name="ck_smb_shares_key_scoped_by_server",
+    ),
+    CheckConstraint(
+        "concurrent_user_limit IS NULL OR concurrent_user_limit >= 0",
+        name="ck_smb_shares_user_limit_non_negative",
+    ),
+    # Listing a server's shares is the hot path, and the trailing key makes the index cover
+    # the keyset pagination order as well.
+    Index("ix_smb_shares_server", "server_key", "share_key"),
+    Index("ix_smb_shares_last_observed_run", "last_observed_run_id"),
+    comment="SMB shares. A share is a publication of a directory, not the directory.",
+)
+
+
+smb_share_aces = Table(
+    "smb_share_aces",
+    metadata,
+    # SmbShareAce.identity_key(share_key): '<share>|<trustee>|<type>|<right>'. order_index
+    # is not part of it: reordering an ACL must not look like every entry being deleted
+    # and recreated.
+    Column("ace_key", String(KEY_LENGTH), primary_key=True),
+    # No foreign key, for the same reason smb_shares.server_key has none: an ACL batch may
+    # arrive before the batch describing the share, and an orphaned ACE is evidence.
+    Column("share_key", String(KEY_LENGTH), nullable=False),
+    Column("trustee_sid", String(200), nullable=False),
+    # referenced_principal_key(trustee_sid, server): the principals row this ACE points at
+    # if one exists. A BUILTIN trustee is host-scoped here because S-1-5-32-544 on FS01 is
+    # a different group from S-1-5-32-544 on FS02. Whether the principal is *known* is a
+    # join against principals, never a stored flag that could go stale the moment an AD
+    # run resolves the SID.
+    Column("trustee_key", String(KEY_LENGTH), nullable=False),
+    Column("ace_type", Text, nullable=False),
+    # bigint: an access mask is unsigned 32-bit and 0xFFFFFFFF overflows a signed integer.
+    Column("access_mask", BigInteger, nullable=True),
+    Column("permission", Text, nullable=True),
+    # The right as reported -- 'change' or '0x001301bf' -- which is what the identity key
+    # is built from. Stored so the key can be recomputed without re-deriving which form
+    # the source used.
+    Column("right_token", Text, nullable=False),
+    # Position in the DACL as read. Recorded because canonical ordering is what makes a
+    # Deny evaluable, but not part of identity.
+    Column("order_index", Integer, nullable=True),
+    Column("source_key", String(KEY_LENGTH), nullable=False),
+    _timestamp("first_observed_at"),
+    Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("last_observed_at"),
+    Column("last_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    _enum_check("ace_type", AceType),
+    _enum_check("permission", SharePermission, nullable=True),
+    CheckConstraint(
+        "(access_mask IS NULL) <> (permission IS NULL)",
+        name="ck_smb_share_aces_exactly_one_right",
+    ),
+    CheckConstraint(
+        f"access_mask IS NULL OR (access_mask >= 0 AND access_mask <= {MAX_ACCESS_MASK_VALUE})",
+        name="ck_smb_share_aces_access_mask_range",
+    ),
+    CheckConstraint(
+        "order_index IS NULL OR order_index >= 0",
+        name="ck_smb_share_aces_order_index_non_negative",
+    ),
+    CheckConstraint(
+        "strpos(ace_key, share_key || '|') = 1",
+        name="ck_smb_share_aces_key_scoped_by_share",
+    ),
+    # Reading one share's ACL, and finding every share that names one trustee, are the two
+    # questions this table exists to answer. Both get a covering index.
+    Index("ix_smb_share_aces_share", "share_key", "ace_key"),
+    Index("ix_smb_share_aces_trustee", "trustee_key", "share_key"),
+    Index("ix_smb_share_aces_trustee_sid", "trustee_sid"),
+    Index("ix_smb_share_aces_last_observed_run", "last_observed_run_id"),
+    comment="Raw share-level ACEs, exactly as read. No effective access is derived here.",
+)
+
+
+principal_references = Table(
+    "principal_references",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    # The key this reference resolves to, whether or not a principals row exists for it.
+    # Unresolved is the absence of that row, computed by a join: storing a 'resolved' flag
+    # would be a cache that lies the moment an AD run describes the SID.
+    Column("principal_key", String(KEY_LENGTH), nullable=False),
+    Column("sid", String(200), nullable=False),
+    # The machine whose context scoped the reference, when scoping applied. NULL for a
+    # globally unique SID, which is most of them.
+    Column("host_key", Text, nullable=True),
+    Column("reference_kind", Text, nullable=False),
+    # What names the principal: a share_key today, an NTFS resource key in Phase 3.
+    Column("reference_key", String(KEY_LENGTH), nullable=False),
+    _timestamp("first_observed_at"),
+    Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("last_observed_at"),
+    Column("last_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    UniqueConstraint(
+        "principal_key", "reference_kind", "reference_key", name="uq_principal_references_identity"
+    ),
+    _enum_check("reference_kind", ReferenceKind),
+    # "Which resources name this SID, resolved or not" is the question an orphaned-SID
+    # report asks, and it must not require scanning every ACL table in the estate.
+    Index("ix_principal_references_principal", "principal_key", "reference_key"),
+    Index("ix_principal_references_sid", "sid"),
+    Index("ix_principal_references_target", "reference_kind", "reference_key"),
+    comment="Every reference from a resource ACL to a principal key. Resolution is a join.",
 )

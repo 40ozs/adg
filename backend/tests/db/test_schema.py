@@ -1,6 +1,7 @@
 """The migration builds exactly what the schema module declares, and the constraints bite.
 
-``app/models/schema.py`` is the declaration and ``0002_ad_graph`` is the migration. Nothing
+``app/models/schema.py`` is the declaration and the revisions under
+``database/migrations/versions`` are the migrations. Nothing
 stops the two from drifting except a test that reflects the database the migration actually
 produced and compares it to the declaration — so that is what this does, plus a check that
 each invariant encoded as a constraint is enforced by the database rather than only by
@@ -16,7 +17,14 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.schema import membership_edges, metadata, principals
+from app.models.schema import (
+    membership_edges,
+    metadata,
+    principal_references,
+    principals,
+    smb_share_aces,
+    smb_shares,
+)
 
 RUN_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
 NOW = dt.datetime(2026, 9, 14, tzinfo=dt.UTC)
@@ -181,6 +189,158 @@ class TestConstraintsAreEnforcedByTheDatabase:
                     host_key=None,
                     is_foreign_security_principal=False,
                     source_key="edge|unscoped",
+                    first_observed_at=NOW,
+                    first_observed_run_id=RUN_ID,
+                    last_observed_at=NOW,
+                    last_observed_run_id=RUN_ID,
+                    created_at=NOW,
+                    updated_at=NOW,
+                )
+            )
+
+
+class TestResourceConstraintsAreEnforcedByTheDatabase:
+    """The SMB invariants, checked where the application layer cannot be bypassed.
+
+    Each of these is a fact that would be wrong in a way nobody notices: a share keyed to
+    one server and labelled with another's name, an ACE claiming both a level and a mask, a
+    mask silently truncated to 31 bits.
+    """
+
+    async def _insert_share(self, session: AsyncSession, **overrides: object) -> None:
+        values = {
+            "share_key": "fs01|finance",
+            "server_key": "fs01",
+            "name": "Finance",
+            "share_type": "disk",
+            "source_key": "share|fs01|finance",
+            "first_observed_at": NOW,
+            "first_observed_run_id": RUN_ID,
+            "last_observed_at": NOW,
+            "last_observed_run_id": RUN_ID,
+            "created_at": NOW,
+            "updated_at": NOW,
+            **overrides,
+        }
+        await session.execute(sa.insert(smb_shares).values(values))
+
+    async def _insert_ace(self, session: AsyncSession, **overrides: object) -> None:
+        values = {
+            "ace_key": "fs01|finance|S-1-1-0|allow|read",
+            "share_key": "fs01|finance",
+            "trustee_sid": "S-1-1-0",
+            "trustee_key": "S-1-1-0",
+            "ace_type": "allow",
+            "permission": "read",
+            "right_token": "read",
+            "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|read",
+            "first_observed_at": NOW,
+            "first_observed_run_id": RUN_ID,
+            "last_observed_at": NOW,
+            "last_observed_run_id": RUN_ID,
+            "created_at": NOW,
+            "updated_at": NOW,
+            **overrides,
+        }
+        await session.execute(sa.insert(smb_share_aces).values(values))
+
+    async def test_a_share_key_must_start_with_its_server(self, session: AsyncSession) -> None:
+        # Otherwise a share could be listed under FS01 while its identity says FS02.
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_share(session, server_key="fs02")
+
+    async def test_an_invalid_share_type_is_refused(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_share(session, share_type="tape")
+
+    async def test_a_negative_user_limit_is_refused(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_share(session, concurrent_user_limit=-1)
+
+    async def test_an_ace_key_must_start_with_its_share(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_ace(session, share_key="fs01|payroll")
+
+    async def test_an_ace_may_not_claim_both_a_level_and_a_mask(
+        self, session: AsyncSession
+    ) -> None:
+        # A source reported one form or the other. Holding both would fabricate a reading.
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_ace(session, access_mask=0x001200A9)
+
+    async def test_an_ace_must_carry_one_of_them(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_ace(session, permission=None, right_token="0x00000000")
+
+    async def test_an_unsigned_32_bit_mask_fits(self, session: AsyncSession) -> None:
+        # The column is bigint precisely so that 0xFFFFFFFF does not overflow into -1.
+        await self._insert_ace(
+            session, permission=None, access_mask=0xFFFFFFFF, right_token="0xffffffff"
+        )
+
+        stored = (await session.execute(sa.select(smb_share_aces.c.access_mask))).scalar_one()
+        assert stored == 0xFFFFFFFF
+
+    async def test_a_mask_beyond_32_bits_is_refused(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_ace(
+                session, permission=None, access_mask=0x1_0000_0000, right_token="0x100000000"
+            )
+
+    async def test_an_invalid_ace_type_is_refused(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_ace(session, ace_type="audit")
+
+    async def test_a_negative_order_index_is_refused(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await self._insert_ace(session, order_index=-1)
+
+    async def test_an_ace_needs_no_share_row(self, session: AsyncSession) -> None:
+        # No foreign key, on purpose: an ACL read before the share list is still a fact,
+        # and refusing it would discard evidence a partial scan did manage to collect.
+        await self._insert_ace(session)
+
+        stored = (
+            await session.execute(sa.select(sa.func.count()).select_from(smb_share_aces))
+        ).scalar_one()
+        assert stored == 1
+
+    async def test_a_share_needs_no_server_row(self, session: AsyncSession) -> None:
+        await self._insert_share(session)
+
+        stored = (
+            await session.execute(sa.select(sa.func.count()).select_from(smb_shares))
+        ).scalar_one()
+        assert stored == 1
+
+    async def test_one_principal_is_referenced_by_one_resource_only_once(
+        self, session: AsyncSession
+    ) -> None:
+        values = {
+            "principal_key": "S-1-1-0",
+            "sid": "S-1-1-0",
+            "reference_kind": "smb_ace",
+            "reference_key": "fs01|finance",
+            "first_observed_at": NOW,
+            "first_observed_run_id": RUN_ID,
+            "last_observed_at": NOW,
+            "last_observed_run_id": RUN_ID,
+            "created_at": NOW,
+            "updated_at": NOW,
+        }
+        await session.execute(sa.insert(principal_references).values(values))
+
+        with pytest.raises(sa.exc.IntegrityError):
+            await session.execute(sa.insert(principal_references).values(values))
+
+    async def test_an_unknown_reference_kind_is_refused(self, session: AsyncSession) -> None:
+        with pytest.raises(sa.exc.IntegrityError):
+            await session.execute(
+                sa.insert(principal_references).values(
+                    principal_key="S-1-1-0",
+                    sid="S-1-1-0",
+                    reference_kind="gpo",
+                    reference_key="fs01|finance",
                     first_observed_at=NOW,
                     first_observed_run_id=RUN_ID,
                     last_observed_at=NOW,
