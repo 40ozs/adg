@@ -208,7 +208,7 @@ All commands from `C:\code\adg\backend` using `.venv\Scripts\python.exe`.
 | Access performance | `ADG_RUN_SMOKE_TESTS=1 pytest tests/db/test_access_performance.py -q` | **16 passed, 1 xfailed in 14.27s** |
 | Hermetic suite | `pytest tests -q -m "not smoke"` | **3731 passed, 10 skipped, 323 deselected in 15.94s** |
 | Full suite | `ADG_RUN_SMOKE_TESTS=1 pytest tests -q` | **4053 passed, 10 skipped, 1 xfailed in 159.17s** |
-| Lint | `scripts\backend-lint.ps1` | **Backend checks passed** — ruff, ruff format, mypy strict, 140 files |
+| Lint | `scripts\backend-lint.ps1` | **Backend checks passed** — ruff, ruff format (141 files), mypy strict (140 source files) |
 
 Before this phase the hermetic suite stood at 3,641 and the full suite at 3,947.
 
@@ -336,7 +336,7 @@ soundness and remote-never-exceeds-local. Restored; all 32 pass.
 
 ## Commit
 
-`a68d3ca` — *Phase 4C: the effective-access engine, checked against Windows*. Not pushed; no
+`4e908f9` — *Phase 4C: the effective-access engine, checked against Windows*. Not pushed; no
 remote is configured for this repository.
 
 ## `git status --short`
