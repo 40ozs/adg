@@ -66,12 +66,12 @@ running something, and all six are fixed with a regression test that fails witho
 | `backend/tests/fixtures/build_ad_graph.py` | **New.** The generator, with `--check`. |
 | `backend/tests/fixtures/__init__.py` | Changed: `AD_GRAPH_DIR`, `ad_graph_names`, `load_ad_graph`, `load_ad_graph_raw`, `load_all_ad_graph`. |
 | `backend/tests/support/graph.py` | Changed: `InMemoryMembershipRepository` and `repository_from_fixture`, so the service layer's filters are testable without a database. Rows are built through `plan_batch`, so the keys are ingestion's keys. |
-| `backend/tests/contracts/test_ad_graph_fixtures.py` | **New (147).** Schema validity, transcript coherence, generator parity, and a check that every key named in an `expectations` block exists. |
+| `backend/tests/contracts/test_ad_graph_fixtures.py` | **New (160).** Schema validity, transcript coherence, generator parity, and a check that every key named in an `expectations` block exists. |
 | `backend/tests/contracts/test_published_constraints.py` | **New (59).** The models must enforce what the published schemas advertise — tested behaviorally, not by diffing JSON. |
 | `backend/tests/domain/test_graph_adversarial.py` | **New (49).** Every fixture's `expectations` asserted against `GraphService`. |
-| `backend/tests/domain/test_graph_properties.py` | **New (1,880).** Seeded graphs, reference implementations, eight invariant families. |
-| `backend/tests/domain/test_key_scoping.py` | **New (19).** Storage keys and `split_key`. |
-| `backend/tests/api/test_traversal_pairing.py` | **New (12).** The repository ceiling and the traversal budget must stay paired. |
+| `backend/tests/domain/test_graph_properties.py` | **New (1,872 passing, 8 skipped).** Seeded graphs, reference implementations, eight invariant families. |
+| `backend/tests/domain/test_key_scoping.py` | **New (17).** Storage keys and `split_key`. |
+| `backend/tests/api/test_traversal_pairing.py` | **New (14).** The repository ceiling and the traversal budget must stay paired. |
 | `backend/tests/db/test_graph_adversarial.py` | **New (40, smoke).** The same fixtures through ingestion and the query endpoints. |
 | `backend/tests/validation/test_collector_output.py` | **New (66).** Both halves of the validator, plus the whole committed corpus. |
 | `backend/tests/benchmarks/graph_benchmark.py` | **New.** In-memory and PostgreSQL suites, plans captured. |
@@ -152,7 +152,7 @@ Run from `backend\`, against an isolated database (see "Known limitations" 7).
 | `.\scripts\graph-benchmark.ps1 -Scale large -Database` | Completed; numbers in `ad-graph-validation.md` §6 |
 | Relative Markdown link check, whole repository | **0 broken links** |
 
-Test counts added by this phase: 147 + 59 + 49 + 1,880 + 19 + 12 + 40 + 66 + 14 = **2,286**.
+Test counts added by this phase: 160 + 59 + 49 + 1,872 + 17 + 14 + 40 + 66 + 14 = **2,291** passing (plus 8 skipped).
 The property suite is the bulk of that: 40 seeds × 8 invariant families × several limit
 combinations, each walking every node of a generated graph.
 
