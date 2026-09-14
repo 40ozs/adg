@@ -134,7 +134,14 @@ function Invoke-AdgParallelMap {
     $completed = $indexed | ForEach-Object -ThrottleLimit $ConcurrencyLimit -Parallel {
         $entry = $_
         $block = [scriptblock]::Create($using:blockText)
-        Import-Module $using:ImportModulePath -Force -ErrorAction Stop
+        # Imported without -Force, and that is a measured difference rather than tidiness.
+        # ForEach-Object -Parallel reuses a pool of runspaces, so a module imported by one
+        # iteration is still loaded for the next - unless -Force makes it re-import, which it
+        # did: this collector dot-sources seven files, and paying for that once per directory
+        # made concurrency 8 *slower* than concurrency 1 on a benchmark of 781 directories.
+        # Without -Force an already-loaded module is a no-op, and there is nothing stale for
+        # it to guard against: the runspace was created by this call.
+        Import-Module $using:ImportModulePath -ErrorAction Stop
         try {
             [pscustomobject]@{
                 Index = $entry.Index; Item = $entry.Item; Ok = $true
@@ -558,6 +565,11 @@ function Invoke-AdgNtfsDirectoryWalk {
                     # The reparse targets crossed on the way here. Empty at a root, and the
                     # branch-local set a junction's target is checked against.
                     LinkTargets       = @()
+                    # A scan root is an ordinary directory: read it, list it, descend. The
+                    # three fields matter only for a reparse point - see the child enqueue.
+                    NoDescend         = $false
+                    IsReparsePoint    = $false
+                    ReparseTarget     = $null
                 })
         }
     }
@@ -617,7 +629,13 @@ function Invoke-AdgNtfsDirectoryWalk {
                         # can be told from "the tree ended here". Only the first makes a root
                         # non-exhaustive, and a truncated tree reported as a complete one is
                         # the failure that matters.
-                        Enumerate         = [bool] $scope.Descend
+                        #
+                        # A reparse point the policy already declined is the exception: the
+                        # decision was made and recorded when it was queued, so listing it
+                        # would be a round trip whose every outcome is discarded - and on a
+                        # junction whose target is gone, a listing failure reported as a
+                        # rights problem. Its own descriptor is still read.
+                        Enumerate         = [bool] $scope.Descend -and -not $entry.NoDescend
                         RetryCount        = [int] $Settings.RetryCount
                         RetryDelaySeconds = [int] $Settings.RetryDelaySeconds
                     })
@@ -699,12 +717,26 @@ function Invoke-AdgNtfsDirectoryWalk {
                 $childProjection = if ($null -eq $group) { $null } else { $group.ChildProjection }
                 $childParentHash = if ($null -eq $group) { $null } else { $group.AclHash }
 
-                if ($scope.Descend) {
+                if ($scope.Descend -and -not $entry.NoDescend) {
                     if ($null -ne $unit.ChildrenError) {
-                        $errors.Add((New-AdgCollectorError -Code 'access_denied' -Target $entry.Path `
-                                    -Message "$($entry.Path) could not be enumerated: $($unit.ChildrenError). Listing a directory needs FILE_LIST_DIRECTORY on it, which is a different right from the READ_CONTROL that reading its ACL needs - so a directory whose ACL was read and whose contents were not is an ordinary result, and everything beneath it is unobserved rather than absent."))
+                        # A reparse point that could not be listed is told apart from an
+                        # ordinary directory that could not be listed, because the two send
+                        # an operator to different places: one is a link to somewhere that is
+                        # gone, the other is a missing right on a directory that is right
+                        # here. Only reachable under 'follow'; every other policy declined
+                        # the junction before it got this far.
+                        if ($entry.IsReparsePoint) {
+                            $target = if ([string]::IsNullOrWhiteSpace([string] $entry.ReparseTarget)) { 'an unreadable target' } else { "'$($entry.ReparseTarget)'" }
+                            $errors.Add((New-AdgCollectorError -Code 'reparse_target_unreadable' -Target $entry.Path `
+                                        -Message "$($entry.Path) is a reparse point to $target, and following it failed: $($unit.ChildrenError). The link's own descriptor was read and is reported; what it points at is unobserved rather than absent, and a target that has been decommissioned is an ordinary finding rather than a permissions problem."))
+                            Add-NotExhaustive $entry.Root 'unreadable_link_target'
+                        }
+                        else {
+                            $errors.Add((New-AdgCollectorError -Code 'access_denied' -Target $entry.Path `
+                                        -Message "$($entry.Path) could not be enumerated: $($unit.ChildrenError). Listing a directory needs FILE_LIST_DIRECTORY on it, which is a different right from the READ_CONTROL that reading its ACL needs - so a directory whose ACL was read and whose contents were not is an ordinary result, and everything beneath it is unobserved rather than absent."))
+                            Add-NotExhaustive $entry.Root 'unreadable_directory'
+                        }
                         $metrics.Errors++
-                        Add-NotExhaustive $entry.Root 'unreadable_directory'
                     }
                     else {
                         $children = @($unit.Children ?? @())
@@ -743,6 +775,7 @@ function Invoke-AdgNtfsDirectoryWalk {
 
                                 $childDepth = $entry.Depth + 1
                                 $childTargets = @($entry.LinkTargets ?? @())
+                                $childNoDescend = $false
 
                                 if ($child.IsReparsePoint) {
                                     # Read, never descended past, under every policy but
@@ -780,7 +813,16 @@ function Invoke-AdgNtfsDirectoryWalk {
                                         }
                                     }
 
-                                    if ($stop) { $childDepth = $Settings.MaxDepth }
+                                    # Not descended into - and said so as itself. Phase 3A
+                                    # and 3B expressed "do not go below this" by queueing the
+                                    # junction at maxDepth, which worked and then reported
+                                    # the stop as a depth limit: a real walk of a real tree
+                                    # produced "maxDepth is 20 and this directory sits at
+                                    # that depth" about a junction sitting at depth 2. An
+                                    # operator raising maxDepth would see no change, and the
+                                    # run's own account of why it could not reconcile named
+                                    # a setting that had nothing to do with it.
+                                    $childNoDescend = $stop
                                     $metrics.SkippedReparsePoints++
                                     Add-NotExhaustive $entry.Root $reason
                                 }
@@ -794,6 +836,10 @@ function Invoke-AdgNtfsDirectoryWalk {
                                         ParentProjection  = $childProjection
                                         ParentAclHash     = $childParentHash
                                         LinkTargets       = $childTargets
+                                        # Read this directory's own descriptor, and stop.
+                                        NoDescend         = $childNoDescend
+                                        IsReparsePoint    = [bool] $child.IsReparsePoint
+                                        ReparseTarget     = [string] $child.LinkTarget
                                     })
                             }
                         }

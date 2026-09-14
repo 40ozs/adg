@@ -572,6 +572,63 @@ Describe 'Reparse points' {
         ($paths | Sort-Object -Unique).Count | Should -Be $paths.Count
     }
 
+    It 'does not blame the depth limit for a junction the policy declined' {
+        # Found by a real walk of a real tree, and invisible to every test in this file until
+        # this one. The walk used to express "do not descend past this" by queueing the
+        # junction at maxDepth, and the generic depth-limit branch then reported the stop as
+        # "maxDepth is 20 and this directory sits at that depth" - about a junction at depth
+        # 2. An operator raising maxDepth would see the message again, unchanged, and the
+        # run's own account of why it could not reconcile named a setting that had nothing to
+        # do with it.
+        Set-TestEstate $Estate
+        $walk = Invoke-TestWalk -Settings (Get-Settings)
+
+        @($walk.Result.Errors | Where-Object { $_.code -eq 'depth_limit_reached' }) | Should -BeNullOrEmpty
+        @($walk.Result.Roots)[0].Reasons | Should -Not -Contain 'depth_limit'
+        $walk.Result.Metrics.SkippedDepthLimited | Should -Be 0
+        # Still counted, and counted as what it is.
+        $walk.Result.Metrics.SkippedReparsePoints | Should -Be 1
+    }
+
+    It 'does not even list a junction it has already decided not to descend into' {
+        # The listing's every outcome would be discarded, and it is a round trip to a remote
+        # server per junction. On a junction whose target is gone it is worse than wasted: the
+        # listing fails, and the failure reads as a permissions problem.
+        Set-TestEstate $Estate
+        [void] (Invoke-TestWalk -Settings (Get-Settings))
+
+        Should -Invoke Get-AdgChildDirectory -ModuleName AdgNtfsCollector -Times 0 -Exactly `
+            -ParameterFilter { $Path -eq '\\FS01\Finance\Archive' }
+    }
+
+    It 'blames the link rather than the rights when a followed junction cannot be listed' {
+        # The other half of the same finding. A junction to a decommissioned volume produced
+        # "could not be enumerated ... Listing a directory needs FILE_LIST_DIRECTORY", which
+        # sends somebody to look at permissions on a directory whose permissions are fine.
+        $Estate['\\fs01\finance\archive'].ListDenied = $true
+        Set-TestEstate $Estate
+
+        $walk = Invoke-TestWalk -Settings (Get-Settings @{ ReparsePointPolicy = 'follow' })
+        $errors = @($walk.Result.Errors | Where-Object { $_.target -eq '\\FS01\Finance\Archive' })
+        $errors.Count | Should -Be 1
+        $errors[0].code | Should -Be 'reparse_target_unreadable'
+        $errors[0].message | Should -BeLike '*reparse point*'
+        @($walk.Result.Roots)[0].Reasons | Should -Contain 'unreadable_link_target'
+    }
+
+    It 'still blames the rights when an ordinary directory cannot be listed' {
+        # The control for the test above: the reparse-specific message must not swallow the
+        # ordinary case, which is the common one and the one that really is about a right.
+        $Estate['\\fs01\finance\reports'].ListDenied = $true
+        Set-TestEstate $Estate
+
+        $walk = Invoke-TestWalk -Settings (Get-Settings)
+        $errors = @($walk.Result.Errors | Where-Object { $_.target -eq '\\FS01\Finance\Reports' })
+        $errors.Count | Should -Be 1
+        $errors[0].code | Should -Be 'access_denied'
+        $errors[0].message | Should -BeLike '*FILE_LIST_DIRECTORY*'
+    }
+
     It 'never claims an exhaustive tree when a junction was not followed' {
         # A path under a junction is a distinct resource key, so skipping it leaves real
         # paths unreported - and a scope reconciled on that basis would mark them absent.

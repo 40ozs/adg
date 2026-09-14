@@ -264,13 +264,29 @@ function Read-AdgShareAcl {
 function Split-AdgObservationBatch {
     <#
         .SYNOPSIS
-            Chunk observations into contract-sized batches.
+            Chunk observations into contract-sized batches, one source key per batch.
         .DESCRIPTION
             Order is preserved, so a share's defining observation stays in the same batch
             as its ACEs or an earlier one, which keeps partial data interpretable. Each
             batch gets a UUID generated once and reused on every retry - that is what
             makes a retry after a timeout a recognized duplicate instead of a second
             application.
+
+            **One source key, once per batch.** The contract forbids a repeat and the API
+            rejects the whole batch with a 422, and this collector produces one in the
+            ordinary case: an orphaned SID is orphaned estate-wide, so it sits on the ACL of
+            several shares of one server, and every one of them reports a `principal`
+            observation describing it. Those are the same fact about the same SID, so the
+            repeat is dropped rather than sent - the server stores one row for it either way,
+            and sending it would make the batch unsendable.
+
+            The case was found by walking a generated tree through the NTFS collector, which
+            carried the identical defect. This one had shipped since Phase 2A: no fixture had
+            two shares sharing an unresolved trustee.
+
+            Across batches a repeat is not a repeat. The server keys observations by
+            (run_id, source_key) and ignores the second arrival, so the set is cleared with
+            each batch rather than held for the run.
     #>
     [OutputType([object[]])]
     param(
@@ -285,22 +301,49 @@ function Split-AdgObservationBatch {
     if ($items.Count -eq 0) { return , @() }
 
     $batches = [System.Collections.Generic.List[object]]::new()
+    $pending = [System.Collections.Generic.List[object]]::new()
+    $keys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $sequence = 1
-    for ($offset = 0; $offset -lt $items.Count; $offset += $BatchSize) {
-        $take = [Math]::Min($BatchSize, $items.Count - $offset)
-        $slice = $items[$offset..($offset + $take - 1)]
-        $isFinal = ($offset + $take) -ge $items.Count
 
+    foreach ($item in $items) {
+        $key = [string] $item['source_key']
+        # A missing key is malformed, and the API rejects it naming the field. Kept rather
+        # than dropped: deduplicating on a key that is not there would discard every
+        # observation after the first, which is a far worse failure than the 422 that is
+        # coming anyway.
+        if (-not [string]::IsNullOrEmpty($key) -and -not $keys.Add($key)) { continue }
+
+        $pending.Add($item)
+        if ($pending.Count -ge $BatchSize) {
+            $batches.Add([ordered]@{
+                    schema_version = $script:AdgSchemaVersion
+                    run_id         = $RunId
+                    batch_id       = [guid]::NewGuid().ToString()
+                    sequence       = $sequence
+                    is_final       = $false
+                    observations   = @($pending.ToArray())
+                })
+            $sequence++
+            $pending.Clear()
+            $keys.Clear()
+        }
+    }
+
+    if ($pending.Count -gt 0) {
         $batches.Add([ordered]@{
                 schema_version = $script:AdgSchemaVersion
                 run_id         = $RunId
                 batch_id       = [guid]::NewGuid().ToString()
                 sequence       = $sequence
-                is_final       = $isFinal
-                observations   = @($slice)
+                is_final       = $false
+                observations   = @($pending.ToArray())
             })
-        $sequence++
     }
+
+    # Marked at the end rather than predicted inside the loop. How many batches there are is
+    # not known until the deduplication has finished, so a flag computed from the length of
+    # the input can land on the wrong one.
+    if ($batches.Count -gt 0) { $batches[$batches.Count - 1].is_final = $true }
 
     return , $batches.ToArray()
 }
@@ -434,7 +477,12 @@ function Invoke-AdgSmbScanRun {
         status            = $status
         completed_at      = Get-AdgTimestamp
         batch_count       = $batches.Count
-        observation_count = $observations.Count
+        # What the batches actually carry, not what the scan accumulated. The two differ
+        # whenever a source key repeating across shares was deduplicated, and a run claiming
+        # more coverage than it delivered overstates what ADG knows - which is exactly what
+        # the output validator refuses.
+        observation_count = [int] (@($batches | ForEach-Object { @($_.observations).Count } |
+                Measure-Object -Sum).Sum)
         error_count       = $errors.Count
         errors            = @($errors.ToArray())
         reconciled_scopes = @($reconciled)

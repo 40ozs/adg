@@ -19,6 +19,7 @@
     # System.IO, so the collector does not depend on the PowerShell provider stack.
 
     FunctionsToExport    = @(
+        'Get-AdgNtfsSafeDefault'
         'Import-AdgNtfsTarget'
         'Test-AdgShareRootPath'
         'Test-AdgPathMatch'

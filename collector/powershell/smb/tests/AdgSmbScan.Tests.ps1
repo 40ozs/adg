@@ -232,6 +232,33 @@ Describe 'Unresolved trustees' {
         @($run.Start.scopes | Where-Object { $_.kind -eq 'share' }).key | Should -Contain 'fs01|finance'
     }
 
+    It 'reports one orphaned SID once when it sits on two shares' {
+        # The shape that made this collector produce a batch the API rejects with a 422: an
+        # orphaned SID is orphaned estate-wide, so it appears on share after share and every
+        # one of them reports a principal observation describing it.
+        Set-TestEstate -Shares @((New-TestShare -Name 'Finance'), (New-TestShare -Name 'Payroll')) -Dacl @(
+            (New-TestAce -SidString 'S-1-5-21-1-2-3-9999' -TrusteeName '')
+            (New-TestAce -SidString 'S-1-5-11' -TrusteeName 'Authenticated Users')
+        )
+
+        $run = (Invoke-AdgSmbScan -Settings (Import-AdgSmbTarget -Server 'FS01'))[0]
+
+        # The finding survives: the SID is still reported.
+        $principals = Get-Observations $run 'principal'
+        $principals.Count | Should -Be 1
+        $principals[0].sid | Should -Be 'S-1-5-21-1-2-3-9999'
+
+        # And no batch carries one key twice, which is what the API checks.
+        foreach ($batch in $run.Batches) {
+            $keys = @($batch.observations | ForEach-Object { $_['source_key'] })
+            @($keys | Sort-Object -Unique).Count | Should -Be $keys.Count
+        }
+
+        # The completion counts what was sent, not what the scan accumulated.
+        $sent = @($run.Batches | ForEach-Object { @($_.observations).Count } | Measure-Object -Sum).Sum
+        $run.Completion.observation_count | Should -Be $sent
+    }
+
     It 'falls back to permission levels when the descriptor is unreadable' {
         Set-TestEstate -Shares @((New-TestShare -Name 'Finance')) -DescriptorThrows
         Mock -ModuleName AdgSmbCollector Get-AdgRemoteShareAccess {
@@ -502,6 +529,55 @@ Describe 'Split-AdgObservationBatch' {
         $batches = Split-AdgObservationBatch -RunId $script:RunId -Observations $script:Many -BatchSize 500
 
         (@($batches.batch_id) | Sort-Object -Unique).Count | Should -Be 3
+    }
+
+    It 'sends one source key once per batch' {
+        # This collector had shipped since Phase 2A producing batches the API would reject
+        # with a 422, and no fixture caught it because none had a key repeat. The case is
+        # the ordinary one: an orphaned SID is orphaned estate-wide.
+        $repeated = @(
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs1' -Body @{ name = 'FS1' })
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs2' -Body @{ name = 'FS2' })
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs1' -Body @{ name = 'FS1' })
+        )
+        $batches = Split-AdgObservationBatch -RunId $script:RunId -Observations $repeated -BatchSize 500
+
+        $batches.Count | Should -Be 1
+        @($batches[0].observations).Count | Should -Be 2
+        @($batches[0].observations.source_key) | Should -Be @('server|fs1', 'server|fs2')
+    }
+
+    It 'sends the same key again in a later batch, because that is not a duplicate' {
+        # The rule is per batch. Across batches the server keys observations by
+        # (run_id, source_key) and ignores the second arrival, so carrying the set across
+        # batches would drop real observations and would grow without bound on an estate.
+        $repeated = @(
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs1' -Body @{ name = 'FS1' })
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs2' -Body @{ name = 'FS2' })
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs1' -Body @{ name = 'FS1' })
+        )
+        $batches = Split-AdgObservationBatch -RunId $script:RunId -Observations $repeated -BatchSize 2
+
+        $batches.Count | Should -Be 2
+        @($batches[0].observations.source_key) | Should -Be @('server|fs1', 'server|fs2')
+        @($batches[1].observations.source_key) | Should -Be @('server|fs1')
+        @($batches.is_final) | Should -Be @($false, $true)
+    }
+
+    It 'marks the last batch final after deduplication has changed how many there are' {
+        # Three observations at a batch size of three would once have been one full batch.
+        # With the repeat dropped it is a batch of two, so is_final has to be decided after
+        # chunking rather than predicted from the length of the input.
+        $repeated = @(
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs1' -Body @{ name = 'FS1' })
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs2' -Body @{ name = 'FS2' })
+            (New-AdgObservation -Kind 'server' -RunId $script:RunId -SourceKey 'server|fs2' -Body @{ name = 'FS2' })
+        )
+        $batches = Split-AdgObservationBatch -RunId $script:RunId -Observations $repeated -BatchSize 3
+
+        $batches.Count | Should -Be 1
+        @($batches[0].observations).Count | Should -Be 2
+        @($batches.is_final) | Should -Be @($true)
     }
 
     It 'produces no batch at all when there is nothing to send' {

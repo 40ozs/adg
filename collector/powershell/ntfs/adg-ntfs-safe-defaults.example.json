@@ -1,0 +1,81 @@
+{
+  "$comment": [
+    "ADG NTFS collector - the safe-defaults profile for a scheduled production scan.",
+    "",
+    "The built-in defaults are tuned for a first run on a workstation: one descriptor read at",
+    "a time, no deadline, no checkpoint. They cannot surprise anybody, and they are the wrong",
+    "settings for a scheduled scan of a real file server - a scan that takes far longer than",
+    "it needs to and that loses everything it read if the collector restarts.",
+    "",
+    "Every value below is also returned by Get-AdgNtfsSafeDefault, and the collector applies",
+    "the same set when Invoke-AdgNtfsScan.ps1 is given -SafeDefaults. A test asserts that this",
+    "file and that function agree, so this is documentation that cannot drift from the code.",
+    "",
+    "Copy it, add your scanRoots and a checkpointPath, and keep it under change control.",
+    "It holds NO credentials: collection runs as the identity of the process."
+  ],
+
+  "$comment_measurement": [
+    "These numbers came from scripts\\ntfs-benchmark.ps1 on one workstation against a local",
+    "volume over \\\\localhost\\C$. They are a starting point and a method, not a target: a",
+    "remote file server over SMB has a completely different cost model, in which latency",
+    "rather than CPU is what a scan spends its time on. Re-run the benchmark on your own",
+    "hardware. The measured figures are in docs/architecture/ntfs-scan-performance.md."
+  ],
+
+  "scanRoots": [],
+
+  "$comment_scanRoots": [
+    "Fill this in. There is no estate-wide default and there will not be one: a tool that",
+    "walks an estate it was never pointed at looks exactly like reconnaissance, and it makes",
+    "a run's declared scope mean something nobody chose. Generate the list from ADG's own",
+    "share inventory (GET /api/v1/servers/{server}/shares).",
+    "",
+    "Run ONE TREE PER RUN in production - pass -RunPerScanRoot, or give each root its own",
+    "invocation and its own checkpointPath. A single unreadable descriptor anywhere in a",
+    "combined run downgrades the whole run to 'partial' and stops EVERY tree in it from",
+    "reconciling, which is the difference between one tree ADG cannot age out and all of them."
+  ],
+
+  "$comment_concurrencyLimit": "Descriptor reads in flight at once. A read over SMB is almost entirely latency, so this is the setting worth tuning against a real file server: raise it while throughput improves and stop before the server's queue becomes the bottleneck. It changes throughput only - the walk's decisions stay sequential and its output is byte-identical at every setting.",
+  "concurrencyLimit": 8,
+
+  "$comment_maxDepth": "Past any tree a file server holds in practice, and low enough that a misconfiguration cannot become a walk that never ends. Reaching it is reported as an error and stops that tree from reconciling, so a truncated tree is never mistaken for a complete one.",
+  "maxDepth": 24,
+
+  "$comment_batchSize": "Half the contract ceiling of 1000. A resource observation and all of its ACEs always travel in one batch, so a batch may exceed this slightly rather than split a DACL: the server can only verify a reported acl_hash against a complete one.",
+  "batchSize": 500,
+
+  "$comment_timeoutSeconds": "Four hours - a maintenance window. The scan stops where it is, writes a checkpoint, and reports 'canceled'; it never reports the part it reached as the whole. Pointless without checkpointPath, because the scan then cannot be resumed.",
+  "timeoutSeconds": 14400,
+
+  "$comment_checkpointPath": [
+    "SET THIS. The profile cannot: it has to be a path this account can write, on a disk that",
+    "survives whatever interrupted the scan. Without it, timeoutSeconds stops a scan that",
+    "cannot be resumed, and a restart re-walks the whole tree.",
+    "The file holds pending directories and the parent facts each needs to judge its own",
+    "boundary. No observations, and no credentials."
+  ],
+  "checkpointPath": "",
+  "checkpointIntervalSeconds": 60,
+
+  "$comment_retry": "A file server that is briefly busy is worth waiting for; one that is denying access is not. The collector does not try to tell the two apart - a wrong guess would turn a recoverable blip into a permanent gap - and the bound keeps the cost small either way.",
+  "retryCount": 2,
+  "retryDelaySeconds": 5,
+
+  "$comment_reparsePointPolicy": "'skip' reads a junction's own descriptor - it is a real directory with a real ACL - and does not descend, because what lies below belongs to the target and is reported under the target's own path when that path is in scope. 'follow' reports one directory under several names and needs the cycle guard to terminate at all.",
+  "reparsePointPolicy": "skip",
+
+  "$comment_includeFiles": "Off. Measured on a tree carrying three files per directory: turning it on read 4x the paths, took 2.1x the wall clock, submitted 4x the batches, and found 1.5x the distinct ACL states. A real file server holds hundreds of files per directory, so the multiplier there is far worse. Turn it on for a named subtree under investigation, never for an estate.",
+  "includeFiles": false,
+
+  "$comment_reportUnresolvedPrincipals": "On. An orphaned SID on a folder ACL is one of the findings this tool exists to produce, and the backend cannot infer it from the ACE alone.",
+  "reportUnresolvedPrincipals": true,
+
+  "$comment_notInThisProfile": [
+    "excludePaths and includePaths are deliberately absent. Both are useful and both make a",
+    "run incremental, which means it reconciles nothing - so ADG can never mark a directory",
+    "beneath those roots as gone. That is a trade to make deliberately for a named subtree,",
+    "not a default to inherit."
+  ]
+}

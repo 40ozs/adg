@@ -40,6 +40,13 @@
 .PARAMETER ConfigPath
     Path to a JSON target configuration. Merged with -ScanRoot if both are given.
 
+.PARAMETER SafeDefaults
+    Start from the production profile rather than the first-run defaults: concurrency 8,
+    maxDepth 24, a four-hour deadline, and a checkpoint every minute. It changes only what
+    the configuration file does not say, and a command-line switch still overrides it. See
+    adg-ntfs-safe-defaults.example.json for every value and the reasoning, and set
+    -CheckpointPath alongside it - the deadline is what makes an unresumable scan a problem.
+
 .PARAMETER ScanRoot
     Directories to walk, as UNC paths: \\FS01\Finance. A path inside a share is accepted;
     its boundary is then reported as scan_root, because its parent was not read.
@@ -120,6 +127,7 @@ param(
     [string] $OutputDirectory,
 
     [string] $ConfigPath,
+    [switch] $SafeDefaults,
     [string[]] $ScanRoot = @(),
     [string[]] $ShareRoot = @(),
     [Nullable[int]] $MaxDepth,
@@ -141,7 +149,15 @@ Set-StrictMode -Version Latest
 $modulePath = Join-Path $PSScriptRoot 'AdgNtfsCollector.psd1'
 Import-Module $modulePath -Force
 
-$settings = Import-AdgNtfsTarget -Path $ConfigPath -ScanRoot $ScanRoot -ShareRoot $ShareRoot
+$settings = Import-AdgNtfsTarget -Path $ConfigPath -ScanRoot $ScanRoot -ShareRoot $ShareRoot `
+    -SafeDefaults:$SafeDefaults
+
+if ($SafeDefaults -and [string]::IsNullOrWhiteSpace($settings.CheckpointPath)) {
+    # Not fatal, because a caller may genuinely want one bounded pass. But the profile sets a
+    # four-hour deadline, and a deadline without a checkpoint turns a long scan into a scan
+    # that starts again from nothing.
+    Write-Warning '-SafeDefaults sets a four-hour deadline and no checkpoint was configured. A scan that reaches the deadline will stop and cannot be resumed; pass -CheckpointPath so the next run continues instead of starting again.'
+}
 
 # Command-line overrides, applied after the file so a one-off run can narrow a standing
 # configuration without editing it. Each is validated through the same bounds the file uses,

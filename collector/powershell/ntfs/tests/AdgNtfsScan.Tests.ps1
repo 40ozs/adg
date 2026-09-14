@@ -94,8 +94,15 @@ BeforeAll {
     # runs during Pester's discovery pass, and a function defined there does not survive
     # into the run pass where the It blocks execute.
     function New-ObservationGroup {
-        param([int] $Count)
-        return @(1..$Count | ForEach-Object { [ordered]@{ kind = 'ntfs_ace'; n = $_ } })
+        # Distinct source keys, because the batch writer deduplicates on them: observations
+        # that all claimed one key would be one observation by the time they reached a batch,
+        # which is the correct behaviour and the wrong fixture. A fresh path per call by
+        # default, too, because two groups are two resources - sharing one would make the
+        # second group a repeat of the first, and the writer would rightly drop all of it.
+        param([int] $Count, [string] $Path = [guid]::NewGuid().ToString('n').Substring(0, 8))
+        return @(1..$Count | ForEach-Object {
+                [ordered]@{ kind = 'ntfs_ace'; source_key = "ace|$Path|$_"; n = $_ }
+            })
     }
 
     # Records the whole conversation with the sink, in order, so a test can assert on what
@@ -171,6 +178,71 @@ Describe 'The batch writer' {
         $Emitted.Count | Should -Be 2
         @($Emitted[0].observations).Count | Should -Be 3
         @($Emitted[1].observations).Count | Should -Be 3
+    }
+
+    It 'sends one source key once per batch' {
+        # Found by a real walk of a generated tree: one orphaned SID sat on two directories,
+        # each resource group reported a principal observation describing it, and the API
+        # rejected the whole batch with a 422. In an estate an orphaned SID is orphaned
+        # estate-wide, so it appears on dozens of folders and every batch would be refused.
+        $shared = [ordered]@{ kind = 'principal'; source_key = 'principal|S-1-5-21-1-2-3-1001' }
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @(
+            [ordered]@{ kind = 'ntfs_resource'; source_key = 'resource|a' }, $shared)
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @(
+            [ordered]@{ kind = 'ntfs_resource'; source_key = 'resource|b' }, $shared)
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+
+        $keys = @($Emitted[0].observations | ForEach-Object { $_['source_key'] })
+        $keys.Count | Should -Be 3
+        @($keys | Sort-Object -Unique).Count | Should -Be 3
+        $Writer.DuplicatesDropped | Should -Be 1
+    }
+
+    It 'sends the same key again in a later batch, because that is not a duplicate' {
+        # The contract forbids a repeat *within* one batch. Across batches the server keys
+        # observations by (run_id, source_key) and ignores the second arrival, so carrying
+        # the set across batches would drop real observations - and would grow without bound
+        # on a large estate.
+        $shared = [ordered]@{ kind = 'principal'; source_key = 'principal|S-1-5-21-1-2-3-1001' }
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @(
+            [ordered]@{ kind = 'ntfs_resource'; source_key = 'resource|a' },
+            [ordered]@{ kind = 'ntfs_ace'; source_key = 'ace|a|1' },
+            [ordered]@{ kind = 'ntfs_ace'; source_key = 'ace|a|2' }, $shared)
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @(
+            [ordered]@{ kind = 'ntfs_resource'; source_key = 'resource|b' }, $shared)
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+
+        $Emitted.Count | Should -Be 2
+        @($Emitted[0].observations | ForEach-Object { $_['source_key'] }) |
+            Should -Contain 'principal|S-1-5-21-1-2-3-1001'
+        @($Emitted[1].observations | ForEach-Object { $_['source_key'] }) |
+            Should -Contain 'principal|S-1-5-21-1-2-3-1001'
+        $Writer.DuplicatesDropped | Should -Be 0
+    }
+
+    It 'drops a repeated key inside one group too' {
+        # An ACE's key deliberately excludes order_index, so a DACL carrying the same entry
+        # at two positions produces one key twice inside a single resource's group.
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @(
+            [ordered]@{ kind = 'ntfs_resource'; source_key = 'resource|a' },
+            [ordered]@{ kind = 'ntfs_ace'; source_key = 'ace|a|same' },
+            [ordered]@{ kind = 'ntfs_ace'; source_key = 'ace|a|same' })
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+
+        @($Emitted[0].observations).Count | Should -Be 2
+        $Writer.DuplicatesDropped | Should -Be 1
+    }
+
+    It 'keeps an observation with no source key rather than deduplicating on nothing' {
+        # A missing key is malformed and the API says so by name. Treating every such
+        # observation as a repeat of the first would silently discard the rest, which is a
+        # far worse failure than the 422 the caller is about to be told about.
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @(
+            [ordered]@{ kind = 'ntfs_ace' }, [ordered]@{ kind = 'ntfs_ace' })
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+
+        @($Emitted[0].observations).Count | Should -Be 2
+        $Writer.DuplicatesDropped | Should -Be 0
     }
 
     It 'lets one oversized group exceed the requested batch size rather than cutting it' {

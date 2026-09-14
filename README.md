@@ -34,6 +34,7 @@ docs/
   decisions/      Architecture decision records.
   handoffs/       Per-phase implementation handoffs.
 scripts/          Windows developer commands (PowerShell 7).
+  windows-test-tree/  Builds real NTFS trees to validate and benchmark the collector against.
 ```
 
 ## Prerequisites
@@ -81,6 +82,15 @@ seeds `.env` if it is missing. It never overwrites an existing `.env`.
 # docs\architecture\ad-graph-validation.md.
 .\scripts\graph-benchmark.ps1
 .\scripts\graph-benchmark.ps1 -Scale large -Database   # needs the database up
+
+# NTFS scan cost, against a generated tree on a real volume. Also not a test; the numbers
+# and query plans live in docs\architecture\ntfs-scan-performance.md.
+.\scripts\ntfs-benchmark.ps1
+.\scripts\ntfs-benchmark.ps1 -Scale medium -Database   # adds the ingestion and query suites
+
+# Build that tree on its own, to point a collector at it by hand.
+.\scripts\windows-test-tree\New-AdgTestTree.ps1
+.\scripts\windows-test-tree\New-AdgTestTree.ps1 -Remove
 
 # Frontend
 .\scripts\frontend-check.ps1          # lint + typecheck + tests + production build

@@ -205,7 +205,10 @@ class ResourceService:
             return None
         shares = await self._resources.shares_by_keys([resource.share_key])
         servers = await self._resources.servers_by_keys([resource.server_key])
-        parent_key = resource.parent_key
+        # The parent is read once, by the verification, and carried out on the verdict. This
+        # response shows that same row, and fetching it again here made the API's most
+        # expensive read one round trip more expensive than it needed to be.
+        boundary = await self._resources.verify_boundary(resource)
         return ResourceDetail(
             resource=resource,
             share=shares.get(resource.share_key),
@@ -215,22 +218,32 @@ class ResourceService:
             stored_ace_count=await self._resources.count_ntfs_acl(resource.resource_key),
             # The claim the collector made about where permissions change, checked against
             # the parent this database holds rather than stored unread.
-            boundary=await self._resources.verify_boundary(resource),
-            parent=(
-                None
-                if parent_key is None
-                else (await self._resources.ntfs_resources_by_keys([parent_key])).get(parent_key)
-            ),
+            boundary=boundary,
+            parent=boundary.parent,
         )
 
-    async def ntfs_acl(self, resource_key: str, *, limit: int, offset: int) -> NtfsAcl:
-        """One directory's NTFS ACL, whether or not the directory itself has been observed."""
+    async def ntfs_acl(
+        self,
+        resource_key: str,
+        *,
+        limit: int,
+        offset: int,
+        resource: NtfsResourceRecord | None = None,
+    ) -> NtfsAcl:
+        """One directory's NTFS ACL, whether or not the directory itself has been observed.
+
+        ``resource`` lets a caller that has already read the row hand it over instead of
+        having it read again. :meth:`share_root_acl` is the one that does: it must look the
+        root up to learn its key, and passing ``None`` would make the same primary-key lookup
+        twice in one request.
+        """
         key = resource_key.casefold()
         entries, has_more = await self._resources.ntfs_acl(key, limit=limit, offset=offset)
         principals = await self._membership.principals_by_keys(
             [entry.trustee_key for entry in entries]
         )
-        resource = await self._resources.get_ntfs_resource(key)
+        if resource is None:
+            resource = await self._resources.get_ntfs_resource(key)
         return NtfsAcl(
             resource_key=key,
             resource=resource,
@@ -265,7 +278,7 @@ class ResourceService:
             if root is not None
             else parse_share_identifier(share_key).unc_path.comparison_key
         )
-        return await self.ntfs_acl(key, limit=limit, offset=offset)
+        return await self.ntfs_acl(key, limit=limit, offset=offset, resource=root)
 
     async def shares_for_trustee(
         self,

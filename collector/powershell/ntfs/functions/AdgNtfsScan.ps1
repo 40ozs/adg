@@ -66,13 +66,19 @@ function New-AdgNtfsBatchWriter {
     )
 
     return [pscustomobject]@{
-        RunId            = $RunId
-        BatchSize        = $BatchSize
-        OnBatch          = $OnBatch
-        Pending          = [System.Collections.Generic.List[object]]::new()
-        Sequence         = 0
-        BatchCount       = 0
-        ObservationCount = 0
+        RunId             = $RunId
+        BatchSize         = $BatchSize
+        OnBatch           = $OnBatch
+        Pending           = [System.Collections.Generic.List[object]]::new()
+        # The source keys already in the pending batch. A batch may not carry one key twice:
+        # two observations with one key are indistinguishable, so the second would silently
+        # overwrite the first, and the API rejects such a batch with a 422. See
+        # Add-AdgNtfsObservationGroup for the two ordinary ways a walk produces one.
+        PendingKeys       = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+        Sequence          = 0
+        BatchCount        = 0
+        ObservationCount  = 0
+        DuplicatesDropped = 0
     }
 }
 
@@ -86,6 +92,26 @@ function Add-AdgNtfsObservationGroup {
             over the requested size, and that is the trade: a batch slightly larger than
             asked for costs nothing, while a DACL split across two batches costs the server
             its ability to notice entries that never arrived.
+
+            **One source key, once per batch.** The contract forbids a repeat and the API
+            rejects the whole batch with a 422, and a tree walk produces repeats in two
+            ordinary ways:
+
+              * *the same unresolved trustee on several directories.* An orphaned SID is
+                usually orphaned estate-wide, so it turns up on dozens of folders, and every
+                one of them reports a `principal` observation describing it. The second and
+                later ones are the same fact about the same SID;
+              * *two identical ACEs in one DACL.* An ACE's key deliberately excludes
+                `order_index` - so that reordering a DACL does not look like every entry
+                being deleted and recreated - and Windows permits a DACL to carry the same
+                entry at two positions.
+
+            Both are the same fact stated twice, so the repeat is dropped rather than sent.
+            That is not a loss: the observation is identical, and the server stores one row
+            for it either way. Dropping it is what stops one orphaned SID from making every
+            batch of a real estate unsendable - which is what it did, until a walk of a
+            generated tree carrying one orphaned trustee on two directories produced a batch
+            the API refused.
     #>
     param(
         [Parameter(Mandatory)][pscustomobject] $Writer,
@@ -98,10 +124,34 @@ function Add-AdgNtfsObservationGroup {
         throw "One resource produced $($observations.Count) observations, which exceeds the contract's ceiling of 1000 per batch. Splitting them would disable the server's acl_hash check, and truncating them would look like a shorter ACL. Report this directory: a DACL that large is itself a finding."
     }
 
-    if ($Writer.Pending.Count -gt 0 -and ($Writer.Pending.Count + $observations.Count) -gt $Writer.BatchSize) {
+    # Within the group first, so the fit test below counts what will actually be sent.
+    $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    $unique = [System.Collections.Generic.List[object]]::new()
+    foreach ($observation in $observations) {
+        $key = [string] $observation['source_key']
+        # An observation with no key is malformed and the API will say so by name. It is
+        # kept rather than dropped: deduplicating on a key that is not there would silently
+        # discard every observation after the first, which is a far worse failure than the
+        # 422 the caller is about to get told about.
+        if ([string]::IsNullOrEmpty($key) -or $seen.Add($key)) { $unique.Add($observation) }
+        else { $Writer.DuplicatesDropped++ }
+    }
+
+    if ($Writer.Pending.Count -gt 0 -and ($Writer.Pending.Count + $unique.Count) -gt $Writer.BatchSize) {
         Send-AdgNtfsPendingBatch -Writer $Writer
     }
-    foreach ($observation in $observations) { $Writer.Pending.Add($observation) }
+
+    # Then against the pending batch - after the flush, never before it. A key that repeats
+    # one already sent is not a repeat at all: it is in a different batch, and the server
+    # keys observations by (run_id, source_key) and ignores the second arrival.
+    foreach ($observation in $unique) {
+        $key = [string] $observation['source_key']
+        if (-not [string]::IsNullOrEmpty($key) -and -not $Writer.PendingKeys.Add($key)) {
+            $Writer.DuplicatesDropped++
+            continue
+        }
+        $Writer.Pending.Add($observation)
+    }
 }
 
 function Send-AdgNtfsPendingBatch {
@@ -133,6 +183,11 @@ function Send-AdgNtfsPendingBatch {
     $Writer.ObservationCount += $Writer.Pending.Count
     $Writer.BatchCount++
     $Writer.Pending.Clear()
+    # Cleared with the batch, not carried across it. A source key that appears in two
+    # different batches is not a duplicate: the server keys observations by
+    # (run_id, source_key) and ignores the second arrival, and holding the set for the whole
+    # run would grow without bound on a large estate.
+    $Writer.PendingKeys.Clear()
 
     & $Writer.OnBatch $batch
 }

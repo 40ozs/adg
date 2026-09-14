@@ -147,6 +147,70 @@ function Test-AdgPathInScope {
     return @{ Read = $read; Descend = $descend; Excluded = $false }
 }
 
+function Get-AdgNtfsSafeDefault {
+    <#
+        .SYNOPSIS
+            The documented settings profile for a production scan.
+        .DESCRIPTION
+            The built-in defaults are tuned for a first run on a workstation: one read at a
+            time, no deadline, no checkpoint, and a depth ceiling high enough that it can only
+            be reached by a mistake. They are safe in the sense that they cannot surprise
+            anybody, and they are wrong for a scheduled scan of a real file server - a scan
+            that takes eleven times longer than it needs to, and that loses everything it read
+            if the box reboots.
+
+            This profile is the other set: what to run against an estate, and why each number
+            is what it is. The costs behind them are measured on one workstation and recorded
+            in docs/architecture/ntfs-scan-performance.md; re-run scripts/ntfs-benchmark.ps1
+            on your own hardware before treating any of them as a target.
+
+            **Concurrency is the one an operator should expect to tune.** Its whole benefit is
+            hiding latency, and a local disk has almost none - so the measured gain on the
+            machine this profile was written on is small, and the gain against a remote file
+            server over SMB is the one that matters and is not measurable from here.
+
+            | Setting | Value | Why |
+            | --- | --- | --- |
+            | concurrencyLimit | 8 | A descriptor read over SMB is almost all latency, and reads in flight hide it. Eight is a starting point rather than a measured optimum: raise it while throughput improves, and stop before the file server's queue becomes the bottleneck |
+            | maxDepth | 24 | Past any real tree, and low enough that a misconfiguration cannot become a walk that never ends. Reaching it is reported, so a truncated tree is never mistaken for a complete one |
+            | batchSize | 500 | Half the contract ceiling. A resource and its ACEs always travel together, so a batch may exceed this rather than split a DACL |
+            | timeoutSeconds | 14400 | Four hours: a maintenance window. The scan stops where it is, writes a checkpoint, and reports 'canceled' - it never reports the part it reached as the whole |
+            | checkpointIntervalSeconds | 60 | A reboot costs at most a minute of walking. More often than this and the checkpoint write becomes the cost |
+            | retryCount / retryDelaySeconds | 2 / 5 | A file server that is briefly busy is worth waiting for; one that is denying access is not, and the bound keeps the difference cheap either way |
+            | reparsePointPolicy | skip | A junction's own descriptor is read and its target is reported under the target's own path when that path is in scope. 'follow' reports one directory under several names |
+            | includeFiles | false | Measured on a tree with three files per directory: 4x the paths read, 2.1x the wall clock, 4x the batches submitted, for 1.5x the distinct ACL states. A real file server has hundreds of files per directory, so the multiplier is far worse. Turn it on for a named subtree under investigation, never for an estate |
+            | reportUnresolvedPrincipals | true | An orphaned SID on a folder ACL is a finding, and the backend cannot infer it from the ACE alone |
+
+            **Two things this profile cannot set for you**, because they are facts about your
+            estate rather than defaults:
+
+              * `checkpointPath` - a scan of any size should have one, and it has to be a path
+                this account can write. Without it `timeoutSeconds` stops a scan that cannot
+                then be resumed;
+              * `-RunPerScanRoot` - one run per tree. A single unreadable descriptor anywhere
+                downgrades a combined run to 'partial' and stops *every* tree in it from
+                reconciling.
+
+        .OUTPUTS
+            A hashtable of setting names to values, in the spelling a configuration file uses.
+    #>
+    [OutputType([hashtable])]
+    param()
+
+    return @{
+        concurrencyLimit           = 8
+        maxDepth                   = 24
+        batchSize                  = 500
+        timeoutSeconds             = 14400
+        checkpointIntervalSeconds  = 60
+        retryCount                 = 2
+        retryDelaySeconds          = 5
+        reparsePointPolicy         = 'skip'
+        includeFiles               = $false
+        reportUnresolvedPrincipals = $true
+    }
+}
+
 function Import-AdgNtfsTarget {
     <#
         .SYNOPSIS
@@ -173,13 +237,40 @@ function Import-AdgNtfsTarget {
             The Phase 3A name for -ScanRoot, kept so an existing command line and an
             existing configuration file both keep working. A scan root need no longer be a
             share root, which is why the new name says directory rather than share.
+
+        .PARAMETER SafeDefaults
+            Start from the production profile (Get-AdgNtfsSafeDefault) instead of the
+            first-run defaults. It changes only what the configuration file does not say: a
+            value written in the file, and a command-line override applied afterwards, both
+            still win. A profile that overrode an explicit setting would be a profile nobody
+            could safely turn on.
     #>
     [OutputType([pscustomobject])]
     param(
         [string] $Path,
         [string[]] $ScanRoot = @(),
-        [string[]] $ShareRoot = @()
+        [string[]] $ShareRoot = @(),
+        [switch] $SafeDefaults
     )
+
+    # The baseline every unset field falls back to. Two named sets rather than literals
+    # scattered through the function, so "what does this collector do if you tell it nothing"
+    # has one answer that can be read, printed, and tested against the documented profile.
+    $fallback = @{
+        concurrencyLimit           = 1
+        maxDepth                   = 64
+        batchSize                  = 500
+        timeoutSeconds             = 0
+        checkpointIntervalSeconds  = 30
+        retryCount                 = 1
+        retryDelaySeconds          = 2
+        reparsePointPolicy         = 'skip'
+        includeFiles               = $false
+        reportUnresolvedPrincipals = $true
+    }
+    if ($SafeDefaults) {
+        foreach ($entry in (Get-AdgNtfsSafeDefault).GetEnumerator()) { $fallback[$entry.Key] = $entry.Value }
+    }
 
     $document = [pscustomobject]@{}
     if (-not [string]::IsNullOrWhiteSpace($Path)) {
@@ -274,7 +365,7 @@ function Import-AdgNtfsTarget {
         }
     }
 
-    $reparse = ([string] (Get-Field $document 'reparsePointPolicy' 'skip')).Trim().ToLowerInvariant()
+    $reparse = ([string] (Get-Field $document 'reparsePointPolicy' $fallback.reparsePointPolicy)).Trim().ToLowerInvariant()
     if ($reparse -notin @('skip', 'ignore', 'follow')) {
         throw "reparsePointPolicy must be 'skip', 'ignore', or 'follow', not '$reparse'. 'skip' reads the junction's own descriptor and does not descend; 'ignore' does not read it at all; 'follow' descends, and the walk's visited set is what stops a loop."
     }
@@ -292,14 +383,14 @@ function Import-AdgNtfsTarget {
 
     return [pscustomobject]@{
         ScanRoots                 = $roots.ToArray()
-        RetryCount                = Get-Bounded $document 'retryCount' 1 0 10
-        RetryDelaySeconds         = Get-Bounded $document 'retryDelaySeconds' 2 0 300
-        BatchSize                 = Get-Bounded $document 'batchSize' 500 1 1000
+        RetryCount                = Get-Bounded $document 'retryCount' $fallback.retryCount 0 10
+        RetryDelaySeconds         = Get-Bounded $document 'retryDelaySeconds' $fallback.retryDelaySeconds 0 300
+        BatchSize                 = Get-Bounded $document 'batchSize' $fallback.batchSize 1 1000
 
         # 0 reads the scan roots and nothing below them, which is exactly the Phase 3A
         # behaviour and the cheapest useful scan. The ceiling is well past any real tree;
         # it exists so a typo cannot become a walk that never ends.
-        MaxDepth                  = Get-Bounded $document 'maxDepth' 64 0 512
+        MaxDepth                  = Get-Bounded $document 'maxDepth' $fallback.maxDepth 0 512
 
         IncludePaths              = Get-PatternList $document 'includePaths'
         ExcludePaths              = Get-PatternList $document 'excludePaths'
@@ -309,21 +400,21 @@ function Import-AdgNtfsTarget {
         # against a remote file server, where the cost is latency rather than CPU, and they
         # change nothing about what is reported - see Invoke-AdgParallelMap for why the walk
         # itself stays sequential.
-        ConcurrencyLimit          = Get-Bounded $document 'concurrencyLimit' 1 1 32
+        ConcurrencyLimit          = Get-Bounded $document 'concurrencyLimit' $fallback.concurrencyLimit 1 32
 
         # 0 means no deadline. A scan that runs out of time stops where it is, writes a
         # checkpoint, and reports 'canceled' - it never reports the part it reached as the
         # whole, because a truncated scan that looks complete is how permissions go missing.
-        TimeoutSeconds            = Get-Bounded $document 'timeoutSeconds' 0 0 86400
+        TimeoutSeconds            = Get-Bounded $document 'timeoutSeconds' $fallback.timeoutSeconds 0 86400
 
-        IncludeFiles              = [bool] (Get-Field $document 'includeFiles' $false)
+        IncludeFiles              = [bool] (Get-Field $document 'includeFiles' $fallback.includeFiles)
 
         CheckpointPath            = $checkpointPath
-        CheckpointIntervalSeconds = Get-Bounded $document 'checkpointIntervalSeconds' 30 1 3600
+        CheckpointIntervalSeconds = Get-Bounded $document 'checkpointIntervalSeconds' $fallback.checkpointIntervalSeconds 1 3600
 
         # Report a principal observation for every trustee SID that did not resolve to a
         # name. On by default: an orphaned SID on a folder ACL is one of the findings this
         # tool exists to produce, and the backend cannot infer it from the ACE alone.
-        ReportUnresolved          = [bool] (Get-Field $document 'reportUnresolvedPrincipals' $true)
+        ReportUnresolved          = [bool] (Get-Field $document 'reportUnresolvedPrincipals' $fallback.reportUnresolvedPrincipals)
     }
 }

@@ -97,6 +97,14 @@ A target that is unreachable is reported as an error against that host and leave
 `computer_sid` and `domain_sid` are deliberately left unset: a computer's SID is an Active
 Directory fact that the Phase 1 collector reads from the directory.
 
+**One source key reaches a batch once.** An orphaned SID is usually orphaned estate-wide, so
+it sits on the ACL of several shares of one server and every one of them describes it — and a
+batch may not carry one key twice, because two observations with one key are indistinguishable
+and the API rejects the whole batch with a 422. The repeat is the same fact about the same
+SID, so it is dropped; the finding is not, and `observation_count` reports what the batches
+actually carry. A key repeating in a *different* batch is not a repeat: the server keys
+observations by `(run_id, source_key)` and ignores the second arrival.
+
 ### Two ways to read a share ACL
 
 | | Descriptor (preferred) | Permission levels (fallback) |

@@ -301,3 +301,86 @@ Describe 'Import-AdgNtfsTarget' {
         $settings.ScanRoots[0] | Should -Be '\\FS01\Finance'
     }
 }
+
+Describe 'The safe-defaults profile' {
+
+    It 'changes the defaults an unconfigured run would otherwise use' {
+        $plain = Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance'
+        $safe = Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance' -SafeDefaults
+
+        $plain.ConcurrencyLimit | Should -Be 1
+        $safe.ConcurrencyLimit | Should -Be 8
+        $plain.TimeoutSeconds | Should -Be 0
+        $safe.TimeoutSeconds | Should -Be 14400
+        $plain.MaxDepth | Should -Be 64
+        $safe.MaxDepth | Should -Be 24
+        $safe.CheckpointIntervalSeconds | Should -Be 60
+        $safe.RetryCount | Should -Be 2
+        $safe.RetryDelaySeconds | Should -Be 5
+    }
+
+    It 'leaves the settings that are already right alone' {
+        # A profile that changed everything would be a profile nobody could reason about.
+        # These three are the same in both because the built-in value is already the one a
+        # production scan wants.
+        $safe = Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance' -SafeDefaults
+        $safe.BatchSize | Should -Be 500
+        $safe.ReparsePointPolicy | Should -Be 'skip'
+        $safe.IncludeFiles | Should -BeFalse
+        $safe.ReportUnresolved | Should -BeTrue
+    }
+
+    It 'never overrides a value the configuration file states' {
+        # The profile supplies defaults, not policy. An operator who wrote concurrencyLimit 2
+        # into their file meant 2, and a profile that quietly replaced it would be one nobody
+        # could safely turn on.
+        $path = Join-Path $script:Root 'explicit.json'
+        Set-Content -LiteralPath $path -Encoding utf8 -Value @'
+{ "scanRoots": ["\\\\FS01\\Finance"], "concurrencyLimit": 2, "maxDepth": 3, "timeoutSeconds": 60 }
+'@
+        $settings = Import-AdgNtfsTarget -Path $path -SafeDefaults
+
+        $settings.ConcurrencyLimit | Should -Be 2
+        $settings.MaxDepth | Should -Be 3
+        $settings.TimeoutSeconds | Should -Be 60
+        # And the fields the file did not mention still come from the profile.
+        $settings.CheckpointIntervalSeconds | Should -Be 60
+    }
+
+    It 'validates a profile value through the same bounds as any other' {
+        $profile = Get-AdgNtfsSafeDefault
+        $profile.concurrencyLimit | Should -BeGreaterOrEqual 1
+        $profile.concurrencyLimit | Should -BeLessOrEqual 32
+        $profile.maxDepth | Should -BeLessOrEqual 512
+        $profile.batchSize | Should -BeLessOrEqual 1000
+        $profile.timeoutSeconds | Should -BeLessOrEqual 86400
+        $profile.checkpointIntervalSeconds | Should -BeLessOrEqual 3600
+    }
+
+    It 'agrees with the example configuration that documents it' {
+        # The whole point of this test: adg-ntfs-safe-defaults.example.json is what an
+        # operator reads and copies, and -SafeDefaults is what the collector actually does.
+        # Documentation that can drift from the code is documentation that will.
+        $moduleRoot = Split-Path -Parent $PSScriptRoot
+        $documented = Get-Content -LiteralPath (Join-Path $moduleRoot 'adg-ntfs-safe-defaults.example.json') `
+            -Raw -Encoding utf8 | ConvertFrom-Json
+
+        foreach ($entry in (Get-AdgNtfsSafeDefault).GetEnumerator()) {
+            $property = $documented.PSObject.Properties[$entry.Key]
+            $property | Should -Not -BeNullOrEmpty -Because "$($entry.Key) is in the profile and should be in the example file"
+            $property.Value | Should -Be $entry.Value -Because "$($entry.Key) must mean the same thing in both"
+        }
+    }
+
+    It 'leaves checkpointPath and scanRoots for the operator' {
+        # Neither can be a default. One is a path on a disk the profile knows nothing about;
+        # the other is the estate, and ADG never sweeps one it was not pointed at.
+        $profile = Get-AdgNtfsSafeDefault
+        $profile.ContainsKey('checkpointPath') | Should -BeFalse
+        $profile.ContainsKey('scanRoots') | Should -BeFalse
+    }
+
+    It 'refuses a run with no scan roots even under the profile' {
+        { Import-AdgNtfsTarget -SafeDefaults } | Should -Throw '*No scan roots were configured*'
+    }
+}

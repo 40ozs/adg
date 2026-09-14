@@ -178,6 +178,56 @@ Describe 'Saving and reading a checkpoint' {
         $loaded.RunId | Should -Be $checkpoint.RunId
     }
 
+    It 'carries a junction verdict across a resume' {
+        # The frontier can hold a reparse point the first half of the walk already decided
+        # not to descend into. Losing that decision does not just cost a round trip: the
+        # resumed half re-decides it with whatever facts it has, and under 'follow' it would
+        # re-cross a target the branch had already crossed - which is the cycle the first
+        # half caught.
+        $checkpoint = New-AdgNtfsCheckpoint -RunId ([guid]::NewGuid().ToString()) -Settings $Settings
+        $checkpoint.Frontier = @(
+            [pscustomobject]@{
+                Path = '\\FS01\Finance\Archive'; Depth = 1; Root = '\\fs01\finance'; IsScanRoot = $false
+                ParentDaclPresent = $true; ParentProjection = $null; ParentAclHash = $null
+                LinkTargets = @('d:\shares\finance')
+                NoDescend = $true; IsReparsePoint = $true; ReparseTarget = 'D:\Shares\Finance'
+            },
+            [pscustomobject]@{
+                Path = '\\FS01\Finance\Reports'; Depth = 1; Root = '\\fs01\finance'; IsScanRoot = $false
+                ParentDaclPresent = $true; ParentProjection = $null; ParentAclHash = $null
+                LinkTargets = @(); NoDescend = $false; IsReparsePoint = $false; ReparseTarget = $null
+            })
+        Save-AdgNtfsCheckpoint -Checkpoint $checkpoint -Path $Path | Out-Null
+
+        $loaded = Import-AdgNtfsCheckpoint -Path $Path -Settings $Settings
+        $junction = @($loaded.Frontier) | Where-Object { $_.Path -eq '\\FS01\Finance\Archive' }
+        $junction.NoDescend | Should -BeTrue
+        $junction.IsReparsePoint | Should -BeTrue
+        $junction.ReparseTarget | Should -Be 'D:\Shares\Finance'
+
+        $ordinary = @($loaded.Frontier) | Where-Object { $_.Path -eq '\\FS01\Finance\Reports' }
+        $ordinary.NoDescend | Should -BeFalse
+        $ordinary.IsReparsePoint | Should -BeFalse
+    }
+
+    It 'treats a frontier entry written before these fields as an ordinary directory' {
+        # A checkpoint from an older collector has no NoDescend at all. Absent must read as
+        # "descend normally": the alternative is a resume that silently stops at every
+        # directory the first half had queued.
+        $checkpoint = New-AdgNtfsCheckpoint -RunId ([guid]::NewGuid().ToString()) -Settings $Settings
+        $checkpoint.Frontier = @(
+            [pscustomobject]@{
+                Path = '\\FS01\Finance\Reports'; Depth = 1; Root = '\\fs01\finance'; IsScanRoot = $false
+                ParentDaclPresent = $true; ParentProjection = $null; ParentAclHash = $null; LinkTargets = @()
+            })
+        Save-AdgNtfsCheckpoint -Checkpoint $checkpoint -Path $Path | Out-Null
+
+        $entry = @((Import-AdgNtfsCheckpoint -Path $Path -Settings $Settings).Frontier)[0]
+        $entry.NoDescend | Should -BeFalse
+        $entry.IsReparsePoint | Should -BeFalse
+        $entry.ReparseTarget | Should -BeNullOrEmpty
+    }
+
     It 'keeps "the parent was never read" distinct from "the parent has a NULL DACL"' {
         # Two opposite facts that both arrive as an absent JSON property. Collapsing them
         # would report parent_unreadable as parent_null_dacl, or the other way round.

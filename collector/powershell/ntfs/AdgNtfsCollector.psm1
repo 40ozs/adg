@@ -55,6 +55,7 @@ foreach ($file in $files) {
 
 Export-ModuleMember -Function @(
     # Configuration, filtering, and scope
+    'Get-AdgNtfsSafeDefault'
     'Import-AdgNtfsTarget'
     'Test-AdgShareRootPath'
     'Test-AdgPathMatch'

@@ -192,6 +192,13 @@ function Import-AdgNtfsCheckpoint {
                 # first half had recognized as a cycle, and produce an endless chain of new
                 # paths describing one directory.
                 LinkTargets       = @((Get-AdgProperty $entry 'LinkTargets') ?? @())
+                # The junction verdict the first half of the walk already reached, and the
+                # two facts behind it. Without these a resumed walk re-decides a reparse
+                # point that was already declined - and having lost the decision, it reports
+                # the stop as whatever happens to stop it next.
+                NoDescend         = [bool] (Get-AdgProperty $entry 'NoDescend')
+                IsReparsePoint    = [bool] (Get-AdgProperty $entry 'IsReparsePoint')
+                ReparseTarget     = [string] (Get-AdgProperty $entry 'ReparseTarget')
             })
     }
 

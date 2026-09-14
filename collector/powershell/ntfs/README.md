@@ -141,6 +141,38 @@ The rules, the measured propagation table, and what the server does with the cla
 Every setting below is in `adg-ntfs-targets.json`, documented inline in
 [the example](adg-ntfs-targets.example.json), and overridable per-run on the command line.
 
+### Start from the safe-defaults profile
+
+The built-in defaults are tuned for a first run on a workstation: one descriptor read at a
+time, no deadline, no checkpoint. For a scheduled scan of a real file server, start from the
+production profile instead:
+
+```powershell
+.\Invoke-AdgNtfsScan.ps1 -ApiBaseUrl http://adg:8000 -SafeDefaults -RunPerScanRoot `
+    -ConfigPath .\adg-ntfs-targets.json `
+    -CheckpointPath C:\ProgramData\ADG\finance.checkpoint.json
+```
+
+`-SafeDefaults` sets concurrency 8, `maxDepth` 24, a four-hour deadline, a checkpoint every
+minute, and a slightly more patient retry. It changes **only what the configuration file does
+not say** — a value written in the file, and a command-line override applied afterwards, both
+still win, because a profile that quietly replaced an explicit setting would be one nobody
+could safely turn on.
+
+Two things it cannot set for you, and both matter:
+
+* **`-CheckpointPath`.** The profile sets a deadline, and a deadline without a checkpoint
+  turns a long scan into one that starts again from nothing. The script warns if you omit it.
+* **`-RunPerScanRoot`.** One run per tree. A single unreadable descriptor anywhere in a
+  combined run downgrades the whole run to `partial` and stops *every* tree in it from
+  reconciling.
+
+Every value, and the reasoning behind each, is in
+[`adg-ntfs-safe-defaults.example.json`](adg-ntfs-safe-defaults.example.json) — which a test
+asserts matches `Get-AdgNtfsSafeDefault`, so it cannot drift from what the collector does. What
+the numbers were measured against is in
+[`ntfs-scan-performance.md`](../../../docs/architecture/ntfs-scan-performance.md).
+
 ### Make it finish
 
 | Setting | What it buys | What it costs |
@@ -176,6 +208,14 @@ would produce one run that enumerated its scope under two different rules.
 Any of the three leaves paths under the junction unreported, so a tree containing one is
 never reconciled.
 
+A junction the policy declined is **not** read as a depth limit, and does not enumerate. Under
+`skip` and `ignore` the decision is made when the junction is queued, so the walk never lists
+it: the listing's every outcome would be discarded, and on a junction whose target has been
+decommissioned the listing fails and the failure reads as a permissions problem. A followed
+junction that cannot be listed reports `reparse_target_unreadable` rather than `access_denied`,
+because a link to somewhere that is gone and a missing right on a directory that is right here
+send an operator to different places.
+
 **A visited-path set does not catch a junction loop**, which is why `follow` needs its own
 guard: a junction pointing at its own grandparent produces `\\fs\share\j`,
 `\\fs\share\j\j`, `\\fs\share\j\j\j` — every one a path nothing has seen before, so the
@@ -200,8 +240,12 @@ different operator settings, and "1,412 skipped" does not say which of yours pro
 A tree that was not fully enumerated says so, and says why:
 
 ```text
-  \FS01\Finance was not fully enumerated (reparse_point, depth_limit); its scope is not reconciled.
+  \FS01\Finance was not fully enumerated (reparse_point, unreadable_directory); its scope is not reconciled.
 ```
+
+Each reason names the thing that actually stopped the walk. `depth_limit` appears only when
+`maxDepth` was really reached — a junction the reparse policy declined used to be reported that
+way, which sent operators to raise a setting that had nothing to do with it.
 
 ---
 
@@ -266,6 +310,14 @@ For each share root, one `ntfs_resource` observation and one `ntfs_ace` per DACL
 Plus a `principal` observation with `principal_kind: unresolved` for every trustee SID that
 did not resolve to a name. An orphaned SID on a folder ACL is a finding, not a defect to be
 tidied away, and the backend cannot infer it from the ACE alone.
+
+**One source key reaches a batch once.** An orphaned SID is usually orphaned estate-wide, so
+it sits on dozens of folders and every one of them describes it — and a batch may not carry
+one key twice, because two observations with one key are indistinguishable and the API rejects
+the whole batch. The repeat is the same fact about the same SID, so it is dropped; the finding
+is not. The same applies to two identical ACEs in one DACL, since an ACE's key excludes
+`order_index` on purpose. A key repeating in a *different* batch is not a repeat at all: the
+server keys observations by `(run_id, source_key)` and ignores the second arrival.
 
 **`inherited_from` is still never reported.** Naming the ancestor an inherited entry came
 from needs the Win32 `GetInheritanceSource`, which this collector does not call. The

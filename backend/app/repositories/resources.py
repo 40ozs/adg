@@ -413,6 +413,16 @@ class NtfsBoundaryVerification:
     resource_key: str
     parent_key: str | None
     parent_observed: bool
+    parent: NtfsResourceRecord | None
+    """The parent row this verdict was reached against.
+
+    Carried out rather than looked up again by the caller. The verification has to read the
+    parent to project from it, and a caller that also wants to show the parent — which the
+    detail endpoint does — would otherwise fetch the same row a second time in the same
+    request. Measured: it was one of two duplicated reads that made ``GET /resources/{path}``
+    the most expensive read in the API.
+    """
+
     reported: bool
     reported_reason: AclBoundaryReason | None
     reported_parent_acl_hash: str | None
@@ -807,6 +817,7 @@ class ResourceRepository:
             resource_key=resource.resource_key,
             parent_key=parent_key,
             parent_observed=parent is not None,
+            parent=parent,
             reported=resource.is_acl_boundary,
             reported_reason=resource.boundary_reason,
             reported_parent_acl_hash=resource.parent_acl_hash,
