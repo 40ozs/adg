@@ -307,6 +307,11 @@ Ownership matters for the same reason: an owner holds implicit `READ_CONTROL` an
 This section is a checklist for Phases 3 and 4. The domain model must be able to *represent*
 each item; the engine must *evaluate* it.
 
+The rights algebra that evaluates the mask-level items — generic mapping, share/NTFS
+intersection, Deny masking, and display categories — is specified in
+[rights-model.md](rights-model.md) and decided by
+[ADR-0005](../decisions/0005-internal-rights-representation.md).
+
 | Concern | Representation | What the engine must do later |
 | --- | --- | --- |
 | **Allow and Deny** | `AceType` | Apply real DACL evaluation order — an explicit Deny normally precedes Allow, but order is a property of the ACL, and a non-canonical ACL must be evaluated as written and flagged. |
