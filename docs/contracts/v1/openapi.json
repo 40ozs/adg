@@ -12,6 +12,129 @@
         "title": "AccessCertainty",
         "type": "string"
       },
+      "AccessExplanationResponse": {
+        "description": "Everything needed to render \"why does this principal have this access?\" — once.\n\nThe published shape of this response is\n``docs/contracts/v1/access-explanation.schema.json``; the schema is the contract and\nthis model is the implementation of it, held together by a parity test.\n\nIt is deliberately one round trip. A client that had to fetch the answer, then the\npaths, then the ACL to work out which entry mattered would be reimplementing the access\ncheck to join them — and the whole point of the engine is that nothing outside it ever\nhas to.",
+        "properties": {
+          "access_path": {
+            "title": "Access Path",
+            "type": "string"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "complete": {
+            "description": "False means the paths shown are a subset: at least one more route to these rights exists, so nothing may be concluded from the absence of one.",
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "cycles": {
+            "description": "Membership cycles in the traversed subgraph. A cycle is a finding.",
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Cycles",
+            "type": "array"
+          },
+          "effective": {
+            "$ref": "#/components/schemas/EffectiveAccessView",
+            "description": "The full derivation: the effective mask, and the NTFS and SMB evaluations that produced it with every contributing and denying entry."
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ExplanationGraphView"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ExplanationLimitsView"
+          },
+          "paths": {
+            "description": "Every route from the subject to an entry that matched, with what each one is actually worth. Bounded, not paged; /api/v1/access/paths pages the same list when an estate produces more of them than one response should carry.",
+            "items": {
+              "$ref": "#/components/schemas/CausalPathView"
+            },
+            "title": "Paths",
+            "type": "array"
+          },
+          "removal_targets": {
+            "description": "Every removable edge on a path, with the measured effect of deleting it.",
+            "items": {
+              "$ref": "#/components/schemas/RemovalTargetView"
+            },
+            "title": "Removal Targets",
+            "type": "array"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceRef"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "description": "Version of the derived-answer contract this body conforms to. Additive changes bump the minor; a breaking change means a new major and a new path.",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShareRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PrincipalSummary"
+          },
+          "token": {
+            "$ref": "#/components/schemas/TokenView"
+          },
+          "truncation": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Truncation",
+            "type": "array"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/VerdictView"
+          },
+          "warnings": {
+            "description": "Everything that qualifies this answer: assumptions made, trustees that could not be resolved, descriptors never read. The same list as effective.findings, surfaced here because it qualifies the whole response and not just the mask.",
+            "items": {
+              "$ref": "#/components/schemas/FindingView"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis",
+          "subject",
+          "resource",
+          "access_path",
+          "verdict",
+          "token",
+          "effective",
+          "graph",
+          "limits",
+          "complete"
+        ],
+        "title": "AccessExplanationResponse",
+        "type": "object"
+      },
+      "AccessOutcome": {
+        "description": "What the answer *is*, as one value a client can branch on.\n\nThe values are stable and appear in API responses; renaming one is a contract change.",
+        "enum": [
+          "granted",
+          "denied",
+          "no_grant",
+          "indeterminate"
+        ],
+        "title": "AccessOutcome",
+        "type": "string"
+      },
       "AccessPath": {
         "description": "How a principal reaches the object, which decides whether the share ACL applies.",
         "enum": [
@@ -20,6 +143,85 @@
         ],
         "title": "AccessPath",
         "type": "string"
+      },
+      "AccessPathPageResponse": {
+        "description": "One page of the routes that produced an answer.\n\nSame computation and same deterministic order as the explanation's ``paths``, sliced.\nThe verdict travels with every page on purpose: a page of paths read without the answer\nthey explain is how somebody concludes that a ``constrained`` path grants access.",
+        "properties": {
+          "access_path": {
+            "title": "Access Path",
+            "type": "string"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "complete": {
+            "description": "Whether the underlying enumeration was complete. Independent of paging: a page can be the last page of a truncated enumeration, which is exactly the case a client must not read as 'these are all the paths'.",
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ExplanationGraphView",
+            "description": "The nodes and edges this page's paths refer to, and only those, so the page renders on its own without holding the whole graph."
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CausalPathView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ExplanationLimitsView"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceRef"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShareRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PrincipalSummary"
+          },
+          "truncation": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Truncation",
+            "type": "array"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/VerdictView"
+          }
+        },
+        "required": [
+          "basis",
+          "subject",
+          "resource",
+          "access_path",
+          "verdict",
+          "graph",
+          "page",
+          "limits",
+          "complete"
+        ],
+        "title": "AccessPathPageResponse",
+        "type": "object"
       },
       "AccessPathsResponse": {
         "description": "One principal, one resource, and every path that caused the answer.",
@@ -366,6 +568,11 @@
             ],
             "title": "Inherited From"
           },
+          "layer": {
+            "description": "Which ACL this entry sits on: smb_share or ntfs. Carried on the entry itself so that a list drawn from both layers stays unambiguous — SMB 'Change' and NTFS 'Modify' are the same bits under two names.",
+            "title": "Layer",
+            "type": "string"
+          },
           "matched_key": {
             "description": "The token entry this ACE named.",
             "title": "Matched Key",
@@ -390,6 +597,7 @@
           }
         },
         "required": [
+          "layer",
           "position",
           "trustee",
           "ace_type",
@@ -497,6 +705,68 @@
           "roles"
         ],
         "title": "AuthConfigResponse",
+        "type": "object"
+      },
+      "BasisView": {
+        "description": "The collected state an answer was computed from, as the contract renders it.\n\nEvery derived response carries one. It is what lets a client say *\"as of the run that\nfinished at 02:14\"* instead of *\"as of now\"*, and what lets two answers fetched minutes\napart be compared honestly: same token, same facts, and any difference between them is a\ndifference in the question rather than in the estate.",
+        "properties": {
+          "batches_received": {
+            "title": "Batches Received",
+            "type": "integer"
+          },
+          "is_empty": {
+            "description": "True when no run has ever been recorded. Every derived answer over an empty estate reports no access, and here that means nobody looked.",
+            "title": "Is Empty",
+            "type": "boolean"
+          },
+          "latest_activity_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a collector last wrote anything.",
+            "title": "Latest Activity At"
+          },
+          "latest_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The most recently updated run. Informational, not the key.",
+            "title": "Latest Run Id"
+          },
+          "observations_applied": {
+            "title": "Observations Applied",
+            "type": "integer"
+          },
+          "runs": {
+            "description": "Scan runs on record.",
+            "title": "Runs",
+            "type": "integer"
+          },
+          "token": {
+            "description": "The cache identity of the collected state. Equal tokens mean identical stored facts; this is the value the ETag is built from.",
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "runs",
+          "observations_applied",
+          "batches_received",
+          "is_empty"
+        ],
+        "title": "BasisView",
         "type": "object"
       },
       "BatchAcceptedResponse": {
@@ -1956,6 +2226,49 @@
         ],
         "title": "MembershipEdgeKind",
         "type": "string"
+      },
+      "MembershipImpactView": {
+        "description": "How many principals a change to this group would affect.\n\nBounded, and honest about it. ``complete: false`` means the downward traversal hit a\nlimit, so the counts are lower bounds and the real blast radius is larger — never\nsmaller.",
+        "properties": {
+          "complete": {
+            "description": "False means the traversal was truncated and both counts are lower bounds.",
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "cycles": {
+            "description": "Membership cycles found below this group. A cycle is a finding.",
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Cycles",
+            "type": "array"
+          },
+          "depth_reached": {
+            "title": "Depth Reached",
+            "type": "integer"
+          },
+          "effective_members": {
+            "description": "Principals reachable downward through nesting, the group itself excluded.",
+            "title": "Effective Members",
+            "type": "integer"
+          },
+          "non_group_members": {
+            "description": "Of those, the ones that are not themselves groups: the accounts that would actually hold the rights listed here. Unclassified principals are counted, because an orphaned SID inside a group is a finding and not a rounding error.",
+            "title": "Non Group Members",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "effective_members",
+          "non_group_members",
+          "depth_reached",
+          "complete"
+        ],
+        "title": "MembershipImpactView",
+        "type": "object"
       },
       "MembershipObservation": {
         "additionalProperties": false,
@@ -4066,6 +4379,129 @@
           "limiting_layer"
         ],
         "title": "ResourceAccessView",
+        "type": "object"
+      },
+      "ResourceImpactResponse": {
+        "description": "Everything one group reaches, one page at a time.",
+        "properties": {
+          "access_path": {
+            "title": "Access Path",
+            "type": "string"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "group": {
+            "$ref": "#/components/schemas/PrincipalSummary"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ResourceImpactView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "membership": {
+            "$ref": "#/components/schemas/MembershipImpactView"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "token": {
+            "$ref": "#/components/schemas/TokenView",
+            "description": "The SIDs a member of this group presents: the group, everything it is nested inside, and the SIDs Windows adds to every token of this kind. This is what makes a row appear even when the ACL names a parent group rather than this one."
+          }
+        },
+        "required": [
+          "basis",
+          "group",
+          "access_path",
+          "token",
+          "membership",
+          "page"
+        ],
+        "title": "ResourceImpactResponse",
+        "type": "object"
+      },
+      "ResourceImpactView": {
+        "description": "One resource this group's membership reaches, and what it confers there.",
+        "properties": {
+          "conditions": {
+            "description": "Condition codes qualifying this row.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "denied_by": {
+            "description": "Entries that took rights away.",
+            "items": {
+              "$ref": "#/components/schemas/AppliedAceView"
+            },
+            "title": "Denied By",
+            "type": "array"
+          },
+          "explain": {
+            "description": "URL of the full derivation for this pair. Not inlined: an explanation costs a bounded resolution each, and a page of them is not a page a server should compute speculatively.",
+            "title": "Explain",
+            "type": "string"
+          },
+          "granted_by": {
+            "description": "Entries that gave rights, both layers, in evaluation order.",
+            "items": {
+              "$ref": "#/components/schemas/AppliedAceView"
+            },
+            "title": "Granted By",
+            "type": "array"
+          },
+          "limiting_layer": {
+            "description": "Which ACL removed rights the other granted.",
+            "title": "Limiting Layer",
+            "type": "string"
+          },
+          "names_group": {
+            "description": "Whether any entry above names this group itself. False means the rights arrive some other way — through a group this one is nested inside, or through a world SID such as Everyone — and there is no entry naming this group to edit, so 'remove the group from the ACL' is not an available fix on this resource.",
+            "title": "Names Group",
+            "type": "boolean"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceRef"
+          },
+          "rights": {
+            "$ref": "#/components/schemas/RightsView",
+            "description": "The effective mask a member inherits."
+          },
+          "share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShareRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/VerdictView",
+            "description": "What a member of this group gets here — and, when the answer is no rights, whether that is a Deny, an absence of any grant, or a gap in collection."
+          }
+        },
+        "required": [
+          "resource",
+          "verdict",
+          "rights",
+          "limiting_layer",
+          "names_group",
+          "explain"
+        ],
+        "title": "ResourceImpactView",
         "type": "object"
       },
       "ResourceKind": {
@@ -6330,6 +6766,56 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VerdictView": {
+        "description": "The answer as one value, with the evidence that distinguishes it from its neighbors.\n\n``access: false`` is two completely different findings and this is where they are told\napart. Branch on ``outcome``; render ``reason``; and never draw a negative conclusion\nwhile ``conclusive`` is false.",
+        "properties": {
+          "certainty": {
+            "$ref": "#/components/schemas/AccessCertainty",
+            "description": "Orthogonal to the outcome: the outcome is the verdict on the evidence, this is the direction the evidence can be wrong in. Both must be rendered."
+          },
+          "conclusive": {
+            "description": "False only for 'indeterminate'. While false, 'this principal has no access' is not a statement this response supports.",
+            "title": "Conclusive",
+            "type": "boolean"
+          },
+          "denials": {
+            "description": "Deny entries that actually withheld rights, both layers, in evaluation order. A projection of the per-layer 'denied_by' lists, placed here because it is the evidence for a 'denied' outcome. Entries that matched and took nothing away are not here; they are in the layer's 'superseded' list.",
+            "items": {
+              "$ref": "#/components/schemas/AppliedAceView"
+            },
+            "title": "Denials",
+            "type": "array"
+          },
+          "may_overstate": {
+            "title": "May Overstate",
+            "type": "boolean"
+          },
+          "may_understate": {
+            "description": "True when the real rights could be wider than reported — keep looking.",
+            "title": "May Understate",
+            "type": "boolean"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AccessOutcome",
+            "description": "granted — rights survive. denied — none survive and a Deny entry is why. no_grant — none survive and nothing denied any; nothing names this principal. indeterminate — none were established and collection is incomplete in a direction that could hide a grant, so this is not a finding of no access."
+          },
+          "reason": {
+            "description": "The operator-facing sentence for the outcome.",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "reason",
+          "certainty",
+          "conclusive",
+          "may_overstate",
+          "may_understate"
+        ],
+        "title": "VerdictView",
+        "type": "object"
+      },
       "VersionResponse": {
         "properties": {
           "environment": {
@@ -6362,6 +6848,564 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/access/explain": {
+      "get": {
+        "description": "The whole answer to \"why can this principal do this?\", in one request.\n\nThe same computation as\n``/paths/principals/{identifier}/resources/{resource}``, addressed by query parameters\nand shaped for a client that has to render it. Three things it adds:\n\n* **``verdict``** — the one field that separates *denied*, *not granted*, and *not\n  answerable from what has been collected*. ``access: false`` conflates all three, and\n  an auditor who reads \"no access\" where the truth is \"nobody scanned that server\"\n  stops looking exactly where they should keep looking.\n* **``basis``** — which collected state this was computed from, so an answer can be\n  quoted as of a scan rather than as of a wall clock.\n* **conditional GET** — an ``ETag`` over *(contract version, collection basis, this\n  request)*. Return it in ``If-None-Match`` and a repeat costs one small query and a\n  ``304``. There is no time-to-live anywhere: the answer is reusable exactly as long as\n  no collector has written anything, which is what the validator encodes.\n\nEverything Phase 5A established still holds, unchanged and unrepeated here: a matched\nACE is not necessarily a cause, every path is kept rather than collapsed, and every\nremoval target is *measured* by re-running the access check without that edge.",
+        "operationId": "explain_api_v1_access_explain_get",
+        "parameters": [
+          {
+            "description": "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a route that would answer without one asks for the whole estate.",
+            "in": "query",
+            "name": "principal",
+            "required": true,
+            "schema": {
+              "description": "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a route that would answer without one asks for the whole estate.",
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Principal",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a query parameter rather than a path segment so that a client does not have to percent-encode backslashes into a URL path — which several proxies normalize or reject. A share key is not accepted: a share and the directory it publishes have different ACLs.",
+            "in": "query",
+            "name": "resource",
+            "required": true,
+            "schema": {
+              "description": "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a query parameter rather than a path segment so that a client does not have to percent-encode backslashes into a URL path — which several proxies normalize or reject. A share key is not accepted: a share and the directory it publishes have different ACLs.",
+              "maxLength": 1024,
+              "minLength": 5,
+              "title": "Resource",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "How the principal reaches the data. 'remote_smb' applies the share ACL and the NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what anyone who can log on to the server gets.",
+            "in": "query",
+            "name": "access_path",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AccessPath",
+              "default": "remote_smb",
+              "description": "How the principal reaches the data. 'remote_smb' applies the share ACL and the NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what anyone who can log on to the server gets."
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "Causal paths to enumerate across the whole explanation, both layers together. Distinct from max_paths, which bounds the chains to any one trustee. Clamped to the server ceiling; the response reports the limits used and sets complete=false when anything was cut.",
+            "in": "query",
+            "name": "max_causal_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Causal paths to enumerate across the whole explanation, both layers together. Distinct from max_paths, which bounds the chains to any one trustee. Clamped to the server ceiling; the response reports the limits used and sets complete=false when anything was cut.",
+              "title": "Max Causal Paths"
+            }
+          },
+          {
+            "description": "Edges to measure by re-running the access check without them. Each costs one check over each ACL.",
+            "in": "query",
+            "name": "max_removal_targets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 256,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Edges to measure by re-running the access check without them. Each costs one check over each ACL.",
+              "title": "Max Removal Targets"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessExplanationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing has been collected since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "description": "The principal is not a SID, or the resource is not a UNC path."
+          }
+        },
+        "summary": "Why one principal has the access it has, as one renderable object",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/v1/access/paths": {
+      "get": {
+        "description": "Page through the causal paths behind one answer, in the engine's own order.\n\nAn explanation of a well-nested estate can carry hundreds of chains, and a client that\nrenders a list wants a page of it rather than all of it. This is that list, sliced\nserver-side; ``/explain`` returns the same paths whole, and both come from one\nenumeration whose order Phase 5A made deterministic, so page two of this route and the\nsecond screenful of that one are the same paths.\n\n**Paging is a slice of the enumeration, not a widening of it.** ``max_causal_paths``\nstill bounds how many paths are enumerated at all, and asking for page five does not\nenumerate more than that ceiling: ``complete: false`` means routes exist that no page\nwill ever show. Paging and truncation are separate facts and both are reported, because\na caller that walks to the last page of a truncated enumeration would otherwise conclude\nit had seen everything.\n\n``graph`` carries only the nodes and edges this page's paths refer to, so the page\nrenders on its own. ``removal_targets`` is not paged here — it is a property of the\nwhole explanation, not of a page — and lives on ``/explain``.",
+        "operationId": "access_path_page_api_v1_access_paths_get",
+        "parameters": [
+          {
+            "description": "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a route that would answer without one asks for the whole estate.",
+            "in": "query",
+            "name": "principal",
+            "required": true,
+            "schema": {
+              "description": "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a route that would answer without one asks for the whole estate.",
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Principal",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a query parameter rather than a path segment so that a client does not have to percent-encode backslashes into a URL path — which several proxies normalize or reject. A share key is not accepted: a share and the directory it publishes have different ACLs.",
+            "in": "query",
+            "name": "resource",
+            "required": true,
+            "schema": {
+              "description": "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a query parameter rather than a path segment so that a client does not have to percent-encode backslashes into a URL path — which several proxies normalize or reject. A share key is not accepted: a share and the directory it publishes have different ACLs.",
+              "maxLength": 1024,
+              "minLength": 5,
+              "title": "Resource",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "How the principal reaches the data. 'remote_smb' applies the share ACL and the NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what anyone who can log on to the server gets.",
+            "in": "query",
+            "name": "access_path",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AccessPath",
+              "default": "remote_smb",
+              "description": "How the principal reaches the data. 'remote_smb' applies the share ACL and the NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what anyone who can log on to the server gets."
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "Causal paths to enumerate across the whole explanation, both layers together. Distinct from max_paths, which bounds the chains to any one trustee. Clamped to the server ceiling; the response reports the limits used and sets complete=false when anything was cut.",
+            "in": "query",
+            "name": "max_causal_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Causal paths to enumerate across the whole explanation, both layers together. Distinct from max_paths, which bounds the chains to any one trustee. Clamped to the server ceiling; the response reports the limits used and sets complete=false when anything was cut.",
+              "title": "Max Causal Paths"
+            }
+          },
+          {
+            "description": "Edges to measure by re-running the access check without them. Each costs one check over each ACL.",
+            "in": "query",
+            "name": "max_removal_targets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 256,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Edges to measure by re-running the access check without them. Each costs one check over each ACL.",
+              "title": "Max Removal Targets"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessPathPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing has been collected since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "description": "A bad identifier, a bad UNC path, or a cursor from elsewhere."
+          }
+        },
+        "summary": "One page of the routes that produced an answer",
+        "tags": [
+          "access"
+        ]
+      }
+    },
     "/api/v1/access/paths/principals/{identifier}/resources/{resource}": {
       "get": {
         "description": "Enumerate the membership and ACE paths that produced one effective-access answer.\n\nThe same computation as ``/principals/{identifier}/resources/{resource}``, with the\nderivation kept: which chains reached which entries, what each one is actually worth,\nand what would change if any one edge were removed.\n\nThree distinctions the response draws that a trustee list cannot:\n\n* an ACE that **matched** the token is not necessarily a **cause**. It can be redundant\n  — an earlier entry had already settled every right it names — or constrained, where\n  the other ACL withholds all of it;\n* several paths can lead to the same rights, and all of them are kept. Two chains to one\n  group is the common case, and collapsing them is how a remediation gets signed off\n  having changed nothing;\n* ``removal_targets`` is **measured**, by re-running the access check with each edge\n  gone. An edge with an alternate path around it reports no rights removed, and a\n  membership carrying a Deny reports rights *added*.\n\nThis route is not paged. It answers about exactly one principal and one resource, and\nits size is bounded by ``max_paths`` and ``max_removal_targets`` rather than by a\ncursor; ``limits`` reports what was applied after clamping and ``complete`` says whether\nanything was cut.",
@@ -7830,6 +8874,263 @@
         "summary": "Direct members of a group",
         "tags": [
           "graph"
+        ]
+      }
+    },
+    "/api/v1/groups/{identifier}/resource-impact": {
+      "get": {
+        "description": "What a member of this group can reach, with the entries that put it there.\n\nAccepts any principal, not only a group — a user's \"impact\" is its own access, which is\na coherent answer and cheaper to allow than to special-case. When the subject *is* a\ngroup, the resolver records the ``subject_is_a_group`` condition on every row: a group\nholds no access token, and what is reported is the rights an authenticated member of it\nwould have. That is the useful question and not the literal one, and the condition says\nso rather than letting the distinction go unremarked.\n\n**Every candidate is listed, including the ones that confer nothing.** A directory whose\nACL names this group and whose share ACL withholds everything is precisely the row an\nadministrator needs to see: the grant is there, it is doing nothing today, and it will\nstart doing something the moment somebody widens the share. Filtering those out would\nalso make ``has_more`` a claim about a different set than the one being paged.\n\n``names_group`` is the field that decides where a fix goes. True means an entry names\nthis group and can be edited. False means the rights arrive through something else — a\ngroup this one is nested inside, or a world SID such as ``Everyone`` — and there is no\nentry naming this group to remove, so a remediation written against one would change\nnothing.",
+        "operationId": "resource_impact_api_v1_groups__identifier__resource_impact_get",
+        "parameters": [
+          {
+            "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Identifier",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "How the principal reaches the data. 'remote_smb' applies the share ACL and the NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what anyone who can log on to the server gets.",
+            "in": "query",
+            "name": "access_path",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AccessPath",
+              "default": "remote_smb",
+              "description": "How the principal reaches the data. 'remote_smb' applies the share ACL and the NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what anyone who can log on to the server gets."
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "False (the default) lists the directories this group reaches. True lists the shares instead, each crossed with the ACL of the directory it publishes. Refused with access_path=local: local access does not pass through a share ACL.",
+            "in": "query",
+            "name": "shares",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "False (the default) lists the directories this group reaches. True lists the shares instead, each crossed with the ACL of the directory it publishes. Refused with access_path=local: local access does not pass through a share ACL.",
+              "title": "Shares",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceImpactResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing has been collected since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "description": "A bad identifier, a cursor from elsewhere, or shares with local."
+          }
+        },
+        "summary": "Every resource one group's membership reaches, and what it confers",
+        "tags": [
+          "access"
         ]
       }
     },

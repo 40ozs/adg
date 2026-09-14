@@ -37,6 +37,7 @@ from app.domain.acl_hash import (
     is_acl_hash,
     normalize_acl,
 )
+from app.domain.basis import EMPTY_BASIS, CollectionBasis
 from app.domain.errors import DomainError, DomainValidationError
 from app.domain.graph import (
     DEFAULT_LIMITS,
@@ -129,6 +130,7 @@ __all__ = [
     "ACL_HASH_LENGTH",
     "ACL_NORMAL_FORM_VERSION",
     "DEFAULT_LIMITS",
+    "EMPTY_BASIS",
     "FULL_CONTROL_MASK",
     "GENERIC_RIGHT_BITS",
     "MAX_DEPTH_CEILING",
@@ -149,6 +151,7 @@ __all__ = [
     "AclBoundaryReason",
     "AclLayer",
     "AdjacencyProvider",
+    "CollectionBasis",
     "CollectorKind",
     "ComputerIdentity",
     "Direction",

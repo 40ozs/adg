@@ -27,3 +27,5 @@ Rules:
 | [0013](0013-causality-is-measured-not-inferred.md) | A removal's effect is measured by re-running the access check, never inferred | Accepted |
 | [0014](0014-authorization-is-capabilities-enforced-in-the-backend.md) | Authorization is a capability check in the backend, declared once per router | Accepted |
 | [0015](0015-emptiness-is-attributed-by-the-backend.md) | An empty view is attributed by the backend, never inferred from a row count | Accepted |
+| [0016](0016-an-empty-answer-names-its-own-emptiness.md) | An empty access answer names which kind of emptiness it is | Accepted |
+| [0017](0017-derived-answers-are-validated-against-collected-state.md) | A derived answer is cached against collected state, never against a clock | Accepted |

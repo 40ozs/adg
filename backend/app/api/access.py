@@ -17,33 +17,57 @@ the difference is what shapes every response here:
   a group whose membership nobody collected — rather than returning a short list that
   looks whole.
 
+* **An empty answer says which emptiness it is.** ``verdict.outcome`` is one of four
+  values, not a boolean: ``denied`` (a Deny withheld it), ``no_grant`` (nothing names this
+  principal), ``indeterminate`` (not answerable from what has been collected), and
+  ``granted``. ADR-0016. The information was always in ``access`` plus ``certainty`` plus
+  the findings; what was missing was a single field a client gets right by doing nothing.
+
 Both bounded listings page, and they page differently on purpose: the principals of one
 resource are computed by traversal and then sliced (offset), while the resources of one
 principal come straight out of an index (keyset). The distinction is the one
 :mod:`app.api.pagination` already draws, for the same reasons.
 
-``/paths/principals/{identifier}/resources/{resource}`` is the odd one out and pages not
-at all. It answers about exactly one pair, so there is no population to slice; what can
-grow is the *graph* — group nesting is combinatorial — so it is bounded by explicit path
-and removal limits instead, reports the limits it applied, and says ``complete: false``
-when either bit. A truncated explanation read as a whole one is a conclusion drawn from a
-subset, which is the same error in a different shape.
+The explanation has two spellings, and they are one computation. ``/explain`` is addressed
+by query parameters — a UNC path does not have to survive being a URL *path* segment — and
+is what a client renders; ``/paths/principals/{identifier}/resources/{resource}`` is Phase
+5A's path-addressed form and is unchanged. Both go through ``_explain``, so they cannot
+answer differently, including in how they fail.
+
+Neither of those pages. Each answers about exactly one pair, so there is no population to
+slice; what can grow is the *graph* — group nesting is combinatorial — so they are bounded
+by explicit path and removal limits instead, report the limits applied, and say
+``complete: false`` when either bit. A truncated explanation read as a whole one is a
+conclusion drawn from a subset, which is the same error in a different shape.
+``/paths`` slices that same enumeration for a client that wants a list, and reports
+``complete`` and ``has_more`` separately: the last page of a truncated enumeration is not
+the last of the paths.
+
+``/explain``, ``/paths`` and the group resource-impact listing carry an ``ETag`` over the
+**collection basis** — the state of every scan run — so a repeat request costs one query
+and a ``304``, and an ingestion invalidates every cached answer. There is no
+time-to-live anywhere. ADR-0017 and :mod:`app.api.caching`.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Header, Path, Query, Response
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.access_engine import (
     DEFAULT_EXPLANATION_LIMITS,
     MAX_PATHS_CEILING,
     MAX_REMOVAL_TARGETS_CEILING,
     AccessCertainty,
+    AccessExplanation,
     AccessFinding,
+    AccessOutcome,
     AccessPath,
+    AccessVerdict,
     AclEvaluation,
     AclProvenance,
     AppliedAce,
@@ -51,6 +75,8 @@ from app.access_engine import (
     EdgeKind,
     EffectiveAccess,
     ExplanationEdge,
+    ExplanationGraph,
+    ExplanationLimits,
     ExplanationNode,
     LimitingLayer,
     NodeKind,
@@ -62,7 +88,15 @@ from app.access_engine import (
     TokenAssumption,
     TokenSid,
     category_display_name,
+    classify_access,
     summarize,
+)
+from app.api.caching import (
+    CONTRACT_VERSION,
+    BasisView,
+    basis_view,
+    current_validator,
+    not_modified,
 )
 from app.api.deps import Session, TraversalBounds
 from app.api.graph import PrincipalSummary, principal_summary, resolve_principal
@@ -76,7 +110,7 @@ from app.api.pagination import (
     encode_offset_cursor,
     normalize_limit,
 )
-from app.domain import DomainValidationError, parse_unc_path
+from app.domain import DomainValidationError, TraversalLimits, parse_unc_path
 from app.repositories import MembershipRepository, PrincipalRecord, ResourceRepository
 from app.services.access import (
     AccessService,
@@ -168,6 +202,46 @@ LimitQuery = Annotated[
 
 CursorQuery = Annotated[
     str | None, Query(description="Opaque cursor from a previous response's next_cursor.")
+]
+
+PrincipalQuery = Annotated[
+    str,
+    Query(
+        min_length=1,
+        max_length=512,
+        description=(
+            "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key "
+            "(fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a "
+            "route that would answer without one asks for the whole estate."
+        ),
+    ),
+]
+
+ResourceExplainQuery = Annotated[
+    str,
+    Query(
+        min_length=5,
+        max_length=1024,
+        description=(
+            "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a "
+            "query parameter rather than a path segment so that a client does not have to "
+            "percent-encode backslashes into a URL path — which several proxies normalize or "
+            "reject. A share key is not accepted: a share and the directory it publishes have "
+            "different ACLs."
+        ),
+    ),
+]
+
+IfNoneMatchHeader = Annotated[
+    str | None,
+    Header(
+        alias="If-None-Match",
+        description=(
+            "An ETag from a previous response. The server answers 304 when nothing has been "
+            "collected since, so a client may hold an explanation indefinitely and still "
+            "never render a stale one."
+        ),
+    ),
 ]
 
 MaxCausalPathsQuery = Annotated[
@@ -281,6 +355,11 @@ class AppliedAceView(BaseModel):
     """One ACE that matched the token, and what it contributed where it sits."""
 
     ace_key: str | None = None
+    layer: str = Field(
+        description="Which ACL this entry sits on: smb_share or ntfs. Carried on the entry "
+        "itself so that a list drawn from both layers stays unambiguous — SMB 'Change' and "
+        "NTFS 'Modify' are the same bits under two names."
+    )
     position: int = Field(description="Index in the DACL as stored. Order is load-bearing.")
     trustee: PrincipalSummary
     ace_type: str
@@ -460,6 +539,48 @@ class RemovalTargetView(BaseModel):
     paths_removed: list[str] = Field(default_factory=list)
 
 
+class VerdictView(BaseModel):
+    r"""The answer as one value, with the evidence that distinguishes it from its neighbors.
+
+    ``access: false`` is two completely different findings and this is where they are told
+    apart. Branch on ``outcome``; render ``reason``; and never draw a negative conclusion
+    while ``conclusive`` is false.
+    """
+
+    outcome: AccessOutcome = Field(
+        description=(
+            "granted — rights survive. denied — none survive and a Deny entry is why. "
+            "no_grant — none survive and nothing denied any; nothing names this principal. "
+            "indeterminate — none were established and collection is incomplete in a "
+            "direction that could hide a grant, so this is not a finding of no access."
+        )
+    )
+    reason: str = Field(description="The operator-facing sentence for the outcome.")
+    certainty: AccessCertainty = Field(
+        description=(
+            "Orthogonal to the outcome: the outcome is the verdict on the evidence, this is "
+            "the direction the evidence can be wrong in. Both must be rendered."
+        )
+    )
+    conclusive: bool = Field(
+        description="False only for 'indeterminate'. While false, 'this principal has no "
+        "access' is not a statement this response supports."
+    )
+    may_overstate: bool
+    may_understate: bool = Field(
+        description="True when the real rights could be wider than reported — keep looking."
+    )
+    denials: list[AppliedAceView] = Field(
+        default_factory=list,
+        description=(
+            "Deny entries that actually withheld rights, both layers, in evaluation order. "
+            "A projection of the per-layer 'denied_by' lists, placed here because it is the "
+            "evidence for a 'denied' outcome. Entries that matched and took nothing away are "
+            "not here; they are in the layer's 'superseded' list."
+        ),
+    )
+
+
 class ExplanationLimitsView(BaseModel):
     """The bounds actually applied, after clamping."""
 
@@ -522,6 +643,97 @@ class AccessPathsResponse(BaseModel):
     complete: bool = Field(
         description="False means the paths shown are a subset: at least one more route to "
         "these rights exists, so nothing may be concluded from the absence of one."
+    )
+    truncation: list[str] = Field(default_factory=list)
+
+
+class AccessExplanationResponse(BaseModel):
+    r"""Everything needed to render "why does this principal have this access?" — once.
+
+    The published shape of this response is
+    ``docs/contracts/v1/access-explanation.schema.json``; the schema is the contract and
+    this model is the implementation of it, held together by a parity test.
+
+    It is deliberately one round trip. A client that had to fetch the answer, then the
+    paths, then the ACL to work out which entry mattered would be reimplementing the access
+    check to join them — and the whole point of the engine is that nothing outside it ever
+    has to.
+    """
+
+    schema_version: str = Field(
+        default=CONTRACT_VERSION,
+        json_schema_extra={"const": CONTRACT_VERSION},
+        description="Version of the derived-answer contract this body conforms to. Additive "
+        "changes bump the minor; a breaking change means a new major and a new path.",
+    )
+    basis: BasisView
+    subject: PrincipalSummary
+    resource: ResourceRef
+    share: ShareRef | None = None
+    access_path: str
+    verdict: VerdictView
+    token: TokenView
+    effective: EffectiveAccessView = Field(
+        description="The full derivation: the effective mask, and the NTFS and SMB "
+        "evaluations that produced it with every contributing and denying entry."
+    )
+    graph: ExplanationGraphView
+    paths: list[CausalPathView] = Field(
+        default_factory=list,
+        description="Every route from the subject to an entry that matched, with what each "
+        "one is actually worth. Bounded, not paged; /api/v1/access/paths pages the same "
+        "list when an estate produces more of them than one response should carry.",
+    )
+    removal_targets: list[RemovalTargetView] = Field(
+        default_factory=list,
+        description="Every removable edge on a path, with the measured effect of deleting it.",
+    )
+    cycles: list[list[str]] = Field(
+        default_factory=list,
+        description="Membership cycles in the traversed subgraph. A cycle is a finding.",
+    )
+    warnings: list[FindingView] = Field(
+        default_factory=list,
+        description="Everything that qualifies this answer: assumptions made, trustees that "
+        "could not be resolved, descriptors never read. The same list as effective.findings, "
+        "surfaced here because it qualifies the whole response and not just the mask.",
+    )
+    limits: ExplanationLimitsView
+    complete: bool = Field(
+        description="False means the paths shown are a subset: at least one more route to "
+        "these rights exists, so nothing may be concluded from the absence of one."
+    )
+    truncation: list[str] = Field(default_factory=list)
+
+
+class AccessPathPageResponse(BaseModel):
+    """One page of the routes that produced an answer.
+
+    Same computation and same deterministic order as the explanation's ``paths``, sliced.
+    The verdict travels with every page on purpose: a page of paths read without the answer
+    they explain is how somebody concludes that a ``constrained`` path grants access.
+    """
+
+    schema_version: str = Field(
+        default=CONTRACT_VERSION, json_schema_extra={"const": CONTRACT_VERSION}
+    )
+    basis: BasisView
+    subject: PrincipalSummary
+    resource: ResourceRef
+    share: ShareRef | None = None
+    access_path: str
+    verdict: VerdictView
+    graph: ExplanationGraphView = Field(
+        description="The nodes and edges this page's paths refer to, and only those, so the "
+        "page renders on its own without holding the whole graph."
+    )
+    items: list[CausalPathView] = Field(default_factory=list)
+    page: PageInfo
+    limits: ExplanationLimitsView
+    complete: bool = Field(
+        description="Whether the underlying enumeration was complete. Independent of paging: "
+        "a page can be the last page of a truncated enumeration, which is exactly the case a "
+        "client must not read as 'these are all the paths'."
     )
     truncation: list[str] = Field(default_factory=list)
 
@@ -638,9 +850,9 @@ async def effective_access(
     )
     return EffectiveAccessResponse(
         subject=principal_summary(key, record),
-        resource=_resource_ref(resolved),
-        share=_share_ref(resolved),
-        token=_token_view(resolved.access.token, resolved.principals),
+        resource=render_resource_ref(resolved),
+        share=render_share_ref(resolved),
+        token=render_token(resolved.access.token, resolved.principals),
         effective=_effective_view(resolved.access, resolved.principals),
     )
 
@@ -689,47 +901,224 @@ async def access_paths(
     cursor; ``limits`` reports what was applied after clamping and ``complete`` says whether
     anything was cut.
     """
-    membership = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
-    key, record = await resolve_principal(membership, identifier, host)
-    service = AccessService(ResourceRepository(session), membership)
-
-    # `max_paths` and `max_depth` already mean, for the membership traversal, exactly what
-    # the explanation needs them to mean for one trustee's chains, so they are reused
-    # rather than duplicated under a second name that could disagree with the first.
-    explanation_limits = DEFAULT_EXPLANATION_LIMITS.clamped(
-        max_paths=max_causal_paths,
-        max_paths_per_trustee=limits.max_paths,
-        max_depth=limits.max_depth,
-        max_removal_targets=max_removal_targets,
-    )
-    resolved = await service.explain_access(
-        key,
-        _resource_key(resource),
-        path=access_path,
-        limits=limits,
-        explanation_limits=explanation_limits,
+    resolved, record, key = await _explain(
+        session,
+        identifier=identifier,
+        resource=resource,
+        host=host,
+        access_path=access_path,
         assumption=assumption,
+        limits=limits,
+        explanation_limits=_explanation_limits(limits, max_causal_paths, max_removal_targets),
     )
     explanation = resolved.explanation
     labels = resolved.principals
     return AccessPathsResponse(
         subject=principal_summary(key, record),
-        resource=_resource_ref(resolved),
-        share=_share_ref(resolved),
+        resource=render_resource_ref(resolved),
+        share=render_share_ref(resolved),
         effective=_effective_view(explanation.access, labels),
-        graph=ExplanationGraphView(
-            nodes=[_node_view(node) for node in explanation.graph.nodes],
-            edges=[_edge_view(edge) for edge in explanation.graph.edges],
-        ),
+        graph=_graph_view(explanation.graph),
         paths=[_causal_path_view(path, labels) for path in explanation.paths],
         removal_targets=[_removal_view(target) for target in explanation.removal_targets],
         cycles=[list(cycle.members) for cycle in explanation.cycles],
-        limits=ExplanationLimitsView(
-            max_paths=explanation.limits.max_paths,
-            max_paths_per_trustee=explanation.limits.max_paths_per_trustee,
-            max_depth=explanation.limits.max_depth,
-            max_removal_targets=explanation.limits.max_removal_targets,
+        limits=_limits_view(explanation),
+        complete=explanation.complete,
+        truncation=[reason.value for reason in explanation.truncation],
+    )
+
+
+@router.get(
+    "/explain",
+    response_model=AccessExplanationResponse,
+    summary="Why one principal has the access it has, as one renderable object",
+    responses={
+        304: {"description": "Nothing has been collected since the ETag was issued."},
+        404: {"description": "Nothing is stored about this principal."},
+        409: {"description": "A bare SID matched several host-scoped principals."},
+        422: {"description": "The principal is not a SID, or the resource is not a UNC path."},
+    },
+)
+async def explain(
+    session: Session,
+    limits: TraversalBounds,
+    response: Response,
+    principal: PrincipalQuery,
+    resource: ResourceExplainQuery,
+    host: HostQuery = None,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    assumption: AssumptionQuery = None,
+    max_causal_paths: MaxCausalPathsQuery = None,
+    max_removal_targets: MaxRemovalTargetsQuery = None,
+    if_none_match: IfNoneMatchHeader = None,
+) -> AccessExplanationResponse | Response:
+    r"""The whole answer to "why can this principal do this?", in one request.
+
+    The same computation as
+    ``/paths/principals/{identifier}/resources/{resource}``, addressed by query parameters
+    and shaped for a client that has to render it. Three things it adds:
+
+    * **``verdict``** — the one field that separates *denied*, *not granted*, and *not
+      answerable from what has been collected*. ``access: false`` conflates all three, and
+      an auditor who reads "no access" where the truth is "nobody scanned that server"
+      stops looking exactly where they should keep looking.
+    * **``basis``** — which collected state this was computed from, so an answer can be
+      quoted as of a scan rather than as of a wall clock.
+    * **conditional GET** — an ``ETag`` over *(contract version, collection basis, this
+      request)*. Return it in ``If-None-Match`` and a repeat costs one small query and a
+      ``304``. There is no time-to-live anywhere: the answer is reusable exactly as long as
+      no collector has written anything, which is what the validator encodes.
+
+    Everything Phase 5A established still holds, unchanged and unrepeated here: a matched
+    ACE is not necessarily a cause, every path is kept rather than collapsed, and every
+    removal target is *measured* by re-running the access check without that edge.
+    """
+    explanation_limits = _explanation_limits(limits, max_causal_paths, max_removal_targets)
+    validator = await current_validator(
+        session,
+        route="access.explain",
+        parameters={
+            "principal": principal,
+            "resource": resource,
+            "host": host,
+            "access_path": access_path,
+            "assumption": assumption,
+            **_limit_parameters(limits, explanation_limits),
+        },
+    )
+    if validator.matches(if_none_match):
+        return not_modified(validator)
+
+    resolved, record, key = await _explain(
+        session,
+        identifier=principal,
+        resource=resource,
+        host=host,
+        access_path=access_path,
+        assumption=assumption,
+        limits=limits,
+        explanation_limits=explanation_limits,
+    )
+    explanation = resolved.explanation
+    labels = resolved.principals
+    validator.apply(response)
+    return AccessExplanationResponse(
+        basis=basis_view(validator.basis),
+        subject=principal_summary(key, record),
+        resource=render_resource_ref(resolved),
+        share=render_share_ref(resolved),
+        access_path=explanation.access.path.value,
+        verdict=render_verdict(explanation.access, labels),
+        token=render_token(explanation.access.token, labels),
+        effective=_effective_view(explanation.access, labels),
+        graph=_graph_view(explanation.graph),
+        paths=[_causal_path_view(path, labels) for path in explanation.paths],
+        removal_targets=[_removal_view(target) for target in explanation.removal_targets],
+        cycles=[list(cycle.members) for cycle in explanation.cycles],
+        warnings=[_finding_view(finding) for finding in explanation.access.findings],
+        limits=_limits_view(explanation),
+        complete=explanation.complete,
+        truncation=[reason.value for reason in explanation.truncation],
+    )
+
+
+@router.get(
+    "/paths",
+    response_model=AccessPathPageResponse,
+    summary="One page of the routes that produced an answer",
+    responses={
+        304: {"description": "Nothing has been collected since the ETag was issued."},
+        404: {"description": "Nothing is stored about this principal."},
+        409: {"description": "A bare SID matched several host-scoped principals."},
+        422: {"description": "A bad identifier, a bad UNC path, or a cursor from elsewhere."},
+    },
+)
+async def access_path_page(
+    session: Session,
+    limits: TraversalBounds,
+    response: Response,
+    principal: PrincipalQuery,
+    resource: ResourceExplainQuery,
+    host: HostQuery = None,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    assumption: AssumptionQuery = None,
+    max_causal_paths: MaxCausalPathsQuery = None,
+    max_removal_targets: MaxRemovalTargetsQuery = None,
+    limit: LimitQuery = None,
+    cursor: CursorQuery = None,
+    if_none_match: IfNoneMatchHeader = None,
+) -> AccessPathPageResponse | Response:
+    r"""Page through the causal paths behind one answer, in the engine's own order.
+
+    An explanation of a well-nested estate can carry hundreds of chains, and a client that
+    renders a list wants a page of it rather than all of it. This is that list, sliced
+    server-side; ``/explain`` returns the same paths whole, and both come from one
+    enumeration whose order Phase 5A made deterministic, so page two of this route and the
+    second screenful of that one are the same paths.
+
+    **Paging is a slice of the enumeration, not a widening of it.** ``max_causal_paths``
+    still bounds how many paths are enumerated at all, and asking for page five does not
+    enumerate more than that ceiling: ``complete: false`` means routes exist that no page
+    will ever show. Paging and truncation are separate facts and both are reported, because
+    a caller that walks to the last page of a truncated enumeration would otherwise conclude
+    it had seen everything.
+
+    ``graph`` carries only the nodes and edges this page's paths refer to, so the page
+    renders on its own. ``removal_targets`` is not paged here — it is a property of the
+    whole explanation, not of a page — and lives on ``/explain``.
+    """
+    explanation_limits = _explanation_limits(limits, max_causal_paths, max_removal_targets)
+    page_size = normalize_limit(limit)
+    validator = await current_validator(
+        session,
+        route="access.paths",
+        parameters={
+            "principal": principal,
+            "resource": resource,
+            "host": host,
+            "access_path": access_path,
+            "assumption": assumption,
+            "limit": page_size,
+            "cursor": cursor,
+            **_limit_parameters(limits, explanation_limits),
+        },
+    )
+    if validator.matches(if_none_match):
+        return not_modified(validator)
+
+    offset = decode_offset_cursor(cursor)
+    resolved, record, key = await _explain(
+        session,
+        identifier=principal,
+        resource=resource,
+        host=host,
+        access_path=access_path,
+        assumption=assumption,
+        limits=limits,
+        explanation_limits=explanation_limits,
+    )
+    explanation = resolved.explanation
+    labels = resolved.principals
+
+    window = explanation.paths[offset : offset + page_size]
+    has_more = len(explanation.paths) > offset + page_size
+    validator.apply(response)
+    return AccessPathPageResponse(
+        basis=basis_view(validator.basis),
+        subject=principal_summary(key, record),
+        resource=render_resource_ref(resolved),
+        share=render_share_ref(resolved),
+        access_path=explanation.access.path.value,
+        verdict=render_verdict(explanation.access, labels),
+        graph=_graph_view(_subgraph(explanation.graph, window)),
+        items=[_causal_path_view(path, labels) for path in window],
+        page=PageInfo(
+            limit=page_size,
+            has_more=has_more,
+            next_cursor=encode_offset_cursor(offset + page_size) if has_more else None,
+            total=len(explanation.paths),
         ),
+        limits=_limits_view(explanation),
         complete=explanation.complete,
         truncation=[reason.value for reason in explanation.truncation],
     )
@@ -910,7 +1299,7 @@ async def _principal_resource_page(
     return PrincipalResourcesResponse(
         subject=principal_summary(key, record),
         access_path=result.path.value,
-        token=_token_view(result.token, result.principals),
+        token=render_token(result.token, result.principals),
         items=[_resource_access_view(item) for item in result.items],
         page=PageInfo(
             limit=page_size,
@@ -923,6 +1312,96 @@ async def _principal_resource_page(
             # caller cannot act on -- and which is a count of candidates, not of grants.
             total=None,
         ),
+    )
+
+
+# ------------------------------------------------------- explanation plumbing
+
+
+def _explanation_limits(
+    limits: TraversalLimits, max_causal_paths: int | None, max_removal_targets: int | None
+) -> ExplanationLimits:
+    """The explanation's own bounds, clamped, from the traversal's and the caller's.
+
+    ``max_paths`` and ``max_depth`` already mean, for the membership traversal, exactly what
+    the explanation needs them to mean for one trustee's chains, so they are reused rather
+    than duplicated under a second name that could disagree with the first.
+
+    Pure and cheap, and called before any query on purpose: the clamped values are part of
+    the cache validator, so a request that asks for a different bound has to get a different
+    ETag rather than a 304 carrying somebody else's bound.
+    """
+    return DEFAULT_EXPLANATION_LIMITS.clamped(
+        max_paths=max_causal_paths,
+        max_paths_per_trustee=limits.max_paths,
+        max_depth=limits.max_depth,
+        max_removal_targets=max_removal_targets,
+    )
+
+
+def _limit_parameters(
+    limits: TraversalLimits, explanation_limits: ExplanationLimits
+) -> dict[str, Any]:
+    """Every bound that can change a body, as validator material.
+
+    The **clamped** values, not what the caller asked for: two requests asking for 10,000
+    paths and 1,000,000 paths get the same ceiling and therefore the same answer, and should
+    share a cache entry rather than each holding their own.
+    """
+    return {
+        "max_depth": limits.max_depth,
+        "max_nodes": limits.max_nodes,
+        "max_edges": limits.max_edges,
+        "max_paths": limits.max_paths,
+        "max_causal_paths": explanation_limits.max_paths,
+        "max_removal_targets": explanation_limits.max_removal_targets,
+    }
+
+
+async def _explain(
+    session: AsyncSession,
+    *,
+    identifier: str,
+    resource: str,
+    host: str | None,
+    access_path: AccessPath,
+    assumption: TokenAssumption | None,
+    limits: TraversalLimits,
+    explanation_limits: ExplanationLimits,
+) -> tuple[ResolvedExplanation, PrincipalRecord | None, str]:
+    """Resolve one principal against one resource and keep the derivation.
+
+    Shared by all three explanation routes so that the query-addressed spelling and the
+    path-addressed one cannot answer differently — including in how they fail, which is
+    where a second implementation would diverge first: an ambiguous BUILTIN SID is a 409
+    and an unknown one a 404, and both come from the single :func:`resolve_principal`.
+    """
+    membership = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
+    key, record = await resolve_principal(membership, identifier, host)
+    service = AccessService(ResourceRepository(session), membership)
+    resolved = await service.explain_access(
+        key,
+        _resource_key(resource),
+        path=access_path,
+        limits=limits,
+        explanation_limits=explanation_limits,
+        assumption=assumption,
+    )
+    return resolved, record, key
+
+
+def _subgraph(graph: ExplanationGraph, paths: Sequence[CausalPath]) -> ExplanationGraph:
+    """The nodes and edges a slice of paths refers to, and nothing else.
+
+    A page carries its own subgraph so it can be rendered without the whole one. Node and
+    edge ids are unchanged, so two pages' subgraphs compose into the full graph by union
+    rather than needing to be reconciled.
+    """
+    node_ids = {node_id for path in paths for node_id in path.node_ids}
+    edge_ids = {edge_id for path in paths for edge_id in path.edge_ids}
+    return ExplanationGraph(
+        nodes=tuple(node for node in graph.nodes if node.node_id in node_ids),
+        edges=tuple(edge for edge in graph.edges if edge.edge_id in edge_ids),
     )
 
 
@@ -949,7 +1428,7 @@ def _resource_key(identifier: str) -> str:
     return parse_unc_path(text).comparison_key
 
 
-def _rights_view(mask: RightsMask) -> RightsView:
+def render_rights(mask: RightsMask) -> RightsView:
     summary = summarize(mask)
     return RightsView(
         mask=str(mask),
@@ -993,7 +1472,7 @@ def _token_entry_view(entry: TokenSid, labels: dict[str, PrincipalRecord]) -> To
     )
 
 
-def _token_view(token: SubjectToken, labels: dict[str, PrincipalRecord]) -> TokenView:
+def render_token(token: SubjectToken, labels: dict[str, PrincipalRecord]) -> TokenView:
     return TokenView(
         subject=principal_summary(token.subject.key, labels.get(token.subject.key)),
         assumption=token.assumption.value,
@@ -1003,10 +1482,11 @@ def _token_view(token: SubjectToken, labels: dict[str, PrincipalRecord]) -> Toke
     )
 
 
-def _applied_view(applied: AppliedAce, labels: dict[str, PrincipalRecord]) -> AppliedAceView:
+def render_applied_ace(applied: AppliedAce, labels: dict[str, PrincipalRecord]) -> AppliedAceView:
     entry = applied.entry
     return AppliedAceView(
         ace_key=entry.ace_key,
+        layer=entry.layer.value,
         position=applied.position,
         trustee=principal_summary(entry.trustee_key, labels.get(entry.trustee_key)),
         ace_type=entry.ace_type.value,
@@ -1025,17 +1505,17 @@ def _evaluation_view(
 ) -> AclEvaluationView:
     return AclEvaluationView(
         layer=evaluation.layer.value,
-        rights=_rights_view(evaluation.rights),
-        granted_by=[_applied_view(item, labels) for item in evaluation.granted_by],
-        denied_by=[_applied_view(item, labels) for item in evaluation.denied_by],
-        superseded=[_applied_view(item, labels) for item in evaluation.superseded],
+        rights=render_rights(evaluation.rights),
+        granted_by=[render_applied_ace(item, labels) for item in evaluation.granted_by],
+        denied_by=[render_applied_ace(item, labels) for item in evaluation.denied_by],
+        superseded=[render_applied_ace(item, labels) for item in evaluation.superseded],
         owner_rights=(
-            None if evaluation.owner_rights is None else _rights_view(evaluation.owner_rights)
+            None if evaluation.owner_rights is None else render_rights(evaluation.owner_rights)
         ),
         canonical_rights=(
             None
             if evaluation.canonical_rights is None
-            else _rights_view(evaluation.canonical_rights)
+            else render_rights(evaluation.canonical_rights)
         ),
         order_dependent=evaluation.order_dependent,
         entries_supplied=evaluation.entries_supplied,
@@ -1051,7 +1531,7 @@ def _effective_view(
         share_key=access.share_key,
         access_path=access.path.value,
         access=access.has_access,
-        rights=_rights_view(access.rights),
+        rights=render_rights(access.rights),
         certainty=access.certainty,
         limiting_layer=access.limiting_layer,
         acl_provenance=access.provenance,
@@ -1059,6 +1539,36 @@ def _effective_view(
         share=None if access.share is None else _evaluation_view(access.share, labels),
         conditions=[condition.value for condition in access.conditions],
         findings=[_finding_view(finding) for finding in access.findings],
+    )
+
+
+def render_verdict(access: EffectiveAccess, labels: dict[str, PrincipalRecord]) -> VerdictView:
+    """The typed answer, classified once by the engine rather than by each client."""
+    verdict: AccessVerdict = classify_access(access)
+    return VerdictView(
+        outcome=verdict.outcome,
+        reason=verdict.reason,
+        certainty=verdict.certainty,
+        conclusive=verdict.is_conclusive,
+        may_overstate=verdict.may_overstate,
+        may_understate=verdict.may_understate,
+        denials=[render_applied_ace(applied, labels) for applied in verdict.denials],
+    )
+
+
+def _limits_view(explanation: AccessExplanation) -> ExplanationLimitsView:
+    return ExplanationLimitsView(
+        max_paths=explanation.limits.max_paths,
+        max_paths_per_trustee=explanation.limits.max_paths_per_trustee,
+        max_depth=explanation.limits.max_depth,
+        max_removal_targets=explanation.limits.max_removal_targets,
+    )
+
+
+def _graph_view(graph: ExplanationGraph) -> ExplanationGraphView:
+    return ExplanationGraphView(
+        nodes=[_node_view(node) for node in graph.nodes],
+        edges=[_edge_view(edge) for edge in graph.edges],
     )
 
 
@@ -1103,10 +1613,10 @@ def _causal_path_view(path: CausalPath, labels: dict[str, PrincipalRecord]) -> C
         edges=list(path.edge_ids),
         ace_position=path.ace_position,
         ace_key=path.ace_key,
-        ace_rights=_rights_view(path.ace_rights),
-        layer_rights=_rights_view(path.layer_rights),
-        effective_rights=_rights_view(path.effective_rights),
-        constrained_rights=_rights_view(path.constrained_rights),
+        ace_rights=render_rights(path.ace_rights),
+        layer_rights=render_rights(path.layer_rights),
+        effective_rights=render_rights(path.effective_rights),
+        constrained_rights=render_rights(path.constrained_rights),
         assumed=path.assumed,
         via_group=path.via_group,
         inherited=path.inherited,
@@ -1119,9 +1629,9 @@ def _removal_view(target: RemovalTarget) -> RemovalTargetView:
         kind=target.kind,
         source=target.source,
         target=target.target,
-        rights_removed=_rights_view(target.rights_removed),
-        rights_added=_rights_view(target.rights_added),
-        rights_after=_rights_view(target.rights_after),
+        rights_removed=render_rights(target.rights_removed),
+        rights_added=render_rights(target.rights_added),
+        rights_after=render_rights(target.rights_after),
         revokes_all_access=target.revokes_all_access,
         changes_nothing=target.changes_nothing,
         alternate_paths=list(target.alternate_paths),
@@ -1135,7 +1645,7 @@ def _principal_access_view(
     return PrincipalAccessView(
         principal=principal_summary(item.key, item.principal),
         access=item.access.has_access,
-        rights=_rights_view(item.access.rights),
+        rights=render_rights(item.access.rights),
         certainty=item.access.certainty,
         limiting_layer=item.access.limiting_layer,
         via=[_token_entry_view(entry, labels) for entry in item.via],
@@ -1145,17 +1655,17 @@ def _principal_access_view(
 
 def _resource_access_view(item: ResolvedAccess) -> ResourceAccessView:
     return ResourceAccessView(
-        resource=_resource_ref(item),
-        share=_share_ref(item),
+        resource=render_resource_ref(item),
+        share=render_share_ref(item),
         access=item.access.has_access,
-        rights=_rights_view(item.access.rights),
+        rights=render_rights(item.access.rights),
         certainty=item.access.certainty,
         limiting_layer=item.access.limiting_layer,
         conditions=[condition.value for condition in item.access.conditions],
     )
 
 
-def _resource_ref(item: ResolvedAccess | ResolvedExplanation) -> ResourceRef:
+def render_resource_ref(item: ResolvedAccess | ResolvedExplanation) -> ResourceRef:
     row = item.resource
     if row is None:
         return ResourceRef(key=item.access.resource_key, observed=False)
@@ -1171,7 +1681,7 @@ def _resource_ref(item: ResolvedAccess | ResolvedExplanation) -> ResourceRef:
     )
 
 
-def _share_ref(item: ResolvedAccess | ResolvedExplanation) -> ShareRef | None:
+def render_share_ref(item: ResolvedAccess | ResolvedExplanation) -> ShareRef | None:
     if item.access.share_key is None:
         return None
     row = item.share

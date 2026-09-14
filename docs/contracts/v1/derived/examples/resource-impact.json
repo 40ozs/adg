@@ -1,0 +1,308 @@
+{
+  "access_path": "remote_smb",
+  "basis": {
+    "batches_received": 1,
+    "is_empty": false,
+    "latest_activity_at": "2026-09-14T21:14:05.358532Z",
+    "latest_run_id": "49a89aad-437f-4a3c-84ef-952e281deffa",
+    "observations_applied": 10,
+    "runs": 1,
+    "token": "0b55f806a5a30271cfe895c5c8fdde45"
+  },
+  "group": {
+    "display_name": "Finance-Team",
+    "distinguished_name": null,
+    "enabled": null,
+    "group_scope": "global",
+    "group_type": "security",
+    "host_key": null,
+    "is_deleted": false,
+    "is_group": true,
+    "key": "S-1-5-21-1004336348-1177238915-682003330-1201",
+    "kind": "domain_group",
+    "last_known_name": null,
+    "resolved": true,
+    "sam_account_name": null,
+    "sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+    "unresolved_reason": null,
+    "user_principal_name": null
+  },
+  "items": [
+    {
+      "conditions": [
+        "subject_is_a_group",
+        "assumed_token_sids"
+      ],
+      "denied_by": [],
+      "explain": "/api/v1/access/explain?principal=S-1-5-21-1004336348-1177238915-682003330-1201&resource=%5C%5CFS01%5CFinance&access_path=remote_smb",
+      "granted_by": [
+        {
+          "access_mask": "0x001301BF",
+          "ace_key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+          "ace_type": "allow",
+          "contributed": "0x001301BF",
+          "flags": 3,
+          "inherited_from": null,
+          "layer": "ntfs",
+          "matched_key": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "position": 0,
+          "source": "explicit",
+          "trustee": {
+            "display_name": "Finance-RW",
+            "distinguished_name": null,
+            "enabled": null,
+            "group_scope": "domain_local",
+            "group_type": "security",
+            "host_key": null,
+            "is_deleted": false,
+            "is_group": true,
+            "key": "S-1-5-21-1004336348-1177238915-682003330-1202",
+            "kind": "domain_group",
+            "last_known_name": null,
+            "resolved": true,
+            "sam_account_name": null,
+            "sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+            "unresolved_reason": null,
+            "user_principal_name": null
+          },
+          "via_group": true
+        },
+        {
+          "access_mask": "0x001F01FF",
+          "ace_key": "fs01|finance|S-1-1-0|allow|full",
+          "ace_type": "allow",
+          "contributed": "0x001F01FF",
+          "flags": 0,
+          "inherited_from": null,
+          "layer": "smb_share",
+          "matched_key": "S-1-1-0",
+          "position": 0,
+          "source": "explicit",
+          "trustee": {
+            "display_name": null,
+            "distinguished_name": null,
+            "enabled": null,
+            "group_scope": null,
+            "group_type": null,
+            "host_key": null,
+            "is_deleted": false,
+            "is_group": null,
+            "key": "S-1-1-0",
+            "kind": null,
+            "last_known_name": null,
+            "resolved": false,
+            "sam_account_name": null,
+            "sid": "S-1-1-0",
+            "unresolved_reason": null,
+            "user_principal_name": null
+          },
+          "via_group": true
+        }
+      ],
+      "limiting_layer": "ntfs",
+      "names_group": false,
+      "resource": {
+        "dacl_present": true,
+        "dacl_protected": false,
+        "is_acl_boundary": true,
+        "key": "\\\\fs01\\finance",
+        "observed": true,
+        "owner_sid": null,
+        "path": "\\\\FS01\\Finance",
+        "share_key": "fs01|finance"
+      },
+      "rights": {
+        "categories": [
+          "Modify"
+        ],
+        "escalation_rights": [],
+        "extra_rights": [],
+        "indeterminate": false,
+        "is_exact": true,
+        "label": "Modify",
+        "layer": "effective",
+        "mask": "0x001301BF",
+        "primary": "Modify",
+        "unrecognized_bits": null,
+        "value": 1245631
+      },
+      "share": {
+        "key": "fs01|finance",
+        "name": "Finance",
+        "observed": true,
+        "server_key": "fs01"
+      },
+      "verdict": {
+        "certainty": "at_most",
+        "conclusive": true,
+        "denials": [],
+        "may_overstate": true,
+        "may_understate": false,
+        "outcome": "granted",
+        "reason": "This principal holds rights on this object."
+      }
+    }
+  ],
+  "membership": {
+    "complete": true,
+    "cycles": [],
+    "depth_reached": 1,
+    "effective_members": 1,
+    "non_group_members": 1
+  },
+  "page": {
+    "has_more": false,
+    "limit": 100,
+    "next_cursor": null,
+    "total": null
+  },
+  "schema_version": "1.0",
+  "token": {
+    "access_path": "remote_smb",
+    "assumption": "authenticated_user",
+    "entries": [
+      {
+        "assumed": false,
+        "depth": 0,
+        "origin": "subject",
+        "path": [],
+        "principal": {
+          "display_name": "Finance-Team",
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": "global",
+          "group_type": "security",
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": true,
+          "key": "S-1-5-21-1004336348-1177238915-682003330-1201",
+          "kind": "domain_group",
+          "last_known_name": null,
+          "resolved": true,
+          "sam_account_name": null,
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        }
+      },
+      {
+        "assumed": false,
+        "depth": 1,
+        "origin": "group_membership",
+        "path": [
+          "S-1-5-21-1004336348-1177238915-682003330-1201",
+          "S-1-5-21-1004336348-1177238915-682003330-1202"
+        ],
+        "principal": {
+          "display_name": "Finance-RW",
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": "domain_local",
+          "group_type": "security",
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": true,
+          "key": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "kind": "domain_group",
+          "last_known_name": null,
+          "resolved": true,
+          "sam_account_name": null,
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        }
+      },
+      {
+        "assumed": true,
+        "depth": 0,
+        "origin": "well_known",
+        "path": [],
+        "principal": {
+          "display_name": null,
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": null,
+          "group_type": null,
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": null,
+          "key": "S-1-1-0",
+          "kind": null,
+          "last_known_name": null,
+          "resolved": false,
+          "sam_account_name": null,
+          "sid": "S-1-1-0",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        }
+      },
+      {
+        "assumed": true,
+        "depth": 0,
+        "origin": "well_known",
+        "path": [],
+        "principal": {
+          "display_name": null,
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": null,
+          "group_type": null,
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": null,
+          "key": "S-1-5-11",
+          "kind": null,
+          "last_known_name": null,
+          "resolved": false,
+          "sam_account_name": null,
+          "sid": "S-1-5-11",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        }
+      },
+      {
+        "assumed": true,
+        "depth": 0,
+        "origin": "logon_type",
+        "path": [],
+        "principal": {
+          "display_name": null,
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": null,
+          "group_type": null,
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": null,
+          "key": "S-1-5-2",
+          "kind": null,
+          "last_known_name": null,
+          "resolved": false,
+          "sam_account_name": null,
+          "sid": "S-1-5-2",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        }
+      }
+    ],
+    "membership_complete": true,
+    "subject": {
+      "display_name": "Finance-Team",
+      "distinguished_name": null,
+      "enabled": null,
+      "group_scope": "global",
+      "group_type": "security",
+      "host_key": null,
+      "is_deleted": false,
+      "is_group": true,
+      "key": "S-1-5-21-1004336348-1177238915-682003330-1201",
+      "kind": "domain_group",
+      "last_known_name": null,
+      "resolved": true,
+      "sam_account_name": null,
+      "sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+      "unresolved_reason": null,
+      "user_principal_name": null
+    }
+  }
+}

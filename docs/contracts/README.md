@@ -6,12 +6,36 @@ the fixtures that pin them.
 A contract here is a promise: once accepted, it changes only through an explicit, versioned
 migration documented in the phase that changes it.
 
+Contracts run in two directions, and the distinction matters because the rules differ:
+
+* **Inbound** — what a collector sends. Raw observations, never conclusions (ADR-0003).
+  Hand-written schemas, because a collector author codes against them.
+* **Outbound** — what the API returns for a question it *derived*. Generated from the models
+  the API serializes, because a hand-maintained copy of a response shape drifts and the
+  drift is invisible until a client believes the wrong one.
+
 ## What is here
 
 | Path | Purpose |
 | --- | --- |
 | [`collector-protocol.md`](collector-protocol.md) | How a collector begins, batches, completes, fails, and retries a scan. Normative. |
-| [`v1/`](v1/) | JSON Schemas (draft 2020-12) for every collector payload. |
+| [`derived-responses.md`](derived-responses.md) | What the API returns for a derived answer: the verdict vocabulary, the collection basis, caching, bounds, and identifiers. Normative. |
+| [`v1/`](v1/) | JSON Schemas (draft 2020-12) for every collector payload and every derived response. |
+| [`v1/derived/examples/`](v1/derived/examples/) | Captured derived responses. Real bodies from the smoke suite, validated against the schemas beside them. |
+
+## The derived-response schemas
+
+| Schema | Response |
+| --- | --- |
+| [`access-explanation.schema.json`](v1/derived/access-explanation.schema.json) | `GET /api/v1/access/explain` — the whole derivation of one principal's access to one directory. |
+| [`access-paths.schema.json`](v1/derived/access-paths.schema.json) | `GET /api/v1/access/paths` — one page of the causal paths behind that answer. |
+| [`resource-impact.schema.json`](v1/derived/resource-impact.schema.json) | `GET /api/v1/groups/{identifier}/resource-impact` — everything one group's membership reaches. |
+
+Regenerate with `python -m app.contracts.derived`;
+`backend/tests/contracts/test_derived_schemas.py` fails when they fall behind. See
+[`derived-responses.md`](derived-responses.md) for what the fields promise — above all that
+`granted`, `denied`, `no_grant` and `indeterminate` are four different answers and that the
+last one forbids concluding the negative.
 
 ## The v1 schemas
 

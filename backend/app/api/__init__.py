@@ -27,7 +27,18 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from app.api import access, auth, collection, graph, health, meta, resources, scan_runs, search
+from app.api import (
+    access,
+    auth,
+    collection,
+    graph,
+    groups,
+    health,
+    meta,
+    resources,
+    scan_runs,
+    search,
+)
 from app.auth.dependencies import requires
 from app.auth.roles import Capability
 from app.config import Settings
@@ -61,6 +72,13 @@ def build_api_router(settings: Settings) -> APIRouter:
     )
     api_router.include_router(
         access.router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
+    )
+    # A group's resource impact is an access answer about many resources at once, so it
+    # requires ACCESS_READ and not the IDENTITIES_READ that the rest of /api/v1/groups
+    # carries. Knowing who is in a group and knowing what that group reaches are different
+    # disclosures, and the more sensitive one does not inherit the weaker requirement.
+    api_router.include_router(
+        groups.router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
     )
     # Search spans areas, so it requires only the capability to search and then filters
     # each category by the caller's own capabilities; see app.services.search.

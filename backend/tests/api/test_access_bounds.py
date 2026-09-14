@@ -31,12 +31,31 @@ from app.main import create_app
 
 ACCESS_PREFIX = "/api/v1/access"
 
-ANCHORS = ("{identifier}", "{resource}")
-"""A path parameter that pins the answer to one principal or one directory.
+IMPACT_ROUTE = "/api/v1/groups/{identifier}/resource-impact"
+"""An access answer that does not live under the access prefix.
 
-Every access route must carry at least one. That is the property that makes the product
-unreachable: an answer anchored to one principal is bounded by the ACLs that name it, and one
-anchored to one resource is bounded by that resource's ACL.
+"What does this group reach?" is the same kind of question as everything under
+``/api/v1/access`` — it is derived, it is bounded by an ACL join, and it would be the
+Cartesian product if it were not anchored — so it is held to every rule in this file. It
+sits under ``/api/v1/groups`` because that is where a client looks for it, not because it
+is a different kind of thing.
+"""
+
+PATH_ANCHORS = ("{identifier}", "{resource}", "{sid}")
+"""A path parameter that pins the answer to one principal or one directory."""
+
+QUERY_ANCHORS = frozenset({"principal", "identifier", "sid", "resource"})
+"""A **required** query parameter that pins the answer just as firmly.
+
+Phase 5B added ``/api/v1/access/explain?principal=...&resource=...``, which names one
+principal and one directory without a path parameter. That is anchored — the answer is about
+one pair and cannot grow with the estate — so the guard had to start testing the property
+rather than the spelling it happened to have until then.
+
+**Required** is doing the work here. An optional ``?principal=`` would be a route that
+answers about everybody when it is omitted, which is exactly the Cartesian product wearing a
+query string, so ``anchors_of`` checks ``required: true`` and
+:class:`TestTheAnchorDetectorIsHonest` proves an optional one is not accepted.
 """
 
 SINGULAR_ROUTES = frozenset(
@@ -45,6 +64,7 @@ SINGULAR_ROUTES = frozenset(
         # routes spelled as the published contract spells them.
         "/api/v1/access/principals/{identifier}/resources/{resource}",
         "/api/v1/access/paths/principals/{identifier}/resources/{resource}",
+        "/api/v1/access/explain",
     }
 )
 """Routes that answer about exactly one pair and therefore need no paging.
@@ -56,7 +76,13 @@ instead by ``max_paths`` and ``max_removal_targets``, which
 paging is not an exemption from being bounded.
 """
 
-EXPLANATION_ROUTE = "/api/v1/access/paths/principals/{identifier}/resources/{resource}"
+EXPLANATION_ROUTES = (
+    "/api/v1/access/paths/principals/{identifier}/resources/{resource}",
+    "/api/v1/access/explain",
+)
+"""Both spellings of the explanation. The query-addressed one added in Phase 5B is exempt
+from paging on exactly the same ground as the path-addressed one, so it is held to exactly
+the same substitute standard rather than inheriting the exemption without the checks."""
 
 
 @pytest.fixture(scope="module")
@@ -73,8 +99,26 @@ def access_paths(schema: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {
         path: operations
         for path, operations in schema["paths"].items()
-        if path.startswith(ACCESS_PREFIX)
+        if path.startswith(ACCESS_PREFIX) or path == IMPACT_ROUTE
     }
+
+
+def anchors_of(path: str, operations: dict[str, Any]) -> set[str]:
+    """Every principal or resource this route is pinned to, however it is spelled.
+
+    A path parameter counts, and so does a **required** query parameter. An optional one
+    does not: a route that answers without it is a route that answers about everybody.
+    """
+    found = {anchor.strip("{}") for anchor in PATH_ANCHORS if anchor in path}
+    for operation in _operations(operations):
+        for parameter in operation.get("parameters", []):
+            if (
+                parameter.get("in") == "query"
+                and parameter.get("required") is True
+                and parameter["name"] in QUERY_ANCHORS
+            ):
+                found.add(parameter["name"])
+    return found
 
 
 class TestThereAreAccessRoutesToCheck:
@@ -90,7 +134,9 @@ class TestEveryRouteIsAnchored:
     ) -> None:
         """The test that makes the Cartesian product unreachable rather than merely capped."""
         unanchored = [
-            path for path in access_paths(schema) if not any(anchor in path for anchor in ANCHORS)
+            path
+            for path, operations in access_paths(schema).items()
+            if not anchors_of(path, operations)
         ]
         assert not unanchored, (
             "These access routes are not anchored to one principal or one resource, so their "
@@ -105,7 +151,7 @@ class TestEveryRouteIsAnchored:
             ]
             if len(collections) < 2:
                 continue
-            assert any(anchor in path for anchor in ANCHORS), path
+            assert any(anchor in path for anchor in PATH_ANCHORS), path
 
 
 class TestEveryListingIsPaged:
@@ -156,10 +202,60 @@ class TestEveryListingIsPaged:
             )
 
     def test_the_singular_route_really_is_singular(self, schema: dict[str, Any]) -> None:
-        """Guards the exemption: it is only sound while the route answers about one pair."""
+        """Guards the exemption: it is only sound while the route answers about one pair.
+
+        Checked through :func:`anchors_of` rather than by counting braces, because Phase 5B's
+        ``/explain`` is anchored by two required query parameters and has no braces at all.
+        What makes the exemption sound was never the punctuation — it is that the route names
+        exactly one principal and exactly one resource, so there is no population to page.
+        """
         for path in SINGULAR_ROUTES:
-            assert path in access_paths(schema), f"{path} no longer exists; revisit the exemption"
-            assert path.count("{") == 2, path
+            operations = access_paths(schema).get(path)
+            assert operations is not None, f"{path} no longer exists; revisit the exemption"
+            anchors = anchors_of(path, operations)
+            assert "resource" in anchors, (
+                f"{path} is exempt from paging but names no single resource: {sorted(anchors)}"
+            )
+            assert anchors & {"principal", "identifier", "sid"}, (
+                f"{path} is exempt from paging but names no single principal: {sorted(anchors)}"
+            )
+
+
+class TestTheAnchorDetectorIsHonest:
+    """The guard above is only worth having if it fails for a route that deserves it.
+
+    Every other test here passes when :func:`anchors_of` is too generous, so its generosity
+    is tested directly against synthetic operations rather than against the real document —
+    which, by construction, contains no unanchored route to catch it out.
+    """
+
+    def test_a_route_with_no_parameters_is_unanchored(self) -> None:
+        assert anchors_of("/api/v1/access/everything", {"get": {}}) == set()
+
+    def test_an_optional_principal_does_not_anchor(self) -> None:
+        """The failure mode worth spelling out: omit it and the route answers about everyone."""
+        operations = {
+            "get": {
+                "parameters": [
+                    {"name": "principal", "in": "query", "required": False},
+                    {"name": "limit", "in": "query", "required": True},
+                ]
+            }
+        }
+        assert anchors_of("/api/v1/access/everything", operations) == set()
+
+    def test_a_required_query_principal_anchors(self) -> None:
+        operations = {
+            "get": {"parameters": [{"name": "principal", "in": "query", "required": True}]}
+        }
+        assert anchors_of("/api/v1/access/explain", operations) == {"principal"}
+
+    def test_a_required_header_does_not_anchor(self) -> None:
+        """Only a query or path parameter names the subject; a header is not an address."""
+        operations = {
+            "get": {"parameters": [{"name": "principal", "in": "header", "required": True}]}
+        }
+        assert anchors_of("/api/v1/access/everything", operations) == set()
 
 
 class TestTheExplanationRouteIsBoundedWithoutPaging:
@@ -172,34 +268,50 @@ class TestTheExplanationRouteIsBoundedWithoutPaging:
     that can grow, and a flag that says when either of them bit.
     """
 
-    def test_the_route_exists(self, schema: dict[str, Any]) -> None:
+    @pytest.mark.parametrize("route", EXPLANATION_ROUTES)
+    def test_the_route_exists(self, schema: dict[str, Any], route: str) -> None:
         """Every assertion below is vacuous if the route is renamed."""
-        assert EXPLANATION_ROUTE in access_paths(schema)
+        assert route in access_paths(schema)
 
-    def test_it_caps_the_paths_it_will_enumerate(self, schema: dict[str, Any]) -> None:
-        operations = access_paths(schema)[EXPLANATION_ROUTE]
+    @pytest.mark.parametrize("route", EXPLANATION_ROUTES)
+    def test_it_caps_the_paths_it_will_enumerate(self, schema: dict[str, Any], route: str) -> None:
+        operations = access_paths(schema)[route]
         parameter = _parameter(operations, "max_causal_paths")
         assert parameter is not None, "the explanation has no bound on its own size"
         maximum = _maximum_of(parameter["schema"])
         assert maximum is not None and 0 < maximum <= MAX_PATHS_CEILING
 
-    def test_it_caps_the_removals_it_will_measure(self, schema: dict[str, Any]) -> None:
+    @pytest.mark.parametrize("route", EXPLANATION_ROUTES)
+    def test_it_caps_the_removals_it_will_measure(self, schema: dict[str, Any], route: str) -> None:
         """Each removal target re-runs the access check, so this one is a compute bound."""
-        operations = access_paths(schema)[EXPLANATION_ROUTE]
+        operations = access_paths(schema)[route]
         parameter = _parameter(operations, "max_removal_targets")
         assert parameter is not None
         maximum = _maximum_of(parameter["schema"])
         assert maximum is not None and 0 < maximum <= MAX_REMOVAL_TARGETS_CEILING
 
-    def test_it_says_when_it_was_cut_short(self, schema: dict[str, Any]) -> None:
+    @pytest.mark.parametrize("route", EXPLANATION_ROUTES)
+    def test_it_says_when_it_was_cut_short(self, schema: dict[str, Any], route: str) -> None:
         """A truncated explanation read as complete is a conclusion drawn from a subset."""
-        operations = access_paths(schema)[EXPLANATION_ROUTE]
+        operations = access_paths(schema)[route]
         model = _response_model(schema, operations)
         assert model is not None
         properties = set(model.get("properties", {}))
         assert {"complete", "truncation", "limits"} <= properties, (
-            f"{EXPLANATION_ROUTE} returns {sorted(properties)} and cannot say it is partial"
+            f"{route} returns {sorted(properties)} and cannot say it is partial"
         )
+
+    def test_the_paged_spelling_is_not_exempt(self, schema: dict[str, Any]) -> None:
+        """``/access/paths`` pages *and* is bounded, and the two facts are separate.
+
+        Walking to the last page of a truncated enumeration returns ``has_more: false`` and
+        ``complete: false`` together, which is the one combination a client must not read as
+        "that was all of them". The guard here is that both live on the same body.
+        """
+        operations = access_paths(schema)["/api/v1/access/paths"]
+        model = _response_model(schema, operations)
+        assert model is not None
+        assert {"complete", "truncation", "limits", "page"} <= set(model.get("properties", {}))
 
 
 class TestTheTraversalIsBoundedToo:

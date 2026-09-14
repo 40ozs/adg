@@ -1,0 +1,916 @@
+{
+  "$defs": {
+    "AccessCertainty": {
+      "description": "How the reported rights may differ from the truth, given what ADG has not seen.\n\nNot a confidence score. Each value is a *direction*, derived from the conditions that\nfired, and it is what lets a consumer tell a finding from a gap: rights reported\n``AT_LEAST`` may be wider in reality, which means a risk rule reading them may be\nlooking at an under-count and must not conclude \"nobody has access here\".",
+      "enum": [
+        "certain",
+        "at_most",
+        "at_least",
+        "uncertain"
+      ],
+      "title": "AccessCertainty",
+      "type": "string"
+    },
+    "AccessOutcome": {
+      "description": "What the answer *is*, as one value a client can branch on.\n\nThe values are stable and appear in API responses; renaming one is a contract change.",
+      "enum": [
+        "granted",
+        "denied",
+        "no_grant",
+        "indeterminate"
+      ],
+      "title": "AccessOutcome",
+      "type": "string"
+    },
+    "AppliedAceView": {
+      "description": "One ACE that matched the token, and what it contributed where it sits.",
+      "properties": {
+        "access_mask": {
+          "description": "The entry's own mask, generic bits expanded.",
+          "title": "Access Mask",
+          "type": "string"
+        },
+        "ace_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ace Key"
+        },
+        "ace_type": {
+          "title": "Ace Type",
+          "type": "string"
+        },
+        "contributed": {
+          "description": "The part of the mask that survived what earlier entries had already settled. 0x00000000 means the entry is on the ACL and does nothing.",
+          "title": "Contributed",
+          "type": "string"
+        },
+        "flags": {
+          "title": "Flags",
+          "type": "integer"
+        },
+        "inherited_from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inherited From"
+        },
+        "layer": {
+          "description": "Which ACL this entry sits on: smb_share or ntfs. Carried on the entry itself so that a list drawn from both layers stays unambiguous — SMB 'Change' and NTFS 'Modify' are the same bits under two names.",
+          "title": "Layer",
+          "type": "string"
+        },
+        "matched_key": {
+          "description": "The token entry this ACE named.",
+          "title": "Matched Key",
+          "type": "string"
+        },
+        "position": {
+          "description": "Index in the DACL as stored. Order is load-bearing.",
+          "title": "Position",
+          "type": "integer"
+        },
+        "source": {
+          "description": "explicit or inherited.",
+          "title": "Source",
+          "type": "string"
+        },
+        "trustee": {
+          "$ref": "#/$defs/PrincipalSummary"
+        },
+        "via_group": {
+          "title": "Via Group",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "layer",
+        "position",
+        "trustee",
+        "ace_type",
+        "access_mask",
+        "contributed",
+        "flags",
+        "source",
+        "matched_key",
+        "via_group"
+      ],
+      "title": "AppliedAceView",
+      "type": "object"
+    },
+    "BasisView": {
+      "description": "The collected state an answer was computed from, as the contract renders it.\n\nEvery derived response carries one. It is what lets a client say *\"as of the run that\nfinished at 02:14\"* instead of *\"as of now\"*, and what lets two answers fetched minutes\napart be compared honestly: same token, same facts, and any difference between them is a\ndifference in the question rather than in the estate.",
+      "properties": {
+        "batches_received": {
+          "title": "Batches Received",
+          "type": "integer"
+        },
+        "is_empty": {
+          "description": "True when no run has ever been recorded. Every derived answer over an empty estate reports no access, and here that means nobody looked.",
+          "title": "Is Empty",
+          "type": "boolean"
+        },
+        "latest_activity_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When a collector last wrote anything.",
+          "title": "Latest Activity At"
+        },
+        "latest_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The most recently updated run. Informational, not the key.",
+          "title": "Latest Run Id"
+        },
+        "observations_applied": {
+          "title": "Observations Applied",
+          "type": "integer"
+        },
+        "runs": {
+          "description": "Scan runs on record.",
+          "title": "Runs",
+          "type": "integer"
+        },
+        "token": {
+          "description": "The cache identity of the collected state. Equal tokens mean identical stored facts; this is the value the ETag is built from.",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "token",
+        "runs",
+        "observations_applied",
+        "batches_received",
+        "is_empty"
+      ],
+      "title": "BasisView",
+      "type": "object"
+    },
+    "MembershipImpactView": {
+      "description": "How many principals a change to this group would affect.\n\nBounded, and honest about it. ``complete: false`` means the downward traversal hit a\nlimit, so the counts are lower bounds and the real blast radius is larger — never\nsmaller.",
+      "properties": {
+        "complete": {
+          "description": "False means the traversal was truncated and both counts are lower bounds.",
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "cycles": {
+          "description": "Membership cycles found below this group. A cycle is a finding.",
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Cycles",
+          "type": "array"
+        },
+        "depth_reached": {
+          "title": "Depth Reached",
+          "type": "integer"
+        },
+        "effective_members": {
+          "description": "Principals reachable downward through nesting, the group itself excluded.",
+          "title": "Effective Members",
+          "type": "integer"
+        },
+        "non_group_members": {
+          "description": "Of those, the ones that are not themselves groups: the accounts that would actually hold the rights listed here. Unclassified principals are counted, because an orphaned SID inside a group is a finding and not a rounding error.",
+          "title": "Non Group Members",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "effective_members",
+        "non_group_members",
+        "depth_reached",
+        "complete"
+      ],
+      "title": "MembershipImpactView",
+      "type": "object"
+    },
+    "PageInfo": {
+      "description": "Where a caller is in a list, and how to continue.",
+      "properties": {
+        "has_more": {
+          "description": "Whether more items exist beyond this page.",
+          "title": "Has More",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "Maximum items this page could contain.",
+          "title": "Limit",
+          "type": "integer"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pass back as ?cursor= to fetch the next page. Null on the last page.",
+          "title": "Next Cursor"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Exact number of items across all pages, when the endpoint can count them cheaply. Null means not counted, never zero.",
+          "title": "Total"
+        }
+      },
+      "required": [
+        "limit",
+        "has_more"
+      ],
+      "title": "PageInfo",
+      "type": "object"
+    },
+    "PrincipalSummary": {
+      "description": "What is known about one principal, as far as any of it is known.",
+      "properties": {
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "distinguished_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Distinguished Name"
+        },
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "group_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Scope"
+        },
+        "group_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Type"
+        },
+        "host_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Host Key"
+        },
+        "is_deleted": {
+          "default": false,
+          "title": "Is Deleted",
+          "type": "boolean"
+        },
+        "is_group": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Null when the kind is unknown, never a guessed false.",
+          "title": "Is Group"
+        },
+        "key": {
+          "description": "Storage key: the SID, or host|SID for a local group.",
+          "title": "Key",
+          "type": "string"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Null when no run has described this principal. The membership that reached it was still observed; only the description is missing.",
+          "title": "Kind"
+        },
+        "last_known_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Known Name"
+        },
+        "resolved": {
+          "description": "Whether ADG holds a principal record for this key.",
+          "title": "Resolved",
+          "type": "boolean"
+        },
+        "sam_account_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sam Account Name"
+        },
+        "sid": {
+          "title": "Sid",
+          "type": "string"
+        },
+        "unresolved_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unresolved Reason"
+        },
+        "user_principal_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Principal Name"
+        }
+      },
+      "required": [
+        "key",
+        "sid",
+        "resolved"
+      ],
+      "title": "PrincipalSummary",
+      "type": "object"
+    },
+    "ResourceImpactView": {
+      "description": "One resource this group's membership reaches, and what it confers there.",
+      "properties": {
+        "conditions": {
+          "description": "Condition codes qualifying this row.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Conditions",
+          "type": "array"
+        },
+        "denied_by": {
+          "description": "Entries that took rights away.",
+          "items": {
+            "$ref": "#/$defs/AppliedAceView"
+          },
+          "title": "Denied By",
+          "type": "array"
+        },
+        "explain": {
+          "description": "URL of the full derivation for this pair. Not inlined: an explanation costs a bounded resolution each, and a page of them is not a page a server should compute speculatively.",
+          "title": "Explain",
+          "type": "string"
+        },
+        "granted_by": {
+          "description": "Entries that gave rights, both layers, in evaluation order.",
+          "items": {
+            "$ref": "#/$defs/AppliedAceView"
+          },
+          "title": "Granted By",
+          "type": "array"
+        },
+        "limiting_layer": {
+          "description": "Which ACL removed rights the other granted.",
+          "title": "Limiting Layer",
+          "type": "string"
+        },
+        "names_group": {
+          "description": "Whether any entry above names this group itself. False means the rights arrive some other way — through a group this one is nested inside, or through a world SID such as Everyone — and there is no entry naming this group to edit, so 'remove the group from the ACL' is not an available fix on this resource.",
+          "title": "Names Group",
+          "type": "boolean"
+        },
+        "resource": {
+          "$ref": "#/$defs/ResourceRef"
+        },
+        "rights": {
+          "$ref": "#/$defs/RightsView",
+          "description": "The effective mask a member inherits."
+        },
+        "share": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShareRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "verdict": {
+          "$ref": "#/$defs/VerdictView",
+          "description": "What a member of this group gets here — and, when the answer is no rights, whether that is a Deny, an absence of any grant, or a gap in collection."
+        }
+      },
+      "required": [
+        "resource",
+        "verdict",
+        "rights",
+        "limiting_layer",
+        "names_group",
+        "explain"
+      ],
+      "title": "ResourceImpactView",
+      "type": "object"
+    },
+    "ResourceRef": {
+      "description": "Enough of a directory to identify it, with whether it was ever read.",
+      "properties": {
+        "dacl_present": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dacl Present"
+        },
+        "dacl_protected": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dacl Protected"
+        },
+        "is_acl_boundary": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Acl Boundary"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "observed": {
+          "title": "Observed",
+          "type": "boolean"
+        },
+        "owner_sid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner Sid"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "share_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Share Key"
+        }
+      },
+      "required": [
+        "key",
+        "observed"
+      ],
+      "title": "ResourceRef",
+      "type": "object"
+    },
+    "RightsView": {
+      "description": "A rights mask, with its rendering alongside it. The mask is the answer.",
+      "properties": {
+        "categories": {
+          "description": "Every category the mask contains, strongest first.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Categories",
+          "type": "array"
+        },
+        "escalation_rights": {
+          "description": "WRITE_DAC / WRITE_OWNER, when present. The holder can self-grant.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Escalation Rights",
+          "type": "array"
+        },
+        "extra_rights": {
+          "description": "Rights present beyond what the categories cover.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Rights",
+          "type": "array"
+        },
+        "indeterminate": {
+          "default": false,
+          "description": "MAXIMUM_ALLOWED is present; Windows resolves it per open, so no fixed rights set exists.",
+          "title": "Indeterminate",
+          "type": "boolean"
+        },
+        "is_exact": {
+          "description": "False when the mask carries rights the label does not name.",
+          "title": "Is Exact",
+          "type": "boolean"
+        },
+        "label": {
+          "description": "Display text derived from the mask. Never store or compare it: SMB 'Read' and NTFS 'Read & Execute' are the same bits, and 'Modify' can hide WRITE_DAC.",
+          "title": "Label",
+          "type": "string"
+        },
+        "layer": {
+          "description": "smb_share, ntfs, or effective. Masks never cross layers.",
+          "title": "Layer",
+          "type": "string"
+        },
+        "mask": {
+          "description": "The access mask, as 0xNNNNNNNN. This is authoritative.",
+          "title": "Mask",
+          "type": "string"
+        },
+        "primary": {
+          "description": "The strongest category the mask fully contains.",
+          "title": "Primary",
+          "type": "string"
+        },
+        "unrecognized_bits": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Mask bits matching no right ADG knows, as 0xNNNNNNNN.",
+          "title": "Unrecognized Bits"
+        },
+        "value": {
+          "description": "The same mask as an integer, for arithmetic.",
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mask",
+        "value",
+        "layer",
+        "label",
+        "primary",
+        "is_exact"
+      ],
+      "title": "RightsView",
+      "type": "object"
+    },
+    "ShareRef": {
+      "description": "Enough of a share to identify it, with whether it was ever described.",
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "observed": {
+          "title": "Observed",
+          "type": "boolean"
+        },
+        "server_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Server Key"
+        }
+      },
+      "required": [
+        "key",
+        "observed"
+      ],
+      "title": "ShareRef",
+      "type": "object"
+    },
+    "TokenEntryView": {
+      "description": "One SID in the constructed access token, and why it is there.",
+      "properties": {
+        "assumed": {
+          "title": "Assumed",
+          "type": "boolean"
+        },
+        "depth": {
+          "description": "Membership hops from the subject. 0 for the subject itself.",
+          "title": "Depth",
+          "type": "integer"
+        },
+        "origin": {
+          "description": "subject, group_membership, well_known, or logon_type. The last two are assumptions, not observations.",
+          "title": "Origin",
+          "type": "string"
+        },
+        "path": {
+          "description": "The membership chain, subject first.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Path",
+          "type": "array"
+        },
+        "principal": {
+          "$ref": "#/$defs/PrincipalSummary"
+        }
+      },
+      "required": [
+        "principal",
+        "origin",
+        "assumed",
+        "depth"
+      ],
+      "title": "TokenEntryView",
+      "type": "object"
+    },
+    "TokenView": {
+      "description": "The SIDs the ACLs were evaluated against.",
+      "properties": {
+        "access_path": {
+          "title": "Access Path",
+          "type": "string"
+        },
+        "assumption": {
+          "title": "Assumption",
+          "type": "string"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/TokenEntryView"
+          },
+          "title": "Entries",
+          "type": "array"
+        },
+        "membership_complete": {
+          "description": "False means the traversal hit a limit and the token is a lower bound.",
+          "title": "Membership Complete",
+          "type": "boolean"
+        },
+        "subject": {
+          "$ref": "#/$defs/PrincipalSummary"
+        }
+      },
+      "required": [
+        "subject",
+        "assumption",
+        "access_path",
+        "membership_complete"
+      ],
+      "title": "TokenView",
+      "type": "object"
+    },
+    "VerdictView": {
+      "description": "The answer as one value, with the evidence that distinguishes it from its neighbors.\n\n``access: false`` is two completely different findings and this is where they are told\napart. Branch on ``outcome``; render ``reason``; and never draw a negative conclusion\nwhile ``conclusive`` is false.",
+      "properties": {
+        "certainty": {
+          "$ref": "#/$defs/AccessCertainty",
+          "description": "Orthogonal to the outcome: the outcome is the verdict on the evidence, this is the direction the evidence can be wrong in. Both must be rendered."
+        },
+        "conclusive": {
+          "description": "False only for 'indeterminate'. While false, 'this principal has no access' is not a statement this response supports.",
+          "title": "Conclusive",
+          "type": "boolean"
+        },
+        "denials": {
+          "description": "Deny entries that actually withheld rights, both layers, in evaluation order. A projection of the per-layer 'denied_by' lists, placed here because it is the evidence for a 'denied' outcome. Entries that matched and took nothing away are not here; they are in the layer's 'superseded' list.",
+          "items": {
+            "$ref": "#/$defs/AppliedAceView"
+          },
+          "title": "Denials",
+          "type": "array"
+        },
+        "may_overstate": {
+          "title": "May Overstate",
+          "type": "boolean"
+        },
+        "may_understate": {
+          "description": "True when the real rights could be wider than reported — keep looking.",
+          "title": "May Understate",
+          "type": "boolean"
+        },
+        "outcome": {
+          "$ref": "#/$defs/AccessOutcome",
+          "description": "granted — rights survive. denied — none survive and a Deny entry is why. no_grant — none survive and nothing denied any; nothing names this principal. indeterminate — none were established and collection is incomplete in a direction that could hide a grant, so this is not a finding of no access."
+        },
+        "reason": {
+          "description": "The operator-facing sentence for the outcome.",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome",
+        "reason",
+        "certainty",
+        "conclusive",
+        "may_overstate",
+        "may_understate"
+      ],
+      "title": "VerdictView",
+      "type": "object"
+    }
+  },
+  "$id": "https://adg.local/contracts/v1/derived/resource-impact.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Every resource one group's membership reaches, what it confers on each, and how many principals a change would affect. Returned by GET /api/v1/groups/{identifier}/resource-impact.",
+  "properties": {
+    "access_path": {
+      "title": "Access Path",
+      "type": "string"
+    },
+    "basis": {
+      "$ref": "#/$defs/BasisView"
+    },
+    "group": {
+      "$ref": "#/$defs/PrincipalSummary"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/ResourceImpactView"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "membership": {
+      "$ref": "#/$defs/MembershipImpactView"
+    },
+    "page": {
+      "$ref": "#/$defs/PageInfo"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "token": {
+      "$ref": "#/$defs/TokenView",
+      "description": "The SIDs a member of this group presents: the group, everything it is nested inside, and the SIDs Windows adds to every token of this kind. This is what makes a row appear even when the ACL names a parent group rather than this one."
+    }
+  },
+  "required": [
+    "basis",
+    "group",
+    "access_path",
+    "token",
+    "membership",
+    "page"
+  ],
+  "title": "ResourceImpactResponse",
+  "type": "object",
+  "x-contract-version": "1.0"
+}

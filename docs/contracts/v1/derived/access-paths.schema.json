@@ -1,0 +1,1086 @@
+{
+  "$defs": {
+    "AccessCertainty": {
+      "description": "How the reported rights may differ from the truth, given what ADG has not seen.\n\nNot a confidence score. Each value is a *direction*, derived from the conditions that\nfired, and it is what lets a consumer tell a finding from a gap: rights reported\n``AT_LEAST`` may be wider in reality, which means a risk rule reading them may be\nlooking at an under-count and must not conclude \"nobody has access here\".",
+      "enum": [
+        "certain",
+        "at_most",
+        "at_least",
+        "uncertain"
+      ],
+      "title": "AccessCertainty",
+      "type": "string"
+    },
+    "AccessOutcome": {
+      "description": "What the answer *is*, as one value a client can branch on.\n\nThe values are stable and appear in API responses; renaming one is a contract change.",
+      "enum": [
+        "granted",
+        "denied",
+        "no_grant",
+        "indeterminate"
+      ],
+      "title": "AccessOutcome",
+      "type": "string"
+    },
+    "AppliedAceView": {
+      "description": "One ACE that matched the token, and what it contributed where it sits.",
+      "properties": {
+        "access_mask": {
+          "description": "The entry's own mask, generic bits expanded.",
+          "title": "Access Mask",
+          "type": "string"
+        },
+        "ace_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ace Key"
+        },
+        "ace_type": {
+          "title": "Ace Type",
+          "type": "string"
+        },
+        "contributed": {
+          "description": "The part of the mask that survived what earlier entries had already settled. 0x00000000 means the entry is on the ACL and does nothing.",
+          "title": "Contributed",
+          "type": "string"
+        },
+        "flags": {
+          "title": "Flags",
+          "type": "integer"
+        },
+        "inherited_from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inherited From"
+        },
+        "layer": {
+          "description": "Which ACL this entry sits on: smb_share or ntfs. Carried on the entry itself so that a list drawn from both layers stays unambiguous — SMB 'Change' and NTFS 'Modify' are the same bits under two names.",
+          "title": "Layer",
+          "type": "string"
+        },
+        "matched_key": {
+          "description": "The token entry this ACE named.",
+          "title": "Matched Key",
+          "type": "string"
+        },
+        "position": {
+          "description": "Index in the DACL as stored. Order is load-bearing.",
+          "title": "Position",
+          "type": "integer"
+        },
+        "source": {
+          "description": "explicit or inherited.",
+          "title": "Source",
+          "type": "string"
+        },
+        "trustee": {
+          "$ref": "#/$defs/PrincipalSummary"
+        },
+        "via_group": {
+          "title": "Via Group",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "layer",
+        "position",
+        "trustee",
+        "ace_type",
+        "access_mask",
+        "contributed",
+        "flags",
+        "source",
+        "matched_key",
+        "via_group"
+      ],
+      "title": "AppliedAceView",
+      "type": "object"
+    },
+    "BasisView": {
+      "description": "The collected state an answer was computed from, as the contract renders it.\n\nEvery derived response carries one. It is what lets a client say *\"as of the run that\nfinished at 02:14\"* instead of *\"as of now\"*, and what lets two answers fetched minutes\napart be compared honestly: same token, same facts, and any difference between them is a\ndifference in the question rather than in the estate.",
+      "properties": {
+        "batches_received": {
+          "title": "Batches Received",
+          "type": "integer"
+        },
+        "is_empty": {
+          "description": "True when no run has ever been recorded. Every derived answer over an empty estate reports no access, and here that means nobody looked.",
+          "title": "Is Empty",
+          "type": "boolean"
+        },
+        "latest_activity_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When a collector last wrote anything.",
+          "title": "Latest Activity At"
+        },
+        "latest_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The most recently updated run. Informational, not the key.",
+          "title": "Latest Run Id"
+        },
+        "observations_applied": {
+          "title": "Observations Applied",
+          "type": "integer"
+        },
+        "runs": {
+          "description": "Scan runs on record.",
+          "title": "Runs",
+          "type": "integer"
+        },
+        "token": {
+          "description": "The cache identity of the collected state. Equal tokens mean identical stored facts; this is the value the ETag is built from.",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "token",
+        "runs",
+        "observations_applied",
+        "batches_received",
+        "is_empty"
+      ],
+      "title": "BasisView",
+      "type": "object"
+    },
+    "CausalPathView": {
+      "description": "One route from the subject to one ACE on one object, and what it delivers.",
+      "properties": {
+        "ace_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ace Key"
+        },
+        "ace_position": {
+          "title": "Ace Position",
+          "type": "integer"
+        },
+        "ace_rights": {
+          "$ref": "#/$defs/RightsView",
+          "description": "The entry's own mask: what it is worth alone."
+        },
+        "assumed": {
+          "description": "True when the ACE reached the subject through an assumed token SID (Everyone, Authenticated Users) rather than an observed membership.",
+          "title": "Assumed",
+          "type": "boolean"
+        },
+        "chain": {
+          "description": "The membership chain, subject first and ACL trustee last.",
+          "items": {
+            "$ref": "#/$defs/PrincipalSummary"
+          },
+          "title": "Chain",
+          "type": "array"
+        },
+        "constrained_rights": {
+          "$ref": "#/$defs/RightsView",
+          "description": "The part of layer_rights the other ACL withholds."
+        },
+        "edges": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "effect": {
+          "$ref": "#/$defs/PathEffect",
+          "description": "What the path is worth. 'contributes' changed the final answer; 'redundant' means an earlier entry had already settled every right it names; 'constrained' means the other layer withholds all of it, so it does not affect access."
+        },
+        "effective_rights": {
+          "$ref": "#/$defs/RightsView",
+          "description": "What it is worth to the final answer, after the layer crossing."
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "inherited": {
+          "title": "Inherited",
+          "type": "boolean"
+        },
+        "layer": {
+          "title": "Layer",
+          "type": "string"
+        },
+        "layer_rights": {
+          "$ref": "#/$defs/RightsView",
+          "description": "What it settled at its own layer that nothing earlier had already settled."
+        },
+        "nodes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Nodes",
+          "type": "array"
+        },
+        "relation": {
+          "$ref": "#/$defs/PathRelation",
+          "description": "Whether the ACE at the end allows or denies."
+        },
+        "via_group": {
+          "title": "Via Group",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "layer",
+        "relation",
+        "effect",
+        "ace_position",
+        "ace_rights",
+        "layer_rights",
+        "effective_rights",
+        "constrained_rights",
+        "assumed",
+        "via_group",
+        "inherited"
+      ],
+      "title": "CausalPathView",
+      "type": "object"
+    },
+    "EdgeKind": {
+      "description": "What one edge in the explanation graph asserts.",
+      "enum": [
+        "membership",
+        "assumed_membership",
+        "trustee",
+        "grant",
+        "deny",
+        "ownership"
+      ],
+      "title": "EdgeKind",
+      "type": "string"
+    },
+    "ExplanationEdgeView": {
+      "description": "One edge of the explanation graph.",
+      "properties": {
+        "ace_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ace Key"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "membership_edge_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Membership Edge Key"
+        },
+        "removable": {
+          "description": "Whether an administrator could actually delete this relationship. False for an assumed membership: there is no Everyone group to edit.",
+          "title": "Removable",
+          "type": "boolean"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "source",
+        "target",
+        "removable"
+      ],
+      "title": "ExplanationEdgeView",
+      "type": "object"
+    },
+    "ExplanationGraphView": {
+      "description": "The typed nodes and edges every path refers to, deduplicated.",
+      "properties": {
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/ExplanationEdgeView"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/ExplanationNodeView"
+          },
+          "title": "Nodes",
+          "type": "array"
+        }
+      },
+      "title": "ExplanationGraphView",
+      "type": "object"
+    },
+    "ExplanationLimitsView": {
+      "description": "The bounds actually applied, after clamping.",
+      "properties": {
+        "max_depth": {
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "max_paths": {
+          "title": "Max Paths",
+          "type": "integer"
+        },
+        "max_paths_per_trustee": {
+          "title": "Max Paths Per Trustee",
+          "type": "integer"
+        },
+        "max_removal_targets": {
+          "title": "Max Removal Targets",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_paths",
+        "max_paths_per_trustee",
+        "max_depth",
+        "max_removal_targets"
+      ],
+      "title": "ExplanationLimitsView",
+      "type": "object"
+    },
+    "ExplanationNodeView": {
+      "description": "One node of the explanation graph.",
+      "properties": {
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/NodeKind"
+        },
+        "layer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ACE nodes only: which ACL it is on.",
+          "title": "Layer"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ACE nodes only: index in the DACL as stored. Two entries naming one trustee are two nodes, because order decides which of them settles a right.",
+          "title": "Position"
+        },
+        "sid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sid"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "key"
+      ],
+      "title": "ExplanationNodeView",
+      "type": "object"
+    },
+    "NodeKind": {
+      "description": "What one node in the explanation graph is.\n\nA principal and a group are distinguished because the *edge* between them means\ndifferent things to a reader: a user is where a chain starts, and a group is something\nthat can be emptied, renamed, or removed from an ACL.",
+      "enum": [
+        "principal",
+        "group",
+        "assumed_trustee",
+        "ntfs_ace",
+        "smb_ace",
+        "resource",
+        "share"
+      ],
+      "title": "NodeKind",
+      "type": "string"
+    },
+    "PageInfo": {
+      "description": "Where a caller is in a list, and how to continue.",
+      "properties": {
+        "has_more": {
+          "description": "Whether more items exist beyond this page.",
+          "title": "Has More",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "Maximum items this page could contain.",
+          "title": "Limit",
+          "type": "integer"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pass back as ?cursor= to fetch the next page. Null on the last page.",
+          "title": "Next Cursor"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Exact number of items across all pages, when the endpoint can count them cheaply. Null means not counted, never zero.",
+          "title": "Total"
+        }
+      },
+      "required": [
+        "limit",
+        "has_more"
+      ],
+      "title": "PageInfo",
+      "type": "object"
+    },
+    "PathEffect": {
+      "description": "What a path is actually worth to the final answer.\n\nThe distinction this module exists to draw. All three describe an ACE that **matched\nthe token** — an ACE that names nobody in the token produces no path at all — and they\ndiffer in whether that match changed anything.",
+      "enum": [
+        "contributes",
+        "redundant",
+        "constrained"
+      ],
+      "title": "PathEffect",
+      "type": "string"
+    },
+    "PathRelation": {
+      "description": "Whether the ACE at the end of a path allows or denies.",
+      "enum": [
+        "grant",
+        "deny"
+      ],
+      "title": "PathRelation",
+      "type": "string"
+    },
+    "PrincipalSummary": {
+      "description": "What is known about one principal, as far as any of it is known.",
+      "properties": {
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "distinguished_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Distinguished Name"
+        },
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "group_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Scope"
+        },
+        "group_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Type"
+        },
+        "host_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Host Key"
+        },
+        "is_deleted": {
+          "default": false,
+          "title": "Is Deleted",
+          "type": "boolean"
+        },
+        "is_group": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Null when the kind is unknown, never a guessed false.",
+          "title": "Is Group"
+        },
+        "key": {
+          "description": "Storage key: the SID, or host|SID for a local group.",
+          "title": "Key",
+          "type": "string"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Null when no run has described this principal. The membership that reached it was still observed; only the description is missing.",
+          "title": "Kind"
+        },
+        "last_known_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Known Name"
+        },
+        "resolved": {
+          "description": "Whether ADG holds a principal record for this key.",
+          "title": "Resolved",
+          "type": "boolean"
+        },
+        "sam_account_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sam Account Name"
+        },
+        "sid": {
+          "title": "Sid",
+          "type": "string"
+        },
+        "unresolved_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unresolved Reason"
+        },
+        "user_principal_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Principal Name"
+        }
+      },
+      "required": [
+        "key",
+        "sid",
+        "resolved"
+      ],
+      "title": "PrincipalSummary",
+      "type": "object"
+    },
+    "ResourceRef": {
+      "description": "Enough of a directory to identify it, with whether it was ever read.",
+      "properties": {
+        "dacl_present": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dacl Present"
+        },
+        "dacl_protected": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dacl Protected"
+        },
+        "is_acl_boundary": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Acl Boundary"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "observed": {
+          "title": "Observed",
+          "type": "boolean"
+        },
+        "owner_sid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner Sid"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "share_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Share Key"
+        }
+      },
+      "required": [
+        "key",
+        "observed"
+      ],
+      "title": "ResourceRef",
+      "type": "object"
+    },
+    "RightsView": {
+      "description": "A rights mask, with its rendering alongside it. The mask is the answer.",
+      "properties": {
+        "categories": {
+          "description": "Every category the mask contains, strongest first.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Categories",
+          "type": "array"
+        },
+        "escalation_rights": {
+          "description": "WRITE_DAC / WRITE_OWNER, when present. The holder can self-grant.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Escalation Rights",
+          "type": "array"
+        },
+        "extra_rights": {
+          "description": "Rights present beyond what the categories cover.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Rights",
+          "type": "array"
+        },
+        "indeterminate": {
+          "default": false,
+          "description": "MAXIMUM_ALLOWED is present; Windows resolves it per open, so no fixed rights set exists.",
+          "title": "Indeterminate",
+          "type": "boolean"
+        },
+        "is_exact": {
+          "description": "False when the mask carries rights the label does not name.",
+          "title": "Is Exact",
+          "type": "boolean"
+        },
+        "label": {
+          "description": "Display text derived from the mask. Never store or compare it: SMB 'Read' and NTFS 'Read & Execute' are the same bits, and 'Modify' can hide WRITE_DAC.",
+          "title": "Label",
+          "type": "string"
+        },
+        "layer": {
+          "description": "smb_share, ntfs, or effective. Masks never cross layers.",
+          "title": "Layer",
+          "type": "string"
+        },
+        "mask": {
+          "description": "The access mask, as 0xNNNNNNNN. This is authoritative.",
+          "title": "Mask",
+          "type": "string"
+        },
+        "primary": {
+          "description": "The strongest category the mask fully contains.",
+          "title": "Primary",
+          "type": "string"
+        },
+        "unrecognized_bits": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Mask bits matching no right ADG knows, as 0xNNNNNNNN.",
+          "title": "Unrecognized Bits"
+        },
+        "value": {
+          "description": "The same mask as an integer, for arithmetic.",
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mask",
+        "value",
+        "layer",
+        "label",
+        "primary",
+        "is_exact"
+      ],
+      "title": "RightsView",
+      "type": "object"
+    },
+    "ShareRef": {
+      "description": "Enough of a share to identify it, with whether it was ever described.",
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "observed": {
+          "title": "Observed",
+          "type": "boolean"
+        },
+        "server_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Server Key"
+        }
+      },
+      "required": [
+        "key",
+        "observed"
+      ],
+      "title": "ShareRef",
+      "type": "object"
+    },
+    "VerdictView": {
+      "description": "The answer as one value, with the evidence that distinguishes it from its neighbors.\n\n``access: false`` is two completely different findings and this is where they are told\napart. Branch on ``outcome``; render ``reason``; and never draw a negative conclusion\nwhile ``conclusive`` is false.",
+      "properties": {
+        "certainty": {
+          "$ref": "#/$defs/AccessCertainty",
+          "description": "Orthogonal to the outcome: the outcome is the verdict on the evidence, this is the direction the evidence can be wrong in. Both must be rendered."
+        },
+        "conclusive": {
+          "description": "False only for 'indeterminate'. While false, 'this principal has no access' is not a statement this response supports.",
+          "title": "Conclusive",
+          "type": "boolean"
+        },
+        "denials": {
+          "description": "Deny entries that actually withheld rights, both layers, in evaluation order. A projection of the per-layer 'denied_by' lists, placed here because it is the evidence for a 'denied' outcome. Entries that matched and took nothing away are not here; they are in the layer's 'superseded' list.",
+          "items": {
+            "$ref": "#/$defs/AppliedAceView"
+          },
+          "title": "Denials",
+          "type": "array"
+        },
+        "may_overstate": {
+          "title": "May Overstate",
+          "type": "boolean"
+        },
+        "may_understate": {
+          "description": "True when the real rights could be wider than reported — keep looking.",
+          "title": "May Understate",
+          "type": "boolean"
+        },
+        "outcome": {
+          "$ref": "#/$defs/AccessOutcome",
+          "description": "granted — rights survive. denied — none survive and a Deny entry is why. no_grant — none survive and nothing denied any; nothing names this principal. indeterminate — none were established and collection is incomplete in a direction that could hide a grant, so this is not a finding of no access."
+        },
+        "reason": {
+          "description": "The operator-facing sentence for the outcome.",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome",
+        "reason",
+        "certainty",
+        "conclusive",
+        "may_overstate",
+        "may_understate"
+      ],
+      "title": "VerdictView",
+      "type": "object"
+    }
+  },
+  "$id": "https://adg.local/contracts/v1/derived/access-paths.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One page of the causal paths behind one answer, in the engine's deterministic order. Returned by GET /api/v1/access/paths.",
+  "properties": {
+    "access_path": {
+      "title": "Access Path",
+      "type": "string"
+    },
+    "basis": {
+      "$ref": "#/$defs/BasisView"
+    },
+    "complete": {
+      "description": "Whether the underlying enumeration was complete. Independent of paging: a page can be the last page of a truncated enumeration, which is exactly the case a client must not read as 'these are all the paths'.",
+      "title": "Complete",
+      "type": "boolean"
+    },
+    "graph": {
+      "$ref": "#/$defs/ExplanationGraphView",
+      "description": "The nodes and edges this page's paths refer to, and only those, so the page renders on its own without holding the whole graph."
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/CausalPathView"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "limits": {
+      "$ref": "#/$defs/ExplanationLimitsView"
+    },
+    "page": {
+      "$ref": "#/$defs/PageInfo"
+    },
+    "resource": {
+      "$ref": "#/$defs/ResourceRef"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "share": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ShareRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "subject": {
+      "$ref": "#/$defs/PrincipalSummary"
+    },
+    "truncation": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Truncation",
+      "type": "array"
+    },
+    "verdict": {
+      "$ref": "#/$defs/VerdictView"
+    }
+  },
+  "required": [
+    "basis",
+    "subject",
+    "resource",
+    "access_path",
+    "verdict",
+    "graph",
+    "page",
+    "limits",
+    "complete"
+  ],
+  "title": "AccessPathPageResponse",
+  "type": "object",
+  "x-contract-version": "1.0"
+}

@@ -1,0 +1,297 @@
+{
+  "access_path": "remote_smb",
+  "basis": {
+    "batches_received": 1,
+    "is_empty": false,
+    "latest_activity_at": "2026-09-14T21:13:59.332287Z",
+    "latest_run_id": "9e3a6626-40c2-484b-b3ce-1ca70b40acbe",
+    "observations_applied": 16,
+    "runs": 1,
+    "token": "1e9414a5bb7b8b468ca63eaa900597d4"
+  },
+  "complete": true,
+  "graph": {
+    "edges": [
+      {
+        "ace_key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+        "id": "grant:ntfs-ace:\\\\fs01\\finance:0000",
+        "kind": "grant",
+        "membership_edge_key": null,
+        "removable": false,
+        "source": "ntfs-ace:\\\\fs01\\finance:0000",
+        "target": "resource:\\\\fs01\\finance"
+      },
+      {
+        "ace_key": null,
+        "id": "membership:group:S-1-5-21-1004336348-1177238915-682003330-1201->group:S-1-5-21-1004336348-1177238915-682003330-1202",
+        "kind": "membership",
+        "membership_edge_key": "S-1-5-21-1004336348-1177238915-682003330-1202->S-1-5-21-1004336348-1177238915-682003330-1201|directory_group_member",
+        "removable": true,
+        "source": "group:S-1-5-21-1004336348-1177238915-682003330-1201",
+        "target": "group:S-1-5-21-1004336348-1177238915-682003330-1202"
+      },
+      {
+        "ace_key": null,
+        "id": "membership:principal:S-1-5-21-1004336348-1177238915-682003330-1104->group:S-1-5-21-1004336348-1177238915-682003330-1201",
+        "kind": "membership",
+        "membership_edge_key": "S-1-5-21-1004336348-1177238915-682003330-1201->S-1-5-21-1004336348-1177238915-682003330-1104|directory_group_member",
+        "removable": true,
+        "source": "principal:S-1-5-21-1004336348-1177238915-682003330-1104",
+        "target": "group:S-1-5-21-1004336348-1177238915-682003330-1201"
+      },
+      {
+        "ace_key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+        "id": "trustee:group:S-1-5-21-1004336348-1177238915-682003330-1202->ntfs-ace:\\\\fs01\\finance:0000",
+        "kind": "trustee",
+        "membership_edge_key": null,
+        "removable": true,
+        "source": "group:S-1-5-21-1004336348-1177238915-682003330-1202",
+        "target": "ntfs-ace:\\\\fs01\\finance:0000"
+      }
+    ],
+    "nodes": [
+      {
+        "display_name": "Finance-Team",
+        "id": "group:S-1-5-21-1004336348-1177238915-682003330-1201",
+        "key": "S-1-5-21-1004336348-1177238915-682003330-1201",
+        "kind": "group",
+        "layer": null,
+        "position": null,
+        "sid": "S-1-5-21-1004336348-1177238915-682003330-1201"
+      },
+      {
+        "display_name": "Finance-RW",
+        "id": "group:S-1-5-21-1004336348-1177238915-682003330-1202",
+        "key": "S-1-5-21-1004336348-1177238915-682003330-1202",
+        "kind": "group",
+        "layer": null,
+        "position": null,
+        "sid": "S-1-5-21-1004336348-1177238915-682003330-1202"
+      },
+      {
+        "display_name": null,
+        "id": "ntfs-ace:\\\\fs01\\finance:0000",
+        "key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+        "kind": "ntfs_ace",
+        "layer": "ntfs",
+        "position": 0,
+        "sid": "S-1-5-21-1004336348-1177238915-682003330-1202"
+      },
+      {
+        "display_name": "Alice Smith",
+        "id": "principal:S-1-5-21-1004336348-1177238915-682003330-1104",
+        "key": "S-1-5-21-1004336348-1177238915-682003330-1104",
+        "kind": "principal",
+        "layer": null,
+        "position": null,
+        "sid": "S-1-5-21-1004336348-1177238915-682003330-1104"
+      },
+      {
+        "display_name": null,
+        "id": "resource:\\\\fs01\\finance",
+        "key": "\\\\fs01\\finance",
+        "kind": "resource",
+        "layer": null,
+        "position": null,
+        "sid": null
+      }
+    ]
+  },
+  "items": [
+    {
+      "ace_key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+      "ace_position": 0,
+      "ace_rights": {
+        "categories": [
+          "Modify"
+        ],
+        "escalation_rights": [],
+        "extra_rights": [],
+        "indeterminate": false,
+        "is_exact": true,
+        "label": "Modify",
+        "layer": "ntfs",
+        "mask": "0x001301BF",
+        "primary": "Modify",
+        "unrecognized_bits": null,
+        "value": 1245631
+      },
+      "assumed": false,
+      "chain": [
+        {
+          "display_name": "Alice Smith",
+          "distinguished_name": null,
+          "enabled": true,
+          "group_scope": null,
+          "group_type": null,
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": false,
+          "key": "S-1-5-21-1004336348-1177238915-682003330-1104",
+          "kind": "user",
+          "last_known_name": null,
+          "resolved": true,
+          "sam_account_name": null,
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        },
+        {
+          "display_name": "Finance-Team",
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": "global",
+          "group_type": "security",
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": true,
+          "key": "S-1-5-21-1004336348-1177238915-682003330-1201",
+          "kind": "domain_group",
+          "last_known_name": null,
+          "resolved": true,
+          "sam_account_name": null,
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        },
+        {
+          "display_name": "Finance-RW",
+          "distinguished_name": null,
+          "enabled": null,
+          "group_scope": "domain_local",
+          "group_type": "security",
+          "host_key": null,
+          "is_deleted": false,
+          "is_group": true,
+          "key": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "kind": "domain_group",
+          "last_known_name": null,
+          "resolved": true,
+          "sam_account_name": null,
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "unresolved_reason": null,
+          "user_principal_name": null
+        }
+      ],
+      "constrained_rights": {
+        "categories": [],
+        "escalation_rights": [],
+        "extra_rights": [],
+        "indeterminate": false,
+        "is_exact": true,
+        "label": "No access",
+        "layer": "effective",
+        "mask": "0x00000000",
+        "primary": "No access",
+        "unrecognized_bits": null,
+        "value": 0
+      },
+      "edges": [
+        "membership:principal:S-1-5-21-1004336348-1177238915-682003330-1104->group:S-1-5-21-1004336348-1177238915-682003330-1201",
+        "membership:group:S-1-5-21-1004336348-1177238915-682003330-1201->group:S-1-5-21-1004336348-1177238915-682003330-1202",
+        "trustee:group:S-1-5-21-1004336348-1177238915-682003330-1202->ntfs-ace:\\\\fs01\\finance:0000",
+        "grant:ntfs-ace:\\\\fs01\\finance:0000"
+      ],
+      "effect": "contributes",
+      "effective_rights": {
+        "categories": [
+          "Modify"
+        ],
+        "escalation_rights": [],
+        "extra_rights": [],
+        "indeterminate": false,
+        "is_exact": true,
+        "label": "Modify",
+        "layer": "effective",
+        "mask": "0x001301BF",
+        "primary": "Modify",
+        "unrecognized_bits": null,
+        "value": 1245631
+      },
+      "id": "p0000",
+      "inherited": false,
+      "layer": "ntfs",
+      "layer_rights": {
+        "categories": [
+          "Modify"
+        ],
+        "escalation_rights": [],
+        "extra_rights": [],
+        "indeterminate": false,
+        "is_exact": true,
+        "label": "Modify",
+        "layer": "ntfs",
+        "mask": "0x001301BF",
+        "primary": "Modify",
+        "unrecognized_bits": null,
+        "value": 1245631
+      },
+      "nodes": [
+        "principal:S-1-5-21-1004336348-1177238915-682003330-1104",
+        "group:S-1-5-21-1004336348-1177238915-682003330-1201",
+        "group:S-1-5-21-1004336348-1177238915-682003330-1202",
+        "ntfs-ace:\\\\fs01\\finance:0000",
+        "resource:\\\\fs01\\finance"
+      ],
+      "relation": "grant",
+      "via_group": true
+    }
+  ],
+  "limits": {
+    "max_depth": 32,
+    "max_paths": 200,
+    "max_paths_per_trustee": 100,
+    "max_removal_targets": 64
+  },
+  "page": {
+    "has_more": true,
+    "limit": 1,
+    "next_cursor": "eyJvIjoxLCJ0IjoibyJ9",
+    "total": 4
+  },
+  "resource": {
+    "dacl_present": true,
+    "dacl_protected": false,
+    "is_acl_boundary": true,
+    "key": "\\\\fs01\\finance",
+    "observed": true,
+    "owner_sid": null,
+    "path": "\\\\FS01\\Finance",
+    "share_key": "fs01|finance"
+  },
+  "schema_version": "1.0",
+  "share": {
+    "key": "fs01|finance",
+    "name": "Finance",
+    "observed": true,
+    "server_key": "fs01"
+  },
+  "subject": {
+    "display_name": "Alice Smith",
+    "distinguished_name": null,
+    "enabled": true,
+    "group_scope": null,
+    "group_type": null,
+    "host_key": null,
+    "is_deleted": false,
+    "is_group": false,
+    "key": "S-1-5-21-1004336348-1177238915-682003330-1104",
+    "kind": "user",
+    "last_known_name": null,
+    "resolved": true,
+    "sam_account_name": null,
+    "sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+    "unresolved_reason": null,
+    "user_principal_name": null
+  },
+  "truncation": [],
+  "verdict": {
+    "certainty": "certain",
+    "conclusive": true,
+    "denials": [],
+    "may_overstate": false,
+    "may_understate": false,
+    "outcome": "granted",
+    "reason": "This principal holds rights on this object."
+  }
+}

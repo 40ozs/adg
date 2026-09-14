@@ -9,6 +9,7 @@ breadth-first level, and no SQL anywhere in the traversal itself.
 
 from __future__ import annotations
 
+from app.repositories.basis import CollectionBasisRepository
 from app.repositories.membership import (
     EDGE_FETCH_CEILING,
     AliasRecord,
@@ -33,6 +34,7 @@ from app.repositories.resources import (
 __all__ = [
     "EDGE_FETCH_CEILING",
     "AliasRecord",
+    "CollectionBasisRepository",
     "DirectEdgeRecord",
     "MembershipRepository",
     "NtfsAceRecord",

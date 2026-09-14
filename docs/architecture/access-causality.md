@@ -4,6 +4,11 @@
 specifies *why*: the membership and ACE paths that produced the answer, what each one is
 actually worth, and what would change if any one of them were removed.
 
+For how this reaches a client — the four-valued verdict that separates *denied* from *not
+granted* from *not answerable*, the collection basis, conditional GET, and the published
+response schemas — see [`docs/contracts/derived-responses.md`](../contracts/derived-responses.md),
+which is normative for the wire shape.
+
 The two are different products. "Alice has Modify on `\\FS01\Finance`" closes a question and
 opens an investigation. "Alice has Modify because `Finance-Team` is inside `Finance-RW`,
 which the DACL grants Modify — and also because she is in `Domain Users`, which the share
