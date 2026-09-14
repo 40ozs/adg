@@ -322,8 +322,8 @@ Consequences worth knowing:
 
 ## Commit
 
-`<recorded below after committing>` — *Phase 5A: the access path and causality engine*. Not
-pushed; no remote is configured for this repository.
+`153aff4` — *Phase 5A: the access path and causality engine*. Not pushed; no remote is
+configured for this repository.
 
 ## `git status --short`
 
@@ -332,5 +332,10 @@ second session's uncommitted authentication, search, and frontend work, which th
 not stage and does not describe.
 
 ```
-<recorded below after committing>
+ M backend/tests/contracts/test_smb_collector.py
 ```
+
+The full `git status --short` is longer and lists the second session's in-flight
+authentication, search and frontend files; none of them belong to this phase and none were
+staged. The line above is the only entry among this phase's own paths, and it is the
+pre-existing formatting change the last three handoffs also recorded.
