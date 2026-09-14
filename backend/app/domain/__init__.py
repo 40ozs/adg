@@ -50,6 +50,7 @@ from app.domain.graph import (
     GraphCycle,
     GraphEdge,
     MembershipPath,
+    PathEnumeration,
     PathSearch,
     ReachedNode,
     TraversalLimits,
@@ -57,6 +58,7 @@ from app.domain.graph import (
     expand,
     find_cycles,
     find_paths,
+    simple_paths,
 )
 from app.domain.identity import (
     MAX_SUB_AUTHORITIES,
@@ -113,6 +115,14 @@ from app.domain.resources import (
     SmbShare,
     parse_share_identifier,
 )
+from app.domain.search import (
+    MAX_SEARCH_TERM,
+    MIN_SEARCH_TERM,
+    QueryShape,
+    SearchQuery,
+    SearchTermError,
+    interpret_query,
+)
 
 __all__ = [
     "ACL_HASH_ALGORITHM",
@@ -125,7 +135,9 @@ __all__ = [
     "MAX_EDGES_CEILING",
     "MAX_NODES_CEILING",
     "MAX_PATHS_CEILING",
+    "MAX_SEARCH_TERM",
     "MAX_SUB_AUTHORITIES",
+    "MIN_SEARCH_TERM",
     "SHARE_PERMISSION_MASKS",
     "SUBSTITUTED_TRUSTEES",
     "WELL_KNOWN_RID_NAMES",
@@ -161,13 +173,17 @@ __all__ = [
     "NtfsRight",
     "Observation",
     "ObservationSource",
+    "PathEnumeration",
     "PathSearch",
     "Principal",
     "PrincipalKind",
+    "QueryShape",
     "ReachedNode",
     "ResourceKind",
     "ScanRun",
     "ScanStatus",
+    "SearchQuery",
+    "SearchTermError",
     "SecurityDescriptorFacts",
     "Server",
     "ShareIdentity",
@@ -189,6 +205,7 @@ __all__ = [
     "find_cycles",
     "find_paths",
     "inherited_child_acl_hash",
+    "interpret_query",
     "is_acl_hash",
     "map_generic_rights",
     "normalize_acl",
@@ -204,4 +221,5 @@ __all__ = [
     "referenced_principal_key",
     "share_ace_identity_key",
     "share_ace_right_token",
+    "simple_paths",
 ]

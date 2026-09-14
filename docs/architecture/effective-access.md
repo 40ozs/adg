@@ -12,6 +12,11 @@ behind it are [ADR-0010](../decisions/0010-effective-access-is-an-access-check.m
 [ADR-0011](../decisions/0011-answers-carry-their-uncertainty.md), and
 [ADR-0012](../decisions/0012-bounded-access-queries.md).
 
+**Why** an answer is what it is — the membership and ACE paths that caused it, what each one
+is worth, and what removing one would do — is a separate specification:
+[access-causality.md](access-causality.md), decided by
+[ADR-0013](../decisions/0013-causality-is-measured-not-inferred.md).
+
 ---
 
 ## 1. The three inputs

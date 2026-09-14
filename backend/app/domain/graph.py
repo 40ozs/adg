@@ -54,6 +54,7 @@ __all__ = [
     "GraphCycle",
     "GraphEdge",
     "MembershipPath",
+    "PathEnumeration",
     "PathSearch",
     "ReachedNode",
     "TraversalLimits",
@@ -61,6 +62,7 @@ __all__ = [
     "expand",
     "find_cycles",
     "find_paths",
+    "simple_paths",
 ]
 
 # Ceilings, not defaults. They exist so that a caller-supplied limit cannot turn a bounded
@@ -464,18 +466,38 @@ async def expand(
     )
 
 
-async def find_paths(
+@dataclass(frozen=True, slots=True)
+class PathEnumeration:
+    """Every simple path found between two nodes of a subgraph, and what was cut short."""
+
+    paths: tuple[MembershipPath, ...]
+    truncation: tuple[TruncationReason, ...] = ()
+
+    @property
+    def complete(self) -> bool:
+        return not self.truncation
+
+
+def simple_paths(
+    edges: Iterable[GraphEdge],
     member_key: str,
     group_key: str,
-    provider: AdjacencyProvider,
     limits: TraversalLimits = DEFAULT_LIMITS,
-) -> PathSearch:
-    """Enumerate every simple membership path from ``member_key`` up to ``group_key``.
+) -> PathEnumeration:
+    """Enumerate every simple path from ``member_key`` up to ``group_key`` within ``edges``.
 
-    Implemented as an upward expansion followed by path enumeration over the subgraph that
-    expansion collected, so both halves obey one set of limits and one set of provider
-    calls. Paths are returned shortest-first and, within a length, in lexicographic order,
-    so the output is stable enough to diff between runs.
+    Pure and synchronous: it walks a subgraph already in hand rather than an
+    :class:`AdjacencyProvider`, which is what lets a caller holding one traversal's edges
+    enumerate paths to many targets without going back to the database for each.
+
+    Paths come back shortest-first and, within a length, in lexicographic order of their
+    nodes. That ordering is the whole reason this is one function rather than two: an
+    explanation that reorders itself between runs cannot be diffed, and a path limit that
+    keeps an arbitrary subset is a limit that hides a different path every time.
+
+    A node already on the current chain is never revisited, so a membership cycle bounds
+    the walk instead of unrolling it. Cycles are a finding in their own right and
+    :func:`find_cycles` reports them; they are simply not paths.
     """
     if member_key == group_key:
         raise DomainValidationError(
@@ -484,14 +506,12 @@ async def find_paths(
             field="group_key",
         )
 
-    expansion = await expand(member_key, Direction.UP, provider, limits)
-    truncation = set(expansion.truncation)
-
+    truncation: set[TruncationReason] = set()
     outgoing: dict[str, list[GraphEdge]] = {}
-    for edge in expansion.edges:
+    for edge in edges:
         outgoing.setdefault(edge.member_key, []).append(edge)
-    for edges in outgoing.values():
-        edges.sort(key=lambda edge: (edge.group_key, edge.edge_key))
+    for candidates in outgoing.values():
+        candidates.sort(key=lambda edge: (edge.group_key, edge.edge_key))
 
     found: list[MembershipPath] = []
     on_path: set[str] = {member_key}
@@ -512,7 +532,7 @@ async def find_paths(
         edge = candidates[index]
         far = edge.group_key
         if far in on_path:
-            # A cycle; already reported in `cycles`. Following it would enumerate
+            # A cycle; reported separately by find_cycles. Following it would enumerate
             # infinitely many chains, none of them a simple path.
             continue
         next_taken = [*taken, edge]
@@ -537,13 +557,39 @@ async def find_paths(
         stack.append((far, next_taken, 0))
 
     found.sort(key=lambda path: (path.length, path.nodes))
+    return PathEnumeration(paths=tuple(found), truncation=tuple(sorted(truncation)))
+
+
+async def find_paths(
+    member_key: str,
+    group_key: str,
+    provider: AdjacencyProvider,
+    limits: TraversalLimits = DEFAULT_LIMITS,
+) -> PathSearch:
+    """Enumerate every simple membership path from ``member_key`` up to ``group_key``.
+
+    Implemented as an upward expansion followed by :func:`simple_paths` over the subgraph
+    that expansion collected, so both halves obey one set of limits and one set of provider
+    calls. Paths are returned shortest-first and, within a length, in lexicographic order,
+    so the output is stable enough to diff between runs.
+    """
+    if member_key == group_key:
+        raise DomainValidationError(
+            "A principal is not a member of itself; give two distinct keys.",
+            value=member_key,
+            field="group_key",
+        )
+
+    expansion = await expand(member_key, Direction.UP, provider, limits)
+    enumeration = simple_paths(expansion.edges, member_key, group_key, limits)
+
     return PathSearch(
         member_key=member_key,
         group_key=group_key,
-        paths=tuple(found),
+        paths=enumeration.paths,
         cycles=expansion.cycles,
         limits=limits,
-        truncation=tuple(sorted(truncation)),
+        truncation=tuple(sorted(set(expansion.truncation) | set(enumeration.truncation))),
     )
 
 

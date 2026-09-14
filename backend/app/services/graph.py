@@ -22,6 +22,7 @@ from app.domain import (
     Direction,
     Expansion,
     GraphCycle,
+    GraphEdge,
     MembershipEdgeKind,
     MembershipPath,
     PathSearch,
@@ -139,6 +140,15 @@ class EffectiveMembership:
     root_key: str
     direction: Direction
     nodes: tuple[ResolvedNode, ...]
+    edges: tuple[GraphEdge, ...]
+    """The subgraph the traversal actually walked.
+
+    Carried so that a caller holding this answer can enumerate **alternate** routes through
+    it without a second round of queries: :attr:`ResolvedNode.path` records only the
+    shortest chain to each node, and an explanation that shows one chain where two exist
+    invites a remediation that changes nothing.
+    """
+
     cycles: tuple[GraphCycle, ...]
     limits: TraversalLimits
     truncation: tuple[TruncationReason, ...]
@@ -201,6 +211,7 @@ class GraphService:
             root_key=root,
             direction=direction,
             nodes=nodes,
+            edges=expansion.edges,
             cycles=expansion.cycles,
             limits=limits,
             truncation=expansion.truncation,

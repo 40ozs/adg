@@ -24,3 +24,4 @@ Rules:
 | [0010](0010-effective-access-is-an-access-check.md) | Effective access is a faithful access check over a constructed token | Accepted |
 | [0011](0011-answers-carry-their-uncertainty.md) | An effective-access answer carries the conditions that qualify it | Accepted |
 | [0012](0012-bounded-access-queries.md) | Effective-access queries are bounded by inverting the question | Accepted |
+| [0013](0013-causality-is-measured-not-inferred.md) | A removal's effect is measured by re-running the access check, never inferred | Accepted |

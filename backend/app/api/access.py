@@ -1,8 +1,8 @@
 r"""Effective-access endpoints: what a principal can actually do, and why.
 
 Everything under ``/api/v1/access`` is **derived**. The rest of the API reports what
-collectors observed; these three routes report a conclusion drawn from those observations,
-and the difference is what shapes every response here:
+collectors observed; these routes report a conclusion drawn from those observations, and
+the difference is what shapes every response here:
 
 * **A mask is the answer; a label is a rendering.** ``rights.mask`` is authoritative and
   ``rights.label`` is recomputed from it. A client that stores or compares the label is
@@ -21,6 +21,13 @@ Both bounded listings page, and they page differently on purpose: the principals
 resource are computed by traversal and then sliced (offset), while the resources of one
 principal come straight out of an index (keyset). The distinction is the one
 :mod:`app.api.pagination` already draws, for the same reasons.
+
+``/paths/principals/{identifier}/resources/{resource}`` is the odd one out and pages not
+at all. It answers about exactly one pair, so there is no population to slice; what can
+grow is the *graph* — group nesting is combinatorial — so it is bounded by explicit path
+and removal limits instead, reports the limits it applied, and says ``complete: false``
+when either bit. A truncated explanation read as a whole one is a conclusion drawn from a
+subset, which is the same error in a different shape.
 """
 
 from __future__ import annotations
@@ -31,14 +38,25 @@ from fastapi import APIRouter, Path, Query
 from pydantic import BaseModel, Field
 
 from app.access_engine import (
+    DEFAULT_EXPLANATION_LIMITS,
+    MAX_PATHS_CEILING,
+    MAX_REMOVAL_TARGETS_CEILING,
     AccessCertainty,
     AccessFinding,
     AccessPath,
     AclEvaluation,
     AclProvenance,
     AppliedAce,
+    CausalPath,
+    EdgeKind,
     EffectiveAccess,
+    ExplanationEdge,
+    ExplanationNode,
     LimitingLayer,
+    NodeKind,
+    PathEffect,
+    PathRelation,
+    RemovalTarget,
     RightsMask,
     SubjectToken,
     TokenAssumption,
@@ -64,6 +82,7 @@ from app.services.access import (
     AccessService,
     PrincipalAccess,
     ResolvedAccess,
+    ResolvedExplanation,
     ResourceAccessPage,
     SubjectAccessPage,
 )
@@ -149,6 +168,32 @@ LimitQuery = Annotated[
 
 CursorQuery = Annotated[
     str | None, Query(description="Opaque cursor from a previous response's next_cursor.")
+]
+
+MaxCausalPathsQuery = Annotated[
+    int | None,
+    Query(
+        ge=1,
+        le=MAX_PATHS_CEILING,
+        description=(
+            "Causal paths to enumerate across the whole explanation, both layers together. "
+            "Distinct from max_paths, which bounds the chains to any one trustee. Clamped "
+            "to the server ceiling; the response reports the limits used and sets "
+            "complete=false when anything was cut."
+        ),
+    ),
+]
+
+MaxRemovalTargetsQuery = Annotated[
+    int | None,
+    Query(
+        ge=1,
+        le=MAX_REMOVAL_TARGETS_CEILING,
+        description=(
+            "Edges to measure by re-running the access check without them. Each costs one "
+            "check over each ACL."
+        ),
+    ),
 ]
 
 
@@ -310,6 +355,120 @@ class EffectiveAccessView(BaseModel):
     findings: list[FindingView] = Field(default_factory=list)
 
 
+class ExplanationNodeView(BaseModel):
+    """One node of the explanation graph."""
+
+    id: str
+    kind: NodeKind
+    key: str
+    sid: str | None = None
+    display_name: str | None = None
+    layer: str | None = Field(default=None, description="ACE nodes only: which ACL it is on.")
+    position: int | None = Field(
+        default=None,
+        description="ACE nodes only: index in the DACL as stored. Two entries naming one "
+        "trustee are two nodes, because order decides which of them settles a right.",
+    )
+
+
+class ExplanationEdgeView(BaseModel):
+    """One edge of the explanation graph."""
+
+    id: str
+    kind: EdgeKind
+    source: str
+    target: str
+    membership_edge_key: str | None = None
+    ace_key: str | None = None
+    removable: bool = Field(
+        description="Whether an administrator could actually delete this relationship. False "
+        "for an assumed membership: there is no Everyone group to edit."
+    )
+
+
+class ExplanationGraphView(BaseModel):
+    """The typed nodes and edges every path refers to, deduplicated."""
+
+    nodes: list[ExplanationNodeView] = Field(default_factory=list)
+    edges: list[ExplanationEdgeView] = Field(default_factory=list)
+
+
+class CausalPathView(BaseModel):
+    """One route from the subject to one ACE on one object, and what it delivers."""
+
+    id: str
+    layer: str
+    relation: PathRelation = Field(description="Whether the ACE at the end allows or denies.")
+    effect: PathEffect = Field(
+        description=(
+            "What the path is worth. 'contributes' changed the final answer; 'redundant' "
+            "means an earlier entry had already settled every right it names; 'constrained' "
+            "means the other layer withholds all of it, so it does not affect access."
+        )
+    )
+    chain: list[PrincipalSummary] = Field(
+        default_factory=list,
+        description="The membership chain, subject first and ACL trustee last.",
+    )
+    nodes: list[str] = Field(default_factory=list)
+    edges: list[str] = Field(default_factory=list)
+    ace_position: int
+    ace_key: str | None = None
+    ace_rights: RightsView = Field(description="The entry's own mask: what it is worth alone.")
+    layer_rights: RightsView = Field(
+        description="What it settled at its own layer that nothing earlier had already settled."
+    )
+    effective_rights: RightsView = Field(
+        description="What it is worth to the final answer, after the layer crossing."
+    )
+    constrained_rights: RightsView = Field(
+        description="The part of layer_rights the other ACL withholds."
+    )
+    assumed: bool = Field(
+        description="True when the ACE reached the subject through an assumed token SID "
+        "(Everyone, Authenticated Users) rather than an observed membership."
+    )
+    via_group: bool
+    inherited: bool
+
+
+class RemovalTargetView(BaseModel):
+    """What removing one edge would do, measured by re-running the access check."""
+
+    edge_id: str
+    kind: EdgeKind
+    source: str
+    target: str
+    rights_removed: RightsView = Field(
+        description="Effective rights lost. Empty means removing this changes nothing, which "
+        "is the honest answer whenever another path remains."
+    )
+    rights_added: RightsView = Field(
+        description="Effective rights *gained*. Non-empty means the edge carried a Deny and "
+        "removing it would widen access."
+    )
+    rights_after: RightsView
+    revokes_all_access: bool = Field(
+        description="Whether removing this one edge leaves no rights at all. False while any "
+        "alternate path survives."
+    )
+    changes_nothing: bool
+    alternate_paths: list[str] = Field(
+        default_factory=list,
+        description="Contributing paths that still deliver rights afterwards.",
+    )
+    paths_removed: list[str] = Field(default_factory=list)
+
+
+class ExplanationLimitsView(BaseModel):
+    """The bounds actually applied, after clamping."""
+
+    max_paths: int
+    max_paths_per_trustee: int
+    max_depth: int
+    max_removal_targets: int
+
+
 class ResourceRef(BaseModel):
     """Enough of a directory to identify it, with whether it was ever read."""
 
@@ -340,6 +499,31 @@ class EffectiveAccessResponse(BaseModel):
     share: ShareRef | None = None
     token: TokenView
     effective: EffectiveAccessView
+
+
+class AccessPathsResponse(BaseModel):
+    """One principal, one resource, and every path that caused the answer."""
+
+    subject: PrincipalSummary
+    resource: ResourceRef
+    share: ShareRef | None = None
+    effective: EffectiveAccessView
+    graph: ExplanationGraphView
+    paths: list[CausalPathView] = Field(default_factory=list)
+    removal_targets: list[RemovalTargetView] = Field(
+        default_factory=list,
+        description="Every removable edge on a path, with the measured effect of deleting it.",
+    )
+    cycles: list[list[str]] = Field(
+        default_factory=list,
+        description="Membership cycles in the traversed subgraph. A cycle is a finding.",
+    )
+    limits: ExplanationLimitsView
+    complete: bool = Field(
+        description="False means the paths shown are a subset: at least one more route to "
+        "these rights exists, so nothing may be concluded from the absence of one."
+    )
+    truncation: list[str] = Field(default_factory=list)
 
 
 class PrincipalAccessView(BaseModel):
@@ -458,6 +642,96 @@ async def effective_access(
         share=_share_ref(resolved),
         token=_token_view(resolved.access.token, resolved.principals),
         effective=_effective_view(resolved.access, resolved.principals),
+    )
+
+
+@router.get(
+    "/paths/principals/{identifier}/resources/{resource:path}",
+    response_model=AccessPathsResponse,
+    summary="Why one principal has the rights it has on one directory",
+    responses={
+        404: {"description": "Nothing is stored about this principal."},
+        409: {"description": "A bare SID matched several host-scoped principals."},
+        422: {"description": "The identifier is not a SID, or the path is not a UNC path."},
+    },
+)
+async def access_paths(
+    identifier: IdentifierPath,
+    resource: ResourcePath,
+    session: Session,
+    limits: TraversalBounds,
+    host: HostQuery = None,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    assumption: AssumptionQuery = None,
+    max_causal_paths: MaxCausalPathsQuery = None,
+    max_removal_targets: MaxRemovalTargetsQuery = None,
+) -> AccessPathsResponse:
+    r"""Enumerate the membership and ACE paths that produced one effective-access answer.
+
+    The same computation as ``/principals/{identifier}/resources/{resource}``, with the
+    derivation kept: which chains reached which entries, what each one is actually worth,
+    and what would change if any one edge were removed.
+
+    Three distinctions the response draws that a trustee list cannot:
+
+    * an ACE that **matched** the token is not necessarily a **cause**. It can be redundant
+      — an earlier entry had already settled every right it names — or constrained, where
+      the other ACL withholds all of it;
+    * several paths can lead to the same rights, and all of them are kept. Two chains to one
+      group is the common case, and collapsing them is how a remediation gets signed off
+      having changed nothing;
+    * ``removal_targets`` is **measured**, by re-running the access check with each edge
+      gone. An edge with an alternate path around it reports no rights removed, and a
+      membership carrying a Deny reports rights *added*.
+
+    This route is not paged. It answers about exactly one principal and one resource, and
+    its size is bounded by ``max_paths`` and ``max_removal_targets`` rather than by a
+    cursor; ``limits`` reports what was applied after clamping and ``complete`` says whether
+    anything was cut.
+    """
+    membership = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
+    key, record = await resolve_principal(membership, identifier, host)
+    service = AccessService(ResourceRepository(session), membership)
+
+    # `max_paths` and `max_depth` already mean, for the membership traversal, exactly what
+    # the explanation needs them to mean for one trustee's chains, so they are reused
+    # rather than duplicated under a second name that could disagree with the first.
+    explanation_limits = DEFAULT_EXPLANATION_LIMITS.clamped(
+        max_paths=max_causal_paths,
+        max_paths_per_trustee=limits.max_paths,
+        max_depth=limits.max_depth,
+        max_removal_targets=max_removal_targets,
+    )
+    resolved = await service.explain_access(
+        key,
+        _resource_key(resource),
+        path=access_path,
+        limits=limits,
+        explanation_limits=explanation_limits,
+        assumption=assumption,
+    )
+    explanation = resolved.explanation
+    labels = resolved.principals
+    return AccessPathsResponse(
+        subject=principal_summary(key, record),
+        resource=_resource_ref(resolved),
+        share=_share_ref(resolved),
+        effective=_effective_view(explanation.access, labels),
+        graph=ExplanationGraphView(
+            nodes=[_node_view(node) for node in explanation.graph.nodes],
+            edges=[_edge_view(edge) for edge in explanation.graph.edges],
+        ),
+        paths=[_causal_path_view(path, labels) for path in explanation.paths],
+        removal_targets=[_removal_view(target) for target in explanation.removal_targets],
+        cycles=[list(cycle.members) for cycle in explanation.cycles],
+        limits=ExplanationLimitsView(
+            max_paths=explanation.limits.max_paths,
+            max_paths_per_trustee=explanation.limits.max_paths_per_trustee,
+            max_depth=explanation.limits.max_depth,
+            max_removal_targets=explanation.limits.max_removal_targets,
+        ),
+        complete=explanation.complete,
+        truncation=[reason.value for reason in explanation.truncation],
     )
 
 
@@ -788,6 +1062,73 @@ def _effective_view(
     )
 
 
+def _node_view(node: ExplanationNode) -> ExplanationNodeView:
+    return ExplanationNodeView(
+        id=node.node_id,
+        kind=node.kind,
+        key=node.key,
+        sid=node.sid,
+        display_name=node.display_name,
+        layer=None if node.layer is None else node.layer.value,
+        position=node.position,
+    )
+
+
+def _edge_view(edge: ExplanationEdge) -> ExplanationEdgeView:
+    return ExplanationEdgeView(
+        id=edge.edge_id,
+        kind=edge.kind,
+        source=edge.source,
+        target=edge.target,
+        membership_edge_key=edge.membership_edge_key,
+        ace_key=edge.ace_key,
+        removable=edge.is_removable,
+    )
+
+
+def _causal_path_view(path: CausalPath, labels: dict[str, PrincipalRecord]) -> CausalPathView:
+    """One path, with every principal on its chain rendered rather than left as a key.
+
+    The chain is the product. A response that returned bare storage keys would make the
+    client re-resolve each one, and a client that cannot would render the explanation as a
+    row of SIDs.
+    """
+    return CausalPathView(
+        id=path.path_id,
+        layer=path.layer.value,
+        relation=path.relation,
+        effect=path.effect,
+        chain=[principal_summary(key, labels.get(key)) for key in path.chain],
+        nodes=list(path.node_ids),
+        edges=list(path.edge_ids),
+        ace_position=path.ace_position,
+        ace_key=path.ace_key,
+        ace_rights=_rights_view(path.ace_rights),
+        layer_rights=_rights_view(path.layer_rights),
+        effective_rights=_rights_view(path.effective_rights),
+        constrained_rights=_rights_view(path.constrained_rights),
+        assumed=path.assumed,
+        via_group=path.via_group,
+        inherited=path.inherited,
+    )
+
+
+def _removal_view(target: RemovalTarget) -> RemovalTargetView:
+    return RemovalTargetView(
+        edge_id=target.edge_id,
+        kind=target.kind,
+        source=target.source,
+        target=target.target,
+        rights_removed=_rights_view(target.rights_removed),
+        rights_added=_rights_view(target.rights_added),
+        rights_after=_rights_view(target.rights_after),
+        revokes_all_access=target.revokes_all_access,
+        changes_nothing=target.changes_nothing,
+        alternate_paths=list(target.alternate_paths),
+        paths_removed=list(target.paths_removed),
+    )
+
+
 def _principal_access_view(
     item: PrincipalAccess, labels: dict[str, PrincipalRecord]
 ) -> PrincipalAccessView:
@@ -814,7 +1155,7 @@ def _resource_access_view(item: ResolvedAccess) -> ResourceAccessView:
     )
 
 
-def _resource_ref(item: ResolvedAccess) -> ResourceRef:
+def _resource_ref(item: ResolvedAccess | ResolvedExplanation) -> ResourceRef:
     row = item.resource
     if row is None:
         return ResourceRef(key=item.access.resource_key, observed=False)
@@ -830,7 +1171,7 @@ def _resource_ref(item: ResolvedAccess) -> ResourceRef:
     )
 
 
-def _share_ref(item: ResolvedAccess) -> ShareRef | None:
+def _share_ref(item: ResolvedAccess | ResolvedExplanation) -> ShareRef | None:
     if item.access.share_key is None:
         return None
     row = item.share

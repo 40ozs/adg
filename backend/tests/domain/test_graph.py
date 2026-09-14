@@ -15,6 +15,7 @@ from app.domain import (
     expand,
     find_cycles,
     find_paths,
+    simple_paths,
 )
 from tests.fixtures import load_scenario
 from tests.support.graph import (
@@ -165,6 +166,80 @@ class TestMultiplePaths:
             ["leaf", "left", "top"],
             ["leaf", "right", "top"],
         ]
+
+
+class TestSimplePathsOverASubgraph:
+    """`simple_paths` is the enumeration `find_paths` performs, without the provider.
+
+    It exists because the causality engine holds one traversal's edges and needs chains to
+    many trustees: going back to an `AdjacencyProvider` per trustee would turn one bounded
+    traversal into several. Extracting it rather than writing a second DFS is what keeps the
+    ordering guarantee and the cycle handling in one place — two implementations would
+    eventually disagree, and the disagreement would be an explanation that does not match
+    the membership answer beside it.
+    """
+
+    async def test_it_agrees_with_find_paths_on_the_same_graph(self):
+        """The property that makes the extraction safe rather than merely tidy."""
+        scenario = load_scenario("04-multiple-membership-paths")
+        provider = InMemoryAdjacency(edges_from_observations(scenario.edges))
+
+        for group in (FINANCE_RW, DOMAIN_USERS):
+            search = await find_paths(ALICE, group, provider)
+            direct = simple_paths(provider.edges, ALICE, group)
+            assert [path.nodes for path in direct.paths] == [path.nodes for path in search.paths], (
+                group
+            )
+
+    def test_it_enumerates_every_route_through_a_diamond(self):
+        found = simple_paths(diamond(), "leaf", "top")
+
+        assert [list(path.nodes) for path in found.paths] == [
+            ["leaf", "left", "top"],
+            ["leaf", "right", "top"],
+        ]
+        assert found.complete is True
+
+    def test_it_is_ordered_independently_of_the_edge_order_supplied(self):
+        forward = simple_paths(diamond(), "leaf", "top")
+        reversed_edges = simple_paths(list(reversed(diamond())), "leaf", "top")
+
+        assert [p.nodes for p in forward.paths] == [p.nodes for p in reversed_edges.paths]
+
+    def test_a_ring_terminates_and_yields_no_path_to_an_unreachable_node(self):
+        found = simple_paths(ring(4), "r0", "unrelated")
+
+        assert found.paths == ()
+
+    def test_a_ring_yields_one_simple_path_between_two_of_its_members(self):
+        """Following the loop round would enumerate infinitely many non-simple chains."""
+        found = simple_paths(ring(4), "r0", "r2")
+
+        assert [list(path.nodes) for path in found.paths] == [["r0", "r1", "r2"]]
+
+    def test_the_path_limit_truncates_and_says_so(self):
+        found = simple_paths(diamond(), "leaf", "top", TraversalLimits(max_paths=1))
+
+        assert len(found.paths) == 1
+        assert TruncationReason.MAX_PATHS in found.truncation
+        assert found.complete is False
+
+    def test_the_depth_limit_truncates_and_says_so(self):
+        found = simple_paths(chain(5), "n0", "n5", TraversalLimits(max_depth=2))
+
+        assert found.paths == ()
+        assert TruncationReason.MAX_DEPTH in found.truncation
+
+    def test_an_empty_subgraph_yields_nothing_rather_than_failing(self):
+        """The state a caller is in when no edge was collected; not an error."""
+        found = simple_paths((), ALICE, FINANCE_RW)
+
+        assert found.paths == ()
+        assert found.complete is True
+
+    def test_a_principal_is_not_a_member_of_itself(self):
+        with pytest.raises(DomainValidationError, match="two distinct keys"):
+            simple_paths(diamond(), "leaf", "leaf")
 
 
 class TestCycles:

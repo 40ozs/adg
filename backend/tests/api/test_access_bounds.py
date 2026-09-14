@@ -24,6 +24,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 
+from app.access_engine import MAX_PATHS_CEILING, MAX_REMOVAL_TARGETS_CEILING
 from app.api.pagination import MAX_LIMIT
 from app.domain import MAX_DEPTH_CEILING, MAX_NODES_CEILING
 from app.main import create_app
@@ -40,12 +41,22 @@ anchored to one resource is bounded by that resource's ACL.
 
 SINGULAR_ROUTES = frozenset(
     {
-        # OpenAPI normalizes FastAPI's `{resource:path}` converter away, so this is the
-        # route spelled as the published contract spells it.
+        # OpenAPI normalizes FastAPI's `{resource:path}` converter away, so these are the
+        # routes spelled as the published contract spells them.
         "/api/v1/access/principals/{identifier}/resources/{resource}",
+        "/api/v1/access/paths/principals/{identifier}/resources/{resource}",
     }
 )
-"""Routes that answer about exactly one pair and therefore need no paging."""
+"""Routes that answer about exactly one pair and therefore need no paging.
+
+The explanation route is exempt on the same ground as the answer it explains: it names one
+principal and one resource, so there is no population to page through. Its size is bounded
+instead by ``max_paths`` and ``max_removal_targets``, which
+:class:`TestTheExplanationRouteIsBoundedWithoutPaging` holds in place — an exemption from
+paging is not an exemption from being bounded.
+"""
+
+EXPLANATION_ROUTE = "/api/v1/access/paths/principals/{identifier}/resources/{resource}"
 
 
 @pytest.fixture(scope="module")
@@ -149,6 +160,46 @@ class TestEveryListingIsPaged:
         for path in SINGULAR_ROUTES:
             assert path in access_paths(schema), f"{path} no longer exists; revisit the exemption"
             assert path.count("{") == 2, path
+
+
+class TestTheExplanationRouteIsBoundedWithoutPaging:
+    """The paging exemption is sound only while something else bounds the response.
+
+    An explanation is not a listing — there is no population to slice — but it is still a
+    graph, and group nesting is combinatorial: a subject in twenty groups that each nest
+    three ways into one ACL trustee has sixty chains to one ACE. So the route is held to
+    the same standard by a different instrument: explicit, capped limits on the two things
+    that can grow, and a flag that says when either of them bit.
+    """
+
+    def test_the_route_exists(self, schema: dict[str, Any]) -> None:
+        """Every assertion below is vacuous if the route is renamed."""
+        assert EXPLANATION_ROUTE in access_paths(schema)
+
+    def test_it_caps_the_paths_it_will_enumerate(self, schema: dict[str, Any]) -> None:
+        operations = access_paths(schema)[EXPLANATION_ROUTE]
+        parameter = _parameter(operations, "max_causal_paths")
+        assert parameter is not None, "the explanation has no bound on its own size"
+        maximum = _maximum_of(parameter["schema"])
+        assert maximum is not None and 0 < maximum <= MAX_PATHS_CEILING
+
+    def test_it_caps_the_removals_it_will_measure(self, schema: dict[str, Any]) -> None:
+        """Each removal target re-runs the access check, so this one is a compute bound."""
+        operations = access_paths(schema)[EXPLANATION_ROUTE]
+        parameter = _parameter(operations, "max_removal_targets")
+        assert parameter is not None
+        maximum = _maximum_of(parameter["schema"])
+        assert maximum is not None and 0 < maximum <= MAX_REMOVAL_TARGETS_CEILING
+
+    def test_it_says_when_it_was_cut_short(self, schema: dict[str, Any]) -> None:
+        """A truncated explanation read as complete is a conclusion drawn from a subset."""
+        operations = access_paths(schema)[EXPLANATION_ROUTE]
+        model = _response_model(schema, operations)
+        assert model is not None
+        properties = set(model.get("properties", {}))
+        assert {"complete", "truncation", "limits"} <= properties, (
+            f"{EXPLANATION_ROUTE} returns {sorted(properties)} and cannot say it is partial"
+        )
 
 
 class TestTheTraversalIsBoundedToo:

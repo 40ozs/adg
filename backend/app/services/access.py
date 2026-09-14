@@ -32,12 +32,15 @@ from dataclasses import dataclass, field
 from typing import Final
 
 from app.access_engine import (
+    DEFAULT_EXPLANATION_LIMITS,
     AccessCondition,
+    AccessExplanation,
     AccessFinding,
     AccessPath,
     AclEntry,
     AclProvenance,
     EffectiveAccess,
+    ExplanationLimits,
     ResourceDacl,
     ShareDacl,
     SidOrigin,
@@ -46,6 +49,7 @@ from app.access_engine import (
     TokenAssumption,
     TokenSid,
     build_token,
+    explain_access,
     ntfs_entry,
     resolve_access,
     share_entry,
@@ -57,6 +61,7 @@ from app.domain import (
     AceSource,
     AclAceFacts,
     DomainValidationError,
+    GraphEdge,
     PrincipalKind,
     Sid,
     TraversalLimits,
@@ -84,6 +89,7 @@ __all__ = [
     "AccessService",
     "PrincipalAccess",
     "ResolvedAccess",
+    "ResolvedExplanation",
     "ResourceAccessPage",
     "SubjectAccessPage",
 ]
@@ -128,6 +134,43 @@ class ResolvedAccess:
     share: ShareRecord | None
     principals: dict[str, PrincipalRecord] = field(default_factory=dict)
     """Labels for every key named in the answer — token entries and ACL trustees alike."""
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedExplanation:
+    """One effective-access answer with the causal paths behind it.
+
+    Carries the same labels as :class:`ResolvedAccess`, covering every principal a path
+    names — the groups on a chain included, which is most of what an explanation renders.
+    """
+
+    explanation: AccessExplanation
+    subject: PrincipalRecord | None
+    resource: NtfsResourceRecord | None
+    share: ShareRecord | None
+    principals: dict[str, PrincipalRecord] = field(default_factory=dict)
+
+    @property
+    def access(self) -> EffectiveAccess:
+        return self.explanation.access
+
+
+@dataclass(frozen=True, slots=True)
+class _Resolution:
+    """Everything one principal/resource resolution produced, inputs included.
+
+    Internal: the inputs are here so an explanation is built from the very objects the
+    answer was computed from, and nothing outside this module needs them.
+    """
+
+    access: EffectiveAccess
+    subject: PrincipalRecord | None
+    resource: NtfsResourceRecord | None
+    share: ShareRecord | None
+    dacl: ResourceDacl
+    share_acl: ShareDacl | None
+    edges: tuple[GraphEdge, ...]
+    principals: dict[str, PrincipalRecord]
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,8 +255,68 @@ class AccessService:
         assumption: TokenAssumption | None = None,
     ) -> ResolvedAccess:
         """What one principal can do to one directory, and every reason it is not certain."""
+        resolution = await self._resolve_one(
+            subject_key, resource_key, path=path, limits=limits, assumption=assumption
+        )
+        return ResolvedAccess(
+            access=resolution.access,
+            subject=resolution.subject,
+            resource=resolution.resource,
+            share=resolution.share,
+            principals=resolution.principals,
+        )
+
+    async def explain_access(
+        self,
+        subject_key: str,
+        resource_key: str,
+        *,
+        path: AccessPath = AccessPath.REMOTE_SMB,
+        limits: TraversalLimits = DEFAULT_LIMITS,
+        explanation_limits: ExplanationLimits = DEFAULT_EXPLANATION_LIMITS,
+        assumption: TokenAssumption | None = None,
+    ) -> ResolvedExplanation:
+        """The same answer, plus the paths that caused it and what removing each would do.
+
+        Costs exactly what :meth:`effective_access` costs: the membership subgraph the token
+        was built from is already in hand after the traversal, so path enumeration, the
+        causality analysis and every removal re-evaluation run in process over data already
+        read. No extra query, and none whose cost grows with the estate.
+        """
+        resolution = await self._resolve_one(
+            subject_key, resource_key, path=path, limits=limits, assumption=assumption
+        )
+        explanation = explain_access(
+            resolution.access,
+            resolution.dacl,
+            resolution.share_acl,
+            edges=resolution.edges,
+            limits=explanation_limits,
+        )
+        return ResolvedExplanation(
+            explanation=explanation,
+            subject=resolution.subject,
+            resource=resolution.resource,
+            share=resolution.share,
+            principals=resolution.principals,
+        )
+
+    async def _resolve_one(
+        self,
+        subject_key: str,
+        resource_key: str,
+        *,
+        path: AccessPath,
+        limits: TraversalLimits,
+        assumption: TokenAssumption | None,
+    ) -> _Resolution:
+        """One principal against one resource, with every input the answer was built from.
+
+        Shared by :meth:`effective_access` and :meth:`explain_access` so that an explanation
+        can never be derived from a differently-resolved answer than the one it explains.
+        """
         subject_record = await self._membership.get_principal(subject_key)
-        token, token_labels = await self._build_token(
+        token, token_labels, edges = await self._build_token(
             subject_key, subject_record, path=path, limits=limits, assumption=assumption
         )
 
@@ -232,11 +335,14 @@ class AccessService:
                 sorted(self._keys_named_by(token, dacl, share))
             ),
         }
-        return ResolvedAccess(
+        return _Resolution(
             access=access,
             subject=subject_record,
             resource=resource,
             share=share_record,
+            dacl=dacl,
+            share_acl=share,
+            edges=edges,
             principals=labels,
         )
 
@@ -376,7 +482,7 @@ class AccessService:
                 field="path",
             )
         subject_record = await self._membership.get_principal(subject_key)
-        token, token_labels = await self._build_token(
+        token, token_labels, _ = await self._build_token(
             subject_key, subject_record, path=path, limits=limits, assumption=assumption
         )
         keys = sorted(token.keys)
@@ -481,12 +587,14 @@ class AccessService:
         path: AccessPath,
         limits: TraversalLimits,
         assumption: TokenAssumption | None,
-    ) -> tuple[SubjectToken, dict[str, PrincipalRecord]]:
+    ) -> tuple[SubjectToken, dict[str, PrincipalRecord], tuple[GraphEdge, ...]]:
         """One upward traversal, turned into the SIDs an access check would see.
 
         The labels come back with it because the traversal already read them: rendering a
         token entry without its principal row would report an observed group as an
-        unresolved SID, which is a different finding entirely.
+        unresolved SID, which is a different finding entirely. The traversed **edges** come
+        back for the same reason: they are what lets an explanation enumerate alternate
+        membership chains without walking the graph a second time.
         """
         expansion = await self._graph.effective_groups(subject_key, limits)
         groups = tuple(
@@ -517,7 +625,7 @@ class AccessService:
             membership_complete=expansion.complete,
             findings=findings,
         )
-        return token, labels
+        return token, labels, expansion.edges
 
     async def _resource_dacl(
         self, resource_key: str
