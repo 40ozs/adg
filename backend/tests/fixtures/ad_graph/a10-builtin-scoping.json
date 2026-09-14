@@ -1,0 +1,199 @@
+{
+  "scenario": "a10-builtin-scoping",
+  "title": "One BUILTIN SID, three different groups",
+  "description": "S-1-5-32-544 on FS10, S-1-5-32-544 on FS11, and S-1-5-32-544 as the domain's own BUILTIN group. Same SID, three groups, three memberships that have nothing to do with each other. Merging any two of them would invent access nobody has.",
+  "expectations": {
+    "distinct_group_keys": [
+      "S-1-5-32-544",
+      "fs10|S-1-5-32-544",
+      "fs11|S-1-5-32-544"
+    ],
+    "fs10_group_key": "fs10|S-1-5-32-544",
+    "fs11_group_key": "fs11|S-1-5-32-544",
+    "domain_builtin_group_key": "S-1-5-32-544",
+    "fs10_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-21001"
+    ],
+    "fs11_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-21002"
+    ],
+    "domain_builtin_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-21003"
+    ],
+    "bare_sid_is_ambiguous": true,
+    "bare_sid_candidate_count": 3,
+    "host_qualified_lookup_is_exact": true,
+    "known_hazard": "Only local_group principals are host-scoped. The domain's own BUILTIN group is stored under the bare SID, so two Active Directory domains collected into one ADG would merge their BUILTIN groups and their memberships. Detected by scripts/validate-collector-output.ps1; see docs/architecture/ad-graph-validation.md.",
+    "note": "Resolving the bare SID must return 409 with all three candidates. Resolving it with host=FS10 must return the FS10 group exactly, not the ambiguity."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a10",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a10",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|fs10|S-1-5-32-544",
+          "sid": "S-1-5-32-544",
+          "principal_kind": "local_group",
+          "host_key": "FS10",
+          "display_name": "Administrators",
+          "sam_account_name": "Administrators",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|fs11|S-1-5-32-544",
+          "sid": "S-1-5-32-544",
+          "principal_kind": "local_group",
+          "host_key": "FS11",
+          "display_name": "Administrators",
+          "sam_account_name": "Administrators",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-32-544",
+          "sid": "S-1-5-32-544",
+          "principal_kind": "domain_group",
+          "display_name": "Administrators",
+          "sam_account_name": "Administrators",
+          "distinguished_name": "CN=Administrators,CN=Builtin,DC=corp,DC=example,DC=com",
+          "group_scope": "builtin_local",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-21001",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-21001",
+          "principal_kind": "user",
+          "display_name": "Owen Traore",
+          "sam_account_name": "otraore",
+          "user_principal_name": "otraore@corp.example.com",
+          "distinguished_name": "CN=Owen Traore,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-21002",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-21002",
+          "principal_kind": "user",
+          "display_name": "Lena Fischer",
+          "sam_account_name": "lfischer",
+          "user_principal_name": "lfischer@corp.example.com",
+          "distinguished_name": "CN=Lena Fischer,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-21003",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-21003",
+          "principal_kind": "domain_group",
+          "display_name": "Domain Admins",
+          "sam_account_name": "Domain Admins",
+          "distinguished_name": "CN=Domain Admins,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "global",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "edge|fs10|S-1-5-32-544->S-1-5-21-2000000001-2000000002-2000000003-21001|local_group_member",
+          "group_sid": "S-1-5-32-544",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-21001",
+          "edge_kind": "local_group_member",
+          "host_key": "FS10",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|fs11|S-1-5-32-544->S-1-5-21-2000000001-2000000002-2000000003-21002|local_group_member",
+          "group_sid": "S-1-5-32-544",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-21002",
+          "edge_kind": "local_group_member",
+          "host_key": "FS11",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a10",
+          "observed_at": "2026-09-14T09:00:09Z",
+          "source_key": "edge|S-1-5-32-544->S-1-5-21-2000000001-2000000002-2000000003-21003|directory_group_member",
+          "group_sid": "S-1-5-32-544",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-21003",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a10",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 9,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

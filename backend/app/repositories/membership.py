@@ -11,10 +11,12 @@ Two bounds live here rather than in the caller:
 * **Key chunking.** A breadth-first frontier can be tens of thousands of nodes wide. Keys
   are sent as a single array parameter per chunk, not as an expanded ``IN`` list, so one
   wide level stays one query rather than one 50,000-placeholder statement.
-* **A row ceiling.** ``edge_fetch_limit`` caps how many edge rows one traversal may pull,
-  matching the traversal's own ``max_edges``. Without it a single group with a million
-  members would materialize a million rows before the traversal got the chance to say
-  "truncated".
+* **A row ceiling.** ``edge_fetch_limit`` caps how many edge rows one traversal may pull.
+  Without it a single group with a million members would materialize a million rows before
+  the traversal got the chance to say "truncated". Callers set it to the traversal's
+  ``max_edges`` **plus one**: a traversal can only declare itself truncated when it is
+  offered the edge that exceeds its budget, so the repository has to be willing to read one
+  row more than the traversal will keep. See :data:`EDGE_FETCH_CEILING`.
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ from app.domain import (
 from app.models.schema import membership_edges, principal_aliases, principals
 
 __all__ = [
+    "EDGE_FETCH_CEILING",
     "AliasRecord",
     "DirectEdgeRecord",
     "MembershipRepository",
@@ -50,6 +53,17 @@ __all__ = [
 
 KEY_CHUNK: Final = 5_000
 """Keys per adjacency query. One array parameter, not one placeholder per key."""
+
+EDGE_FETCH_CEILING: Final = MAX_EDGES_CEILING + 1
+"""One row above the largest edge budget a traversal can hold.
+
+Callers pair the repository with a traversal by passing ``max_edges + 1``, because a
+traversal can only report ``max_edges`` truncation when it is *offered* the edge that
+exceeds its budget. Clamping that pairing back to ``MAX_EDGES_CEILING`` would take the
+probe row away at exactly the largest budget, and the traversal would then report a
+repository-truncated answer as complete. The extra row is never kept — it exists only so
+the cut-off can be seen.
+"""
 
 MAX_PAGE_SIZE: Final = 500
 DEFAULT_PAGE_SIZE: Final = 100
@@ -102,8 +116,8 @@ class PrincipalRecord:
 
         Only groups can, so only groups are worth expanding. A principal ADG has never
         described is *not* covered by this property — see
-        :func:`app.services.graph.classify`, which treats an unknown kind as unknown rather
-        than as "not a group".
+        :attr:`app.services.graph.ResolvedNode.is_group`, which answers ``None`` for an
+        unknown kind rather than "not a group".
         """
         return self.principal_kind in (PrincipalKind.DOMAIN_GROUP, PrincipalKind.LOCAL_GROUP)
 
@@ -172,8 +186,13 @@ class MembershipRepository:
 
     def __init__(self, session: AsyncSession, edge_fetch_limit: int = MAX_EDGES_CEILING) -> None:
         self._session = session
-        self._edge_fetch_limit = max(1, min(edge_fetch_limit, MAX_EDGES_CEILING))
+        self._edge_fetch_limit = max(1, min(edge_fetch_limit, EDGE_FETCH_CEILING))
         self._edges_fetched = 0
+
+    @property
+    def edge_fetch_limit(self) -> int:
+        """Rows this repository will read before it stops. Exposed so the pairing is testable."""
+        return self._edge_fetch_limit
 
     @property
     def edges_fetched(self) -> int:
@@ -240,23 +259,37 @@ class MembershipRepository:
         A host-scoped key (``fs01|S-1-5-32-544``) is exact. A bare SID is exact for anything
         a domain issued, and deliberately ambiguous for a BUILTIN SID observed on several
         computers: pass ``host_key`` to name which one.
+
+        **``host_key`` is asked first**, when the identifier is a bare SID. The host-scoped
+        key is what the caller asked for, and answering with an unscoped principal that
+        merely shares the SID would make ``?host=`` silently mean nothing — in exactly the
+        case it exists for. A domain that reports its own ``BUILTIN\\Administrators``
+        occupies the bare ``S-1-5-32-544`` key, so without this the scoped lookup for FS01's
+        local group would be answered with the domain's group instead.
+
+        Failing that, ``host_key`` only widens the search: a domain user is a perfectly good
+        answer to "this SID, on FS01", because a domain principal has no host and scoping it
+        to one would fragment one user into one node per server.
         """
+        sid = Sid.try_parse(identifier)
+
+        if host_key is not None and sid is not None:
+            scoped = await self.get_principal(f"{host_key.casefold()}|{sid.value}")
+            if scoped is not None:
+                return PrincipalResolution(record=scoped)
+
         exact = await self.get_principal(identifier)
         if exact is not None:
             return PrincipalResolution(record=exact)
 
-        sid = Sid.try_parse(identifier)
         if sid is None:
             return PrincipalResolution(record=None)
 
         statement = select(principals).where(principals.c.sid == sid.value)
         if host_key is not None:
-            statement = statement.where(
-                or_(
-                    principals.c.host_key == host_key.casefold(),
-                    principals.c.host_key.is_(None),
-                )
-            )
+            # Nothing is scoped to this host, so only unscoped principals can answer. The
+            # host-scoped lookup above already ruled the other case out.
+            statement = statement.where(principals.c.host_key.is_(None))
         rows = (
             (await self._session.execute(statement.order_by(principals.c.principal_key)))
             .mappings()

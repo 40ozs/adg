@@ -13,6 +13,11 @@ This document is the contract for those traversals: what a node is, what the ans
 what the limits do, and — most importantly — how to tell a complete answer from a partial
 one.
 
+For how that contract behaves against a directory that has been alive for a decade — deep
+nesting, cycles, renames, orphaned SIDs, very large groups, one BUILTIN SID meaning three
+different groups — and for what the answers cost, measured, see
+[ad-graph-validation.md](ad-graph-validation.md).
+
 ---
 
 ## 1. Nodes are keys, not SIDs

@@ -1,0 +1,273 @@
+{
+  "scenario": "a02-cycles",
+  "title": "Two independent membership cycles",
+  "description": "A two-group ring and a three-group ring, reached one after the other from a single top group, with a user beyond both. Expansion must terminate, must reach the user, must report both cycles, and must still call itself complete: a cycle is a finding, not a truncation.",
+  "expectations": {
+    "top_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2200",
+    "user_key": "S-1-5-21-2000000001-2000000002-2000000003-2230",
+    "cycle_count": 2,
+    "cycle_members": [
+      [
+        "S-1-5-21-2000000001-2000000002-2000000003-2210",
+        "S-1-5-21-2000000001-2000000002-2000000003-2211"
+      ],
+      [
+        "S-1-5-21-2000000001-2000000002-2000000003-2220",
+        "S-1-5-21-2000000001-2000000002-2000000003-2221",
+        "S-1-5-21-2000000001-2000000002-2000000003-2222"
+      ]
+    ],
+    "expansion_is_complete": true,
+    "effective_non_group_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2230"
+    ],
+    "note": "A cyclic graph still yields a complete answer. The cycles are reported as strongly connected components with a concrete loop to break."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a02",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a02",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2200",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2200",
+          "principal_kind": "domain_group",
+          "display_name": "Cycle-Top",
+          "sam_account_name": "Cycle-Top",
+          "distinguished_name": "CN=Cycle-Top,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2210",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2210",
+          "principal_kind": "domain_group",
+          "display_name": "Ring-A",
+          "sam_account_name": "Ring-A",
+          "distinguished_name": "CN=Ring-A,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2211",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2211",
+          "principal_kind": "domain_group",
+          "display_name": "Ring-B",
+          "sam_account_name": "Ring-B",
+          "distinguished_name": "CN=Ring-B,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2220",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2220",
+          "principal_kind": "domain_group",
+          "display_name": "Loop-1",
+          "sam_account_name": "Loop-1",
+          "distinguished_name": "CN=Loop-1,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2221",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2221",
+          "principal_kind": "domain_group",
+          "display_name": "Loop-2",
+          "sam_account_name": "Loop-2",
+          "distinguished_name": "CN=Loop-2,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2222",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2222",
+          "principal_kind": "domain_group",
+          "display_name": "Loop-3",
+          "sam_account_name": "Loop-3",
+          "distinguished_name": "CN=Loop-3,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2230",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2230",
+          "principal_kind": "user",
+          "display_name": "Priya Raman",
+          "sam_account_name": "praman",
+          "user_principal_name": "praman@corp.example.com",
+          "distinguished_name": "CN=Priya Raman,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2200->S-1-5-21-2000000001-2000000002-2000000003-2210|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2200",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2210",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:09Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2210->S-1-5-21-2000000001-2000000002-2000000003-2211|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2210",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2211",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:10Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2211->S-1-5-21-2000000001-2000000002-2000000003-2210|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2211",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2210",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:11Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2211->S-1-5-21-2000000001-2000000002-2000000003-2222|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2211",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2222",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:12Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2222->S-1-5-21-2000000001-2000000002-2000000003-2221|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2222",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2221",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:13Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2221->S-1-5-21-2000000001-2000000002-2000000003-2220|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2221",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2220",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:14Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2220->S-1-5-21-2000000001-2000000002-2000000003-2222|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2220",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2222",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a02",
+          "observed_at": "2026-09-14T09:00:15Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2220->S-1-5-21-2000000001-2000000002-2000000003-2230|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2220",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2230",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a02",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 15,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

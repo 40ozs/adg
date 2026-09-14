@@ -13,6 +13,9 @@ from collections.abc import Iterable, Mapping, Sequence
 
 from app.contracts.v1 import MembershipObservation
 from app.domain import Direction, GraphEdge, MembershipEdgeKind, PrincipalKind
+from app.ingestion.plan import PrincipalRow, plan_batch
+from app.repositories import PrincipalRecord
+from tests.fixtures import Scenario, load_ad_graph
 
 
 class InMemoryAdjacency:
@@ -32,6 +35,7 @@ class InMemoryAdjacency:
             self._up[edge.member_key].append(edge)
         self.calls = 0
         self.keys_requested = 0
+        self._rows_read = 0
 
     async def neighbors(
         self, direction: Direction, keys: Sequence[str]
@@ -39,7 +43,9 @@ class InMemoryAdjacency:
         self.calls += 1
         self.keys_requested += len(keys)
         table = self._down if direction is Direction.DOWN else self._up
-        return {key: tuple(table.get(key, ())) for key in keys}
+        answer = {key: tuple(table.get(key, ())) for key in keys}
+        self._rows_read += sum(len(found) for found in answer.values())
+        return answer
 
 
 def edge(
@@ -108,3 +114,90 @@ def diamond() -> list[GraphEdge]:
         edge("top", "left"),
         edge("top", "right"),
     ]
+
+
+class InMemoryMembershipRepository(InMemoryAdjacency):
+    """Everything :class:`app.services.graph.GraphService` asks of a repository.
+
+    The service does two things a bare adjacency provider cannot answer for: it labels each
+    reached key with its stored principal, and it reports how many edge rows the request
+    read. Supplying both in memory is what lets the `include=` filter, the unlabelled-member
+    rule, and the traversal metadata be tested against the adversarial transcripts without a
+    database — the database tests then check that PostgreSQL agrees.
+
+    Principal records are built through :func:`app.ingestion.plan.plan_batch`, so the keys
+    here are the keys ingestion would write. A helper that formatted them itself could pass
+    while the real join failed.
+    """
+
+    def __init__(
+        self, edges: Iterable[GraphEdge], principals: Mapping[str, PrincipalRecord] | None = None
+    ) -> None:
+        super().__init__(edges)
+        self.principals: dict[str, PrincipalRecord] = dict(principals or {})
+
+    async def principals_by_keys(self, keys: Sequence[str]) -> dict[str, PrincipalRecord]:
+        return {key: self.principals[key] for key in keys if key in self.principals}
+
+    @property
+    def edges_fetched(self) -> int:
+        """Rows a database would have read: every edge out of every key asked about."""
+        return self._rows_read
+
+
+def _record(row: PrincipalRow) -> PrincipalRecord:
+    """A stored principal as the repository would return it, from a planned row."""
+    moment = row.observed_at
+    return PrincipalRecord(
+        principal_key=row.principal_key,
+        sid=row.sid,
+        principal_kind=PrincipalKind(row.principal_kind),
+        host_key=row.host_key,
+        domain_sid=row.domain_sid,
+        display_name=row.display_name,
+        sam_account_name=row.sam_account_name,
+        user_principal_name=row.user_principal_name,
+        distinguished_name=row.distinguished_name,
+        group_scope=row.group_scope,
+        group_type=row.group_type,
+        enabled=row.enabled,
+        is_deleted=row.is_deleted,
+        unresolved_reason=row.unresolved_reason,
+        last_known_name=row.last_known_name,
+        first_observed_at=moment,
+        first_observed_run_id=row.run_id,
+        last_observed_at=moment,
+        last_observed_run_id=row.run_id,
+    )
+
+
+def repository_from_scenario(scenario: Scenario) -> InMemoryMembershipRepository:
+    """Replay a transcript into the graph the ingestion phase would have stored.
+
+    Newest-wins on principals, matching the upsert rule, so replaying a rename fixture after
+    its "before" half behaves the way the database does.
+    """
+    edges: dict[str, GraphEdge] = {}
+    records: dict[str, PrincipalRecord] = {}
+    for batch in scenario.batches:
+        plan = plan_batch(batch)
+        for row in plan.principals:
+            existing = records.get(row.principal_key)
+            if existing is None or row.observed_at >= existing.last_observed_at:
+                records[row.principal_key] = _record(row)
+        for edge_row in plan.edges:
+            edges[edge_row.edge_key] = GraphEdge(
+                edge_key=edge_row.edge_key,
+                group_key=edge_row.group_key,
+                member_key=edge_row.member_key,
+                kind=MembershipEdgeKind(edge_row.edge_kind),
+                host_key=edge_row.host_key,
+                member_kind=(PrincipalKind(edge_row.member_kind) if edge_row.member_kind else None),
+                is_foreign_security_principal=edge_row.is_foreign_security_principal,
+            )
+    return InMemoryMembershipRepository(edges.values(), records)
+
+
+def repository_from_fixture(name: str) -> InMemoryMembershipRepository:
+    """The adversarial transcript ``name``, replayed into an in-memory repository."""
+    return repository_from_scenario(load_ad_graph(name))

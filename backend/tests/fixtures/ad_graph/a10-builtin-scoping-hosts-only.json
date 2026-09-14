@@ -1,0 +1,150 @@
+{
+  "scenario": "a10-builtin-scoping-hosts-only",
+  "title": "One BUILTIN SID on two servers and nowhere else",
+  "description": "What an SMB collector produces on its own: BUILTIN\\Administrators on FS12 and on FS13, host-scoped, with no domain BUILTIN group anywhere. A bare S-1-5-32-544 now matches two stored principals and nothing else, so it is genuinely ambiguous and must be answered with both candidates rather than by picking one.",
+  "expectations": {
+    "distinct_group_keys": [
+      "fs12|S-1-5-32-544",
+      "fs13|S-1-5-32-544"
+    ],
+    "fs12_group_key": "fs12|S-1-5-32-544",
+    "fs13_group_key": "fs13|S-1-5-32-544",
+    "fs12_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-21011"
+    ],
+    "fs13_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-21012"
+    ],
+    "bare_sid_is_ambiguous": true,
+    "bare_sid_candidate_count": 2,
+    "note": "Resolving the bare SID must be a 409 listing both groups. This is the shape the host-scoping rule was designed for, and the contrast with a10 — where a domain BUILTIN group occupies the bare key and wins outright — is the point."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-00000000a10b",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-00000000a10b",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000a10b",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|fs12|S-1-5-32-544",
+          "sid": "S-1-5-32-544",
+          "principal_kind": "local_group",
+          "host_key": "FS12",
+          "display_name": "Administrators",
+          "sam_account_name": "Administrators",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000a10b",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|fs13|S-1-5-32-544",
+          "sid": "S-1-5-32-544",
+          "principal_kind": "local_group",
+          "host_key": "FS13",
+          "display_name": "Administrators",
+          "sam_account_name": "Administrators",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000a10b",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-21011",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-21011",
+          "principal_kind": "user",
+          "display_name": "Bea Nowak",
+          "sam_account_name": "bnowak",
+          "user_principal_name": "bnowak@corp.example.com",
+          "distinguished_name": "CN=Bea Nowak,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000a10b",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-21012",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-21012",
+          "principal_kind": "user",
+          "display_name": "Caleb Mensah",
+          "sam_account_name": "cmensah",
+          "user_principal_name": "cmensah@corp.example.com",
+          "distinguished_name": "CN=Caleb Mensah,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-00000000a10b",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "edge|fs12|S-1-5-32-544->S-1-5-21-2000000001-2000000002-2000000003-21011|local_group_member",
+          "group_sid": "S-1-5-32-544",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-21011",
+          "edge_kind": "local_group_member",
+          "host_key": "FS12",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-00000000a10b",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "edge|fs13|S-1-5-32-544->S-1-5-21-2000000001-2000000002-2000000003-21012|local_group_member",
+          "group_sid": "S-1-5-32-544",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-21012",
+          "edge_kind": "local_group_member",
+          "host_key": "FS13",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-00000000a10b",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 6,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

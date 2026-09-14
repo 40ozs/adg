@@ -15,6 +15,7 @@ See `docs/contracts/collector-protocol.md` for the sequence a collector follows.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, Field, model_validator
@@ -119,8 +120,11 @@ class ObservationBatch(ContractModel):
                 "observations to a run that never claimed their scope."
             )
 
-        source_keys = [observation.source_key for observation in self.observations]
-        duplicates = sorted({key for key in source_keys if source_keys.count(key) > 1})
+        # Counter, not `list.count` per element: this runs on every batch POST, and a
+        # 1,000-observation batch is the contract's maximum, so the quadratic form spends
+        # a million string comparisons per batch to answer a question one pass settles.
+        seen = Counter(observation.source_key for observation in self.observations)
+        duplicates = sorted(key for key, count in seen.items() if count > 1)
         if duplicates:
             raise ValueError(
                 f"A batch must not contain the same source_key twice; found {duplicates}. "

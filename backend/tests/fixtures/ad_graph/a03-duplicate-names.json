@@ -1,0 +1,178 @@
+{
+  "scenario": "a03-duplicate-names",
+  "title": "Three principals, one name",
+  "description": "Two users in one domain share a display name; a third in a trusted forest shares both the display name and the sAMAccountName. Two groups in different domains share a name as well. Nothing here may merge: names are metadata, SIDs are identity.",
+  "expectations": {
+    "distinct_principal_keys": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2301",
+      "S-1-5-21-2000000001-2000000002-2000000003-2302",
+      "S-1-5-21-2000000001-2000000002-2000000003-2310",
+      "S-1-5-21-3000000001-3000000002-3000000003-2301",
+      "S-1-5-21-3000000001-3000000002-3000000003-2310"
+    ],
+    "shared_display_name": "Jordan Rivera",
+    "shared_sam_account_name": "jrivera",
+    "corp_finance_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2301",
+      "S-1-5-21-2000000001-2000000002-2000000003-2302"
+    ],
+    "partner_finance_effective_members": [
+      "S-1-5-21-3000000001-3000000002-3000000003-2301"
+    ],
+    "note": "Five principals, five keys. The two groups named Finance must not merge, and the corp Finance group must never return the partner-forest Jordan Rivera."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a03",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a03",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2301",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2301",
+          "principal_kind": "user",
+          "display_name": "Jordan Rivera",
+          "sam_account_name": "jrivera",
+          "user_principal_name": "jrivera@corp.example.com",
+          "distinguished_name": "CN=Jordan Rivera,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2302",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2302",
+          "principal_kind": "user",
+          "display_name": "Jordan Rivera",
+          "sam_account_name": "jrivera2",
+          "user_principal_name": "jrivera2@corp.example.com",
+          "distinguished_name": "CN=Jordan Rivera,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-3000000001-3000000002-3000000003-2301",
+          "sid": "S-1-5-21-3000000001-3000000002-3000000003-2301",
+          "principal_kind": "user",
+          "display_name": "Jordan Rivera",
+          "sam_account_name": "jrivera",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2310",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2310",
+          "principal_kind": "domain_group",
+          "display_name": "Finance",
+          "sam_account_name": "Finance",
+          "distinguished_name": "CN=Finance,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-3000000001-3000000002-3000000003-2310",
+          "sid": "S-1-5-21-3000000001-3000000002-3000000003-2310",
+          "principal_kind": "domain_group",
+          "display_name": "Finance",
+          "sam_account_name": "Finance",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2310->S-1-5-21-2000000001-2000000002-2000000003-2301|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2310",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2301",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2310->S-1-5-21-2000000001-2000000002-2000000003-2302|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2310",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2302",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a03",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|S-1-5-21-3000000001-3000000002-3000000003-2310->S-1-5-21-3000000001-3000000002-3000000003-2301|directory_group_member",
+          "group_sid": "S-1-5-21-3000000001-3000000002-3000000003-2310",
+          "member_sid": "S-1-5-21-3000000001-3000000002-3000000003-2301",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a03",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 8,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

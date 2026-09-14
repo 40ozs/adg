@@ -74,9 +74,15 @@ def split_key(key: str) -> tuple[str | None, str]:
 
     Local-group keys are ``host|sid``; everything else is a bare SID. Used only to label a
     node the traversal reached but no ``principals`` row describes.
+
+    Split on the **last** separator, not the first: a SID can never contain ``|``, but a
+    host name is only forbidden path separators and control characters, so splitting at the
+    front would hand back a truncated host and a SID with the rest of the host glued to it —
+    and that mislabelled pair is what an operator would be shown for the one kind of node
+    ADG knows least about.
     """
-    host, separator, sid = key.partition("|")
-    return (host, sid) if separator else (None, host)
+    host, separator, sid = key.rpartition("|")
+    return (host, sid) if separator else (None, key)
 
 
 @dataclass(frozen=True, slots=True)

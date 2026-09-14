@@ -1,0 +1,233 @@
+{
+  "scenario": "a07-disabled-empty-distribution",
+  "title": "Disabled accounts, an empty group, and a distribution group",
+  "description": "Membership that a naive filter would quietly discard: an account that is disabled but still a member, a group with no members at all, a distribution group that grants nothing but whose membership is still real, and a group whose only member is another group.",
+  "expectations": {
+    "helpdesk_key": "S-1-5-21-2000000001-2000000002-2000000003-2700",
+    "disabled_user_key": "S-1-5-21-2000000001-2000000002-2000000003-2701",
+    "active_user_key": "S-1-5-21-2000000001-2000000002-2000000003-2702",
+    "unknown_enabled_state_key": "S-1-5-21-2000000001-2000000002-2000000003-2703",
+    "empty_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2710",
+    "wrapper_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2711",
+    "distribution_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2720",
+    "helpdesk_effective_members": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2701",
+      "S-1-5-21-2000000001-2000000002-2000000003-2702",
+      "S-1-5-21-2000000001-2000000002-2000000003-2703"
+    ],
+    "empty_group_effective_members": [],
+    "wrapper_effective_members_non_groups": [],
+    "wrapper_effective_members_all": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2710"
+    ],
+    "note": "A disabled account is still a member and must still be returned; whether that matters is the reviewer's judgment, not the traversal's. An account whose enabled state was never reported is null, not false. An empty group expands to nothing and is complete."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a07",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a07",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2700",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2700",
+          "principal_kind": "domain_group",
+          "display_name": "Helpdesk",
+          "sam_account_name": "Helpdesk",
+          "distinguished_name": "CN=Helpdesk,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2701",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2701",
+          "principal_kind": "user",
+          "display_name": "Tomas Klein",
+          "sam_account_name": "tklein",
+          "user_principal_name": "tklein@corp.example.com",
+          "distinguished_name": "CN=Tomas Klein,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": false,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2702",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2702",
+          "principal_kind": "user",
+          "display_name": "Ada Fenwick",
+          "sam_account_name": "afenwick",
+          "user_principal_name": "afenwick@corp.example.com",
+          "distinguished_name": "CN=Ada Fenwick,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2703",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2703",
+          "principal_kind": "user",
+          "display_name": "Rowan Vale",
+          "sam_account_name": "rvale",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2710",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2710",
+          "principal_kind": "domain_group",
+          "display_name": "Retired-Access",
+          "sam_account_name": "Retired-Access",
+          "distinguished_name": "CN=Retired-Access,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2711",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2711",
+          "principal_kind": "domain_group",
+          "display_name": "Retired-Access-Wrapper",
+          "sam_account_name": "Retired-Access-Wrapper",
+          "distinguished_name": "CN=Retired-Access-Wrapper,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2720",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2720",
+          "principal_kind": "domain_group",
+          "display_name": "All-Staff-Announce",
+          "sam_account_name": "All-Staff-Announce",
+          "distinguished_name": "CN=All-Staff-Announce,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "distribution",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2700->S-1-5-21-2000000001-2000000002-2000000003-2701|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2700",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2701",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:09Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2700->S-1-5-21-2000000001-2000000002-2000000003-2702|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2700",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2702",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:10Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2700->S-1-5-21-2000000001-2000000002-2000000003-2703|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2700",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2703",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:11Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2711->S-1-5-21-2000000001-2000000002-2000000003-2710|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2711",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2710",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a07",
+          "observed_at": "2026-09-14T09:00:12Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2720->S-1-5-21-2000000001-2000000002-2000000003-2702|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2720",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2702",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a07",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 12,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

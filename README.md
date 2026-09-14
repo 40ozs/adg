@@ -72,6 +72,16 @@ seeds `.env` if it is missing. It never overwrites an existing `.env`.
 .\scripts\backend-lint.ps1            # ruff + mypy
 .\scripts\backend-lint.ps1 -Fix       # apply safe fixes first
 
+# Collectors
+.\scripts\collector-test.ps1                                   # Pester suites
+.\scripts\validate-collector-output.ps1 -Path .\out            # check a collector's JSON, offline
+.\scripts\validate-collector-output.ps1 -Path .\out -Strict    # warnings fail the build too
+
+# Membership-graph cost. Not a test; the recorded numbers and query plans live in
+# docs\architecture\ad-graph-validation.md.
+.\scripts\graph-benchmark.ps1
+.\scripts\graph-benchmark.ps1 -Scale large -Database   # needs the database up
+
 # Frontend
 .\scripts\frontend-check.ps1          # lint + typecheck + tests + production build
 .\scripts\frontend-check.ps1 -SkipBuild
@@ -129,6 +139,9 @@ Identity and membership graph (see
 > is a lower bound, not a membership list.** Limits, cycle reporting, and pagination
 > semantics are documented in
 > [`docs/architecture/membership-graph.md`](docs/architecture/membership-graph.md).
+> How those answers behave against deep, cyclic, renamed, orphaned and very large graphs —
+> and what they cost, measured — is in
+> [`docs/architecture/ad-graph-validation.md`](docs/architecture/ad-graph-validation.md).
 
 Resources and raw share ACLs (see
 [`docs/architecture/resource-inventory.md`](docs/architecture/resource-inventory.md)):

@@ -48,6 +48,7 @@ __all__ = [
     "MAX_ACCESS_MASK",
     "MAX_ACE_FLAGS",
     "MAX_BATCH_OBSERVATIONS",
+    "MAX_HOST_NAME_LENGTH",
     "SCHEMA_VERSION",
     "AceSource",
     "AceType",
@@ -90,8 +91,19 @@ def canonical_sid(value: str) -> str:
         raise ValueError(str(exc)) from exc
 
 
+MAX_HOST_NAME_LENGTH: Final = 255
+"""Matches ``hostName`` in `common.schema.json`. A host name is part of a storage key."""
+
+
 def normalize_host(value: str) -> str:
-    """Validate a bare host name. A UNC path or path fragment is rejected."""
+    """Validate a bare host name against the published ``hostName`` definition.
+
+    Every host-like field on every observation funnels through here, so this is the one
+    place the published constraints have to hold. They are enforced rather than documented
+    because a host name is not decoration: it is half of the storage key of every local
+    group (``host|sid``), so an unbounded or unprintable one becomes an unbounded or
+    unprintable identity that later shows up in an API response and an operator's report.
+    """
     text = value.strip()
     if not text:
         raise ValueError("A host name must not be empty.")
@@ -99,6 +111,20 @@ def normalize_host(value: str) -> str:
         raise ValueError(
             f"A host name must not contain path separators; received {value!r}. "
             "Send the host name alone, not a UNC path."
+        )
+    if any(char < " " for char in text):
+        raise ValueError(
+            f"A host name must not contain control characters; received {value!r}. "
+            "The published contract (common.schema.json#/$defs/hostName) forbids "
+            "U+0000-U+001F, and a host name is part of a stored identity key."
+        )
+    if len(text) > MAX_HOST_NAME_LENGTH:
+        raise ValueError(
+            f"A host name may be at most {MAX_HOST_NAME_LENGTH} characters; received "
+            f"{len(text)}. The published contract "
+            "(common.schema.json#/$defs/hostName) sets that bound, and a longer name "
+            "would be rejected later as an oversized source_key with no hint of which "
+            "field caused it."
         )
     return text
 
@@ -113,7 +139,7 @@ def to_utc(value: dt.datetime) -> dt.datetime:
 
 
 SidField = Annotated[str, Field(description="String-form SID; canonicalized on ingest.")]
-HostField = Annotated[str, Field(min_length=1, max_length=255)]
+HostField = Annotated[str, Field(min_length=1, max_length=MAX_HOST_NAME_LENGTH)]
 
 
 class ObservationKind(StrEnum):

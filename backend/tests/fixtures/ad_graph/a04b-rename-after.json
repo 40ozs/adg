@@ -1,0 +1,108 @@
+{
+  "scenario": "a04b-rename-after",
+  "title": "The same principal after a rename and a move",
+  "description": "Display name, sAMAccountName, UPN, and distinguished name all changed; the SID did not. The principal key, the edge key, and the membership must be unchanged, and every previous name must still be retrievable as an alias.",
+  "expectations": {
+    "subject_key": "S-1-5-21-2000000001-2000000002-2000000003-2401",
+    "group_key": "S-1-5-21-2000000001-2000000002-2000000003-2410",
+    "edge_key": "S-1-5-21-2000000001-2000000002-2000000003-2410->S-1-5-21-2000000001-2000000002-2000000003-2401|directory_group_member",
+    "display_name": "Samantha Beckett-Nolan",
+    "sam_account_name": "sbnolan",
+    "distinguished_name": "CN=Samantha Beckett-Nolan,OU=Contractors,DC=corp,DC=example,DC=com",
+    "alias_count_after_both_runs": 8,
+    "previous_names": [
+      "Sam Beckett",
+      "sbeckett",
+      "sbeckett@corp.example.com"
+    ],
+    "note": "Eight aliases after both runs: four name kinds, two values each. The older values are kept because 'this SID used to be called sbeckett' is evidence."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-00000000a04b",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-00000000a04b",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000a04b",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2401",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2401",
+          "principal_kind": "user",
+          "display_name": "Samantha Beckett-Nolan",
+          "sam_account_name": "sbnolan",
+          "user_principal_name": "sbnolan@corp.example.com",
+          "distinguished_name": "CN=Samantha Beckett-Nolan,OU=Contractors,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000a04b",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2410",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2410",
+          "principal_kind": "domain_group",
+          "display_name": "Payroll-RW",
+          "sam_account_name": "Payroll-RW",
+          "distinguished_name": "CN=Payroll-RW,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-00000000a04b",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2410->S-1-5-21-2000000001-2000000002-2000000003-2401|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2410",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2401",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-00000000a04b",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 3,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

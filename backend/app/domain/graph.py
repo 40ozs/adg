@@ -437,8 +437,15 @@ async def expand(
         for key in frontier:
             for edge in boundary.get(key, ()):
                 _check_origin(edge, key, direction)
-                if edge.edge_key not in edges_seen and len(edges_seen) < limits.max_edges:
-                    edges_seen[edge.edge_key] = edge
+                if edge.edge_key not in edges_seen:
+                    if len(edges_seen) >= limits.max_edges:
+                        # The edge budget ran out while probing the boundary. Dropping the
+                        # edge silently would leave a closing edge — and with it a cycle —
+                        # out of the analysis while the answer still called itself complete,
+                        # which is the one thing a bounded traversal must never do.
+                        truncation.add(TruncationReason.MAX_EDGES)
+                    else:
+                        edges_seen[edge.edge_key] = edge
                 if edge.endpoint(direction) not in paths:
                     truncation.add(TruncationReason.MAX_DEPTH)
 

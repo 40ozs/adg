@@ -1,0 +1,183 @@
+{
+  "scenario": "a06-foreign-security-principals",
+  "title": "Members from a trusted forest",
+  "description": "Principals whose only local representation is a stub object named after their SID. One is a user, one is a group whose own membership this domain cannot see, and one is reachable by two routes of different lengths — only one of which crosses the trust.",
+  "expectations": {
+    "top_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2600",
+    "nested_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2601",
+    "foreign_user_key": "S-1-5-21-3000000001-3000000002-3000000003-1500",
+    "foreign_group_key": "S-1-5-21-3000000001-3000000002-3000000003-1600",
+    "local_user_key": "S-1-5-21-2000000001-2000000002-2000000003-2602",
+    "keys_reached_across_the_trust": [
+      "S-1-5-21-3000000001-3000000002-3000000003-1500",
+      "S-1-5-21-3000000001-3000000002-3000000003-1600"
+    ],
+    "keys_reached_without_crossing_the_trust": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2601",
+      "S-1-5-21-2000000001-2000000002-2000000003-2602"
+    ],
+    "foreign_group_has_no_observed_members": true,
+    "note": "via_foreign_security_principal must be true for exactly the two SIDs reached through a trust hop. The foreign group is a leaf here: this domain cannot enumerate it, and inventing members for it would fabricate access."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a06",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a06",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2600",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2600",
+          "principal_kind": "domain_group",
+          "display_name": "Cross-Forest-RW",
+          "sam_account_name": "Cross-Forest-RW",
+          "distinguished_name": "CN=Cross-Forest-RW,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2601",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2601",
+          "principal_kind": "domain_group",
+          "display_name": "Cross-Forest-Nested",
+          "sam_account_name": "Cross-Forest-Nested",
+          "distinguished_name": "CN=Cross-Forest-Nested,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2602",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2602",
+          "principal_kind": "user",
+          "display_name": "Elena Marsh",
+          "sam_account_name": "emarsh",
+          "user_principal_name": "emarsh@corp.example.com",
+          "distinguished_name": "CN=Elena Marsh,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-3000000001-3000000002-3000000003-1500",
+          "sid": "S-1-5-21-3000000001-3000000002-3000000003-1500",
+          "principal_kind": "foreign_security_principal",
+          "distinguished_name": "CN=S-1-5-21-3000000001-3000000002-3000000003-1500,CN=ForeignSecurityPrincipals,DC=corp,DC=example,DC=com",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-3000000001-3000000002-3000000003-1600",
+          "sid": "S-1-5-21-3000000001-3000000002-3000000003-1600",
+          "principal_kind": "foreign_security_principal",
+          "distinguished_name": "CN=S-1-5-21-3000000001-3000000002-3000000003-1600,CN=ForeignSecurityPrincipals,DC=corp,DC=example,DC=com",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2600->S-1-5-21-2000000001-2000000002-2000000003-2601|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2600",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2601",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2600->S-1-5-21-3000000001-3000000002-3000000003-1500|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2600",
+          "member_sid": "S-1-5-21-3000000001-3000000002-3000000003-1500",
+          "edge_kind": "directory_group_member",
+          "member_kind": "foreign_security_principal",
+          "is_foreign_security_principal": true
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2601->S-1-5-21-3000000001-3000000002-3000000003-1600|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2601",
+          "member_sid": "S-1-5-21-3000000001-3000000002-3000000003-1600",
+          "edge_kind": "directory_group_member",
+          "member_kind": "foreign_security_principal",
+          "is_foreign_security_principal": true
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a06",
+          "observed_at": "2026-09-14T09:00:09Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2601->S-1-5-21-2000000001-2000000002-2000000003-2602|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2601",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2602",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a06",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 9,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

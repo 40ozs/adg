@@ -1,0 +1,189 @@
+{
+  "scenario": "a05-unresolved-and-deleted",
+  "title": "Orphaned SIDs, a deleted account, and a member nothing describes",
+  "description": "A group whose membership is mostly wreckage: a SID whose account was deleted, a SID from a domain this collector cannot query, a SID whose lookup failed, an account flagged deleted in the directory, and an edge naming a SID that no observation describes at all. Every one of them is a finding; none may be dropped.",
+  "expectations": {
+    "group_key": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+    "unresolved_keys": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2501",
+      "S-1-5-21-2000000001-2000000002-2000000003-2503",
+      "S-1-5-21-3000000001-3000000002-3000000003-2502"
+    ],
+    "deleted_account_key": "S-1-5-21-2000000001-2000000002-2000000003-2504",
+    "undescribed_member_key": "S-1-5-21-2000000001-2000000002-2000000003-2599",
+    "effective_member_count": 5,
+    "undescribed_member_is_resolved": false,
+    "undescribed_member_kind": null,
+    "note": "All five are effective members under the default include=non_groups filter. The undescribed SID is returned with kind null, resolved false, and is_group null — never a guessed false, and never filtered away for want of a label."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a05",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a05",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "principal_kind": "domain_group",
+          "display_name": "Legacy-Access",
+          "sam_account_name": "Legacy-Access",
+          "distinguished_name": "CN=Legacy-Access,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "universal",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2501",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2501",
+          "principal_kind": "unresolved",
+          "is_deleted": false,
+          "unresolved_reason": "deleted",
+          "last_known_name": "svc-oldbackup"
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-3000000001-3000000002-3000000003-2502",
+          "sid": "S-1-5-21-3000000001-3000000002-3000000003-2502",
+          "principal_kind": "unresolved",
+          "is_deleted": false,
+          "unresolved_reason": "untrusted_domain"
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2503",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2503",
+          "principal_kind": "unresolved",
+          "is_deleted": false,
+          "unresolved_reason": "lookup_failed",
+          "last_known_name": "CORP\\jdoe"
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2504",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2504",
+          "principal_kind": "user",
+          "display_name": "Marcus Webb",
+          "sam_account_name": "mwebb",
+          "user_principal_name": "mwebb@corp.example.com",
+          "distinguished_name": "CN=Marcus Webb,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": false,
+          "is_deleted": true
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2500->S-1-5-21-2000000001-2000000002-2000000003-2501|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2501",
+          "edge_kind": "directory_group_member",
+          "member_kind": "unresolved",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2500->S-1-5-21-3000000001-3000000002-3000000003-2502|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "member_sid": "S-1-5-21-3000000001-3000000002-3000000003-2502",
+          "edge_kind": "directory_group_member",
+          "member_kind": "unresolved",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2500->S-1-5-21-2000000001-2000000002-2000000003-2503|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2503",
+          "edge_kind": "directory_group_member",
+          "member_kind": "unresolved",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:09Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2500->S-1-5-21-2000000001-2000000002-2000000003-2504|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2504",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a05",
+          "observed_at": "2026-09-14T09:00:10Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2500->S-1-5-21-2000000001-2000000002-2000000003-2599|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2500",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2599",
+          "edge_kind": "directory_group_member",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a05",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 10,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}

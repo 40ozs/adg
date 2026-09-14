@@ -1,0 +1,253 @@
+{
+  "scenario": "a09-multiple-paths",
+  "title": "Four independent routes to one group",
+  "description": "The same user reaches Finance-RW directly, through one nested group, through two nested groups, and through a primaryGroupID membership that never appears in any group's member attribute. Removing any one route leaves the access in place, which is the whole reason paths are enumerated rather than counted.",
+  "expectations": {
+    "subject_key": "S-1-5-21-2000000001-2000000002-2000000003-2901",
+    "target_group_key": "S-1-5-21-2000000001-2000000002-2000000003-2910",
+    "path_count": 4,
+    "shortest_path": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2901",
+      "S-1-5-21-2000000001-2000000002-2000000003-2910"
+    ],
+    "longest_path": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2901",
+      "S-1-5-21-2000000001-2000000002-2000000003-2912",
+      "S-1-5-21-2000000001-2000000002-2000000003-2911",
+      "S-1-5-21-2000000001-2000000002-2000000003-2910"
+    ],
+    "paths": [
+      [
+        "S-1-5-21-2000000001-2000000002-2000000003-2901",
+        "S-1-5-21-2000000001-2000000002-2000000003-2910"
+      ],
+      [
+        "S-1-5-21-2000000001-2000000002-2000000003-2901",
+        "S-1-5-21-2000000001-2000000002-2000000003-2911",
+        "S-1-5-21-2000000001-2000000002-2000000003-2910"
+      ],
+      [
+        "S-1-5-21-2000000001-2000000002-2000000003-2901",
+        "S-1-5-21-2000000001-2000000002-2000000003-513",
+        "S-1-5-21-2000000001-2000000002-2000000003-2910"
+      ],
+      [
+        "S-1-5-21-2000000001-2000000002-2000000003-2901",
+        "S-1-5-21-2000000001-2000000002-2000000003-2912",
+        "S-1-5-21-2000000001-2000000002-2000000003-2911",
+        "S-1-5-21-2000000001-2000000002-2000000003-2910"
+      ]
+    ],
+    "primary_group_path": [
+      "S-1-5-21-2000000001-2000000002-2000000003-2901",
+      "S-1-5-21-2000000001-2000000002-2000000003-513",
+      "S-1-5-21-2000000001-2000000002-2000000003-2910"
+    ],
+    "note": "A collector that reads only the member attribute loses the Domain Users route entirely. Path enumeration returns shortest first, lexicographic within a length."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a09",
+    "source": {
+      "collector": "active_directory",
+      "collector_host": "COLLECTOR01",
+      "method": "System.DirectoryServices.Protocols",
+      "collector_version": "0.1.0",
+      "target": "corp.example.com"
+    },
+    "started_at": "2026-09-14T09:00:00Z",
+    "scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000a09",
+      "batch_id": "00000000-0000-4000-8000-100000000001",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:01Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2901",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2901",
+          "principal_kind": "user",
+          "display_name": "Ines Duarte",
+          "sam_account_name": "iduarte",
+          "user_principal_name": "iduarte@corp.example.com",
+          "distinguished_name": "CN=Ines Duarte,OU=Users,DC=corp,DC=example,DC=com",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:02Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2910",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2910",
+          "principal_kind": "domain_group",
+          "display_name": "Finance-RW",
+          "sam_account_name": "Finance-RW",
+          "distinguished_name": "CN=Finance-RW,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "domain_local",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:03Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2911",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2911",
+          "principal_kind": "domain_group",
+          "display_name": "Finance-Staff",
+          "sam_account_name": "Finance-Staff",
+          "distinguished_name": "CN=Finance-Staff,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "global",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:04Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-2912",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-2912",
+          "principal_kind": "domain_group",
+          "display_name": "Finance-Contractors",
+          "sam_account_name": "Finance-Contractors",
+          "distinguished_name": "CN=Finance-Contractors,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "global",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:05Z",
+          "source_key": "principal|S-1-5-21-2000000001-2000000002-2000000003-513",
+          "sid": "S-1-5-21-2000000001-2000000002-2000000003-513",
+          "principal_kind": "domain_group",
+          "display_name": "Domain Users",
+          "sam_account_name": "Domain Users",
+          "distinguished_name": "CN=Domain Users,OU=Groups,DC=corp,DC=example,DC=com",
+          "group_scope": "global",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:06Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2910->S-1-5-21-2000000001-2000000002-2000000003-2901|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2910",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2901",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:07Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2911->S-1-5-21-2000000001-2000000002-2000000003-2901|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2911",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2901",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:08Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2910->S-1-5-21-2000000001-2000000002-2000000003-2911|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2910",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2911",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:09Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2912->S-1-5-21-2000000001-2000000002-2000000003-2901|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2912",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2901",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:10Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2911->S-1-5-21-2000000001-2000000002-2000000003-2912|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2911",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2912",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:11Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-513->S-1-5-21-2000000001-2000000002-2000000003-2901|primary_group",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-513",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-2901",
+          "edge_kind": "primary_group",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000a09",
+          "observed_at": "2026-09-14T09:00:12Z",
+          "source_key": "edge|S-1-5-21-2000000001-2000000002-2000000003-2910->S-1-5-21-2000000001-2000000002-2000000003-513|directory_group_member",
+          "group_sid": "S-1-5-21-2000000001-2000000002-2000000003-2910",
+          "member_sid": "S-1-5-21-2000000001-2000000002-2000000003-513",
+          "edge_kind": "directory_group_member",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000a09",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T09:10:00Z",
+    "batch_count": 1,
+    "observation_count": 12,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "domain",
+        "key": "s-1-5-21-2000000001-2000000002-2000000003"
+      }
+    ]
+  }
+}
