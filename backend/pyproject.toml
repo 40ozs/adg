@@ -11,6 +11,9 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.30",
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
+    # Token verification. The [crypto] extra brings `cryptography`, which is what makes the
+    # asymmetric (RS256/ES256) verification an OIDC deployment depends on possible at all.
+    "pyjwt[crypto]>=2.9",
 ]
 
 [project.optional-dependencies]

@@ -4,9 +4,15 @@
  * The browser needs an absolute backend URL, so it must be supplied at build/run time
  * through NEXT_PUBLIC_ADG_API_URL. A bad value fails loudly with an actionable message
  * rather than producing confusing relative-URL fetch errors at runtime.
+ *
+ * Since Phase 6A the browser no longer calls the API directly for data: every request goes
+ * through this app's own `/api/adg/*` proxy, which attaches the session's access token
+ * server-side. NEXT_PUBLIC_ADG_API_URL remains because the status page reports the address
+ * an operator would use, and because it is the fallback for server-side calls.
  */
 
 export const DEFAULT_API_URL = "http://localhost:8000";
+export const DEFAULT_APP_URL = "http://localhost:3000";
 
 export type EnvironmentSource = Record<string, string | undefined>;
 
@@ -55,4 +61,47 @@ function normalize(value: string | undefined, variableName: string): string {
   }
 
   return raw.replace(/\/+$/, "");
+}
+
+/**
+ * This application's own public base URL.
+ *
+ * Needed because the OIDC redirect URI must be absolute and must match the value registered
+ * on the app registration exactly. Deriving it from the incoming request would let a
+ * spoofed Host header steer the redirect, so it is configuration, not inference.
+ */
+export function resolveAppUrl(env: EnvironmentSource = process.env): string {
+  const raw = env.ADG_WEB_URL?.trim();
+  if (!raw) {
+    return DEFAULT_APP_URL;
+  }
+  return normalize(raw, "ADG_WEB_URL");
+}
+
+/** Where the identity provider sends the browser back to. */
+export function resolveRedirectUri(env: EnvironmentSource = process.env): string {
+  return `${resolveAppUrl(env)}/api/auth/oidc/callback`;
+}
+
+/**
+ * The confidential-client secret, when one is configured.
+ *
+ * Optional: a public client using PKCE needs none, and a deployment that prefers a
+ * certificate credential configures neither. Never NEXT_PUBLIC_*, so it cannot reach a
+ * browser bundle.
+ */
+export function resolveClientSecret(env: EnvironmentSource = process.env): string | null {
+  const raw = env.ADG_OIDC_CLIENT_SECRET?.trim();
+  return raw ? raw : null;
+}
+
+/**
+ * Whether cookies should carry the Secure attribute.
+ *
+ * Set over https. Over plain http a Secure cookie is silently discarded by the browser and
+ * the user is bounced back to the login page forever, so this follows the configured app
+ * URL rather than NODE_ENV, which says nothing about the scheme actually in use.
+ */
+export function secureCookiesEnabled(env: EnvironmentSource = process.env): boolean {
+  return resolveAppUrl(env).startsWith("https://");
 }

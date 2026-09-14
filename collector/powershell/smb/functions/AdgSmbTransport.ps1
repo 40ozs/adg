@@ -6,6 +6,15 @@
     run_id and the same batch_id, so the server recognizes a repeat instead of applying
     the work twice. That is why batch ids are generated once during collection rather than
     at send time.
+
+    Credentials
+    -----------
+
+    Since Phase 6A the ingestion endpoints reject an anonymous request. A collector
+    normally presents a key in ``X-ADG-Collector-Key``; an operator replaying a payload by
+    hand presents a bearer token instead. The headers are built by the entry script and
+    threaded through every POST, so a retry carries the same credential as the first
+    attempt.
 #>
 
 function Invoke-AdgPost {
@@ -22,6 +31,7 @@ function Invoke-AdgPost {
     param(
         [Parameter(Mandatory)][string] $Uri,
         [Parameter(Mandatory)] $Payload,
+        [hashtable] $Headers = @{},
         [ValidateRange(1, 10)][int] $MaxAttempts = 5,
         [int] $TimeoutSeconds = 100
     )
@@ -31,7 +41,7 @@ function Invoke-AdgPost {
     for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
         try {
             return Invoke-RestMethod -Method Post -Uri $Uri -Body $json -ContentType 'application/json' `
-                -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+                -Headers $Headers -TimeoutSec $TimeoutSeconds -ErrorAction Stop
         }
         catch {
             $status = 0
@@ -39,6 +49,11 @@ function Invoke-AdgPost {
                 $status = [int] $_.Exception.Response.StatusCode
             }
 
+            if ($status -eq 401 -or $status -eq 403) {
+                # Never retried. A credential the server refuses is refused identically on
+                # every attempt, and retrying only delays the message that says so.
+                throw "The ADG API refused the collector's credential ($status) for $Uri. Set a collector key (ADG_COLLECTOR_API_KEYS on the server, -CollectorKey here). $($_.Exception.Message)"
+            }
             if ($status -eq 422) {
                 throw "The ADG API rejected the payload as invalid (422); retrying cannot help. $($_.Exception.Message)"
             }
@@ -67,20 +82,21 @@ function Send-AdgSmbScanRun {
     [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)][string] $ApiBaseUrl,
-        [Parameter(Mandatory)][pscustomobject] $Run
+        [Parameter(Mandatory)][pscustomobject] $Run,
+        [hashtable] $Headers = @{}
     )
 
     $baseUrl = $ApiBaseUrl.TrimEnd('/')
     $runId = $Run.Start.run_id
 
     Write-Verbose "Starting run $runId against $baseUrl"
-    Invoke-AdgPost -Uri "$baseUrl/api/v1/scan-runs" -Payload $Run.Start | Out-Null
+    Invoke-AdgPost -Uri "$baseUrl/api/v1/scan-runs" -Payload $Run.Start -Headers $Headers | Out-Null
 
     $sent = 0
     $rejected = 0
     foreach ($batch in @($Run.Batches)) {
         try {
-            Invoke-AdgPost -Uri "$baseUrl/api/v1/scan-runs/$runId/batches" -Payload $batch | Out-Null
+            Invoke-AdgPost -Uri "$baseUrl/api/v1/scan-runs/$runId/batches" -Payload $batch -Headers $Headers | Out-Null
             $sent++
         }
         catch {
@@ -103,7 +119,7 @@ function Send-AdgSmbScanRun {
     # server received is how loss is detected, so inflating it would hide the loss.
     $completion['batch_count'] = $sent
 
-    Invoke-AdgPost -Uri "$baseUrl/api/v1/scan-runs/$runId/completion" -Payload $completion | Out-Null
+    Invoke-AdgPost -Uri "$baseUrl/api/v1/scan-runs/$runId/completion" -Payload $completion -Headers $Headers | Out-Null
 
     return [pscustomobject]@{
         RunId          = $runId

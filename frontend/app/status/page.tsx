@@ -1,4 +1,4 @@
-import { fetchBackendStatus } from "@/lib/api";
+import { fetchBackendStatus } from "@/lib/api/health";
 import { resolveApiUrl, resolveServerApiUrl } from "@/lib/config";
 
 // Always render on request: a cached health page would be worse than no health page.

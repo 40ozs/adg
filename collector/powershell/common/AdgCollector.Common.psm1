@@ -610,6 +610,38 @@ function New-AdgScanRunCompletion {
 
 # --- Publishing --------------------------------------------------------------------------
 
+function New-AdgCollectorHeaders {
+    <#
+        .SYNOPSIS
+            The HTTP headers that authenticate a collector to the ADG API.
+        .DESCRIPTION
+            Since Phase 6A the ingestion endpoints reject an anonymous request. There are
+            two credentials because there are two kinds of caller:
+
+            - A **collector key** (X-ADG-Collector-Key) is the normal one. A scheduled task
+              on a file server has no interactive user to borrow a token from, and the key
+              grants exactly one capability: writing observations. It cannot read anything
+              back, which is what makes it safe to leave in a task's configuration.
+            - A **bearer token** is for an operator replaying a payload by hand, and carries
+              whatever that account's roles grant.
+
+            Both may be supplied; the API checks the key first. Built in one place so that
+            every transport sends the same thing and a retry carries the same credential as
+            the first attempt.
+    #>
+    [OutputType([hashtable])]
+    param(
+        [string] $CollectorKey,
+        [string] $AuthenticationToken
+    )
+
+    $headers = @{}
+    if ($AuthenticationToken) { $headers['Authorization'] = "Bearer $AuthenticationToken" }
+    if ($CollectorKey) { $headers['X-ADG-Collector-Key'] = $CollectorKey }
+    return $headers
+}
+
+
 function New-AdgPublisher {
     <#
         .SYNOPSIS
@@ -620,8 +652,15 @@ function New-AdgPublisher {
             suite runs collectors this way and validates the output against the published
             schemas, which is what keeps a collector from drifting from the contract.
 
-            No secret is ever read from a configuration file. A bearer token is taken from
-            an environment variable the configuration names.
+            No secret is ever read from a configuration file. A bearer token or collector
+            key is taken from an environment variable the configuration names.
+
+            Two credentials are accepted because there are two kinds of caller. A collector
+            key (X-ADG-Collector-Key) is the normal one: a scheduled task on a file server
+            has no interactive user to borrow a token from, and the key grants exactly one
+            capability -- writing observations. A bearer token is for an operator replaying
+            a payload by hand. Neither is optional: since Phase 6A the ingestion endpoints
+            reject an anonymous request.
     #>
     [OutputType([hashtable])]
     param(
@@ -629,6 +668,7 @@ function New-AdgPublisher {
         [string] $ApiBaseUrl,
         [string] $OutputDirectory,
         [string] $AuthenticationToken,
+        [string] $CollectorKey,
         [switch] $SkipCertificateCheck,
         [int] $MaxAttempts = 5,
         [int] $TimeoutSeconds = 100
@@ -657,8 +697,14 @@ function New-AdgPublisher {
         }
     }
 
-    $headers = @{}
-    if ($AuthenticationToken) { $headers['Authorization'] = "Bearer $AuthenticationToken" }
+    $headers = New-AdgCollectorHeaders -CollectorKey $CollectorKey -AuthenticationToken $AuthenticationToken
+
+    if ($Mode -eq 'Api' -and $headers.Count -eq 0) {
+        # A warning rather than a refusal: an unauthenticated local API is still a valid
+        # target while a developer is working on one, and the API's own 401 says exactly
+        # what is missing. Silence here would turn that into a mysterious failed run.
+        Write-Warning 'No collector key or authentication token was supplied. The ADG API rejects anonymous ingestion; set CollectorKey or AuthenticationToken.'
+    }
 
     return @{
         Mode                 = $Mode
@@ -821,6 +867,7 @@ Export-ModuleMember -Function @(
     'New-AdgObservationBatch'
     'New-AdgCollectorError'
     'New-AdgScanRunCompletion'
+    'New-AdgCollectorHeaders'
     'New-AdgPublisher'
     'Get-AdgHttpStatusCode'
     'Test-AdgRetryableStatus'

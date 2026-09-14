@@ -1035,7 +1035,8 @@ function New-AdgAdCollectorConfig {
             A configuration with defaults applied and every value validated.
         .DESCRIPTION
             No secret is accepted here. A bearer token is read at run time from the
-            environment variable named by ApiTokenEnvironmentVariable, so a configuration
+            environment variable named by CollectorKeyEnvironmentVariable or
+            ApiTokenEnvironmentVariable, so a configuration
             file is safe to commit and to hand to an operator.
     #>
     [OutputType([hashtable])]
@@ -1052,6 +1053,7 @@ function New-AdgAdCollectorConfig {
         [int] $RangeStep = 1500,
         [string] $ApiBaseUrl,
         [string] $ApiTokenEnvironmentVariable = 'ADG_COLLECTOR_TOKEN',
+        [string] $CollectorKeyEnvironmentVariable = 'ADG_COLLECTOR_KEY',
         [bool] $SkipCertificateCheck = $false,
         [string] $CollectorHost,
         [string] $CollectorVersion,
@@ -1102,6 +1104,7 @@ function New-AdgAdCollectorConfig {
         RangeStep                   = $RangeStep
         ApiBaseUrl                  = $ApiBaseUrl
         ApiTokenEnvironmentVariable = $ApiTokenEnvironmentVariable
+        CollectorKeyEnvironmentVariable = $CollectorKeyEnvironmentVariable
         SkipCertificateCheck        = $SkipCertificateCheck
         CollectorHost               = $CollectorHost
         CollectorVersion            = $CollectorVersion
@@ -1147,6 +1150,7 @@ function Import-AdgAdCollectorConfig {
         rangeStep                   = 'RangeStep'
         apiBaseUrl                  = 'ApiBaseUrl'
         apiTokenEnvironmentVariable = 'ApiTokenEnvironmentVariable'
+        collectorKeyEnvironmentVariable = 'CollectorKeyEnvironmentVariable'
         skipCertificateCheck        = 'SkipCertificateCheck'
         collectorHost               = 'CollectorHost'
         collectorVersion            = 'CollectorVersion'

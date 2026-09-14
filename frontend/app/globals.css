@@ -1,16 +1,42 @@
+/*
+ * ADG application shell.
+ *
+ * Three things here are requirements rather than taste:
+ *
+ * - Focus is always visible. Auditors work through long tables from the keyboard, and a
+ *   focus ring removed for looks is a product they cannot use.
+ * - The layout collapses to a single column below 60rem. There is no horizontal page
+ *   scroll; only tables scroll, inside their own container.
+ * - State colors are never the only signal. Every status carries a word as well as a hue.
+ */
+
 :root {
   --background: #0f1115;
   --surface: #171a21;
+  --surface-raised: #1d212a;
   --border: #262b36;
+  --border-strong: #3a4150;
   --text: #e6e9ef;
   --muted: #9aa3b2;
+  --accent: #6ea8ff;
   --ok: #3fb950;
+  --warn: #d29922;
   --bad: #f85149;
+  --warn-surface: #2a2113;
+  --bad-surface: #2b1517;
+  --info-surface: #13202e;
+  --focus: #ffd166;
   color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -22,7 +48,36 @@ body {
 }
 
 a {
-  color: inherit;
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* One rule, everywhere. Nothing below is allowed to remove it. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Visible only once focused: the first stop for a keyboard user on every page. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  padding: 0.6rem 1rem;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
 }
 
 .shell {
@@ -31,32 +86,142 @@ a {
   min-height: 100vh;
 }
 
-.shell-header,
-.shell-footer {
-  border-bottom: 1px solid var(--border);
-  padding: 1rem 1.5rem;
+.shell-header {
   display: flex;
-  gap: 1.5rem;
-  align-items: baseline;
-}
-
-.shell-footer {
-  border-bottom: none;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin-top: auto;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.25rem;
 }
 
 .brand {
   font-weight: 700;
   letter-spacing: 0.08em;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brand small {
+  display: block;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.shell-body {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  flex: 1;
+  align-items: start;
+}
+
+/* No navigation to place: signed-out and error views are one column at every width. */
+.shell-body-plain {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.shell-nav {
+  border-right: 1px solid var(--border);
+  padding: 1rem 0.75rem;
+  position: sticky;
+  top: 0;
+}
+
+.shell-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.shell-nav a {
+  display: block;
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text);
+  border-left: 3px solid transparent;
+}
+
+.shell-nav a:hover {
+  background: var(--surface);
+}
+
+.shell-nav a[aria-current="page"] {
+  background: var(--surface-raised);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.nav-badge {
+  margin-left: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0 0.4rem;
 }
 
 .shell-main {
-  padding: 1.5rem;
-  max-width: 60rem;
+  padding: 1.5rem 1.25rem 3rem;
+  max-width: 64rem;
   width: 100%;
+  min-width: 0;
+}
+
+.shell-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 1rem 1.25rem;
+  margin-top: auto;
+}
+
+.search-form {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1 1 18rem;
+  max-width: 28rem;
+}
+
+input[type="search"],
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+}
+
+button,
+.button {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button:hover,
+.button:hover {
+  border-color: var(--accent);
+}
+
+button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .card {
@@ -81,15 +246,168 @@ a {
   font-weight: 600;
 }
 
+.status-warn {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* Banners. The ARIA role is assigned in the markup, never inferred from the class. */
+.banner {
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.banner h2,
+.banner p {
+  margin: 0.15rem 0;
+}
+
+.banner h2 {
+  font-size: 1rem;
+}
+
+.banner-warning {
+  border-left-color: var(--warn);
+  background: var(--warn-surface);
+}
+
+.banner-error {
+  border-left-color: var(--bad);
+  background: var(--bad-surface);
+}
+
+.banner-info {
+  border-left-color: var(--accent);
+  background: var(--info-surface);
+}
+
+.banner-development {
+  border-left-color: var(--warn);
+  background: var(--warn-surface);
+  border-radius: 0;
+  margin: 0;
+  border-left-width: 0;
+  border-bottom: 2px solid var(--warn);
+  text-align: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
+  min-width: 34rem;
+}
+
+caption {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 th,
 td {
   text-align: left;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.8rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.92rem;
+  vertical-align: top;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+code {
+  background: var(--surface-raised);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.88em;
+  word-break: break-all;
+}
+
+dl.facts {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr);
+  gap: 0.3rem 1rem;
+  margin: 0;
+}
+
+dl.facts dt {
+  color: var(--muted);
+}
+
+dl.facts dd {
+  margin: 0;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  flex-wrap: wrap;
+}
+
+.role-pill {
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 60rem) {
+  .shell-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell-nav {
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shell-nav ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

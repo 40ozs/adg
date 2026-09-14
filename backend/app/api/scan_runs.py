@@ -23,16 +23,41 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Path, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import Session
+from app.api.pagination import (
+    MAX_LIMIT,
+    PageInfo,
+    decode_offset_cursor,
+    encode_offset_cursor,
+    normalize_limit,
+)
+from app.auth.dependencies import IngestPrincipal, ingest_principal, requires
+from app.auth.roles import Capability
 from app.contracts.v1 import ObservationBatch, ScanRunCompletion, ScanRunStart
-from app.ingestion.service import IngestionService
+from app.domain import CollectorKind, ScanStatus
+from app.ingestion.service import IngestionService, RunSummary
 
 logger = logging.getLogger("adg.api.ingestion")
 
+#: Writing observations. A collector key satisfies this, and so does an administrator's
+#: token; see :func:`app.auth.dependencies.ingest_principal`.
 router = APIRouter(prefix="/api/v1/scan-runs", tags=["ingestion"])
+
+#: Reading run history. Every role holds it, including viewer: somebody looking at an
+#: empty list has to be able to find out whether anything ran.
+READ_RUNS = Depends(requires(Capability.COLLECTORS_READ))
+
+#: Writing observations, declared at the *route* rather than only as a handler parameter.
+#: Route-level dependencies are solved before the handler's own, and the handler's own are
+#: solved in declaration order — so a bare ``principal: IngestPrincipal`` parameter after
+#: ``session: Session`` would open a database session for a request that is about to be
+#: rejected with 401. The parameter is kept for logging; FastAPI caches the dependency, so
+#: it is resolved exactly once per request.
+#: ``tests/api/test_authorization.py`` holds this in place.
+INGEST = Depends(ingest_principal)
 
 RunIdPath = Annotated[
     UUID, Path(description="The run id the collector generated and reuses on every retry.")
@@ -120,13 +145,17 @@ class ScanRunView(BaseModel):
     response_model=ScanRunStartedResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Begin a scan run",
+    dependencies=[INGEST],
     responses={
         200: {"description": "The same start was replayed; the existing run is returned."},
         409: {"description": "The run id exists but describes a different run."},
     },
 )
 async def start_scan_run(
-    start: ScanRunStart, session: Session, response: Response
+    start: ScanRunStart,
+    session: Session,
+    response: Response,
+    principal: IngestPrincipal,
 ) -> ScanRunStartedResponse:
     outcome = await IngestionService(session).start_run(start)
     if not outcome.created:
@@ -135,7 +164,11 @@ async def start_scan_run(
         "ingestion.run.start",
         # Not "created": LogRecord already owns that attribute, and logging raises rather
         # than overwrite it — which would turn every successful run start into a 500.
-        extra={"run_id": str(outcome.run_id), "run_created": outcome.created},
+        extra={
+            "run_id": str(outcome.run_id),
+            "run_created": outcome.created,
+            "subject": principal.subject,
+        },
     )
     return ScanRunStartedResponse(
         run_id=outcome.run_id, status=outcome.status.value, created=outcome.created
@@ -147,6 +180,7 @@ async def start_scan_run(
     response_model=BatchAcceptedResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Send a batch of observations",
+    dependencies=[INGEST],
     responses={
         404: {"description": "No such run; send the start envelope first."},
         409: {"description": "The run is already completed and accepts no more observations."},
@@ -154,7 +188,10 @@ async def start_scan_run(
     },
 )
 async def submit_batch(
-    run_id: RunIdPath, batch: ObservationBatch, session: Session
+    run_id: RunIdPath,
+    batch: ObservationBatch,
+    session: Session,
+    principal: IngestPrincipal,
 ) -> BatchAcceptedResponse:
     if UUID(batch.run_id) != run_id:
         # Applying it to the path's run would attribute these observations to a run that
@@ -174,6 +211,7 @@ async def submit_batch(
             "batch_id": str(outcome.batch_id),
             "applied": outcome.applied,
             "duplicate": outcome.duplicate,
+            "subject": principal.subject,
         },
     )
     return BatchAcceptedResponse(
@@ -193,6 +231,7 @@ async def submit_batch(
     "/{run_id}/completion",
     response_model=ScanRunCompletedResponse,
     summary="Close a scan run",
+    dependencies=[INGEST],
     responses={
         404: {"description": "No such run."},
         409: {
@@ -204,7 +243,10 @@ async def submit_batch(
     },
 )
 async def complete_scan_run(
-    run_id: RunIdPath, completion: ScanRunCompletion, session: Session
+    run_id: RunIdPath,
+    completion: ScanRunCompletion,
+    session: Session,
+    principal: IngestPrincipal,
 ) -> ScanRunCompletedResponse:
     if UUID(completion.run_id) != run_id:
         raise HTTPException(
@@ -221,6 +263,7 @@ async def complete_scan_run(
             "run_id": str(outcome.run_id),
             "status": outcome.status.value,
             "downgraded": outcome.downgrade_reason is not None,
+            "subject": principal.subject,
         },
     )
     return ScanRunCompletedResponse(
@@ -236,6 +279,7 @@ async def complete_scan_run(
     "/{run_id}",
     response_model=ScanRunView,
     summary="Inspect a scan run",
+    dependencies=[READ_RUNS],
     responses={404: {"description": "No such run."}},
 )
 async def get_scan_run(run_id: RunIdPath, session: Session) -> ScanRunView:
@@ -265,6 +309,91 @@ async def get_scan_run(run_id: RunIdPath, session: Session) -> ScanRunView:
             ScopeView(kind=kind, key=key) for kind, key in snapshot.reconciled_scopes
         ],
         errors=[CollectorErrorView(**error) for error in snapshot.errors],
+    )
+
+
+class ScanRunSummaryView(BaseModel):
+    """One row of the run list."""
+
+    run_id: UUID
+    status: str
+    incremental: bool
+    started_at: dt.datetime
+    completed_at: dt.datetime | None
+    collector: str
+    collector_host: str
+    method: str
+    collector_version: str | None
+    target: str | None
+    batch_count_received: int
+    observation_count_applied: int
+    error_count: int
+    downgrade_reason: str | None
+
+
+class ScanRunListResponse(BaseModel):
+    items: list[ScanRunSummaryView]
+    page: PageInfo
+
+
+@router.get(
+    "",
+    response_model=ScanRunListResponse,
+    summary="Scan runs, newest first",
+    dependencies=[READ_RUNS],
+    responses={422: {"description": "The cursor is not one this endpoint issued."}},
+)
+async def list_scan_runs(
+    session: Session,
+    collector: Annotated[
+        CollectorKind | None,
+        Query(description="Restrict to one collector kind."),
+    ] = None,
+    run_status: Annotated[
+        ScanStatus | None,
+        Query(
+            alias="status",
+            description="Restrict to runs in one lifecycle state.",
+        ),
+    ] = None,
+    limit: Annotated[int | None, Query(ge=1, le=MAX_LIMIT)] = None,
+    cursor: Annotated[str | None, Query(description="Opaque cursor from a previous page.")] = None,
+) -> ScanRunListResponse:
+    page_size = normalize_limit(limit)
+    offset = decode_offset_cursor(cursor)
+    page = await IngestionService(session).list_runs(
+        limit=page_size,
+        offset=offset,
+        collector=collector.value if collector is not None else None,
+        status=run_status,
+    )
+    return ScanRunListResponse(
+        items=[_summary_view(item) for item in page.items],
+        page=PageInfo(
+            limit=page_size,
+            has_more=page.has_more,
+            next_cursor=(encode_offset_cursor(offset + page_size) if page.has_more else None),
+            total=page.total,
+        ),
+    )
+
+
+def _summary_view(item: RunSummary) -> ScanRunSummaryView:
+    return ScanRunSummaryView(
+        run_id=item.run_id,
+        status=item.status.value,
+        incremental=item.incremental,
+        started_at=item.started_at,
+        completed_at=item.completed_at,
+        collector=item.collector,
+        collector_host=item.collector_host,
+        method=item.method,
+        collector_version=item.collector_version,
+        target=item.target,
+        batch_count_received=item.batch_count_received,
+        observation_count_applied=item.observation_count_applied,
+        error_count=item.error_count,
+        downgrade_reason=item.downgrade_reason,
     )
 
 

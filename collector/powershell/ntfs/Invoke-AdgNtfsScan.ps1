@@ -140,7 +140,13 @@ param(
     [string] $CheckpointPath,
     [switch] $Resume,
     [switch] $RunPerScanRoot,
-    [string] $CollectorVersion = '0.1.0'
+    [string] $CollectorVersion = '0.1.0',
+
+    # Where the ADG API credential is read from. An environment variable rather than a
+    # parameter value, so the secret is never in a command line, a scheduled-task argument
+    # list, or a shell history. The API rejects anonymous ingestion.
+    [string] $CollectorKeyEnvironmentVariable = 'ADG_COLLECTOR_KEY',
+    [string] $ApiTokenEnvironmentVariable = 'ADG_COLLECTOR_TOKEN'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -205,7 +211,9 @@ $onStart = {
         Write-AdgNtfsPayload -Sink $script:sink -Payload $start -Kind 'start'
     }
     else {
-        $script:transport = New-AdgNtfsTransport -ApiBaseUrl $ApiBaseUrl
+        $script:transport = New-AdgNtfsTransport -ApiBaseUrl $ApiBaseUrl `
+            -CollectorKey ([System.Environment]::GetEnvironmentVariable($CollectorKeyEnvironmentVariable)) `
+            -AuthenticationToken ([System.Environment]::GetEnvironmentVariable($ApiTokenEnvironmentVariable))
         Send-AdgNtfsStart -Transport $script:transport -Start $start
     }
 }

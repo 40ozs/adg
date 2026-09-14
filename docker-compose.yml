@@ -36,6 +36,20 @@ services:
       ADG_LOG_FORMAT: ${ADG_LOG_FORMAT:-json}
       ADG_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-adg}:${POSTGRES_PASSWORD:-adg_dev_password}@db:5432/${POSTGRES_DB:-adg}
       ADG_CORS_ALLOW_ORIGINS: ${ADG_CORS_ALLOW_ORIGINS:-http://localhost:3000}
+      # Authentication. 'development' issues its own tokens and verifies no credential; the
+      # API refuses to start that way with ADG_ENVIRONMENT=production.
+      ADG_AUTH_MODE: ${ADG_AUTH_MODE:-development}
+      ADG_DEV_AUTH_USERS: ${ADG_DEV_AUTH_USERS:-}
+      ADG_DEV_AUTH_SECRET: ${ADG_DEV_AUTH_SECRET:-}
+      ADG_OIDC_ISSUER: ${ADG_OIDC_ISSUER:-}
+      ADG_OIDC_AUDIENCE: ${ADG_OIDC_AUDIENCE:-}
+      ADG_OIDC_JWKS_URL: ${ADG_OIDC_JWKS_URL:-}
+      ADG_OIDC_CLIENT_ID: ${ADG_OIDC_CLIENT_ID:-}
+      ADG_OIDC_AUTHORIZATION_ENDPOINT: ${ADG_OIDC_AUTHORIZATION_ENDPOINT:-}
+      ADG_OIDC_TOKEN_ENDPOINT: ${ADG_OIDC_TOKEN_ENDPOINT:-}
+      ADG_OIDC_GROUP_ROLE_MAP: ${ADG_OIDC_GROUP_ROLE_MAP:-}
+      # Collector credentials. Empty means ingestion requires an administrator's token.
+      ADG_COLLECTOR_API_KEYS: ${ADG_COLLECTOR_API_KEYS:-}
     ports:
       - "${ADG_API_PORT:-8000}:8000"
     depends_on:
@@ -54,6 +68,12 @@ services:
       # Server-side rendering runs inside this container, where localhost is the web
       # container itself; it must call the API by its compose service name.
       ADG_INTERNAL_API_URL: http://api:8000
+      # This app's own public address. The OIDC redirect URI is built from it and must match
+      # the value registered on the app registration exactly, so it is configuration rather
+      # than something inferred from a request's Host header.
+      ADG_WEB_URL: ${ADG_WEB_URL:-http://localhost:3000}
+      # Optional confidential-client secret. Never NEXT_PUBLIC_*: it must not reach a browser.
+      ADG_OIDC_CLIENT_SECRET: ${ADG_OIDC_CLIENT_SECRET:-}
     ports:
       - "${ADG_WEB_PORT:-3000}:3000"
     depends_on:

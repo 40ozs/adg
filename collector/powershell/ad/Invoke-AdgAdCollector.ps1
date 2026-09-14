@@ -146,6 +146,7 @@ else {
         -ExcludeOrganizationalUnits $config.ExcludeOrganizationalUnits `
         -BatchSize $config.BatchSize -PageSize $config.PageSize -RangeStep $config.RangeStep `
         -ApiBaseUrl $config.ApiBaseUrl -ApiTokenEnvironmentVariable $config.ApiTokenEnvironmentVariable `
+        -CollectorKeyEnvironmentVariable $config.CollectorKeyEnvironmentVariable `
         -SkipCertificateCheck $config.SkipCertificateCheck -CollectorHost $config.CollectorHost `
         -CollectorVersion $config.CollectorVersion -Offline $config.Offline `
         -OutputDirectory $config.OutputDirectory -Incremental $config.Incremental `
@@ -174,13 +175,23 @@ else {
     else {
         $null
     }
-    if (-not $token) {
-        Write-Warning "No collector token found in `$env:$($config.ApiTokenEnvironmentVariable). The run will be submitted unauthenticated; that works only against a development API."
+    # A collector key is the normal credential for an unattended run: it grants only
+    # 'collectors:ingest', so a key stolen from a scheduled task cannot read the estate back
+    # out. A bearer token is for an operator replaying a payload by hand.
+    $collectorKey = if ($config.CollectorKeyEnvironmentVariable) {
+        [System.Environment]::GetEnvironmentVariable($config.CollectorKeyEnvironmentVariable)
+    }
+    else {
+        $null
+    }
+    if (-not $token -and -not $collectorKey) {
+        Write-Warning "No credential found in `$env:$($config.CollectorKeyEnvironmentVariable) or `$env:$($config.ApiTokenEnvironmentVariable). The ADG API rejects anonymous ingestion and will answer 401."
     }
     @{
         Mode                 = 'Api'
         ApiBaseUrl           = $config.ApiBaseUrl
         AuthenticationToken  = $token
+        CollectorKey         = $collectorKey
         MaxAttempts          = $config.MaxAttempts
         SkipCertificateCheck = [bool] $config.SkipCertificateCheck
     }

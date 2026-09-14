@@ -15,7 +15,8 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
 
 import pytest
@@ -23,10 +24,12 @@ import sqlalchemy as sa
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.roles import Role
 from app.config import Settings, build_settings
 from app.db import Database
 from app.main import create_app
 from app.models.schema import metadata
+from tests.support.auth import auth_headers, token_for_roles
 
 SMOKE_ENABLED = os.getenv("ADG_RUN_SMOKE_TESTS") == "1"
 # Read at import time, and through Settings rather than os.environ alone: the development
@@ -149,14 +152,54 @@ async def session(database: Database) -> AsyncIterator[AsyncSession]:
 
 @pytest.fixture
 async def client(db_settings: Settings, database: Database) -> AsyncIterator[AsyncClient]:
-    """An HTTP client bound to the real test database.
+    """An HTTP client bound to the real test database, signed in as an administrator.
 
     ``app.state.database`` is set directly rather than through the lifespan, which is the
     same seam the health-endpoint tests already use.
+
+    The token is real: it is signed with this settings object's development secret and
+    verified by the application's own verifier on every request. Nothing here overrides the
+    authentication dependency, so these suites exercise the application as deployed rather
+    than an application with its front door removed. ``tests/db/test_authorization.py``
+    covers what happens without a token and with an insufficient one.
     """
+    app = create_app(db_settings)
+    app.state.database = database
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+        headers=auth_headers(db_settings),
+    ) as active:
+        yield active
+
+
+@pytest.fixture
+async def anonymous_client(db_settings: Settings, database: Database) -> AsyncIterator[AsyncClient]:
+    """The same application, with no credential at all."""
     app = create_app(db_settings)
     app.state.database = database
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as active:
         yield active
+
+
+@pytest.fixture
+def client_as(
+    db_settings: Settings, database: Database
+) -> Callable[..., AbstractAsyncContextManager[AsyncClient]]:
+    """A factory for clients holding exactly the roles named — including none."""
+
+    @asynccontextmanager
+    async def build(*roles: Role) -> AsyncIterator[AsyncClient]:
+        app = create_app(db_settings)
+        app.state.database = database
+        token = token_for_roles(db_settings, *roles)
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+            headers={"Authorization": f"Bearer {token}"},
+        ) as active:
+            yield active
+
+    return build

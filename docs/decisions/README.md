@@ -25,3 +25,5 @@ Rules:
 | [0011](0011-answers-carry-their-uncertainty.md) | An effective-access answer carries the conditions that qualify it | Accepted |
 | [0012](0012-bounded-access-queries.md) | Effective-access queries are bounded by inverting the question | Accepted |
 | [0013](0013-causality-is-measured-not-inferred.md) | A removal's effect is measured by re-running the access check, never inferred | Accepted |
+| [0014](0014-authorization-is-capabilities-enforced-in-the-backend.md) | Authorization is a capability check in the backend, declared once per router | Accepted |
+| [0015](0015-emptiness-is-attributed-by-the-backend.md) | An empty view is attributed by the backend, never inferred from a row count | Accepted |

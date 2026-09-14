@@ -13,8 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api import api_router
+from app.api import build_api_router
 from app.api.pagination import InvalidCursor
+from app.auth.dependencies import install_auth
 from app.config import Settings, get_settings
 from app.db import Database
 from app.domain import DomainValidationError
@@ -62,6 +63,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = resolved
+    # Verifier and claims mapping are built once here, not per request: the OIDC
+    # verifier owns the JWKS cache.
+    install_auth(app, resolved)
 
     if resolved.cors_origin_list:
         app.add_middleware(
@@ -96,7 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     _install_exception_handlers(app)
-    app.include_router(api_router)
+    app.include_router(build_api_router(resolved))
     return app
 
 

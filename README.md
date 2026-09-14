@@ -124,6 +124,20 @@ cd C:\code\adg\backend
 | `GET /version` | Application name, version, and environment. |
 | `GET /docs` | OpenAPI documentation (development). |
 
+> **Everything below requires authentication.** The four endpoints above, plus
+> `GET /auth/config`, are the only ones that answer without a credential. Every other route
+> needs a bearer token whose principal holds the capability that route declares; ingestion
+> additionally accepts a collector key. See
+> [`docs/architecture/authentication.md`](docs/architecture/authentication.md).
+
+Authentication:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /auth/config` | How this deployment signs in: mode, issuer, client id, endpoints, and the role table. Public. |
+| `GET /auth/me` | The caller's roles and **capabilities**. What the web application reads to decide what to show. |
+| `POST /auth/dev/login` | **Development mode only**, and not registered at all otherwise. Issues a token for a configured account without verifying any credential. |
+
 Collector ingestion (contract v1; see
 [`docs/contracts/collector-protocol.md`](docs/contracts/collector-protocol.md)):
 
@@ -133,6 +147,18 @@ Collector ingestion (contract v1; see
 | `POST /api/v1/scan-runs/{run_id}/batches` | Send up to 1000 observations. Idempotent on `batch_id`. |
 | `POST /api/v1/scan-runs/{run_id}/completion` | Close a run and record any reconciled scopes. |
 | `GET /api/v1/scan-runs/{run_id}` | Inspect a run: status, coverage, counts, collector errors. |
+| `GET /api/v1/scan-runs` | Runs newest first, filterable by collector and status. |
+| `GET /api/v1/collection/status` | **Whether an empty result can be believed.** One verdict over the latest run of each collector. |
+
+> The three `POST` routes authenticate with a collector key in `X-ADG-Collector-Key`
+> (`ADG_COLLECTOR_API_KEYS`), or with an administrator's token. **Ingestion is never
+> anonymous**, and a collector key grants `collectors:ingest` and nothing else — it cannot
+> read a single observation back.
+>
+> `GET /api/v1/collection/status` is what every view consults before rendering an empty one.
+> `no_data`, `incomplete` and `failed` all mean *nobody looked*; only `healthy` makes an
+> empty list an answer. See
+> [ADR-0015](docs/decisions/0015-emptiness-is-attributed-by-the-backend.md).
 
 Identity and membership graph (see
 [`docs/architecture/membership-graph.md`](docs/architecture/membership-graph.md)):
@@ -167,6 +193,10 @@ Resources and raw ACLs, share layer and file-system layer (see
 | `GET /api/v1/resources/{path}` | One resource's descriptor facts — owner, NULL-DACL state, inheritance — and its boundary verdict beside the one the server derives. |
 | `GET /api/v1/resources/{path}/acl` | That resource's NTFS ACL in evaluation order, with the ACL digest. |
 | `GET /api/v1/principals/{sid}/shares` | Shares whose ACL names a SID. |
+| `GET /api/v1/search?q=` | One box for four lookups: a SID, a UNC path, a share name, or the start of a display name. |
+
+> Search reports how it read the term, which categories it truncated, and which the account
+> was not permitted to search. An empty result is always attributable.
 
 > Each ACL response carries a `kind` — `raw_smb_acl` or `raw_ntfs_acl`. **These are observed
 > facts of one layer, not effective access** — that requires *both* layers plus group
@@ -186,6 +216,26 @@ Resources and raw ACLs, share layer and file-system layer (see
 The web application's **System status** page (`http://localhost:3000/status`) renders the
 same information from the browser's point of view.
 
+## The web application
+
+`http://localhost:3000`. Sections: Overview, Resources, Identities, Access, Risks (placeholder),
+Changes (placeholder), Collectors, Settings — each shown only when the signed-in account holds
+the capability behind it.
+
+In development mode, sign in at `/login` and pick `viewer`, `auditor`, or `admin` to see the
+product as that role sees it. **A development deployment verifies no credential**, and says so
+in an undismissable banner on every page.
+
+Two properties of the shell are worth knowing before reading the code:
+
+- **The browser never holds the access token.** It lives in an `httpOnly` cookie that only
+  the Next.js server reads; browser requests go to `/api/adg/*` on the same origin and the
+  server attaches it.
+- **No page interprets its own emptiness.** Each one is handed a verdict from
+  `GET /api/v1/collection/status` and renders it, so "nothing is there" and "nobody looked"
+  are different screens. Placeholder sections say they are placeholders rather than showing
+  an empty table.
+
 ## Architecture
 
 See [`docs/architecture/system-overview.md`](docs/architecture/system-overview.md).
@@ -195,9 +245,17 @@ Key invariants:
 - **Windows collection is native**, never containerized.
 - **The backend owns authorization semantics.** Collectors report observations; the
   frontend renders API results. Neither performs permission math.
+- **The authorization boundary is the backend's.** Capabilities are checked per route in
+  `backend/app/api/__init__.py`; the frontend hiding a section is a courtesy, not a control
+  ([ADR-0014](docs/decisions/0014-authorization-is-capabilities-enforced-in-the-backend.md)).
 - **Least privilege.** Normal collection must never require Domain Admin.
 
 ## Security
 
-See [`SECURITY.md`](SECURITY.md). No secrets belong in source control: `.env.example` is a
-template, and `.env` is ignored by Git.
+See [`SECURITY.md`](SECURITY.md) and
+[`docs/architecture/authentication.md`](docs/architecture/authentication.md). No secrets
+belong in source control: `.env.example` is a template, and `.env` is ignored by Git.
+
+The API **refuses to start** with `ADG_AUTH_MODE=development` and
+`ADG_ENVIRONMENT=production`, so a deployment that verifies no credential cannot be shipped
+by accident.

@@ -332,7 +332,20 @@ Describe 'Configuration' {
         $config.BatchSize | Should -Be 500
         $config.RangeStep | Should -Be 1500
         $config.ApiTokenEnvironmentVariable | Should -Be 'ADG_COLLECTOR_TOKEN'
+        # The credential an unattended run normally uses. It grants only 'collectors:ingest',
+        # so a key read out of a scheduled task cannot read the estate back out.
+        $config.CollectorKeyEnvironmentVariable | Should -Be 'ADG_COLLECTOR_KEY'
         $config.CollectorHost | Should -Not -BeNullOrEmpty
+    }
+
+    It 'names an environment variable rather than holding a secret' {
+        # A secret in a configuration file is a secret in a backup, in source control, and
+        # in whatever copied the file to the file server.
+        $config = New-AdgAdCollectorConfig -Offline $true -OutputDirectory 'C:	empdg' `
+            -CollectorKeyEnvironmentVariable 'ADG_FS01_KEY'
+
+        $config.CollectorKeyEnvironmentVariable | Should -Be 'ADG_FS01_KEY'
+        ($config | ConvertTo-Json -Depth 6) | Should -Not -BeLike '*secret*'
     }
 
     It 'refuses a batch size the contract would reject' {

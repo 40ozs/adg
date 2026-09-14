@@ -41,12 +41,24 @@ def test_production_refuses_the_development_database_default() -> None:
 
 
 def test_production_starts_with_an_explicit_database_url() -> None:
+    """Phase 6A added a second production requirement: real authentication.
+
+    The database URL alone is no longer enough to start in production, so this test now
+    supplies the OIDC configuration too. That is the point of the rule rather than an
+    inconvenience of it: a production process that could start without it would be a
+    production process serving the estate to anyone who asked.
+    """
     settings = build_settings(
         environment="production",
         database_url="postgresql+psycopg://adg:secret@db.internal:5432/adg",
+        auth_mode="oidc",
+        oidc_issuer="https://login.microsoftonline.com/tenant/v2.0",
+        oidc_audience="api://adg",
+        oidc_jwks_url="https://login.microsoftonline.com/tenant/discovery/v2.0/keys",
     )
 
     assert settings.is_production is True
+    assert settings.is_development_auth is False
 
 
 def test_cors_origins_are_split_and_trimmed() -> None:

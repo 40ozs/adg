@@ -72,7 +72,13 @@ param(
     [string[]] $Server = @(),
     [pscredential] $Credential,
     [switch] $RunPerServer,
-    [string] $CollectorVersion = '0.1.0'
+    [string] $CollectorVersion = '0.1.0',
+
+    # Where the ADG API credential is read from. An environment variable rather than a
+    # parameter value, so the secret is never in a command line, a scheduled-task argument
+    # list, or a shell history. The API rejects anonymous ingestion.
+    [string] $CollectorKeyEnvironmentVariable = 'ADG_COLLECTOR_KEY',
+    [string] $ApiTokenEnvironmentVariable = 'ADG_COLLECTOR_TOKEN'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -131,8 +137,17 @@ if ($DryRun) {
     return
 }
 
+$headers = @{}
+$collectorKey = [System.Environment]::GetEnvironmentVariable($CollectorKeyEnvironmentVariable)
+$apiToken = [System.Environment]::GetEnvironmentVariable($ApiTokenEnvironmentVariable)
+if ($apiToken) { $headers['Authorization'] = "Bearer $apiToken" }
+if ($collectorKey) { $headers['X-ADG-Collector-Key'] = $collectorKey }
+if ($headers.Count -eq 0) {
+    Write-Warning "No credential found in `$env:$CollectorKeyEnvironmentVariable or `$env:$ApiTokenEnvironmentVariable. The ADG API rejects anonymous ingestion and will answer 401."
+}
+
 foreach ($run in $runs) {
-    $result = Send-AdgSmbScanRun -ApiBaseUrl $ApiBaseUrl -Run $run
+    $result = Send-AdgSmbScanRun -ApiBaseUrl $ApiBaseUrl -Run $run -Headers $headers
     Write-Host ("Submitted run {0}: {1}, {2} batch(es) sent, {3} rejected." -f `
             $result.RunId, $result.Status, $result.BatchesSent, $result.BatchesRejected)
 }

@@ -352,4 +352,34 @@ Describe 'Offline publishing' {
     It 'refuses API mode with no URL' {
         { New-AdgPublisher -Mode Api } | Should -Throw '*needs ApiBaseUrl*'
     }
+
+    It 'sends a collector key in the header the API reads it from' {
+        $publisher = New-AdgPublisher -Mode Api -ApiBaseUrl 'http://localhost:8000' -CollectorKey 'a-key'
+
+        $publisher.Headers['X-ADG-Collector-Key'] | Should -Be 'a-key'
+        $publisher.Headers.ContainsKey('Authorization') | Should -BeFalse
+    }
+
+    It 'sends a bearer token when an operator supplies one instead' {
+        $publisher = New-AdgPublisher -Mode Api -ApiBaseUrl 'http://localhost:8000' -AuthenticationToken 'a-token'
+
+        $publisher.Headers['Authorization'] | Should -Be 'Bearer a-token'
+    }
+
+    It 'warns when an API run carries no credential at all' {
+        # The API rejects anonymous ingestion. Silence here would turn a 401 into a
+        # mysterious failed run.
+        $warnings = @()
+        New-AdgPublisher -Mode Api -ApiBaseUrl 'http://localhost:8000' -WarningVariable warnings -WarningAction SilentlyContinue | Out-Null
+
+        ($warnings -join ' ') | Should -BeLike '*rejects anonymous ingestion*'
+    }
+
+    It 'says nothing about credentials for an offline run' {
+        $directory = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+        $warnings = @()
+        New-AdgPublisher -Mode Offline -OutputDirectory $directory -WarningVariable warnings -WarningAction SilentlyContinue | Out-Null
+
+        ($warnings -join ' ') | Should -Not -BeLike '*anonymous ingestion*'
+    }
 }

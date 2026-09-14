@@ -34,13 +34,50 @@ afterthought.
 - Diagnostics must never echo connection strings, credentials, or tokens. The readiness
   probe reports the failure class, not the DSN.
 
+## Authentication and authorization
+
+The application boundary is enforced in the backend. Every endpoint that speaks about
+collected facts requires an authenticated principal holding a named capability; the frontend
+hides sections an account cannot use, but that is a courtesy and not a control.
+
+- **Production authentication is OIDC / Microsoft Entra ID.** Tokens are verified against
+  the tenant's JWKS endpoint with an explicit asymmetric algorithm allow-list, and the
+  issuer, audience, and expiry are all checked.
+- **Development authentication issues its own tokens and verifies no credential.** It exists
+  so that the product can be driven without a tenant. The API **refuses to start** with
+  `ADG_AUTH_MODE=development` and `ADG_ENVIRONMENT=production`, and the development sign-in
+  route is not registered at all outside development mode, so a production deployment's
+  OpenAPI document does not describe one.
+- **Roles are `viewer`, `auditor`, and `admin`.** `remediator` is reserved for the future
+  remediation capability and grants nothing; holding it is indistinguishable from holding no
+  role. No role grants `remediation:execute`.
+- **A role ADG does not recognize grants nothing.** Unrecognized values are reported on
+  `/auth/me` and logged, so a misassigned app role is diagnosable rather than mysterious.
+- **Ingestion is never anonymous.** Collectors authenticate with a key from
+  `ADG_COLLECTOR_API_KEYS` (compared in constant time, minimum 32 characters). A collector
+  key grants exactly one capability, `collectors:ingest`: it can write observations and
+  cannot read a single one back. With no keys configured, ingestion requires an
+  administrator's access token.
+
+### The browser holds no token
+
+The web tier is a backend-for-frontend. The access token lives in an `httpOnly`, `SameSite`
+cookie that only the Next.js server reads; browser code calls `/api/adg/*` on its own origin
+and the server attaches the token. A token in `localStorage` or in a readable cookie is a
+token any injected script can take, and this token is a key to a map of every weak permission
+in the estate.
+
+`/auth/me` is called on each render rather than cached in the cookie, so a role revoked in
+the tenant takes effect on the next page load.
+
 ## Data sensitivity
 
 - ADG stores permission metadata: SIDs, names, group edges, share and directory paths, and
   ACEs. It does **not** read, index, or classify file contents.
 - Treat the ADG database and its backups as sensitive infrastructure data.
 - Access to the ADG application must be restricted to authorized auditors and
-  administrators. Production authentication is OIDC / Microsoft Entra ID.
+  administrators. Production authentication is OIDC / Microsoft Entra ID; see
+  "Authentication and authorization" above.
 
 ## Out of scope
 

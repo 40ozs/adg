@@ -7,6 +7,17 @@
     work twice. That is why batch ids are generated during collection rather than at send
     time.
 
+    Credentials
+    -----------
+
+    Since Phase 6A the ingestion endpoints reject an anonymous request. A collector normally
+    presents a key in ``X-ADG-Collector-Key``; an operator replaying a payload by hand
+    presents a bearer token instead. The headers are built once, up front, and threaded
+    through every POST, so a retry carries the same credential as the first attempt.
+
+    Built here rather than borrowed from AdgCollector.Common: this collector is a standalone
+    module by design and imports nothing from the others.
+
     ------------------------------------------------------------------------------------
     Streaming changes what a transport is
 
@@ -35,6 +46,7 @@ function Invoke-AdgPost {
     param(
         [Parameter(Mandatory)][string] $Uri,
         [Parameter(Mandatory)] $Payload,
+        [hashtable] $Headers = @{},
         [ValidateRange(1, 10)][int] $MaxAttempts = 5,
         [int] $TimeoutSeconds = 100
     )
@@ -44,7 +56,7 @@ function Invoke-AdgPost {
     for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
         try {
             return Invoke-RestMethod -Method Post -Uri $Uri -Body $json -ContentType 'application/json' `
-                -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+                -Headers $Headers -TimeoutSec $TimeoutSeconds -ErrorAction Stop
         }
         catch {
             $status = 0
@@ -53,6 +65,11 @@ function Invoke-AdgPost {
                 $status = [int] $response.Value.StatusCode
             }
 
+            if ($status -eq 401 -or $status -eq 403) {
+                # Never retried. A credential the server refuses is refused identically on
+                # every attempt, and retrying only delays the message that says so.
+                throw "The ADG API refused the collector's credential ($status) for $Uri. Set a collector key (ADG_COLLECTOR_API_KEYS on the server, -CollectorKey here). $($_.Exception.Message)"
+            }
             if ($status -eq 422) {
                 throw "The ADG API rejected the payload as invalid (422); retrying cannot help. $($_.Exception.Message)"
             }
@@ -79,11 +96,25 @@ function New-AdgNtfsTransport {
             exactly the loss it exists to reveal.
     #>
     [OutputType([pscustomobject])]
-    param([Parameter(Mandatory)][string] $ApiBaseUrl)
+    param(
+        [Parameter(Mandatory)][string] $ApiBaseUrl,
+        [string] $CollectorKey,
+        [string] $AuthenticationToken
+    )
+
+    # Built once and carried on the transport, so every POST in a scan that runs for hours
+    # sends the same credential -- including the retries.
+    $headers = @{}
+    if ($AuthenticationToken) { $headers['Authorization'] = "Bearer $AuthenticationToken" }
+    if ($CollectorKey) { $headers['X-ADG-Collector-Key'] = $CollectorKey }
+    if ($headers.Count -eq 0) {
+        Write-Warning 'No collector key or authentication token was supplied. The ADG API rejects anonymous ingestion; set CollectorKey or AuthenticationToken.'
+    }
 
     return [pscustomobject]@{
         BaseUrl         = $ApiBaseUrl.TrimEnd('/')
         RunId           = $null
+        Headers         = $headers
         BatchesSent     = 0
         BatchesRejected = 0
     }
@@ -101,7 +132,7 @@ function Send-AdgNtfsStart {
 
     $Transport.RunId = [string] $Start['run_id']
     Write-Verbose "Starting run $($Transport.RunId) against $($Transport.BaseUrl)"
-    Invoke-AdgPost -Uri "$($Transport.BaseUrl)/api/v1/scan-runs" -Payload $Start | Out-Null
+    Invoke-AdgPost -Uri "$($Transport.BaseUrl)/api/v1/scan-runs" -Payload $Start -Headers $Transport.Headers | Out-Null
 }
 
 function Send-AdgNtfsBatch {
@@ -120,7 +151,7 @@ function Send-AdgNtfsBatch {
     )
 
     try {
-        Invoke-AdgPost -Uri "$($Transport.BaseUrl)/api/v1/scan-runs/$($Transport.RunId)/batches" -Payload $Batch | Out-Null
+        Invoke-AdgPost -Uri "$($Transport.BaseUrl)/api/v1/scan-runs/$($Transport.RunId)/batches" -Payload $Batch -Headers $Transport.Headers | Out-Null
         $Transport.BatchesSent++
     }
     catch {
@@ -157,7 +188,7 @@ function Send-AdgNtfsCompletion {
     # What actually reached the server, never what was produced.
     $Completion['batch_count'] = $Transport.BatchesSent
 
-    Invoke-AdgPost -Uri "$($Transport.BaseUrl)/api/v1/scan-runs/$($Transport.RunId)/completion" -Payload $Completion | Out-Null
+    Invoke-AdgPost -Uri "$($Transport.BaseUrl)/api/v1/scan-runs/$($Transport.RunId)/completion" -Payload $Completion -Headers $Transport.Headers | Out-Null
 }
 
 function New-AdgNtfsFileSink {

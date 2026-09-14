@@ -62,8 +62,10 @@ __all__ = [
     "CompletionOutcome",
     "IngestionConflict",
     "IngestionService",
+    "RunListPage",
     "RunNotFound",
     "RunSnapshot",
+    "RunSummary",
     "StartOutcome",
 ]
 
@@ -234,6 +236,39 @@ class CompletionOutcome:
     already_completed: bool
     reconciled_scopes: int
     downgrade_reason: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RunSummary:
+    """One run, reduced to what a list row shows.
+
+    Deliberately smaller than :class:`RunSnapshot`: a list of runs must not fan out into a
+    scope query and an error query per row.
+    """
+
+    run_id: UUID
+    status: ScanStatus
+    incremental: bool
+    started_at: dt.datetime
+    completed_at: dt.datetime | None
+    collector: str
+    collector_host: str
+    method: str
+    collector_version: str | None
+    target: str | None
+    batch_count_received: int
+    observation_count_applied: int
+    error_count: int
+    downgrade_reason: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RunListPage:
+    """One page of runs, newest first, plus the exact total."""
+
+    items: tuple[RunSummary, ...]
+    total: int
+    has_more: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -1027,6 +1062,93 @@ class IngestionService:
                 for error in error_rows
             ),
         )
+
+    async def list_runs(
+        self,
+        *,
+        limit: int,
+        offset: int = 0,
+        collector: str | None = None,
+        status: ScanStatus | None = None,
+    ) -> RunListPage:
+        """Runs newest first, for the Collectors view.
+
+        Offset paging rather than keyset: this list is ordered by ``started_at`` for a
+        human scrolling recent history, the table is small next to the observation tables,
+        and an exact total is worth having on the page that answers "has anything run?".
+        """
+        conditions = []
+        if collector is not None:
+            conditions.append(collector_sources.c.collector == collector)
+        if status is not None:
+            conditions.append(scan_runs.c.status == status.value)
+
+        joined = scan_runs.join(collector_sources, scan_runs.c.source_id == collector_sources.c.id)
+        total = (
+            await self._session.execute(select(func.count()).select_from(joined).where(*conditions))
+        ).scalar_one()
+
+        rows = (
+            (
+                await self._session.execute(
+                    select(scan_runs, collector_sources)
+                    .select_from(joined)
+                    .where(*conditions)
+                    # run_id breaks ties so that two runs started in the same millisecond
+                    # do not swap places between pages.
+                    .order_by(scan_runs.c.started_at.desc(), scan_runs.c.run_id.desc())
+                    .limit(limit + 1)
+                    .offset(offset)
+                )
+            )
+            .mappings()
+            .all()
+        )
+        has_more = len(rows) > limit
+        return RunListPage(
+            items=tuple(_run_summary(row) for row in rows[:limit]),
+            total=int(total),
+            has_more=has_more,
+        )
+
+    async def latest_run_per_collector(self) -> tuple[RunSummary, ...]:
+        """The most recent run of each collector kind.
+
+        DISTINCT ON is PostgreSQL-specific and exactly right here: one index-ordered pass
+        picks the first row per collector, rather than a correlated subquery per kind.
+        """
+        joined = scan_runs.join(collector_sources, scan_runs.c.source_id == collector_sources.c.id)
+        statement = (
+            select(scan_runs, collector_sources)
+            .select_from(joined)
+            .distinct(collector_sources.c.collector)
+            .order_by(
+                collector_sources.c.collector,
+                scan_runs.c.started_at.desc(),
+                scan_runs.c.run_id.desc(),
+            )
+        )
+        rows = (await self._session.execute(statement)).mappings().all()
+        return tuple(_run_summary(row) for row in rows)
+
+
+def _run_summary(row: Any) -> RunSummary:
+    return RunSummary(
+        run_id=row["run_id"],
+        status=ScanStatus(row["status"]),
+        incremental=bool(row["incremental"]),
+        started_at=row["started_at"],
+        completed_at=row["completed_at"],
+        collector=row["collector"],
+        collector_host=row["collector_host"],
+        method=row["method"],
+        collector_version=row["collector_version"],
+        target=row["target"],
+        batch_count_received=int(row["batch_count_received"]),
+        observation_count_applied=int(row["observation_count_applied"]),
+        error_count=int(row["error_count"]),
+        downgrade_reason=row["downgrade_reason"],
+    )
 
 
 def _newest_wins(
