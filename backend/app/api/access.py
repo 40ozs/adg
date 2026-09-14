@@ -1,0 +1,864 @@
+r"""Effective-access endpoints: what a principal can actually do, and why.
+
+Everything under ``/api/v1/access`` is **derived**. The rest of the API reports what
+collectors observed; these three routes report a conclusion drawn from those observations,
+and the difference is what shapes every response here:
+
+* **A mask is the answer; a label is a rendering.** ``rights.mask`` is authoritative and
+  ``rights.label`` is recomputed from it. A client that stores or compares the label is
+  comparing strings, and SMB ``Change`` and NTFS ``Modify`` are the same bits under two
+  names — the exact mistake the rights model exists to prevent.
+* **Every answer carries its own qualifications.** ``certainty`` says in which direction
+  the result may be wrong, and ``findings`` says why. ``access: false`` with
+  ``certainty: "at_least"`` means *no access was established*, never *no access exists*,
+  and a client that renders the two identically has thrown away the finding.
+* **A listing says what it could not list.** ``/resources/{resource}/principals`` reports
+  ``complete: false`` and names the trustees it could not enumerate — an ``Everyone`` ACE,
+  a group whose membership nobody collected — rather than returning a short list that
+  looks whole.
+
+Both bounded listings page, and they page differently on purpose: the principals of one
+resource are computed by traversal and then sliced (offset), while the resources of one
+principal come straight out of an index (keyset). The distinction is the one
+:mod:`app.api.pagination` already draws, for the same reasons.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Path, Query
+from pydantic import BaseModel, Field
+
+from app.access_engine import (
+    AccessCertainty,
+    AccessFinding,
+    AccessPath,
+    AclEvaluation,
+    AclProvenance,
+    AppliedAce,
+    EffectiveAccess,
+    LimitingLayer,
+    RightsMask,
+    SubjectToken,
+    TokenAssumption,
+    TokenSid,
+    category_display_name,
+    summarize,
+)
+from app.api.deps import Session, TraversalBounds
+from app.api.graph import PrincipalSummary, principal_summary, resolve_principal
+from app.api.pagination import (
+    DEFAULT_LIMIT,
+    MAX_LIMIT,
+    PageInfo,
+    decode_keyset_cursor,
+    decode_offset_cursor,
+    encode_keyset_cursor,
+    encode_offset_cursor,
+    normalize_limit,
+)
+from app.domain import DomainValidationError, parse_unc_path
+from app.repositories import MembershipRepository, PrincipalRecord, ResourceRepository
+from app.services.access import (
+    AccessService,
+    PrincipalAccess,
+    ResolvedAccess,
+    ResourceAccessPage,
+    SubjectAccessPage,
+)
+from app.services.graph import MemberInclusion
+
+router = APIRouter(prefix="/api/v1/access", tags=["access"])
+
+__all__ = ["router"]
+
+
+IdentifierPath = Annotated[
+    str,
+    Path(
+        min_length=1,
+        max_length=512,
+        description=(
+            "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). "
+            "Use ?host= to disambiguate a BUILTIN SID seen on several computers."
+        ),
+    ),
+]
+
+ResourcePath = Annotated[
+    str,
+    Path(
+        min_length=5,
+        max_length=1024,
+        description=(
+            "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share "
+            "key is not accepted here: a share and the directory it publishes have "
+            "different ACLs, and only one of them limits local access."
+        ),
+    ),
+]
+
+HostQuery = Annotated[
+    str | None,
+    Query(
+        max_length=255,
+        description="Host that scopes a local group, when the identifier is a bare SID.",
+    ),
+]
+
+PathQuery = Annotated[
+    AccessPath,
+    Query(
+        alias="access_path",
+        description=(
+            "How the principal reaches the data. 'remote_smb' applies the share ACL and the "
+            "NTFS ACL and reports the intersection; 'local' applies only NTFS, which is what "
+            "anyone who can log on to the server gets."
+        ),
+    ),
+]
+
+AssumptionQuery = Annotated[
+    TokenAssumption | None,
+    Query(
+        description=(
+            "Which SIDs to assume are in the subject's access token beyond its observed "
+            "memberships. Defaults from the subject's kind; the response always reports "
+            "what was used and what it added."
+        ),
+    ),
+]
+
+InclusionQuery = Annotated[
+    MemberInclusion,
+    Query(
+        alias="members",
+        description=(
+            "Which reached principals to report. 'non_groups' (the default) keeps users, "
+            "computers, well-known SIDs and anything ADG cannot classify; 'users' keeps "
+            "only accounts; 'all' includes the nested groups themselves."
+        ),
+    ),
+]
+
+LimitQuery = Annotated[
+    int | None,
+    Query(ge=1, le=MAX_LIMIT, description=f"Items per page (default {DEFAULT_LIMIT})."),
+]
+
+CursorQuery = Annotated[
+    str | None, Query(description="Opaque cursor from a previous response's next_cursor.")
+]
+
+
+# --------------------------------------------------------------------- views
+
+
+class RightsView(BaseModel):
+    """A rights mask, with its rendering alongside it. The mask is the answer."""
+
+    mask: str = Field(description="The access mask, as 0xNNNNNNNN. This is authoritative.")
+    value: int = Field(description="The same mask as an integer, for arithmetic.")
+    layer: str = Field(description="smb_share, ntfs, or effective. Masks never cross layers.")
+    label: str = Field(
+        description=(
+            "Display text derived from the mask. Never store or compare it: SMB 'Read' and "
+            "NTFS 'Read & Execute' are the same bits, and 'Modify' can hide WRITE_DAC."
+        )
+    )
+    primary: str = Field(description="The strongest category the mask fully contains.")
+    categories: list[str] = Field(
+        default_factory=list, description="Every category the mask contains, strongest first."
+    )
+    is_exact: bool = Field(
+        description="False when the mask carries rights the label does not name."
+    )
+    extra_rights: list[str] = Field(
+        default_factory=list, description="Rights present beyond what the categories cover."
+    )
+    escalation_rights: list[str] = Field(
+        default_factory=list,
+        description="WRITE_DAC / WRITE_OWNER, when present. The holder can self-grant.",
+    )
+    unrecognized_bits: str | None = Field(
+        default=None, description="Mask bits matching no right ADG knows, as 0xNNNNNNNN."
+    )
+    indeterminate: bool = Field(
+        default=False,
+        description="MAXIMUM_ALLOWED is present; Windows resolves it per open, so no fixed "
+        "rights set exists.",
+    )
+
+
+class FindingView(BaseModel):
+    """One thing the resolver assumed or could not settle."""
+
+    condition: str
+    message: str
+    may_overstate: bool = Field(
+        description="True when this gap means the rights could be wider than reported."
+    )
+    may_understate: bool = Field(
+        description="True when this gap means the rights could be narrower than reported."
+    )
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
+class TokenEntryView(BaseModel):
+    """One SID in the constructed access token, and why it is there."""
+
+    principal: PrincipalSummary
+    origin: str = Field(
+        description="subject, group_membership, well_known, or logon_type. The last two are "
+        "assumptions, not observations."
+    )
+    assumed: bool
+    depth: int = Field(description="Membership hops from the subject. 0 for the subject itself.")
+    path: list[str] = Field(
+        default_factory=list, description="The membership chain, subject first."
+    )
+
+
+class TokenView(BaseModel):
+    """The SIDs the ACLs were evaluated against."""
+
+    subject: PrincipalSummary
+    assumption: str
+    access_path: str
+    membership_complete: bool = Field(
+        description="False means the traversal hit a limit and the token is a lower bound."
+    )
+    entries: list[TokenEntryView] = Field(default_factory=list)
+
+
+class AppliedAceView(BaseModel):
+    """One ACE that matched the token, and what it contributed where it sits."""
+
+    ace_key: str | None = None
+    position: int = Field(description="Index in the DACL as stored. Order is load-bearing.")
+    trustee: PrincipalSummary
+    ace_type: str
+    access_mask: str = Field(description="The entry's own mask, generic bits expanded.")
+    contributed: str = Field(
+        description=(
+            "The part of the mask that survived what earlier entries had already settled. "
+            "0x00000000 means the entry is on the ACL and does nothing."
+        )
+    )
+    flags: int
+    source: str = Field(description="explicit or inherited.")
+    inherited_from: str | None = None
+    matched_key: str = Field(description="The token entry this ACE named.")
+    via_group: bool
+
+
+class AclEvaluationView(BaseModel):
+    """What one layer's ACL grants this token."""
+
+    layer: str
+    rights: RightsView
+    granted_by: list[AppliedAceView] = Field(default_factory=list)
+    denied_by: list[AppliedAceView] = Field(default_factory=list)
+    superseded: list[AppliedAceView] = Field(
+        default_factory=list,
+        description="Entries that matched and contributed nothing because an earlier entry "
+        "had already settled every right they name.",
+    )
+    owner_rights: RightsView | None = Field(
+        default=None,
+        description="Rights held by owning the object, outside the DACL. WRITE_DAC here is "
+        "an escalation path no ACE shows.",
+    )
+    canonical_rights: RightsView | None = Field(
+        default=None, description="What the canonical-ACL model would compute, for comparison."
+    )
+    order_dependent: bool = Field(
+        default=False,
+        description="True when the stored order changed this subject's answer: an Allow ahead "
+        "of a Deny actually grants.",
+    )
+    entries_supplied: int
+    entries_evaluated: int = Field(description="Of those, how many named this token.")
+
+
+class EffectiveAccessView(BaseModel):
+    """The conclusion, with both layers and every qualification."""
+
+    resource_key: str
+    share_key: str | None = None
+    access_path: str
+    access: bool = Field(
+        description=(
+            "Whether any right survives. Read it with certainty: false with 'at_least' "
+            "means no access was established, not that none exists."
+        )
+    )
+    rights: RightsView
+    certainty: AccessCertainty
+    limiting_layer: LimitingLayer = Field(
+        description="Which ACL removed rights the other granted. The field that says which "
+        "ACL to go and fix."
+    )
+    acl_provenance: AclProvenance = Field(
+        description="Whether the NTFS DACL was read on this object, projected from an "
+        "ancestor, or never seen."
+    )
+    ntfs: AclEvaluationView
+    share: AclEvaluationView | None = None
+    conditions: list[str] = Field(default_factory=list)
+    findings: list[FindingView] = Field(default_factory=list)
+
+
+class ResourceRef(BaseModel):
+    """Enough of a directory to identify it, with whether it was ever read."""
+
+    key: str
+    path: str | None = None
+    share_key: str | None = None
+    observed: bool
+    dacl_present: bool | None = None
+    dacl_protected: bool | None = None
+    is_acl_boundary: bool | None = None
+    owner_sid: str | None = None
+
+
+class ShareRef(BaseModel):
+    """Enough of a share to identify it, with whether it was ever described."""
+
+    key: str
+    name: str | None = None
+    server_key: str | None = None
+    observed: bool
+
+
+class EffectiveAccessResponse(BaseModel):
+    """One principal, one resource, one access path."""
+
+    subject: PrincipalSummary
+    resource: ResourceRef
+    share: ShareRef | None = None
+    token: TokenView
+    effective: EffectiveAccessView
+
+
+class PrincipalAccessView(BaseModel):
+    """One principal in a resource's effective-principal listing."""
+
+    principal: PrincipalSummary
+    access: bool
+    rights: RightsView
+    certainty: AccessCertainty
+    limiting_layer: LimitingLayer
+    via: list[TokenEntryView] = Field(
+        default_factory=list,
+        description="The ACL trustees that put this principal here, with the chain to each. "
+        "Empty means the ACL names the principal directly.",
+    )
+    conditions: list[str] = Field(default_factory=list)
+
+
+class EnumerationView(BaseModel):
+    """Whether the listing is everybody, and what stopped it from being."""
+
+    complete: bool
+    unenumerable_trustees: list[PrincipalSummary] = Field(
+        default_factory=list,
+        description=(
+            "Trustees whose members could not be listed: world SIDs such as Everyone, and "
+            "groups whose membership no run has collected. Each one means principals hold "
+            "rights here that are not in this listing."
+        ),
+    )
+    trustees_truncated: bool = Field(
+        default=False, description="The ACL has more distinct trustees than the server expands."
+    )
+
+
+class ResourcePrincipalsResponse(BaseModel):
+    """Who can reach one resource."""
+
+    resource: ResourceRef
+    share: ShareRef | None = None
+    access_path: str
+    items: list[PrincipalAccessView] = Field(default_factory=list)
+    enumeration: EnumerationView
+    findings: list[FindingView] = Field(default_factory=list)
+    page: PageInfo
+
+
+class ResourceAccessView(BaseModel):
+    """One resource in a principal's accessible-resource listing."""
+
+    resource: ResourceRef
+    share: ShareRef | None = None
+    access: bool
+    rights: RightsView
+    certainty: AccessCertainty
+    limiting_layer: LimitingLayer
+    conditions: list[str] = Field(default_factory=list)
+
+
+class PrincipalResourcesResponse(BaseModel):
+    """What one principal can reach."""
+
+    subject: PrincipalSummary
+    access_path: str
+    token: TokenView
+    items: list[ResourceAccessView] = Field(default_factory=list)
+    page: PageInfo
+
+
+# ----------------------------------------------------------------- endpoints
+
+
+@router.get(
+    "/principals/{identifier}/resources/{resource:path}",
+    response_model=EffectiveAccessResponse,
+    summary="What one principal can do to one directory",
+    responses={
+        404: {"description": "Nothing is stored about this principal."},
+        409: {"description": "A bare SID matched several host-scoped principals."},
+        422: {"description": "The identifier is not a SID, or the path is not a UNC path."},
+    },
+)
+async def effective_access(
+    identifier: IdentifierPath,
+    resource: ResourcePath,
+    session: Session,
+    limits: TraversalBounds,
+    host: HostQuery = None,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    assumption: AssumptionQuery = None,
+) -> EffectiveAccessResponse:
+    r"""Resolve one principal's effective rights to one directory, with the derivation.
+
+    The answer is the intersection of what the share ACL permits and what the NTFS DACL
+    permits, evaluated in the order each descriptor stores its entries, against a token
+    built from the principal's observed memberships plus the SIDs Windows guarantees.
+
+    A path whose descriptor no run has read is not treated as having no permissions: the
+    DACL is projected from the nearest ancestor that *was* read, and ``acl_provenance``
+    says so.
+    """
+    membership = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
+    key, record = await resolve_principal(membership, identifier, host)
+    service = AccessService(ResourceRepository(session), membership)
+
+    resolved = await service.effective_access(
+        key,
+        _resource_key(resource),
+        path=access_path,
+        limits=limits,
+        assumption=assumption,
+    )
+    return EffectiveAccessResponse(
+        subject=principal_summary(key, record),
+        resource=_resource_ref(resolved),
+        share=_share_ref(resolved),
+        token=_token_view(resolved.access.token, resolved.principals),
+        effective=_effective_view(resolved.access, resolved.principals),
+    )
+
+
+@router.get(
+    "/resources/{resource:path}/principals",
+    response_model=ResourcePrincipalsResponse,
+    summary="Every principal ADG can show holds rights on one directory",
+    responses={422: {"description": "The identifier is not a canonical UNC path."}},
+)
+async def resource_principals(
+    resource: ResourcePath,
+    session: Session,
+    limits: TraversalBounds,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    members: InclusionQuery = MemberInclusion.NON_GROUPS,
+    limit: LimitQuery = None,
+    cursor: CursorQuery = None,
+) -> ResourcePrincipalsResponse:
+    """List who can reach a directory, with the membership chain that explains each one.
+
+    Bounded by expanding each **trustee** of the ACL downward once rather than evaluating
+    every principal in the domain: a principal's rights here depend only on which of this
+    ACL's trustees it belongs to.
+
+    Paged by offset, because the list is recomputed per page out of a traversal rather than
+    read from an index — the same trade the recursive membership endpoints make, and for
+    the same reason. Read ``enumeration.complete`` before treating the listing as everybody.
+    """
+    membership = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
+    service = AccessService(ResourceRepository(session), membership)
+    page_size = normalize_limit(limit)
+    offset = decode_offset_cursor(cursor)
+
+    result = await service.effective_principals(
+        _resource_key(resource),
+        path=access_path,
+        limits=limits,
+        inclusion=members,
+        limit=page_size,
+        offset=offset,
+    )
+    return ResourcePrincipalsResponse(
+        resource=_resource_ref_from(result),
+        share=_share_ref_from(result),
+        access_path=result.path.value,
+        items=[_principal_access_view(item, result.principals) for item in result.items],
+        enumeration=EnumerationView(
+            complete=result.complete,
+            unenumerable_trustees=[
+                principal_summary(key, result.principals.get(key))
+                for key in result.unenumerable_trustees
+            ],
+            trustees_truncated=result.truncated_trustees,
+        ),
+        findings=[_finding_view(finding) for finding in result.findings],
+        page=PageInfo(
+            limit=page_size,
+            has_more=result.has_more,
+            next_cursor=(
+                encode_offset_cursor(offset + len(result.items)) if result.has_more else None
+            ),
+            total=result.total,
+        ),
+    )
+
+
+@router.get(
+    "/principals/{identifier}/resources",
+    response_model=PrincipalResourcesResponse,
+    summary="Directories one principal can reach",
+    responses={
+        404: {"description": "Nothing is stored about this principal."},
+        409: {"description": "A bare SID matched several host-scoped principals."},
+    },
+)
+async def principal_resources(
+    identifier: IdentifierPath,
+    session: Session,
+    limits: TraversalBounds,
+    host: HostQuery = None,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    assumption: AssumptionQuery = None,
+    limit: LimitQuery = None,
+    cursor: CursorQuery = None,
+) -> PrincipalResourcesResponse:
+    """List the directories whose ACLs could involve this principal, each with its verdict.
+
+    Candidates come from the reference index keyed by the token's own trustees, unioned
+    with the paths that have a NULL DACL and therefore name nobody. Only the page is
+    evaluated, and its ACLs are read in one query.
+
+    **Candidates that turn out to grant nothing are returned, not filtered.** "Named on the
+    ACL and holding no access" is the distinction this engine exists to draw, and dropping
+    those rows inside a page would also make ``has_more`` a claim about a different set
+    than the one paged.
+    """
+    return await _principal_resource_page(
+        identifier,
+        session,
+        limits,
+        host=host,
+        access_path=access_path,
+        assumption=assumption,
+        limit=limit,
+        cursor=cursor,
+        shares=False,
+    )
+
+
+@router.get(
+    "/principals/{identifier}/shares",
+    response_model=PrincipalResourcesResponse,
+    summary="Shares one principal can reach",
+    responses={
+        404: {"description": "Nothing is stored about this principal."},
+        409: {"description": "A bare SID matched several host-scoped principals."},
+        422: {"description": "A share is a remote path; access_path=local is refused."},
+    },
+)
+async def principal_shares(
+    identifier: IdentifierPath,
+    session: Session,
+    limits: TraversalBounds,
+    host: HostQuery = None,
+    access_path: PathQuery = AccessPath.REMOTE_SMB,
+    assumption: AssumptionQuery = None,
+    limit: LimitQuery = None,
+    cursor: CursorQuery = None,
+) -> PrincipalResourcesResponse:
+    r"""List the shares whose ACL names this principal, each crossed with its root's DACL.
+
+    The share question and the directory question are separate routes because they are
+    separate answers: a share grants nothing on its own, and the rights reported here are
+    the share ACL intersected with the NTFS ACL of the directory the share publishes.
+    """
+    return await _principal_resource_page(
+        identifier,
+        session,
+        limits,
+        host=host,
+        access_path=access_path,
+        assumption=assumption,
+        limit=limit,
+        cursor=cursor,
+        shares=True,
+    )
+
+
+async def _principal_resource_page(
+    identifier: str,
+    session: Session,
+    limits: TraversalBounds,
+    *,
+    host: str | None,
+    access_path: AccessPath,
+    assumption: TokenAssumption | None,
+    limit: int | None,
+    cursor: str | None,
+    shares: bool,
+) -> PrincipalResourcesResponse:
+    """The body both listing routes share; only the candidate source differs."""
+    membership = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
+    key, record = await resolve_principal(membership, identifier, host)
+    service = AccessService(ResourceRepository(session), membership)
+    page_size = normalize_limit(limit)
+
+    result: SubjectAccessPage = await service.accessible_resources(
+        key,
+        shares=shares,
+        path=access_path,
+        limits=limits,
+        assumption=assumption,
+        limit=page_size,
+        after=decode_keyset_cursor(cursor),
+    )
+    return PrincipalResourcesResponse(
+        subject=principal_summary(key, record),
+        access_path=result.path.value,
+        token=_token_view(result.token, result.principals),
+        items=[_resource_access_view(item) for item in result.items],
+        page=PageInfo(
+            limit=page_size,
+            has_more=result.has_more,
+            next_cursor=(
+                encode_keyset_cursor(result.next_key) if result.next_key is not None else None
+            ),
+            # Deliberately not counted. The candidate set is a union of two indexed reads
+            # and counting it would double the cost of every page to produce a number the
+            # caller cannot act on -- and which is a count of candidates, not of grants.
+            total=None,
+        ),
+    )
+
+
+# ------------------------------------------------------------------- renderers
+
+
+def _resource_key(identifier: str) -> str:
+    r"""Validate a directory identifier, refusing a share key.
+
+    ``fs01|finance`` names a share, and a share's ACL and its root directory's ACL are
+    different documents. Converting one to the other here would answer a question about a
+    share with a directory's permissions, which is the layer confusion the separate routes
+    exist to prevent.
+    """
+    text = identifier.strip()
+    if "|" in text:
+        raise DomainValidationError(
+            f"{identifier!r} looks like a share key. A directory is named by its UNC path, "
+            "for example \\\\FS01\\Finance. For the share layer, ask "
+            "/api/v1/access/principals/{principal}/shares.",
+            value=identifier,
+            field="resource",
+        )
+    return parse_unc_path(text).comparison_key
+
+
+def _rights_view(mask: RightsMask) -> RightsView:
+    summary = summarize(mask)
+    return RightsView(
+        mask=str(mask),
+        value=mask.value,
+        layer=mask.layer.value,
+        label=summary.label,
+        primary=category_display_name(summary.primary),
+        categories=[category_display_name(category) for category in summary.categories],
+        is_exact=summary.is_exact,
+        extra_rights=_right_names(summary.extra_rights),
+        escalation_rights=_right_names(summary.escalation_rights),
+        unrecognized_bits=(f"0x{mask.unrecognized_bits:08X}" if mask.unrecognized_bits else None),
+        indeterminate=mask.is_indeterminate,
+    )
+
+
+def _right_names(rights: Any) -> list[str]:
+    """Flag names for a rights value, stable and without the zero member."""
+    if not rights:
+        return []
+    return [member.name for member in type(rights) if member.value and member & rights]
+
+
+def _finding_view(finding: AccessFinding) -> FindingView:
+    return FindingView(
+        condition=finding.condition.value,
+        message=finding.message,
+        may_overstate=finding.may_overstate,
+        may_understate=finding.may_understate,
+        detail=finding.detail,
+    )
+
+
+def _token_entry_view(entry: TokenSid, labels: dict[str, PrincipalRecord]) -> TokenEntryView:
+    return TokenEntryView(
+        principal=principal_summary(entry.key, labels.get(entry.key)),
+        origin=entry.origin.value,
+        assumed=entry.is_assumed,
+        depth=entry.depth,
+        path=list(entry.path),
+    )
+
+
+def _token_view(token: SubjectToken, labels: dict[str, PrincipalRecord]) -> TokenView:
+    return TokenView(
+        subject=principal_summary(token.subject.key, labels.get(token.subject.key)),
+        assumption=token.assumption.value,
+        access_path=token.access_path.value,
+        membership_complete=token.membership_complete,
+        entries=[_token_entry_view(entry, labels) for entry in token.entries],
+    )
+
+
+def _applied_view(applied: AppliedAce, labels: dict[str, PrincipalRecord]) -> AppliedAceView:
+    entry = applied.entry
+    return AppliedAceView(
+        ace_key=entry.ace_key,
+        position=applied.position,
+        trustee=principal_summary(entry.trustee_key, labels.get(entry.trustee_key)),
+        ace_type=entry.ace_type.value,
+        access_mask=str(applied.considered),
+        contributed=str(applied.contributed),
+        flags=int(entry.flags),
+        source=entry.source.value,
+        inherited_from=entry.inherited_from,
+        matched_key=applied.matched.key,
+        via_group=applied.via_group,
+    )
+
+
+def _evaluation_view(
+    evaluation: AclEvaluation, labels: dict[str, PrincipalRecord]
+) -> AclEvaluationView:
+    return AclEvaluationView(
+        layer=evaluation.layer.value,
+        rights=_rights_view(evaluation.rights),
+        granted_by=[_applied_view(item, labels) for item in evaluation.granted_by],
+        denied_by=[_applied_view(item, labels) for item in evaluation.denied_by],
+        superseded=[_applied_view(item, labels) for item in evaluation.superseded],
+        owner_rights=(
+            None if evaluation.owner_rights is None else _rights_view(evaluation.owner_rights)
+        ),
+        canonical_rights=(
+            None
+            if evaluation.canonical_rights is None
+            else _rights_view(evaluation.canonical_rights)
+        ),
+        order_dependent=evaluation.order_dependent,
+        entries_supplied=evaluation.entries_supplied,
+        entries_evaluated=evaluation.entries_evaluated,
+    )
+
+
+def _effective_view(
+    access: EffectiveAccess, labels: dict[str, PrincipalRecord]
+) -> EffectiveAccessView:
+    return EffectiveAccessView(
+        resource_key=access.resource_key,
+        share_key=access.share_key,
+        access_path=access.path.value,
+        access=access.has_access,
+        rights=_rights_view(access.rights),
+        certainty=access.certainty,
+        limiting_layer=access.limiting_layer,
+        acl_provenance=access.provenance,
+        ntfs=_evaluation_view(access.ntfs, labels),
+        share=None if access.share is None else _evaluation_view(access.share, labels),
+        conditions=[condition.value for condition in access.conditions],
+        findings=[_finding_view(finding) for finding in access.findings],
+    )
+
+
+def _principal_access_view(
+    item: PrincipalAccess, labels: dict[str, PrincipalRecord]
+) -> PrincipalAccessView:
+    return PrincipalAccessView(
+        principal=principal_summary(item.key, item.principal),
+        access=item.access.has_access,
+        rights=_rights_view(item.access.rights),
+        certainty=item.access.certainty,
+        limiting_layer=item.access.limiting_layer,
+        via=[_token_entry_view(entry, labels) for entry in item.via],
+        conditions=[condition.value for condition in item.access.conditions],
+    )
+
+
+def _resource_access_view(item: ResolvedAccess) -> ResourceAccessView:
+    return ResourceAccessView(
+        resource=_resource_ref(item),
+        share=_share_ref(item),
+        access=item.access.has_access,
+        rights=_rights_view(item.access.rights),
+        certainty=item.access.certainty,
+        limiting_layer=item.access.limiting_layer,
+        conditions=[condition.value for condition in item.access.conditions],
+    )
+
+
+def _resource_ref(item: ResolvedAccess) -> ResourceRef:
+    row = item.resource
+    if row is None:
+        return ResourceRef(key=item.access.resource_key, observed=False)
+    return ResourceRef(
+        key=row.resource_key,
+        path=row.path,
+        share_key=row.share_key,
+        observed=True,
+        dacl_present=row.dacl_present,
+        dacl_protected=row.dacl_protected,
+        is_acl_boundary=row.is_acl_boundary,
+        owner_sid=row.owner_sid,
+    )
+
+
+def _share_ref(item: ResolvedAccess) -> ShareRef | None:
+    if item.access.share_key is None:
+        return None
+    row = item.share
+    if row is None:
+        return ShareRef(key=item.access.share_key, observed=False)
+    return ShareRef(key=row.share_key, name=row.name, server_key=row.server_key, observed=True)
+
+
+def _resource_ref_from(page: ResourceAccessPage) -> ResourceRef:
+    row = page.resource
+    if row is None:
+        return ResourceRef(key=page.resource_key, observed=False)
+    return ResourceRef(
+        key=row.resource_key,
+        path=row.path,
+        share_key=row.share_key,
+        observed=True,
+        dacl_present=row.dacl_present,
+        dacl_protected=row.dacl_protected,
+        is_acl_boundary=row.is_acl_boundary,
+        owner_sid=row.owner_sid,
+    )
+
+
+def _share_ref_from(page: ResourceAccessPage) -> ShareRef | None:
+    if page.share_key is None:
+        return None
+    row = page.share
+    if row is None:
+        return ShareRef(key=page.share_key, observed=False)
+    return ShareRef(key=row.share_key, name=row.name, server_key=row.server_key, observed=True)

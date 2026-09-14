@@ -673,6 +673,16 @@ ntfs_resources = Table(
         "resource_key",
         postgresql_where=text("is_acl_boundary"),
     ),
+    # A NULL DACL grants everyone full access and names nobody, so such a row appears in no
+    # principal_references entry. "What can this principal reach" has to union these in, or
+    # it would omit exactly the resources that are open to the whole estate. Partial,
+    # because they are meant to be vanishingly rare -- and when they are not, that is the
+    # finding.
+    Index(
+        "ix_ntfs_resources_null_dacl",
+        "resource_key",
+        postgresql_where=text("NOT dacl_present"),
+    ),
     Index("ix_ntfs_resources_last_observed_run", "last_observed_run_id"),
     comment=(
         "File-system resources whose NTFS security descriptor ADG has read, keyed by UNC "

@@ -108,6 +108,17 @@ absent: a share a failed scan did not mention keeps its row. Identity, derivatio
 surface, and the pagination choices are in [resource-inventory.md](resource-inventory.md);
 the reasoning is ADR-0003 and ADR-0007.
 
+## Effective access
+
+The three stored layers — identity, share ACL, NTFS ACL — answer nothing on their own. What
+a principal can actually do is the Windows access check run over an access token ADG
+constructs, for one declared access path, with the two ACLs intersected. It is computed on
+every request and never stored, and every answer names the observations it had to assume in
+order to produce one: an unread share ACL is not an open share, and a group nobody
+enumerated is not a group somebody is absent from.
+[effective-access.md](effective-access.md) specifies it; ADR-0010, ADR-0011 and ADR-0012 are
+the reasoning.
+
 ## Security posture
 
 - **Read-only by default.** No ACL writes, no membership changes, no deletions on target

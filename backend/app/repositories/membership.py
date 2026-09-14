@@ -373,6 +373,30 @@ class MembershipRepository:
         row = (await self._session.execute(statement)).one()
         return bool(row.as_principal or row.as_endpoint)
 
+    async def keys_with_members(self, keys: Sequence[str]) -> frozenset[str]:
+        """Which of these keys ADG holds at least one membership edge *into*.
+
+        The question behind it is not "is this a group" but "has anybody looked inside it".
+        An effective-access answer turns on that distinction: an ACE naming a group whose
+        membership was never collected cannot rule anybody out, so "the subject is not in
+        it" is ignorance rather than a conclusion, and reporting the two alike is how a real
+        grant disappears from an audit.
+
+        One query for the whole set, because the caller asks it once per resolution with
+        every trustee on the ACL — a per-trustee existence check would put an N+1 on the
+        most-used endpoint in the engine.
+        """
+        unique = sorted(set(keys))
+        if not unique:
+            return frozenset()
+        statement = (
+            select(membership_edges.c.group_key)
+            .where(membership_edges.c.group_key.in_(unique))
+            .group_by(membership_edges.c.group_key)
+        )
+        rows = (await self._session.execute(statement)).all()
+        return frozenset(row[0] for row in rows)
+
     # ------------------------------------------------- direct membership listing
 
     async def direct_members(

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api import graph, health, meta, resources, scan_runs
+from app.api import access, graph, health, meta, resources, scan_runs
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -20,5 +20,6 @@ api_router.include_router(meta.router)
 api_router.include_router(scan_runs.router)
 api_router.include_router(graph.router)
 api_router.include_router(resources.router)
+api_router.include_router(access.router)
 
 __all__ = ["api_router"]

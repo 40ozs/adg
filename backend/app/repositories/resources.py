@@ -38,7 +38,7 @@ from dataclasses import dataclass, replace
 from typing import Any, TypeVar
 from uuid import UUID
 
-from sqlalchemy import RowMapping, Select, func, select
+from sqlalchemy import CompoundSelect, RowMapping, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain import (
@@ -74,6 +74,7 @@ from app.models.schema import (
 from app.repositories.membership import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 
 __all__ = [
+    "MAX_ACL_FETCH",
     "UNCOMPARED_BOUNDARY_REASONS",
     "NtfsAceRecord",
     "NtfsAclRecomputation",
@@ -87,6 +88,15 @@ __all__ = [
 ]
 
 ItemT = TypeVar("ItemT")
+
+MAX_ACL_FETCH = 4096
+"""Entries read for one ACL when the whole ACL is wanted, as it is for an access check.
+
+Matches :data:`app.access_engine.MAX_ACL_ENTRIES` — the evaluator's own ceiling — and is
+restated here rather than imported so that the persistence layer keeps no dependency on the
+authorization engine. A test pins the two equal; drifting apart would mean the database
+hands the evaluator less than it is willing to evaluate, and nothing would say so.
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -915,6 +925,188 @@ class ResourceRepository:
             )
         ).all()
         return tuple(row[0] for row in rows)
+
+    # ------------------------------------------------- whole ACLs, for evaluation
+
+    async def full_ntfs_acl(
+        self, resource_key: str, *, limit: int = MAX_ACL_FETCH
+    ) -> tuple[NtfsAceRecord, ...]:
+        """Every stored entry for one path, in evaluation order.
+
+        Unpaged on purpose, and for the same reason :meth:`recompute_acl_hash` is: an
+        access check is over a whole DACL. Evaluating a page of one would compute a Deny
+        that the next page cancels, or grant through an Allow the previous page had already
+        denied — a number that looks like an answer and is not one.
+
+        ``limit`` is a ceiling, not a page size: one row beyond it is fetched deliberately
+        so that a caller can tell "this is the whole ACL" from "this is as much of it as
+        the ceiling allows", and report the difference rather than evaluating over a
+        silently shortened DACL.
+        """
+        statement = (
+            select(ntfs_aces)
+            .where(ntfs_aces.c.resource_key == resource_key.casefold())
+            .order_by(ntfs_aces.c.order_index.nulls_last(), ntfs_aces.c.ace_key)
+            .limit(max(1, limit) + 1)
+        )
+        rows = (await self._session.execute(statement)).mappings().all()
+        return tuple(_ntfs_ace_record(row) for row in rows)
+
+    async def full_share_acl(
+        self, share_key: str, *, limit: int = MAX_ACL_FETCH
+    ) -> tuple[ShareAceRecord, ...]:
+        """Every stored entry for one share's ACL, in evaluation order."""
+        statement = (
+            select(smb_share_aces)
+            .where(smb_share_aces.c.share_key == share_key.casefold())
+            .order_by(smb_share_aces.c.order_index.nulls_last(), smb_share_aces.c.ace_key)
+            .limit(max(1, limit) + 1)
+        )
+        rows = (await self._session.execute(statement)).mappings().all()
+        return tuple(_ace_record(row) for row in rows)
+
+    async def ntfs_acls_for(
+        self, keys: Sequence[str], *, limit: int = MAX_ACL_FETCH
+    ) -> dict[str, tuple[NtfsAceRecord, ...]]:
+        """Whole DACLs for several paths in one query, keyed by path.
+
+        One statement for a page of resources rather than one per resource: the endpoint
+        that lists what a principal can reach evaluates a page at a time, and a
+        per-resource read would make its query count grow with the page size — the shape of
+        every N+1 this project has already measured out of the other endpoints.
+
+        A key with no entries is absent from the result rather than mapped to an empty
+        tuple, because the two mean different things — no ACL was stored, versus an ACL with
+        no entries — and only the caller holding the resource row can tell which.
+        """
+        folded = sorted({key.casefold() for key in keys})
+        if not folded:
+            return {}
+        statement = (
+            select(ntfs_aces)
+            .where(ntfs_aces.c.resource_key.in_(folded))
+            .order_by(
+                ntfs_aces.c.resource_key,
+                ntfs_aces.c.order_index.nulls_last(),
+                ntfs_aces.c.ace_key,
+            )
+        )
+        rows = (await self._session.execute(statement)).mappings().all()
+        return _group_by_key(rows, "resource_key", _ntfs_ace_record, limit)
+
+    async def share_acls_for(
+        self, keys: Sequence[str], *, limit: int = MAX_ACL_FETCH
+    ) -> dict[str, tuple[ShareAceRecord, ...]]:
+        """Whole share ACLs for several shares in one query, keyed by share."""
+        folded = sorted({key.casefold() for key in keys})
+        if not folded:
+            return {}
+        statement = (
+            select(smb_share_aces)
+            .where(smb_share_aces.c.share_key.in_(folded))
+            .order_by(
+                smb_share_aces.c.share_key,
+                smb_share_aces.c.order_index.nulls_last(),
+                smb_share_aces.c.ace_key,
+            )
+        )
+        rows = (await self._session.execute(statement)).mappings().all()
+        return _group_by_key(rows, "share_key", _ace_record, limit)
+
+    # --------------------------------------------- candidates for one principal
+
+    async def resources_named_by(
+        self,
+        principal_keys: Sequence[str],
+        *,
+        limit: int = DEFAULT_PAGE_SIZE,
+        after: str | None = None,
+    ) -> Page[str]:
+        """Paths whose evaluation could possibly involve one of these principals.
+
+        The bounded candidate set behind "what can this principal reach": the trustees of
+        an access token, resolved through the reference index, rather than every directory
+        in the estate evaluated against every principal in the domain.
+
+        **A union, not just the index.** A path with a NULL DACL grants everyone full
+        access and names nobody, so it appears in no reference row — and an answer that
+        silently omitted exactly the paths open to the world would invert the finding this
+        tool exists to produce. It is a second indexed read
+        (``ix_ntfs_resources_null_dacl``), unioned into the same keyset page.
+        """
+        page_size = _page_size(limit)
+        if not principal_keys:
+            return Page(items=(), has_more=False, next_key=None)
+
+        named = select(principal_references.c.reference_key.label("candidate_key")).where(
+            principal_references.c.principal_key.in_(sorted(set(principal_keys))),
+            principal_references.c.reference_kind == ReferenceKind.NTFS_ACE.value,
+        )
+        unrestricted = select(ntfs_resources.c.resource_key.label("candidate_key")).where(
+            ~ntfs_resources.c.dacl_present
+        )
+        return await self._candidate_page(named.union(unrestricted), page_size, after)
+
+    async def shares_named_by(
+        self,
+        principal_keys: Sequence[str],
+        *,
+        limit: int = DEFAULT_PAGE_SIZE,
+        after: str | None = None,
+    ) -> Page[str]:
+        """Shares whose ACL names one of these principals.
+
+        No union here, and the asymmetry with :meth:`resources_named_by` is deliberate: a
+        share with no stored ACL is *unknown*, not unrestricted. Listing it as a candidate
+        on that basis would assert that an unread ACL grants something.
+        """
+        page_size = _page_size(limit)
+        if not principal_keys:
+            return Page(items=(), has_more=False, next_key=None)
+
+        named = select(principal_references.c.reference_key.label("candidate_key")).where(
+            principal_references.c.principal_key.in_(sorted(set(principal_keys))),
+            principal_references.c.reference_kind == ReferenceKind.SMB_ACE.value,
+        )
+        return await self._candidate_page(named, page_size, after)
+
+    async def _candidate_page(
+        self, source: Select[Any] | CompoundSelect[Any], page_size: int, after: str | None
+    ) -> Page[str]:
+        """One keyset page of candidate keys out of a (possibly unioned) indexed source."""
+        combined = source.subquery()
+        statement = (
+            select(combined.c.candidate_key).order_by(combined.c.candidate_key).limit(page_size + 1)
+        )
+        if after is not None:
+            statement = statement.where(combined.c.candidate_key > after)
+        keys = [row[0] for row in (await self._session.execute(statement)).all()]
+        has_more = len(keys) > page_size
+        visible = tuple(keys[:page_size])
+        return Page(
+            items=visible,
+            has_more=has_more,
+            next_key=visible[-1] if has_more and visible else None,
+        )
+
+
+def _group_by_key(
+    rows: Sequence[RowMapping],
+    column: str,
+    build: Callable[[RowMapping], ItemT],
+    limit: int,
+) -> dict[str, tuple[ItemT, ...]]:
+    """Fold ordered rows into per-key tuples, keeping one row past the ceiling.
+
+    The extra row is what lets the caller report truncation rather than evaluating a DACL
+    it does not know is incomplete.
+    """
+    grouped: dict[str, list[ItemT]] = {}
+    for row in rows:
+        bucket = grouped.setdefault(row[column], [])
+        if len(bucket) <= limit:
+            bucket.append(build(row))
+    return {key: tuple(value) for key, value in grouped.items()}
 
 
 def _share_root_key(share_key: str) -> str:

@@ -21,3 +21,6 @@ Rules:
 | [0007](0007-resolution-is-a-join.md) | A trustee's resolution is computed at query time, never stored | Accepted |
 | [0008](0008-acl-normal-form-and-hash.md) | A DACL has one normalized form, and its hash excludes the owner | Accepted |
 | [0009](0009-boundaries-are-derived-from-a-projection.md) | An ACL boundary is derived from the parent's projection, and unknown is a boundary | Accepted |
+| [0010](0010-effective-access-is-an-access-check.md) | Effective access is a faithful access check over a constructed token | Accepted |
+| [0011](0011-answers-carry-their-uncertainty.md) | An effective-access answer carries the conditions that qualify it | Accepted |
+| [0012](0012-bounded-access-queries.md) | Effective-access queries are bounded by inverting the question | Accepted |

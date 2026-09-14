@@ -36,7 +36,7 @@ from httpx import AsyncClient
 
 from app.contracts.v1 import keys
 from app.db import Database
-from app.domain import AceType, AclAceFacts, Sid, acl_hash
+from app.domain import AceType, AclAceFacts, MembershipEdgeKind, Sid, acl_hash
 
 pytestmark = pytest.mark.anyio
 
@@ -362,3 +362,245 @@ async def test_an_acl_page_reads_the_entry_table_a_bounded_number_of_times(
 
     assert response.status_code == 200
     assert statements.reading("ntfs_aces") == 3
+
+
+# --------------------------------------------------------------- effective access
+
+ACCESS_PAGED = [
+    pytest.param(
+        f"/api/v1/access/principals/{DOMAIN_SID}-1104/resources?limit={{n}}",
+        id="access-principal-resources",
+    ),
+    pytest.param(
+        f"/api/v1/access/principals/{DOMAIN_SID}-1104/shares?limit={{n}}",
+        id="access-principal-shares",
+    ),
+    pytest.param(
+        f"/api/v1/access/resources/{encoded(FINANCE_UNC)}/principals?limit={{n}}&members=all",
+        id="access-resource-principals",
+    ),
+]
+
+
+@pytest.mark.parametrize("template", ACCESS_PAGED)
+async def test_an_access_listing_costs_the_same_whatever_the_page_holds(
+    client: AsyncClient, estate: None, statements: StatementLog, template: str
+) -> None:
+    """The same property as every other listing, on the reads that derive rather than report.
+
+    It matters more here. An effective-access answer needs a DACL, a share ACL and a
+    membership traversal *per row*, so the obvious implementation issues four statements per
+    result and looks perfectly correct while doing it.
+    """
+    with statements:
+        one = await client.get(template.format(n=1))
+    single = statements.count
+
+    with statements:
+        many = await client.get(template.format(n=100))
+    hundred = statements.count
+
+    assert one.status_code == 200, one.text
+    assert many.status_code == 200, many.text
+    assert single > 0
+    assert hundred == single, (
+        f"{template} issued {single} statement(s) for one row and {hundred} for a hundred."
+    )
+
+
+async def test_resolving_one_principal_against_one_resource_is_a_constant_read(
+    client: AsyncClient, estate: None, statements: StatementLog
+) -> None:
+    """Each table read once, or twice where two different rows are genuinely needed.
+
+    Pinned exactly rather than bounded, because this is the endpoint every other one is
+    built on: the UI calls it per row of a list, and a duplicated read here is multiplied by
+    everything above it.
+    """
+    with statements:
+        response = await client.get(
+            f"/api/v1/access/principals/{DOMAIN_SID}-1104/resources/{encoded(FINANCE_UNC)}"
+        )
+
+    assert response.status_code == 200, response.text
+    assert statements.reading("ntfs_resources") == 1
+    assert statements.reading("ntfs_aces") == 1
+    assert statements.reading("smb_share_aces") == 1
+    assert statements.reading("smb_shares") == 1
+
+
+WIDE_GROUP = f"{DOMAIN_SID}-1500"
+WIDE_MEMBERS = 40
+WIDE_UNC = "\\\\FS01\\Wide"
+WIDE_SCOPE = "\\\\fs01\\wide"
+
+
+@pytest.fixture
+async def wide_membership(client: AsyncClient) -> None:
+    """One directory whose ACL names one group, and a group with forty members.
+
+    Built for a single property: the listing of who can reach a resource must not read the
+    membership table once per member. That is the shape of the quadratic answer this phase
+    exists to avoid, and it is invisible in the response body.
+    """
+    run_id = str(uuid.uuid4())
+    members = [f"{DOMAIN_SID}-{2000 + number}" for number in range(WIDE_MEMBERS)]
+    entries = [ace(run_id, 10, WIDE_UNC, WIDE_GROUP, 0)]
+    observations: list[dict[str, Any]] = [
+        observation("server", run_id, 1, source_key=keys.server_key("FS01"), name="FS01"),
+        observation(
+            "smb_share",
+            run_id,
+            2,
+            source_key=keys.share_key("FS01", "Wide"),
+            server_name="FS01",
+            share_name="Wide",
+        ),
+        observation(
+            "smb_ace",
+            run_id,
+            3,
+            source_key=keys.smb_ace_key("FS01", "Wide", Sid("S-1-1-0"), "allow", None, "full"),
+            server_name="FS01",
+            share_name="Wide",
+            trustee_sid="S-1-1-0",
+            ace_type="allow",
+            permission="full",
+            order_index=0,
+        ),
+        observation(
+            "ntfs_resource",
+            run_id,
+            4,
+            source_key=keys.ntfs_resource_key(WIDE_UNC),
+            path=WIDE_UNC,
+            dacl_present=True,
+            dacl_protected=False,
+            ace_count=1,
+            acl_hash=digest(entries),
+            is_acl_boundary=True,
+            boundary_reason="share_root",
+        ),
+        *entries,
+        observation(
+            "principal",
+            run_id,
+            5,
+            source_key=f"principal|{WIDE_GROUP}",
+            sid=WIDE_GROUP,
+            principal_kind="domain_group",
+            display_name="Wide-Group",
+        ),
+    ]
+    for index, member in enumerate(members):
+        observations.append(
+            observation(
+                "principal",
+                run_id,
+                100 + index,
+                source_key=f"principal|{member}",
+                sid=member,
+                principal_kind="user",
+            )
+        )
+        observations.append(
+            observation(
+                "membership_edge",
+                run_id,
+                200 + index,
+                source_key=keys.membership_key(
+                    Sid(WIDE_GROUP), Sid(member), MembershipEdgeKind.DIRECTORY_GROUP_MEMBER
+                ),
+                group_sid=WIDE_GROUP,
+                member_sid=member,
+                edge_kind="directory_group_member",
+                member_kind="user",
+            )
+        )
+
+    from tests.support.ingest import replay
+
+    await replay(
+        client,
+        {
+            "start": {
+                "schema_version": "1.3",
+                "run_id": run_id,
+                "source": {
+                    "collector": "ntfs",
+                    "collector_host": "COLLECTOR01",
+                    "method": "fixture",
+                },
+                "started_at": "2026-09-14T08:00:00Z",
+                "scopes": [{"kind": "directory_tree", "key": WIDE_SCOPE}],
+                "incremental": True,
+            },
+            "batches": [
+                {
+                    "schema_version": "1.3",
+                    "run_id": run_id,
+                    "batch_id": str(uuid.uuid4()),
+                    "sequence": 1,
+                    "is_final": True,
+                    "observations": observations,
+                }
+            ],
+            "completion": {
+                "schema_version": "1.3",
+                "run_id": run_id,
+                "status": "succeeded",
+                "completed_at": "2026-09-14T09:00:00Z",
+                "batch_count": 1,
+                "observation_count": len(observations),
+                "error_count": 0,
+                "errors": [],
+                "reconciled_scopes": [],
+            },
+        },
+    )
+
+
+async def test_listing_who_can_reach_a_resource_does_not_read_per_member(
+    client: AsyncClient, wide_membership: None, statements: StatementLog
+) -> None:
+    """Forty members, and the membership table is read a handful of times, not forty.
+
+    This is the whole reason the resource-to-principals answer is computed by expanding the
+    ACL's *trustees* downward rather than by evaluating principals one at a time. The
+    traversal costs one query per breadth-first level per trustee, so the count follows the
+    shape of the groups and not the size of the estate.
+    """
+    with statements:
+        response = await client.get(
+            f"/api/v1/access/resources/{encoded(WIDE_UNC)}/principals?limit=100"
+        )
+
+    body = response.json()
+    assert response.status_code == 200, response.text
+    listed = {item["principal"]["key"] for item in body["items"]}
+    # Every member of the group, plus the share ACL's Everyone trustee. Everyone is listed
+    # as a principal in its own right because a well-known SID is not a group, and dropping
+    # it would hide the widest grant on the resource.
+    assert {f"{DOMAIN_SID}-{2000 + number}" for number in range(WIDE_MEMBERS)} <= listed
+    assert "S-1-1-0" in listed
+    assert len(listed) == WIDE_MEMBERS + 1
+    assert statements.reading("membership_edges") <= 8, (
+        f"{WIDE_MEMBERS} members cost {statements.reading('membership_edges')} reads of "
+        "membership_edges; a bounded traversal costs one per level per trustee."
+    )
+    assert statements.count <= 15
+
+
+async def test_the_whole_listing_costs_no_more_than_one_page_of_it(
+    client: AsyncClient, wide_membership: None, statements: StatementLog
+) -> None:
+    """Paging slices a traversal that has already happened; it does not re-fan-out."""
+    with statements:
+        await client.get(f"/api/v1/access/resources/{encoded(WIDE_UNC)}/principals?limit=1")
+    one = statements.count
+
+    with statements:
+        await client.get(f"/api/v1/access/resources/{encoded(WIDE_UNC)}/principals?limit=100")
+    many = statements.count
+
+    assert one == many

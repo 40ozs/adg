@@ -46,7 +46,7 @@ from app.services.graph import (
 
 router = APIRouter(prefix="/api/v1", tags=["graph"])
 
-__all__ = ["PrincipalSummary", "principal_summary", "router"]
+__all__ = ["PrincipalSummary", "principal_summary", "resolve_principal", "router"]
 
 IdentifierPath = Annotated[
     str,
@@ -251,7 +251,7 @@ async def get_principal(
     identifier: IdentifierPath, session: Session, host: HostQuery = None
 ) -> PrincipalDetail:
     repository = MembershipRepository(session)
-    key, record = await _resolve(repository, identifier, host)
+    key, record = await resolve_principal(repository, identifier, host)
     aliases = await repository.aliases_for(key) if record is not None else ()
     return _principal_detail(
         key,
@@ -276,7 +276,7 @@ async def group_members(
     cursor: CursorQuery = None,
 ) -> DirectMembersResponse:
     repository = MembershipRepository(session)
-    key, record = await _resolve(repository, identifier, host)
+    key, record = await resolve_principal(repository, identifier, host)
     page_size = normalize_limit(limit)
     page = await repository.direct_members(key, limit=page_size, after=decode_keyset_cursor(cursor))
     return DirectMembersResponse(
@@ -316,7 +316,7 @@ async def group_effective_members(
     cursor: CursorQuery = None,
 ) -> EffectiveMembersResponse:
     repository = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
-    key, record = await _resolve(repository, identifier, host)
+    key, record = await resolve_principal(repository, identifier, host)
     result = await GraphService(repository).effective_members(key, limits)
 
     matching = [node for node in result.nodes if node.matches(include)]
@@ -356,7 +356,7 @@ async def principal_groups(
     cursor: CursorQuery = None,
 ) -> DirectGroupsResponse | EffectiveGroupsResponse:
     repository = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
-    key, record = await _resolve(repository, identifier, host)
+    key, record = await resolve_principal(repository, identifier, host)
 
     if scope == "direct":
         page_size = normalize_limit(limit)
@@ -407,8 +407,8 @@ async def membership_paths(
     group_host: HostQuery = None,
 ) -> MembershipPathsResponse:
     repository = MembershipRepository(session, edge_fetch_limit=limits.max_edges + 1)
-    member_key, member_record = await _resolve(repository, identifier, host)
-    group_key, group_record = await _resolve(repository, group, group_host)
+    member_key, member_record = await resolve_principal(repository, identifier, host)
+    group_key, group_record = await resolve_principal(repository, group, group_host)
     if member_key == group_key:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -441,13 +441,18 @@ async def membership_paths(
 # ------------------------------------------------------------------- helpers
 
 
-async def _resolve(
+async def resolve_principal(
     repository: MembershipRepository, identifier: str, host: str | None
 ) -> tuple[str, PrincipalRecord | None]:
     """Turn a URL identifier into a storage key, or fail with a precise reason.
 
     A key with no ``principals`` row is still valid when a membership edge names it: the
     edge was observed, and refusing to answer would hide a membership ADG genuinely holds.
+
+    Public for the same reason :func:`principal_summary` is: the access endpoints take the
+    identical identifier and must fail the identical way. A second implementation would be
+    free to answer a 404 where this one answers a 409, and an ambiguous BUILTIN SID is
+    precisely the case where the difference matters.
     """
     resolution = await repository.resolve(identifier, host)
     if resolution.record is not None:

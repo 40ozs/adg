@@ -284,3 +284,8 @@ Deliberately out of scope for Phase 4A, and owned by Phase 4B or later:
 
 The module holds no identity and performs no I/O, which is what makes all of the above
 testable without a database, a collector, or a Windows host.
+
+Phase 4B built that layer on top of this one: see
+[effective-access.md](effective-access.md), with [ADR-0010](../decisions/0010-effective-access-is-an-access-check.md)
+for the access check and the token it is evaluated against. Everything listed above is now
+implemented there, and nothing in this module changed to accommodate it.

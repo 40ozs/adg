@@ -9,8 +9,8 @@
     "expected_ntfs_mask": 2032127,
     "expected_share_permission": "read",
     "limiting_layer": "smb",
-    "expected_effective_remote": "read",
-    "expected_effective_local": "full"
+    "expected_effective_remote": "read_execute",
+    "expected_effective_local": "full_control"
   },
   "start": {
     "schema_version": "1.0",
