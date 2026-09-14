@@ -1069,10 +1069,67 @@
         "title": "CausalPathView",
         "type": "object"
       },
+      "CollectionOperationsResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/ObjectCountsView"
+          },
+          "errors": {
+            "description": "Reported collector errors, grouped by code.",
+            "items": {
+              "$ref": "#/components/schemas/ErrorGroupView"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "health": {
+            "enum": [
+              "no_data",
+              "healthy",
+              "incomplete",
+              "failed"
+            ],
+            "title": "Health",
+            "type": "string"
+          },
+          "notes": {
+            "description": "One sentence per scope that needs attention, in scope order.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeOperationsView"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "total_errors": {
+            "default": 0,
+            "title": "Total Errors",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "health",
+          "summary",
+          "counts"
+        ],
+        "title": "CollectionOperationsResponse",
+        "type": "object"
+      },
       "CollectionStatusResponse": {
         "description": "Whether an empty result can be believed.\n\n``health`` is the field a client branches on:\n\n* ``no_data`` — nothing has ever run. An empty page means \"not collected\".\n* ``healthy`` — every collector's latest run succeeded cleanly. An empty page means\n  \"nothing is there\".\n* ``incomplete`` — something is partial, running, or reported errors.\n* ``failed`` — a collector's latest run failed; part of the estate is unobserved.",
         "properties": {
           "collectors": {
+            "description": "One entry per (collector, target), ordered by collector then target. A collector kind that scans several servers appears once per server.",
             "items": {
               "$ref": "#/components/schemas/CollectorCoverageView"
             },
@@ -1110,6 +1167,7 @@
         "type": "object"
       },
       "CollectorCoverageView": {
+        "description": "The latest run of one *scope*: one collector against one target.\n\nThere is a row per ``(collector, target)``, not per collector kind. A kind that runs\nagainst four file servers produces four rows, and a failure on one of them stays\nvisible however recently the other three succeeded.",
         "properties": {
           "collector": {
             "title": "Collector",
@@ -1810,6 +1868,59 @@
           "complete"
         ],
         "title": "EnumerationView",
+        "type": "object"
+      },
+      "ErrorGroupView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "collectors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Collectors",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "is_widespread": {
+            "description": "Reported by more than one collector, so it is unlikely to be one object.",
+            "title": "Is Widespread",
+            "type": "boolean"
+          },
+          "latest_occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Occurred At"
+          },
+          "sample_targets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sample Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "count",
+          "collectors",
+          "latest_occurred_at",
+          "sample_targets",
+          "is_widespread"
+        ],
+        "title": "ErrorGroupView",
         "type": "object"
       },
       "ExplanationEdgeView": {
@@ -3165,6 +3276,61 @@
           "resource_kind"
         ],
         "title": "NtfsResourceSummary",
+        "type": "object"
+      },
+      "ObjectCountsView": {
+        "description": "How many of each object the store holds.\n\nA collector that ran cleanly and wrote four rows did not do what it was configured to\ndo, and nothing about its own status says so.",
+        "properties": {
+          "directories": {
+            "title": "Directories",
+            "type": "integer"
+          },
+          "membership_edges": {
+            "title": "Membership Edges",
+            "type": "integer"
+          },
+          "ntfs_aces": {
+            "title": "Ntfs Aces",
+            "type": "integer"
+          },
+          "principals": {
+            "title": "Principals",
+            "type": "integer"
+          },
+          "scan_runs": {
+            "title": "Scan Runs",
+            "type": "integer"
+          },
+          "servers": {
+            "title": "Servers",
+            "type": "integer"
+          },
+          "share_aces": {
+            "title": "Share Aces",
+            "type": "integer"
+          },
+          "shares": {
+            "title": "Shares",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Collected objects. Excludes scan_runs: a run is an act.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "principals",
+          "membership_edges",
+          "servers",
+          "shares",
+          "share_aces",
+          "directories",
+          "ntfs_aces",
+          "scan_runs",
+          "total"
+        ],
+        "title": "ObjectCountsView",
         "type": "object"
       },
       "ObservationBatch": {
@@ -4763,6 +4929,155 @@
         "title": "RoleDescription",
         "type": "object"
       },
+      "RunOutcomeView": {
+        "description": "One run, as the collector status page shows it.",
+        "properties": {
+          "batches_received": {
+            "title": "Batches Received",
+            "type": "integer"
+          },
+          "batches_reported": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batches Reported"
+          },
+          "collector": {
+            "title": "Collector",
+            "type": "string"
+          },
+          "collector_host": {
+            "title": "Collector Host",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completeness": {
+            "enum": [
+              "complete",
+              "partial",
+              "none",
+              "in_progress"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "declared_scopes": {
+            "title": "Declared Scopes",
+            "type": "integer"
+          },
+          "downgrade_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downgrade Reason"
+          },
+          "error_count": {
+            "title": "Error Count",
+            "type": "integer"
+          },
+          "incremental": {
+            "title": "Incremental",
+            "type": "boolean"
+          },
+          "observations_applied": {
+            "title": "Observations Applied",
+            "type": "integer"
+          },
+          "observations_reported": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observations Reported"
+          },
+          "reconciled_scopes": {
+            "title": "Reconciled Scopes",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "shortfall": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What this run did not deliver, in one sentence. Null when nothing.",
+            "title": "Shortfall"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "required": [
+          "run_id",
+          "collector",
+          "collector_host",
+          "target",
+          "status",
+          "started_at",
+          "completed_at",
+          "error_count",
+          "batches_reported",
+          "batches_received",
+          "observations_reported",
+          "observations_applied",
+          "declared_scopes",
+          "reconciled_scopes",
+          "incremental",
+          "downgrade_reason",
+          "completeness"
+        ],
+        "title": "RunOutcomeView",
+        "type": "object"
+      },
       "ScanRunCompletedResponse": {
         "description": "Acknowledges a completion, with the status the server actually recorded.",
         "properties": {
@@ -5316,6 +5631,97 @@
         ],
         "title": "ScopeKind",
         "type": "string"
+      },
+      "ScopeOperationsView": {
+        "description": "One collector against one target, with both of the runs an operator needs.\n\n``latest``, ``last_success`` and ``last_failure`` are three different facts and the page\nshows all three. A scope whose latest run failed still has data on screen from its last\nsuccess, and reporting only \"failed\" hides how old that data is.",
+        "properties": {
+          "collector": {
+            "title": "Collector",
+            "type": "string"
+          },
+          "completeness": {
+            "enum": [
+              "complete",
+              "partial",
+              "none",
+              "in_progress"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "has_ever_succeeded": {
+            "title": "Has Ever Succeeded",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "last_failure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunOutcomeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_success": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunOutcomeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest": {
+            "$ref": "#/components/schemas/RunOutcomeView"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "stale_success": {
+            "description": "The last success is not the latest run: the newest attempt did not work.",
+            "title": "Stale Success",
+            "type": "boolean"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "required": [
+          "collector",
+          "target",
+          "label",
+          "completeness",
+          "has_ever_succeeded",
+          "stale_success",
+          "note",
+          "latest",
+          "last_success",
+          "last_failure"
+        ],
+        "title": "ScopeOperationsView",
+        "type": "object"
       },
       "ScopeView": {
         "properties": {
@@ -6862,6 +7268,7 @@
               "description": "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a route that would answer without one asks for the whole estate.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Principal",
               "type": "string"
             }
@@ -6875,6 +7282,7 @@
               "description": "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a query parameter rather than a path segment so that a client does not have to percent-encode backslashes into a URL path — which several proxies normalize or reject. A share key is not accepted: a share and the directory it publishes have different ACLs.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -7122,6 +7530,7 @@
               "description": "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a route that would answer without one asks for the whole estate.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Principal",
               "type": "string"
             }
@@ -7135,6 +7544,7 @@
               "description": "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a query parameter rather than a path segment so that a client does not have to percent-encode backslashes into a URL path — which several proxies normalize or reject. A share key is not accepted: a share and the directory it publishes have different ACLs.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -7420,6 +7830,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -7433,6 +7844,7 @@
               "description": "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share key is not accepted here: a share and the directory it publishes have different ACLs, and only one of them limits local access.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -7659,6 +8071,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -7890,6 +8303,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -7903,6 +8317,7 @@
               "description": "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share key is not accepted here: a share and the directory it publishes have different ACLs, and only one of them limits local access.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -8089,6 +8504,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -8313,6 +8729,7 @@
               "description": "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share key is not accepted here: a share and the directory it publishes have different ACLs, and only one of them limits local access.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -8491,6 +8908,56 @@
         ]
       }
     },
+    "/api/v1/collection/operations": {
+      "get": {
+        "description": "Everything the collector status page renders, in five statements.\n\nThe health verdict is the *same* one ``/status`` returns, folded from the same latest\nruns — so an operator told the estate is incomplete and a viewer reading the coverage\nbanner are never looking at two different answers.",
+        "operationId": "collection_operations_api_v1_collection_operations_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionOperationsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Collector operations: last success, last failure, completeness, counts, errors",
+        "tags": [
+          "collection"
+        ]
+      }
+    },
     "/api/v1/collection/status": {
       "get": {
         "operationId": "collection_status_api_v1_collection_status_get",
@@ -8553,6 +9020,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -8765,6 +9233,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -8891,6 +9360,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -9147,6 +9617,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -9234,6 +9705,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -9456,6 +9928,7 @@
               "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Identifier",
               "type": "string"
             }
@@ -9644,6 +10117,7 @@
               "description": "A SID (S-1-5-21-...), or a host-scoped key (fs01|S-1-5-32-544) to ask about one server's local group rather than the SID everywhere.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Trustee",
               "type": "string"
             }
@@ -9737,6 +10211,7 @@
               "description": "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share key is not accepted: a share and the directory it publishes have different ACLs.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -9795,6 +10270,7 @@
               "description": "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share key is not accepted: a share and the directory it publishes have different ACLs.",
               "maxLength": 1024,
               "minLength": 5,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Resource",
               "type": "string"
             }
@@ -10469,6 +10945,7 @@
               "description": "A server's host name, as collected. Case-insensitive.",
               "maxLength": 255,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Server",
               "type": "string"
             }
@@ -10534,6 +11011,7 @@
               "description": "A server's host name, as collected. Case-insensitive.",
               "maxLength": 255,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Server",
               "type": "string"
             }
@@ -10634,6 +11112,7 @@
               "description": "A share key (fs01|finance) or a UNC path (\\\\FS01\\Finance), percent-encoded. A path below the share root is rejected: it names a folder, not a share.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Share",
               "type": "string"
             }
@@ -10692,6 +11171,7 @@
               "description": "A share key (fs01|finance) or a UNC path (\\\\FS01\\Finance), percent-encoded. A path below the share root is rejected: it names a folder, not a share.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Share",
               "type": "string"
             }
@@ -10789,6 +11269,7 @@
               "description": "A share key (fs01|finance) or a UNC path (\\\\FS01\\Finance), percent-encoded. A path below the share root is rejected: it names a folder, not a share.",
               "maxLength": 512,
               "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
               "title": "Share",
               "type": "string"
             }

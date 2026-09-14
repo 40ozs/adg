@@ -12,6 +12,7 @@ import type { ApiResult, RequestOptions } from "@/lib/api/client";
 import { apiRequest } from "@/lib/api/client";
 import type {
   AuthConfig,
+  CollectionOperations,
   CollectionStatus,
   DevelopmentLogin,
   DirectGroupsResponse,
@@ -41,6 +42,7 @@ export const USED_PATHS = [
   "/auth/me",
   "/auth/dev/login",
   "/api/v1/collection/status",
+  "/api/v1/collection/operations",
   "/api/v1/scan-runs",
   "/api/v1/search",
   "/api/v1/servers",
@@ -102,6 +104,18 @@ export function developmentLogin(username: string): Promise<ApiResult<Developmen
 
 export function fetchCollectionStatus(token: string): Promise<ApiResult<CollectionStatus>> {
   return apiRequest<CollectionStatus>("/api/v1/collection/status", { token });
+}
+
+/**
+ * The collector status page's one call.
+ *
+ * Separate from `fetchCollectionStatus` because the two answer different questions: that
+ * one is on the path of every screen, this one is the operator's page and costs more.
+ */
+export function fetchCollectionOperations(
+  token: string,
+): Promise<ApiResult<CollectionOperations>> {
+  return apiRequest("/api/v1/collection/operations", { token });
 }
 
 export function fetchScanRuns(

@@ -20,23 +20,19 @@
 import { NextResponse } from "next/server";
 
 import { apiRequest } from "@/lib/api/client";
+import { proxyTarget } from "@/lib/api/proxy";
 import { currentSession } from "@/lib/auth/current";
-
-/** Paths the browser may ask for through this proxy, matched as prefixes. */
-const ALLOWED_PREFIXES = ["api/v1/", "auth/me"];
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ path: string[] }> },
 ): Promise<NextResponse> {
   const { path } = await context.params;
-  const joined = path.join("/");
+  const joined = proxyTarget(path);
 
-  if (!ALLOWED_PREFIXES.some((prefix) => joined === prefix || joined.startsWith(prefix))) {
-    // An allow-list rather than a pass-through: this handler must never become a way to
-    // reach arbitrary URLs on the API's network from a browser.
+  if (joined === null) {
     return NextResponse.json(
-      { detail: `This application does not proxy /${joined}.` },
+      { detail: `This application does not proxy /${path.join("/")}.` },
       { status: 404 },
     );
   }

@@ -23,6 +23,7 @@ def transcript(
     status: str = "succeeded",
     errors: int = 0,
     host: str = "COLLECTOR01",
+    target: str | None = None,
 ) -> dict[str, Any]:
     """A run that reports nothing, which is all these tests need: coverage is about runs."""
     run_id = str(uuid.uuid4())
@@ -43,6 +44,7 @@ def transcript(
                 "collector_host": host,
                 "method": "test",
                 "collector_version": "0.1.0",
+                **({"target": target} if target is not None else {}),
             },
             "started_at": started_at,
             "scopes": [{"kind": "server", "key": "fs01"}],
@@ -146,11 +148,12 @@ class TestCollectionStatus:
         assert body["collectors"][0]["trustworthy"] is False
         assert body["collectors"][0]["error_count"] == 3
 
-    async def test_one_collector_running_on_two_hosts_is_still_one_collector(
+    async def test_one_collector_on_two_hosts_with_no_target_is_still_one_collector(
         self, client: AsyncClient
     ) -> None:
-        """Coverage is per collector kind. Two file servers scanned by the same collector
-        are two runs, and the newest one is the state of that collector."""
+        """Coverage is per *scope*: ``(collector, target)``. Two runs of one collector that
+        declare no target are one scope, and the newest of them is its state — which is what
+        this asserted before the unit changed, and still asserts."""
         await record(
             client,
             transcript(collector="ntfs", started_at="2026-09-14T08:00:00Z", host="COLLECTOR01"),
@@ -164,6 +167,120 @@ class TestCollectionStatus:
 
         assert len(body["collectors"]) == 1
         assert body["collectors"][0]["collector"] == "ntfs"
+
+    async def test_a_failure_on_one_server_is_not_hidden_by_a_success_on_another(
+        self, client: AsyncClient
+    ) -> None:
+        """The defect Phase 6D found, measured against a multi-server estate.
+
+        Coverage used to be reduced to the newest run of each collector *kind*. That is
+        correct only while each kind runs against one target — and the NTFS collector runs
+        against every file server. Under the old rule a newer success on FS01 superseded the
+        failure on FS03, the banner read ``healthy``, and every empty list in the product
+        became readable as "nothing is there" while a whole server was unobserved. That is
+        the exact misreading ``app/domain/collection.py`` exists to prevent.
+        """
+        await record(
+            client,
+            transcript(
+                collector="ntfs",
+                started_at="2026-09-14T08:00:00Z",
+                status="failed",
+                errors=1,
+                host="FS03",
+                target="FS03",
+            ),
+        )
+        await record(
+            client,
+            transcript(
+                collector="ntfs",
+                started_at="2026-09-14T09:00:00Z",
+                host="FS01",
+                target="FS01",
+            ),
+        )
+
+        body = (await client.get("/api/v1/collection/status")).json()
+
+        assert body["health"] == "failed"
+        assert any("FS03" in concern for concern in body["concerns"])
+        scopes = {(item["collector"], item["target"]): item for item in body["collectors"]}
+        assert set(scopes) == {("ntfs", "FS01"), ("ntfs", "FS03")}
+        assert scopes[("ntfs", "FS01")]["status"] == "succeeded"
+        assert scopes[("ntfs", "FS03")]["status"] == "failed"
+
+    async def test_a_concern_names_the_target_it_is_about(self, client: AsyncClient) -> None:
+        """Two rows of one collector kind are only distinguishable by target. A concern that
+        does not say which server was not read sends an operator to look at all of them."""
+        await record(
+            client,
+            transcript(
+                collector="ntfs",
+                started_at="2026-09-14T08:00:00Z",
+                status="failed",
+                errors=1,
+                host="FS03",
+                target="FS03",
+            ),
+        )
+
+        body = (await client.get("/api/v1/collection/status")).json()
+
+        assert body["concerns"] == [
+            "The most recent ntfs (FS03) run failed; its scope is unobserved."
+        ]
+
+    async def test_the_healthy_summary_names_each_collector_once(self, client: AsyncClient) -> None:
+        """One kind scanning four servers is four coverage rows and one name. A banner
+        reading "ntfs, ntfs, ntfs, ntfs" says nothing the first one did not."""
+        for index, host in enumerate(["FS01", "FS02", "FS03"]):
+            await record(
+                client,
+                transcript(
+                    collector="ntfs",
+                    started_at=f"2026-09-14T0{index + 1}:00:00Z",
+                    host=host,
+                    target=host,
+                ),
+            )
+
+        body = (await client.get("/api/v1/collection/status")).json()
+
+        assert body["health"] == "healthy"
+        assert body["summary"].count("ntfs") == 1
+        assert len(body["collectors"]) == 3
+
+    async def test_a_later_success_on_the_same_target_does_supersede_the_failure(
+        self, client: AsyncClient
+    ) -> None:
+        """The other half of the rule. Per-scope must not mean a failure is remembered
+        forever: re-scanning the server that failed clears it."""
+        await record(
+            client,
+            transcript(
+                collector="ntfs",
+                started_at="2026-09-14T08:00:00Z",
+                status="failed",
+                errors=1,
+                host="FS03",
+                target="FS03",
+            ),
+        )
+        await record(
+            client,
+            transcript(
+                collector="ntfs",
+                started_at="2026-09-14T10:00:00Z",
+                host="FS03",
+                target="FS03",
+            ),
+        )
+
+        body = (await client.get("/api/v1/collection/status")).json()
+
+        assert body["health"] == "healthy"
+        assert len(body["collectors"]) == 1
 
     async def test_a_viewer_may_read_it(self, client_as: Any, client: AsyncClient) -> None:
         """The whole point of granting viewers collectors:read."""

@@ -21,7 +21,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field
 
-from app.api.deps import Session, TraversalBounds
+from app.api.deps import PRINTABLE_IDENTIFIER, Session, TraversalBounds
 from app.api.pagination import (
     DEFAULT_LIMIT,
     MAX_LIMIT,
@@ -53,6 +53,7 @@ IdentifierPath = Annotated[
     Path(
         min_length=1,
         max_length=512,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). "
             "Use ?host= to disambiguate a BUILTIN SID seen on several computers."
@@ -477,6 +478,22 @@ async def resolve_principal(
     candidate = _candidate_key(identifier, host)
     if await repository.is_known(candidate):
         return candidate, None
+
+    # Two different absences, and they call for two different sentences. An identifier that
+    # *could* name a principal is simply not collected yet, and may be tomorrow. One that
+    # could not — a bare value that is neither a SID nor a host-scoped key, and a storage
+    # key is `SID` or `host|SID` — will never be collected, because no object can carry it.
+    # Telling somebody who mistyped a SID that it "may not have been collected yet" sends
+    # them to look at the collectors instead of at what they typed.
+    if not _could_name_a_principal(identifier):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"{identifier!r} is not a principal identifier. Give a SID "
+                "(S-1-5-21-...), or a host-scoped storage key for a local group "
+                "(fs01|S-1-5-32-544). Nothing can be stored under that value."
+            ),
+        )
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=(
@@ -484,6 +501,19 @@ async def resolve_principal(
             "membership edge names it. It may simply not have been collected yet."
         ),
     )
+
+
+def _could_name_a_principal(identifier: str) -> bool:
+    """Whether any principal could ever carry this identifier as a key.
+
+    A storage key is a SID, or ``host|SID`` for a local group — so both halves of the
+    scoped form are checked rather than only the shape. ``fs01|not-a-sid`` is as impossible
+    as ``not-a-sid``.
+    """
+    host, separator, tail = identifier.partition("|")
+    if separator:
+        return bool(host) and Sid.try_parse(tail) is not None
+    return Sid.try_parse(identifier) is not None
 
 
 def _candidate_key(identifier: str, host: str | None) -> str:

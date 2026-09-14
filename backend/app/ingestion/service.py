@@ -1111,19 +1111,32 @@ class IngestionService:
             has_more=has_more,
         )
 
-    async def latest_run_per_collector(self) -> tuple[RunSummary, ...]:
-        """The most recent run of each collector kind.
+    async def latest_run_per_scope(self) -> tuple[RunSummary, ...]:
+        """The most recent run for each ``(collector, target)`` — one row per scope.
+
+        **Per scope, not per collector kind.** Reducing to one row per kind is only correct
+        while each kind runs against one target. The NTFS collector runs against every file
+        server, and under the per-kind rule a newer success on one server superseded a
+        failure on another: the coverage banner read ``healthy`` while a whole server was
+        unobserved. Phase 6D measured that against the demo estate. The scope is the unit a
+        run actually covers, so it is the unit coverage is judged on.
+
+        ``target`` is nullable — a collector need not declare one — and NULLs do not group
+        in ``DISTINCT ON``, so it is coalesced to the empty string. Runs with no target
+        therefore still collapse to one row per kind, which is what they meant.
 
         DISTINCT ON is PostgreSQL-specific and exactly right here: one index-ordered pass
-        picks the first row per collector, rather than a correlated subquery per kind.
+        picks the first row per scope, rather than a correlated subquery per scope.
         """
         joined = scan_runs.join(collector_sources, scan_runs.c.source_id == collector_sources.c.id)
+        scope_target = func.coalesce(collector_sources.c.target, "")
         statement = (
             select(scan_runs, collector_sources)
             .select_from(joined)
-            .distinct(collector_sources.c.collector)
+            .distinct(collector_sources.c.collector, scope_target)
             .order_by(
                 collector_sources.c.collector,
+                scope_target,
                 scan_runs.c.started_at.desc(),
                 scan_runs.c.run_id.desc(),
             )

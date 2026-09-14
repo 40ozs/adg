@@ -14,6 +14,15 @@ is handed its verdict rather than inferring one.
 The rule is deliberately pessimistic: any doubt downgrades the verdict. A collector whose
 latest run failed makes the whole picture ``failed`` even if three others succeeded,
 because the estate the failed one covers is exactly the part nobody can see.
+
+**One record per scope, not per collector kind.** Coverage was originally reduced to the
+newest run of each collector *kind*, which is correct only while each kind runs against one
+target. On a real estate the NTFS collector runs against every file server, and under that
+rule a newer success on FS01 superseded — and silently erased — a failure on FS03: the
+banner read ``healthy`` while a whole server was unobserved. That is the exact misreading
+this module exists to prevent, so the unit is now ``(collector, target)`` and a failure
+anywhere is visible until that target is scanned again. Phase 6D found it against a
+multi-server demo estate; no single-server test could have.
 """
 
 from __future__ import annotations
@@ -62,6 +71,15 @@ class CollectorCoverage:
     downgrade_reason: str | None
 
     @property
+    def scope_label(self) -> str:
+        """How this row names itself: the collector, and the target when it has one.
+
+        Two rows of the same kind are only distinguishable by target, and a concern that
+        does not say *which* server was not read sends an operator looking at all of them.
+        """
+        return self.collector if self.target is None else f"{self.collector} ({self.target})"
+
+    @property
     def is_trustworthy(self) -> bool:
         """Whether this collector's coverage may be read as complete."""
         return self.status is ScanStatus.SUCCEEDED and self.error_count == 0
@@ -70,15 +88,15 @@ class CollectorCoverage:
     def concern(self) -> str | None:
         """One sentence naming what is wrong, or ``None`` when nothing is."""
         if self.status is ScanStatus.FAILED:
-            return f"The most recent {self.collector} run failed; its scope is unobserved."
+            return f"The most recent {self.scope_label} run failed; its scope is unobserved."
         if self.status is ScanStatus.PARTIAL:
             reason = self.downgrade_reason or "some targets failed"
-            return f"The most recent {self.collector} run is partial ({reason})."
+            return f"The most recent {self.scope_label} run is partial ({reason})."
         if self.status in (ScanStatus.RUNNING, ScanStatus.PENDING):
-            return f"A {self.collector} run is still in progress; results are incomplete."
+            return f"A {self.scope_label} run is still in progress; results are incomplete."
         if self.error_count:
             return (
-                f"The most recent {self.collector} run succeeded but reported "
+                f"The most recent {self.scope_label} run succeeded but reported "
                 f"{self.error_count} error(s); some objects were unreadable."
             )
         return None
@@ -105,7 +123,9 @@ class CollectionStatus:
                 "been collected, not because nothing is there."
             )
         if self.health is CollectionHealth.HEALTHY:
-            collectors = ", ".join(item.collector for item in self.coverage)
+            # Deduplicated: one kind scanning four servers is four coverage rows and one
+            # name, and a banner reading "ntfs, ntfs, ntfs, ntfs" says nothing extra.
+            collectors = ", ".join(dict.fromkeys(item.collector for item in self.coverage))
             return f"Collection is current for: {collectors}."
         if self.health is CollectionHealth.FAILED:
             return (
@@ -121,12 +141,13 @@ class CollectionStatus:
 def assess_collection(latest_runs: Iterable[CollectorCoverage]) -> CollectionStatus:
     """Fold the latest run of each collector into one verdict.
 
-    ``latest_runs`` must already be reduced to one record per collector; choosing *which*
-    run is the latest is a query, and mixing that into the judgement would make the
-    judgement untestable without a database.
+    ``latest_runs`` must already be reduced to one record per *scope* — one per
+    ``(collector, target)`` — because choosing which run is the latest is a query, and
+    mixing that into the judgement would make the judgement untestable without a database.
+    See :meth:`app.ingestion.service.IngestionService.latest_run_per_scope`.
     """
     coverage: tuple[CollectorCoverage, ...] = tuple(
-        sorted(latest_runs, key=lambda item: item.collector)
+        sorted(latest_runs, key=lambda item: (item.collector, item.target or ""))
     )
     if not coverage:
         return CollectionStatus(

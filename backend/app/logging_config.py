@@ -3,6 +3,12 @@
 Log records are emitted as one JSON object per line so that container log drivers and
 log-aggregation tooling can parse them without regular expressions. A human-readable
 text format is available for local debugging via ``ADG_LOG_FORMAT=text``.
+
+Every record passes :class:`app.logging_redaction.RedactingFilter` on its way to either
+format, so a credential that reaches the logging call — from a driver's exception text, a
+library's warning, or an ``extra=`` added later — does not reach the stream. See that
+module for which four shapes are removed and, just as deliberately, which identifiers are
+not.
 """
 
 from __future__ import annotations
@@ -13,6 +19,8 @@ import logging
 import sys
 from collections.abc import Mapping
 from typing import Any
+
+from app.logging_redaction import RedactingFilter, redact
 
 # Attributes present on every ``logging.LogRecord``; anything else was supplied by the
 # caller through ``extra=`` and is merged into the JSON payload.
@@ -45,6 +53,21 @@ _RESERVED_RECORD_ATTRS = frozenset(
 )
 
 
+class TextLogFormatter(logging.Formatter):
+    """The human-readable format, with the same exception redaction as the JSON one.
+
+    A subclass rather than a plain ``Formatter`` so that ``ADG_LOG_FORMAT=text`` — which is
+    what a developer runs locally, against a real database, with real credentials in the
+    environment — is not the one format that prints a DSN in a traceback.
+    """
+
+    def formatException(self, ei: Any) -> str:
+        return redact(super().formatException(ei))
+
+    def formatStack(self, stack_info: str) -> str:
+        return redact(super().formatStack(stack_info))
+
+
 class JsonLogFormatter(logging.Formatter):
     """Format log records as single-line JSON objects."""
 
@@ -68,9 +91,12 @@ class JsonLogFormatter(logging.Formatter):
             if key not in _RESERVED_RECORD_ATTRS and not key.startswith("_"):
                 payload[key] = _coerce(value)
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            # Redacted here rather than only in the filter: the traceback is rendered from
+            # exc_info at format time, and a frame's locals or a driver's DSN can carry a
+            # credential that no filter has seen yet.
+            payload["exception"] = redact(self.formatException(record.exc_info))
         if record.stack_info:
-            payload["stack"] = self.formatStack(record.stack_info)
+            payload["stack"] = redact(self.formatStack(record.stack_info))
         return json.dumps(payload, default=str, separators=(",", ":"))
 
 
@@ -104,7 +130,10 @@ def configure_logging(
             JsonLogFormatter(service=service, environment=environment, version=version)
         )
     else:
-        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s %(name)s %(message)s"))
+        handler.setFormatter(TextLogFormatter("%(asctime)s %(levelname)-8s %(name)s %(message)s"))
+    # On the handler, not on a logger: a filter on a logger does not see records that
+    # propagate up from its children, and uvicorn's records do exactly that.
+    handler.addFilter(RedactingFilter())
 
     root = logging.getLogger()
     for existing in list(root.handlers):

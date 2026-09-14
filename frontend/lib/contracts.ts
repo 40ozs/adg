@@ -87,6 +87,81 @@ export interface CollectionStatus {
   collectors: CollectorCoverage[];
 }
 
+/**
+ * The operator view of collection: `GET /api/v1/collection/operations`.
+ *
+ * Deliberately a different response from `CollectionStatus`. That one is consulted by every
+ * page before it renders an empty list and is kept cheap; this one is five statements and is
+ * read by one screen. Both carry the same `health`, computed from the same runs, so the
+ * banner an auditor sees and the page an operator reads can never disagree.
+ */
+export type Completeness = "complete" | "partial" | "none" | "in_progress";
+
+export interface RunOutcome {
+  run_id: string;
+  collector: string;
+  collector_host: string;
+  target: string | null;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  error_count: number;
+  batches_reported: number | null;
+  batches_received: number;
+  observations_reported: number | null;
+  observations_applied: number;
+  declared_scopes: number;
+  reconciled_scopes: number;
+  incremental: boolean;
+  downgrade_reason: string | null;
+  completeness: Completeness;
+  shortfall: string | null;
+}
+
+export interface ScopeOperations {
+  collector: string;
+  target: string | null;
+  label: string;
+  completeness: Completeness;
+  has_ever_succeeded: boolean;
+  stale_success: boolean;
+  note: string | null;
+  latest: RunOutcome;
+  last_success: RunOutcome | null;
+  last_failure: RunOutcome | null;
+}
+
+export interface CollectorErrorGroup {
+  code: string;
+  count: number;
+  collectors: string[];
+  latest_occurred_at: string | null;
+  sample_targets: string[];
+  is_widespread: boolean;
+}
+
+export interface ObjectCounts {
+  principals: number;
+  membership_edges: number;
+  servers: number;
+  shares: number;
+  share_aces: number;
+  directories: number;
+  ntfs_aces: number;
+  scan_runs: number;
+  total: number;
+}
+
+export interface CollectionOperations {
+  health: CollectionHealth;
+  summary: string;
+  notes: string[];
+  scopes: ScopeOperations[];
+  counts: ObjectCounts;
+  errors: CollectorErrorGroup[];
+  total_errors: number;
+}
+
 export interface PageInfo {
   limit: number;
   has_more: boolean;

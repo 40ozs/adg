@@ -29,13 +29,19 @@ database/         PostgreSQL schema history.
   seed/           Development seed data.
 docker/           Container build definitions.
 docs/
-  architecture/   System and domain architecture.
+  architecture/   System and domain architecture, and what the MVP can answer.
   contracts/      Collector/API payload contracts.
   decisions/      Architecture decision records.
   handoffs/       Per-phase implementation handoffs.
+  operations/     Runbook: install, verify, point at a domain, operate.
 scripts/          Windows developer commands (PowerShell 7).
   windows-test-tree/  Builds real NTFS trees to validate and benchmark the collector against.
 ```
+
+Two documents are the place to start:
+[`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) to get it running, and
+[`docs/architecture/mvp-capabilities.md`](docs/architecture/mvp-capabilities.md) for what it
+answers and — just as deliberately — what it does not.
 
 ## Prerequisites
 
@@ -72,6 +78,12 @@ seeds `.env` if it is missing. It never overwrites an existing `.env`.
 .\scripts\backend-test.ps1 -Smoke     # adds tests that need PostgreSQL running
 .\scripts\backend-lint.ps1            # ruff + mypy
 .\scripts\backend-lint.ps1 -Fix       # apply safe fixes first
+
+# Fill a local database with the demo estate (AD + SMB + NTFS), through the ingestion API.
+# Deterministic, idempotent, and deliberately imperfect — see --features for why.
+.\scripts\seed-demo.ps1
+.\scripts\seed-demo.ps1 -Profile large                         # for measuring, not demonstrating
+.\scripts\seed-demo.ps1 -OutDir .\.tmp\demo                    # write the transcripts, post nothing
 
 # Collectors
 .\scripts\collector-test.ps1                                   # Pester suites
@@ -148,7 +160,8 @@ Collector ingestion (contract v1; see
 | `POST /api/v1/scan-runs/{run_id}/completion` | Close a run and record any reconciled scopes. |
 | `GET /api/v1/scan-runs/{run_id}` | Inspect a run: status, coverage, counts, collector errors. |
 | `GET /api/v1/scan-runs` | Runs newest first, filterable by collector and status. |
-| `GET /api/v1/collection/status` | **Whether an empty result can be believed.** One verdict over the latest run of each collector. |
+| `GET /api/v1/collection/status` | **Whether an empty result can be believed.** One verdict over the latest run of each scope — one collector against one target. |
+| `GET /api/v1/collection/operations` | The collector status page: last success and last failure of every scope, what each run failed to deliver, how many objects are stored, and every reported error grouped by code. |
 
 > The three `POST` routes authenticate with a collector key in `X-ADG-Collector-Key`
 > (`ADG_COLLECTOR_API_KEYS`), or with an administrator's token. **Ingestion is never
@@ -260,6 +273,14 @@ Five properties of these pages are worth knowing before reading the code:
 - **Each section is one query, chosen by the `?tab=` in the URL**, and every list pages
   server-side with its position in the URL. Nothing computes permissions in the browser.
 
+The **Collectors** page (`/collectors`) is where every empty table points, and it is the
+operator's screen rather than the auditor's. It carries one row per *scope* — one collector
+against one target — with the **last successful** scan and the **last failed** scan side by
+side, because those are two facts: a scope whose latest run failed still has data on screen,
+and the page has to say how old it is. Beside them: what each run failed to deliver, how many
+objects are actually stored (a collector that ran cleanly and wrote nothing reports
+`succeeded` everywhere else in the product), and every reported error grouped by code.
+
 ## Architecture
 
 See [`docs/architecture/system-overview.md`](docs/architecture/system-overview.md).
@@ -273,6 +294,9 @@ Key invariants:
   `backend/app/api/__init__.py`; the frontend hiding a section is a courtesy, not a control
   ([ADR-0014](docs/decisions/0014-authorization-is-capabilities-enforced-in-the-backend.md)).
 - **Least privilege.** Normal collection must never require Domain Admin.
+- **Coverage is judged per scope**, `(collector, target)` — not per collector kind. A later
+  success on one file server must never hide a failed scan of another, because every empty
+  list below the failed one would then read as an answer.
 
 ## Security
 
@@ -283,3 +307,11 @@ belong in source control: `.env.example` is a template, and `.env` is ignored by
 The API **refuses to start** with `ADG_AUTH_MODE=development` and
 `ADG_ENVIRONMENT=production`, so a deployment that verifies no credential cannot be shipped
 by accident.
+
+Every log record passes a redaction filter before it is formatted: bearer tokens, JWTs,
+collector keys, `ADG_*` secrets and passwords inside connection strings are replaced with
+`[redacted]` — in the message, in structured `extra=` values, and in tracebacks. SIDs, UNC
+paths and account names are **not** redacted, deliberately: they are what an operator
+correlates against a Windows event log, and they are the subject of the product. That makes
+the log stream personal data rather than credential data; see
+[`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) §6.

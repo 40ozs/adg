@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import replace
+from typing import Any
 
 import pytest
 
@@ -68,8 +69,13 @@ class TestEveryFieldMovesTheToken:
             ("batches_received", 5),
         ],
     )
-    def test_changing_it_changes_the_token(self, field: str, value: object) -> None:
-        assert replace(basis(), **{field: value}).token != basis().token
+    def test_changing_it_changes_the_token(self, field: str, value: Any) -> None:
+        # `Any` rather than `object`: the parametrization deliberately mixes an int, a str
+        # and a datetime, and `replace` type-checks each field against its own declared
+        # type. A widened `object` makes every one of the five a type error.
+        changed: dict[str, Any] = {field: value}
+
+        assert replace(basis(), **changed).token != basis().token
 
     def test_every_field_is_covered(self) -> None:
         """Keeps the parametrization above honest as the dataclass grows."""

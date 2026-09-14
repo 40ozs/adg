@@ -17,6 +17,8 @@ Organized by the claim each group defends:
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from app.access_engine import (
@@ -53,7 +55,7 @@ from tests.access_engine.support import (
 )
 
 
-def local(*entries: AclEntry, **facts: object) -> EffectiveAccess:
+def local(*entries: AclEntry, **facts: Any) -> EffectiveAccess:
     """A local-path answer, so the share layer stays out of a test that is not about it."""
     return resolve_access(
         token(ALICE, [FINANCE_TEAM], path=AccessPath.LOCAL), dacl(*entries, **facts)

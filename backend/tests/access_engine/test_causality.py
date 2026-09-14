@@ -17,6 +17,8 @@ accomplishes nothing and then to sign off a finding as fixed.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from app.access_engine import (
@@ -24,12 +26,14 @@ from app.access_engine import (
     OWNERSHIP_POSITION,
     AccessPath,
     EdgeKind,
+    EffectiveAccess,
     ExplanationLimits,
     NodeKind,
     PathEffect,
     PathRelation,
     PathTruncation,
     RightsLayer,
+    SubjectToken,
     TokenAssumption,
     explain_access,
     resolve_access,
@@ -66,8 +70,13 @@ NESTED = (
 )
 
 
-def nested_token(*, path: AccessPath = AccessPath.REMOTE_SMB, **kwargs: object) -> object:
-    """Alice's token for the shared nesting: both groups, with the chain that reached them."""
+def nested_token(*, path: AccessPath = AccessPath.REMOTE_SMB, **kwargs: Any) -> SubjectToken:
+    """Alice's token for the shared nesting: both groups, with the chain that reached them.
+
+    Typed as the real token rather than as `object`. An opaque return type makes every call
+    site that passes it to `resolve_access` a type error, which is what the forty
+    `# type: ignore` comments this file used to carry were suppressing.
+    """
     return token(
         ALICE,
         [
@@ -75,13 +84,18 @@ def nested_token(*, path: AccessPath = AccessPath.REMOTE_SMB, **kwargs: object) 
             group_sid(FINANCE_RW, depth=2, path=(ALICE, FINANCE_TEAM, FINANCE_RW)),
         ],
         path=path,
-        **kwargs,  # type: ignore[arg-type]
+        **kwargs,
     )
 
 
-def local(subject_token: object, resource: object) -> object:
-    """Resolve for local access, where no share ACL applies."""
-    return resolve_access(subject_token, resource)  # type: ignore[arg-type]
+def local(subject_token: Any, resource: Any) -> EffectiveAccess:
+    """Resolve for local access, where no share ACL applies.
+
+    Typed as returning the real answer rather than `object`: every caller reads
+    `has_access` and `rights` off it, and an opaque return type turns each of those into a
+    type error at the call site instead of here.
+    """
+    return resolve_access(subject_token, resource)
 
 
 # --------------------------------------------------------------------------------------
@@ -95,7 +109,7 @@ class TestTheChainIsReturned:
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
         access = local(subject, resource)
 
-        explanation = explain_access(access, resource, edges=NESTED)  # type: ignore[arg-type]
+        explanation = explain_access(access, resource, edges=NESTED)
 
         assert len(explanation.paths) == 1
         path = explanation.paths[0]
@@ -109,7 +123,7 @@ class TestTheChainIsReturned:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
         explanation = explain_access(
-            local(subject, resource),  # type: ignore[arg-type]
+            local(subject, resource),
             resource,
             edges=NESTED,
         )
@@ -128,7 +142,7 @@ class TestTheChainIsReturned:
         resource = dacl(allow(ALICE, MODIFY, key="ace-alice"))
         subject = token(ALICE, path=AccessPath.LOCAL)
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert explanation.paths[0].chain == (ALICE,)
         assert explanation.paths[0].length == 0
@@ -139,7 +153,7 @@ class TestTheChainIsReturned:
         resource = dacl(allow(BOB, MODIFY, key="ace-bob"), allow(ALICE, READ_EXECUTE, key="a"))
         subject = token(ALICE, path=AccessPath.LOCAL)
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert [path.trustee_key for path in explanation.paths] == [ALICE]
 
@@ -156,7 +170,7 @@ class TestMultiplePathsArePreserved:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
 
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         assert [path.chain for path in explanation.paths] == [
             (ALICE, FINANCE_RW),
@@ -178,7 +192,7 @@ class TestMultiplePathsArePreserved:
             GraphEdge(edge_key="e2", group_key=DOMAIN_USERS, member_key=ALICE),
         )
 
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         assert [path.trustee_key for path in explanation.paths] == [FINANCE_RW, DOMAIN_USERS]
         assert all(path.effect is PathEffect.CONTRIBUTES for path in explanation.paths), (
@@ -194,9 +208,9 @@ class TestMultiplePathsArePreserved:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY), allow(FINANCE_TEAM, READ_EXECUTE))
 
-        first = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        first = explain_access(local(subject, resource), resource, edges=edges)
         second = explain_access(
-            local(subject, resource),  # type: ignore[arg-type]
+            local(subject, resource),
             resource,
             edges=tuple(reversed(edges)),
         )
@@ -209,7 +223,7 @@ class TestMultiplePathsArePreserved:
         subject = token(ALICE, path=AccessPath.LOCAL, assumption=TokenAssumption.AUTHENTICATED_USER)
         resource = dacl(allow(EVERYONE, READ_EXECUTE, key="ace-everyone"))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         path = explanation.paths[0]
         assert path.assumed is True
@@ -229,7 +243,7 @@ class TestRedundantGrants:
             allow(FINANCE_RW, MODIFY, key="ace-second"),
         )
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         effects = {path.ace_key: path.effect for path in explanation.paths}
         assert effects == {
@@ -242,7 +256,7 @@ class TestRedundantGrants:
         subject = token(ALICE, [FINANCE_RW], path=AccessPath.LOCAL)
         resource = dacl(allow(ALICE, MODIFY), allow(FINANCE_RW, MODIFY))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         redundant = explanation.redundant
         assert len(redundant) == 1
@@ -258,7 +272,7 @@ class TestRedundantGrants:
             allow(FINANCE_RW, READ_EXECUTE, key="ace-read"),
         )
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         effects = {path.ace_key: path.effect for path in explanation.paths}
         assert effects["ace-read"] is PathEffect.REDUNDANT
@@ -271,7 +285,7 @@ class TestRedundantGrants:
             allow(ALICE, MODIFY, key="ace-modify"),
         )
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         effects = {path.ace_key: path.effect for path in explanation.paths}
         assert effects == {
@@ -284,7 +298,7 @@ class TestRedundantGrants:
         subject = token(ALICE, path=AccessPath.LOCAL)
         resource = dacl(allow(ALICE, MODIFY, key="ace-allow"), deny(ALICE, MODIFY, key="ace-deny"))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         denies = explanation.denies
         assert len(denies) == 1
@@ -299,7 +313,7 @@ class TestDenyPaths:
             allow(FINANCE_RW, FULL_CONTROL, key="ace-allow"),
         )
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         denied = explanation.denies[0]
         assert denied.relation is PathRelation.DENY
@@ -314,7 +328,7 @@ class TestDenyPaths:
             allow(FINANCE_TEAM, READ_EXECUTE, key="ace-allow"),
         )
         share = share_acl(share_allow(FINANCE_TEAM, SharePermission.READ))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share, edges=NESTED)
 
@@ -330,7 +344,7 @@ class TestTheOtherLayerConstrains:
         subject = nested_token()
         resource = dacl(allow(FINANCE_RW, FULL_CONTROL, key="ace-rw"))
         share = share_acl(share_allow(FINANCE_RW, SharePermission.READ))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share, edges=NESTED)
 
@@ -352,7 +366,7 @@ class TestTheOtherLayerConstrains:
             allow(FINANCE_RW, FULL_CONTROL & ~READ_EXECUTE, key="ace-write"),
         )
         share = share_acl(share_allow(DOMAIN_USERS, SharePermission.READ))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share)
 
@@ -366,7 +380,7 @@ class TestTheOtherLayerConstrains:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, FULL_CONTROL, key="ace-rw"))
 
-        explanation = explain_access(local(subject, resource), resource, edges=NESTED)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=NESTED)
 
         assert explanation.paths[0].constrained_rights.is_empty
         assert explanation.paths[0].effect is PathEffect.CONTRIBUTES
@@ -375,7 +389,7 @@ class TestTheOtherLayerConstrains:
         subject = nested_token()
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
         share = unread_share()
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share, edges=NESTED)
 
@@ -394,7 +408,7 @@ class TestRemovalNeverOverstates:
         )
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         via_team = next(
             t for t in explanation.removal_targets if t.edge_id.endswith(f"group:{FINANCE_TEAM}")
@@ -406,7 +420,7 @@ class TestRemovalNeverOverstates:
     def test_the_only_membership_does_revoke(self) -> None:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
-        explanation = explain_access(local(subject, resource), resource, edges=NESTED)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=NESTED)
 
         first_hop = next(
             t for t in explanation.removal_targets if t.edge_id.endswith(f"group:{FINANCE_TEAM}")
@@ -422,7 +436,7 @@ class TestRemovalNeverOverstates:
             allow(ALICE, MODIFY, key="ace-first"),
             allow(FINANCE_RW, MODIFY, key="ace-second"),
         )
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         first = next(
             t
@@ -449,7 +463,7 @@ class TestRemovalNeverOverstates:
             GraphEdge(edge_key="e-rw", group_key=FINANCE_RW, member_key=ALICE),
             GraphEdge(edge_key="e-du", group_key=DOMAIN_USERS, member_key=ALICE),
         )
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         deny_edge = next(
             t
@@ -465,7 +479,7 @@ class TestRemovalNeverOverstates:
         subject = token(ALICE, path=AccessPath.LOCAL, assumption=TokenAssumption.AUTHENTICATED_USER)
         resource = dacl(allow(AUTHENTICATED_USERS, READ_EXECUTE, key="ace-au"))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         kinds = {target.kind for target in explanation.removal_targets}
         assert EdgeKind.ASSUMED_MEMBERSHIP not in kinds
@@ -475,7 +489,7 @@ class TestRemovalNeverOverstates:
         subject = token(ALICE, path=AccessPath.LOCAL, assumption=TokenAssumption.AUTHENTICATED_USER)
         resource = dacl(allow(AUTHENTICATED_USERS, READ_EXECUTE, key="ace-au"))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert [t.revokes_all_access for t in explanation.removal_targets] == [True]
         assert explanation.sufficient_removals
@@ -494,7 +508,7 @@ class TestRemovalNeverOverstates:
             GraphEdge(edge_key="e-rw", group_key=FINANCE_RW, member_key=ALICE),
             GraphEdge(edge_key="e-du", group_key=DOMAIN_USERS, member_key=ALICE),
         )
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         assert explanation.sufficient_removals == ()
         assert all(t.rights_removed.is_empty for t in explanation.removal_targets)
@@ -504,7 +518,7 @@ class TestRemovalNeverOverstates:
         subject = token(ALICE, [FINANCE_RW], path=AccessPath.LOCAL)
         resource = dacl(allow(BOB, FULL_CONTROL, key="ace-bob"), allow(FINANCE_RW, MODIFY))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert all(
             "ace-bob" not in (target.edge_id or "") for target in explanation.removal_targets
@@ -524,7 +538,7 @@ class TestCycles:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY, key="ace-rw"))
 
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         assert [path.chain for path in explanation.paths] == [(ALICE, FINANCE_TEAM, FINANCE_RW)]
 
@@ -537,7 +551,7 @@ class TestCycles:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY))
 
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         assert explanation.cycles
         assert set(explanation.cycles[0].members) == {FINANCE_TEAM, FINANCE_RW}
@@ -551,7 +565,7 @@ class TestCycles:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY))
 
-        explanation = explain_access(local(subject, resource), resource, edges=edges)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=edges)
 
         first = next(t for t in explanation.removal_targets if t.kind is EdgeKind.MEMBERSHIP)
         assert first.revokes_all_access is True
@@ -569,7 +583,7 @@ class TestLimits:
         )
 
         explanation = explain_access(
-            local(subject, resource),  # type: ignore[arg-type]
+            local(subject, resource),
             resource,
             limits=ExplanationLimits(max_paths=2),
         )
@@ -601,7 +615,7 @@ class TestLimits:
         resource = dacl(allow(FINANCE_RW, MODIFY))
 
         explanation = explain_access(
-            local(subject, resource),  # type: ignore[arg-type]
+            local(subject, resource),
             resource,
             edges=edges,
             limits=ExplanationLimits(max_paths_per_trustee=2),
@@ -615,7 +629,7 @@ class TestLimits:
         subject = nested_token(path=AccessPath.LOCAL, membership_complete=False)
         resource = dacl(allow(FINANCE_RW, MODIFY))
 
-        explanation = explain_access(local(subject, resource), resource, edges=NESTED)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource, edges=NESTED)
 
         assert PathTruncation.MEMBERSHIP_INCOMPLETE in explanation.truncation
         assert explanation.complete is False
@@ -624,7 +638,7 @@ class TestLimits:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY))
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert explanation.paths[0].chain == (ALICE, FINANCE_TEAM, FINANCE_RW)
         assert PathTruncation.EDGES_NOT_SUPPLIED in explanation.truncation
@@ -642,7 +656,7 @@ class TestLimits:
         )
 
         explanation = explain_access(
-            local(subject, resource),  # type: ignore[arg-type]
+            local(subject, resource),
             resource,
             edges=edges,
             limits=ExplanationLimits(max_removal_targets=1),
@@ -671,7 +685,7 @@ class TestTheGraph:
         subject = nested_token(path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY), allow(FINANCE_TEAM, READ_EXECUTE))
 
-        graph = explain_access(local(subject, resource), resource, edges=edges).graph  # type: ignore[arg-type]
+        graph = explain_access(local(subject, resource), resource, edges=edges).graph
 
         ids = [node.node_id for node in graph.nodes]
         assert len(ids) == len(set(ids))
@@ -682,7 +696,7 @@ class TestTheGraph:
         subject = token(ALICE, [FINANCE_RW], path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, READ_EXECUTE), allow(FINANCE_RW, MODIFY))
 
-        graph = explain_access(local(subject, resource), resource).graph  # type: ignore[arg-type]
+        graph = explain_access(local(subject, resource), resource).graph
 
         aces = [node for node in graph.nodes if node.is_ace]
         assert len(aces) == 2
@@ -692,7 +706,7 @@ class TestTheGraph:
         subject = nested_token()
         resource = dacl(allow(FINANCE_RW, MODIFY))
         share = share_acl(share_allow(FINANCE_RW, SharePermission.CHANGE))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share, edges=NESTED)
 
@@ -708,7 +722,7 @@ class TestTheGraph:
         subject = token(ALICE, [FINANCE_RW], path=AccessPath.LOCAL)
         resource = dacl(allow(FINANCE_RW, MODIFY, inherited=True), key=REPORTS)
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert explanation.paths[0].inherited is True
 
@@ -720,7 +734,7 @@ class TestOwnership:
         subject = token(ALICE, path=AccessPath.LOCAL)
         resource = dacl(allow(BOB, MODIFY), owner_sid=ALICE)
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         owned = [p for p in explanation.paths if p.ace_position == OWNERSHIP_POSITION]
         assert len(owned) == 1
@@ -735,7 +749,7 @@ class TestOwnership:
         resource = dacl(deny(ALICE, FULL_CONTROL), owner_sid=ALICE)
         access = local(subject, resource)
 
-        explanation = explain_access(access, resource)  # type: ignore[arg-type]
+        explanation = explain_access(access, resource)
 
         assert access.has_access, "ownership survives an explicit full deny"
         explained = 0
@@ -748,7 +762,7 @@ class TestOwnership:
         subject = token(ALICE, path=AccessPath.LOCAL)
         resource = dacl(allow(BOB, MODIFY), owner_sid=ALICE)
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         assert all(t.kind is not EdgeKind.OWNERSHIP for t in explanation.removal_targets)
 
@@ -756,7 +770,7 @@ class TestOwnership:
         subject = token(ALICE, path=AccessPath.LOCAL)
         resource = dacl(allow(ALICE, READ_CONTROL | WRITE_DAC, key="ace-noop"), owner_sid=ALICE)
 
-        explanation = explain_access(local(subject, resource), resource)  # type: ignore[arg-type]
+        explanation = explain_access(local(subject, resource), resource)
 
         by_key = {path.ace_key: path.effect for path in explanation.paths}
         assert by_key["ace-noop"] is PathEffect.REDUNDANT
@@ -771,13 +785,13 @@ class TestItRefusesToExplainTheWrongAnswer:
         other = dacl(allow(FINANCE_RW, FULL_CONTROL), key=REPORTS)
 
         with pytest.raises(DomainValidationError, match="Explaining one with the other"):
-            explain_access(local(subject, resource), other)  # type: ignore[arg-type]
+            explain_access(local(subject, resource), other)
 
     def test_a_mismatched_share_is_refused(self) -> None:
         subject = nested_token()
         resource = dacl(allow(FINANCE_RW, MODIFY))
         share = share_acl(share_allow(FINANCE_RW))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         with pytest.raises(DomainValidationError):
             explain_access(access, resource, share_acl(share_allow(FINANCE_RW), key="fs02|other"))
@@ -793,7 +807,7 @@ class TestTheExplanationDecomposesTheAnswer:
             allow(FINANCE_TEAM, MODIFY, key="ace-team"),
         )
         share = share_acl(share_allow(FINANCE_RW, SharePermission.READ))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share, edges=NESTED)
 
@@ -811,7 +825,7 @@ class TestTheExplanationDecomposesTheAnswer:
             allow(FINANCE_RW, MODIFY, key="ace-rw"),
         )
         share = share_acl(share_allow(FINANCE_RW, SharePermission.CHANGE))
-        access = resolve_access(subject, resource, share)  # type: ignore[arg-type]
+        access = resolve_access(subject, resource, share)
 
         explanation = explain_access(access, resource, share, edges=NESTED)
 

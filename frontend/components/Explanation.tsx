@@ -120,9 +120,16 @@ export function LayerPanel({
   return (
     <div className="card">
       <h2>{title}</h2>
-      <p>
+      {/*
+        A <div>, not a <p>. `Rights` emits a <div className="ace-notes"> when the mask
+        carries a note, and a <div> inside a <p> is invalid HTML: the browser closes the
+        paragraph early and reparents the note outside it, so the warning ends up detached
+        from the rights it qualifies. React logs it as a hydration error and every render
+        of this panel in the test suite printed one.
+      */}
+      <div className="layer-rights">
         <Rights rights={evaluation.rights} />
-      </p>
+      </div>
       <p className="muted">
         {evaluation.entries_evaluated} of {evaluation.entries_supplied} entries matched this
         subject&apos;s token.

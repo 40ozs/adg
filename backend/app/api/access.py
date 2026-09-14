@@ -98,7 +98,7 @@ from app.api.caching import (
     current_validator,
     not_modified,
 )
-from app.api.deps import Session, TraversalBounds
+from app.api.deps import PRINTABLE_IDENTIFIER, Session, TraversalBounds
 from app.api.graph import PrincipalSummary, principal_summary, resolve_principal
 from app.api.pagination import (
     DEFAULT_LIMIT,
@@ -132,6 +132,7 @@ IdentifierPath = Annotated[
     Path(
         min_length=1,
         max_length=512,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). "
             "Use ?host= to disambiguate a BUILTIN SID seen on several computers."
@@ -144,6 +145,7 @@ ResourcePath = Annotated[
     Path(
         min_length=5,
         max_length=1024,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share "
             "key is not accepted here: a share and the directory it publishes have "
@@ -209,6 +211,7 @@ PrincipalQuery = Annotated[
     Query(
         min_length=1,
         max_length=512,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "The principal to explain, as a SID (S-1-5-21-...) or a host-scoped storage key "
             "(fs01|S-1-5-32-544). Required: an explanation is always about somebody, and a "
@@ -222,6 +225,7 @@ ResourceExplainQuery = Annotated[
     Query(
         min_length=5,
         max_length=1024,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "The directory's canonical UNC path (\\\\FS01\\Finance). Required, and given as a "
             "query parameter rather than a path segment so that a client does not have to "

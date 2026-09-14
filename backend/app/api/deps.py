@@ -18,12 +18,26 @@ from app.domain import DEFAULT_LIMITS, DomainValidationError, TraversalLimits
 from app.repositories import MembershipRepository
 
 __all__ = [
+    "PRINTABLE_IDENTIFIER",
     "Session",
     "TraversalBounds",
     "get_session",
     "membership_repository",
     "traversal_limits",
 ]
+
+#: Every path parameter in this API is an identifier — a SID, a storage key, a host name, or
+#: a UNC path — and none of them can contain a control character. Rejecting one here refuses
+#: the request before it costs a database round trip, which matters for one value in
+#: particular: a NUL byte survived every parser, reached psycopg, and raised
+#: ``PostgreSQL text fields cannot contain NUL (0x00) bytes`` — a 500 for a malformed URL.
+#: Phase 6D found it by fuzzing every path parameter of every route.
+#:
+#: Anchored with ``$``, not ``\Z``. Pydantic v2 compiles this with the Rust ``regex`` crate,
+#: where ``$`` anchors at the end of the haystack — unlike Python's ``re``, where it also
+#: matches before a trailing newline — so a value ending in ``%0A`` is refused. ``\Z`` would
+#: say that unambiguously and is not a sequence that engine accepts.
+PRINTABLE_IDENTIFIER = r"^[^\x00-\x1f\x7f]+$"
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:

@@ -604,3 +604,119 @@ async def test_the_whole_listing_costs_no_more_than_one_page_of_it(
     many = statements.count
 
     assert one == many
+
+
+# ---------------------------------------------------------------------------
+# The endpoints added after Phase 4C. Same property, stated again for each.
+#
+# Every one of these fans out over a membership graph, and every one of them is a place a
+# per-principal or per-trustee read could appear without changing a single byte of the
+# response. Phase 6D added them because "the endpoints that existed when the harness was
+# written" is not a useful definition of the endpoints that need it.
+# ---------------------------------------------------------------------------
+
+
+async def test_an_explanation_costs_the_same_however_wide_the_group_is(
+    client: AsyncClient, wide_membership: None, statements: StatementLog
+) -> None:
+    """An explanation is the most expensive read in the product and the one most likely to
+    acquire an N+1: it walks every route and then *re-runs the access check* once per
+    removal candidate. The re-runs are in-process — the graph is already in hand — and this
+    is the assertion that keeps them that way."""
+    subject = f"{DOMAIN_SID}-2000"
+
+    with statements:
+        response = await client.get(
+            "/api/v1/access/explain",
+            params={"principal": subject, "resource": WIDE_UNC},
+        )
+
+    body = response.json()
+    assert response.status_code == 200, response.text
+    assert body["verdict"]["outcome"] in ("granted", "denied", "no_grant", "indeterminate")
+    assert statements.reading("membership_edges") <= 8, (
+        f"The explanation issued {statements.reading('membership_edges')} membership reads. "
+        "Measuring a removal must not cost a round trip per candidate."
+    )
+    assert statements.count <= 15
+
+
+async def test_an_explanation_does_not_cost_more_per_removal_measured(
+    client: AsyncClient, wide_membership: None, statements: StatementLog
+) -> None:
+    """Asked twice with different removal budgets. The statement count must not move: the
+    measurement happens against the graph already loaded, not against the database."""
+    subject = f"{DOMAIN_SID}-2000"
+
+    with statements:
+        await client.get(
+            "/api/v1/access/explain",
+            params={"principal": subject, "resource": WIDE_UNC, "max_removal_targets": 1},
+        )
+    few = statements.count
+
+    with statements:
+        await client.get(
+            "/api/v1/access/explain",
+            params={"principal": subject, "resource": WIDE_UNC, "max_removal_targets": 64},
+        )
+    many = statements.count
+
+    assert few > 0
+    assert many == few, (
+        f"Measuring 1 removal cost {few} statements and measuring 64 cost {many}. Each "
+        "removal is re-checked in process; it must not be re-fetched."
+    )
+
+
+async def test_a_groups_resource_impact_does_not_read_per_member(
+    client: AsyncClient, wide_membership: None, statements: StatementLog
+) -> None:
+    """The widest answer in the product: every resource one group's membership reaches. A
+    read per member here would be forty round trips to render one table."""
+    with statements:
+        response = await client.get(f"/api/v1/groups/{WIDE_GROUP}/resource-impact?limit=100")
+
+    assert response.status_code == 200, response.text
+    assert statements.reading("membership_edges") <= 8
+    assert statements.count <= 15
+
+
+async def test_a_search_costs_the_same_whatever_it_finds(
+    client: AsyncClient, estate: None, statements: StatementLog
+) -> None:
+    """Search spans four categories and is the most-used call in the product. One statement
+    per category is the budget; one per hit is the failure."""
+    with statements:
+        narrow = await client.get("/api/v1/search", params={"q": "share001"})
+    one = statements.count
+
+    with statements:
+        broad = await client.get("/api/v1/search", params={"q": "share"})
+    many = statements.count
+
+    assert narrow.status_code == 200
+    assert broad.status_code == 200
+    assert one > 0
+    assert many == one, (
+        f"A search matching one object cost {one} statement(s) and one matching many cost "
+        f"{many}. A search's cost follows its categories, never its hits."
+    )
+
+
+async def test_the_run_list_costs_the_same_whatever_the_page_holds(
+    client: AsyncClient, estate: None, statements: StatementLog
+) -> None:
+    """The collectors page's second call. Cheap, and it has to stay cheap: a scan history
+    only ever grows."""
+    with statements:
+        one = await client.get("/api/v1/scan-runs?limit=1")
+    single = statements.count
+
+    with statements:
+        many = await client.get("/api/v1/scan-runs?limit=100")
+    hundred = statements.count
+
+    assert one.status_code == 200
+    assert many.status_code == 200
+    assert hundred == single

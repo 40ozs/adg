@@ -563,6 +563,15 @@ dl.facts dd {
   max-width: 68ch;
 }
 
+/*
+  The rights line of a layer panel. A block, because `Rights` may emit a <div> note beneath
+  the mask and a <div> inside a <p> is invalid HTML — the browser reparents it and the note
+  drifts away from the rights it qualifies. Spaced like the <p> it replaced.
+*/
+.layer-rights {
+  margin: 1rem 0;
+}
+
 .acl-group {
   margin-bottom: 1.5rem;
 }

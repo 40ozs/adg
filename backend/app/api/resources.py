@@ -48,7 +48,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field
 
-from app.api.deps import Session
+from app.api.deps import PRINTABLE_IDENTIFIER, Session
 from app.api.graph import PrincipalSummary, principal_summary
 from app.api.pagination import (
     DEFAULT_LIMIT,
@@ -97,6 +97,7 @@ ServerPath = Annotated[
     Path(
         min_length=1,
         max_length=255,
+        pattern=PRINTABLE_IDENTIFIER,
         description="A server's host name, as collected. Case-insensitive.",
     ),
 ]
@@ -106,6 +107,7 @@ SharePath = Annotated[
     Path(
         min_length=1,
         max_length=512,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "A share key (fs01|finance) or a UNC path (\\\\FS01\\Finance), percent-encoded. "
             "A path below the share root is rejected: it names a folder, not a share."
@@ -118,6 +120,7 @@ ResourcePath = Annotated[
     Path(
         min_length=5,
         max_length=1024,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "A directory's canonical UNC path (\\\\FS01\\Finance), percent-encoded. A share "
             "key is not accepted: a share and the directory it publishes have different ACLs."
@@ -130,6 +133,7 @@ TrusteePath = Annotated[
     Path(
         min_length=1,
         max_length=512,
+        pattern=PRINTABLE_IDENTIFIER,
         description=(
             "A SID (S-1-5-21-...), or a host-scoped key (fs01|S-1-5-32-544) to ask about "
             "one server's local group rather than the SID everywhere."
