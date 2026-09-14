@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.auth.dev_users import DEFAULT_DEV_AUTH_USERS, DevelopmentUser, parse_development_users
 from app.auth.roles import Role, parse_roles
+from app.history.retention import RetentionPolicy
 
 Environment = Literal["development", "test", "production"]
 LogFormat = Literal["json", "text"]
@@ -84,9 +85,35 @@ class Settings(BaseSettings):
     dev_auth_users: str = DEFAULT_DEV_AUTH_USERS
     dev_auth_token_lifetime_minutes: int = Field(default=480, ge=1, le=1440)
 
+    # --- History retention ----------------------------------------------------------
+    #
+    # Two switches rather than one, and the destructive one defaults to off. A deployment
+    # that sets a window while thinking about disk capacity has not thereby authorized the
+    # deletion of recorded permission history; see app/history/retention.py.
+    history_retention_days: int = 0
+    """0 means keep every version indefinitely, which is the default. A non-zero value must
+    be at least 30 days: a shorter window would let an ordinary audit cycle find the evidence
+    of a permission change already gone."""
+
+    history_retention_enabled: bool = False
+    """Whether anything acts on the window. Nothing in the API or the collectors calls the
+    prune; it is an operator action."""
+
     # Comma-separated '<key id>:<secret>' pairs that collectors present as
     # X-ADG-Collector-Key. Empty means ingestion requires an administrator's bearer token.
     collector_api_keys: str = ""
+
+    @property
+    def history_retention_policy(self) -> RetentionPolicy:
+        """The retention policy as a validated domain value.
+
+        Built here rather than read field by field so that the two settings can only be
+        combined in the ways the policy allows -- an enabled policy with no window is
+        refused, which is the combination that reads as protection that is not there.
+        """
+        return RetentionPolicy(
+            retain_days=self.history_retention_days, enabled=self.history_retention_enabled
+        )
 
     @property
     def cors_origin_list(self) -> list[str]:

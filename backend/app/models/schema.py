@@ -22,7 +22,10 @@ authoritative list already lives in :mod:`app.domain`.
 ``membership_edges``, ``servers``, ``smb_shares``, ``smb_share_aces``, ``ntfs_resources``,
 and ``ntfs_aces`` hold the latest known state of each object; ``observations`` holds one row
 per ``(run_id, source_key)``, which is what makes re-ingesting a batch a no-op and what
-keeps "which run saw this, and when" answerable before Phase 7 adds full history.
+keeps "which run saw this, and when" answerable. Phase 7A added ``object_versions``
+beside it, which holds the full timeline; ``observations`` stays, because "which run saw
+this object" and "what state did it hold" are different questions and a version records
+only the runs that opened and last confirmed it.
 
 **Resource tables carry no foreign keys to each other.** A share whose server no run has
 described, and an ACE whose share arrived in a later batch, are both real observations, and
@@ -54,6 +57,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 from app.contracts.v1.common import ObservationKind, ScopeKind
@@ -80,6 +84,11 @@ metadata = MetaData()
 # app/contracts/v1/keys.py cap at this length, and the contract models enforce it.
 KEY_LENGTH = 512
 
+STATE_DIGEST_LENGTH = 64
+"""Hex characters of the SHA-256 digest of a version's state. Full width, deliberately:
+the digest is what decides whether an observation is a change or a repetition, and a
+truncated one would eventually collapse two different ACLs into one version."""
+
 MAX_ACCESS_MASK_VALUE = 0xFFFFFFFF
 """An access mask is an unsigned 32-bit value, which does not fit PostgreSQL's signed
 ``integer``. The columns holding one are ``bigint`` with a range check."""
@@ -87,13 +96,17 @@ MAX_ACCESS_MASK_VALUE = 0xFFFFFFFF
 __all__ = [
     "KEY_LENGTH",
     "MAX_ACCESS_MASK_VALUE",
+    "STATE_DIGEST_LENGTH",
     "AliasKind",
+    "CloseReason",
     "ReferenceKind",
+    "VersionOrigin",
     "collector_sources",
     "membership_edges",
     "metadata",
     "ntfs_aces",
     "ntfs_resources",
+    "object_versions",
     "observations",
     "principal_aliases",
     "principal_references",
@@ -135,6 +148,43 @@ class ReferenceKind(StrEnum):
 
     SMB_ACE = "smb_ace"
     NTFS_ACE = "ntfs_ace"
+
+
+class VersionOrigin(StrEnum):
+    """Where a row of ``object_versions`` came from, which decides what it may be claimed
+    to prove.
+
+    Declared here beside :class:`AliasKind` and :class:`ReferenceKind` rather than in
+    :mod:`app.history.model`, for the same reason those two are: the values are part of the
+    physical schema — they appear in a check constraint — and the check constraint has to be
+    generated from the enum, which means the enum must be importable without importing
+    anything that imports this module.
+    """
+
+    OBSERVED = "observed"
+    """Opened by an observation. Its interval is bounded by instants collectors reported."""
+
+    BACKFILLED = "backfilled"
+    """Reconstructed by the Phase 7 migration from a pre-history row.
+
+    The state is exactly what that row held and the interval is exactly what its two
+    timestamps said. What is *not* known is whether the state changed and changed back
+    inside that interval: the pre-history schema kept no evidence either way, and a
+    backfilled version must never be read as though it had been watched.
+    """
+
+
+class CloseReason(StrEnum):
+    """Why a version stopped being open.
+
+    The distinction is the point of the column. ``superseded`` means the object is still
+    there and something about it changed; ``absent`` means an authoritative scan looked
+    inside the scope and did not find it. Collapsing the two would make "this share's ACL
+    was tightened" and "this share was deleted" the same row.
+    """
+
+    SUPERSEDED = "superseded"
+    ABSENT = "absent"
 
 
 def _enum_check(column: str, enum: type[StrEnum], *, nullable: bool = False) -> CheckConstraint:
@@ -224,8 +274,8 @@ scan_run_scopes = Table(
     Column("scope_kind", Text, nullable=False),
     Column("scope_key", Text, nullable=False),
     Column("declared", Boolean, nullable=False, server_default="true"),
-    # Absence may be inferred only inside a reconciled scope, and only Phase 7 acts on it.
-    # Recording the flag now means the later phase has the evidence it needs.
+    # Absence may be inferred only inside a reconciled scope. Since Phase 7A this flag is
+    # what a completion's closure pass acts on (see app/history/closure.py).
     Column("reconciled", Boolean, nullable=False, server_default="false"),
     UniqueConstraint("run_id", "scope_kind", "scope_key", name="uq_scan_run_scopes_identity"),
     _enum_check("scope_kind", ScopeKind),
@@ -792,4 +842,131 @@ principal_references = Table(
     Index("ix_principal_references_sid", "sid"),
     Index("ix_principal_references_target", "reference_kind", "reference_key"),
     comment="Every reference from a resource ACL to a principal key. Resolution is a join.",
+)
+
+
+object_versions = Table(
+    "object_versions",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    # The seven kinds of contract v1. Reusing the contract enum rather than declaring a
+    # storage-local one means a kind added to the contract is tracked here by default; a
+    # kind that is accepted, stored, and silently given no history would look complete in
+    # every current-state query and have an empty timeline, which is the hardest kind of
+    # gap to notice.
+    Column("object_kind", Text, nullable=False),
+    # The same identity string the current-state table uses as its primary key --
+    # principal_key, edge_key, share_key, ace_key, resource_key. Not a foreign key to any
+    # of them: history outlives the row it describes, and a tombstone is precisely a
+    # version of an object whose current-state row may since have been pruned.
+    Column("object_key", String(KEY_LENGTH), nullable=False),
+    # The object this one is an entry of, so that "everything inside X, as of T" is an
+    # indexed read rather than a scan: the share for a share ACE, the resource for an NTFS
+    # ACE, the server for a share, the group for a membership edge.
+    Column("container_key", String(KEY_LENGTH), nullable=True),
+    # The far end of a relation, when there is one: the member of a membership edge, the
+    # trustee of an ACE. This is what makes "which groups did this principal belong to on
+    # Tuesday" and "what named this SID on Tuesday" indexed in the other direction.
+    Column("related_key", String(KEY_LENGTH), nullable=True),
+    # False is a tombstone: an authoritative scan of a reconciled scope looked and did not
+    # find the object. It is a stored row rather than the absence of one because "ADG knows
+    # it was gone" and "ADG has nothing for that instant" are different answers, and only
+    # the first one may be rendered as a deletion.
+    Column("is_present", Boolean, nullable=False),
+    # The descriptive columns of the current-state row, with provenance stripped. JSONB
+    # rather than a per-kind mirror table because the temporal rules -- what opens a
+    # version, what closes one, what may be inferred absent, what retention may remove --
+    # are identical for all seven kinds, and seven copies of them would be seven chances
+    # for them to drift.
+    # ``none_as_null`` so that a tombstone's absent state is SQL NULL. Without it
+    # SQLAlchemy writes Python ``None`` as the JSON value ``null``, which is a present
+    # value: the row would satisfy ``state IS NOT NULL`` while claiming the object is
+    # absent, and "we have no state" and "its state is the null value" would be stored
+    # identically.
+    Column("state", JSONB(none_as_null=True), nullable=True),
+    Column("state_hash", String(STATE_DIGEST_LENGTH), nullable=True),
+    Column("origin", Text, nullable=False, server_default=VersionOrigin.OBSERVED.value),
+    # When this state was first observed.
+    _timestamp("valid_from"),
+    # The newest observation that confirmed this state. Not redundant with valid_to: a
+    # collector samples rather than watches, so a change is known to have happened
+    # somewhere in (last_seen_at, valid_to] and nowhere more precisely. Dropping this
+    # column would replace that interval with the instant somebody happened to look.
+    _timestamp("last_seen_at"),
+    # NULL means this is the version currently believed to hold.
+    _timestamp("valid_to", nullable=True),
+    Column("close_reason", Text, nullable=True),
+    Column("opened_by_run_id", PgUUID(as_uuid=True), nullable=False),
+    Column("last_seen_run_id", PgUUID(as_uuid=True), nullable=False),
+    Column("closed_by_run_id", PgUUID(as_uuid=True), nullable=True),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    _enum_check("object_kind", ObservationKind),
+    _enum_check("origin", VersionOrigin),
+    _enum_check("close_reason", CloseReason, nullable=True),
+    CheckConstraint("last_seen_at >= valid_from", name="ck_object_versions_confirmed_after_opened"),
+    CheckConstraint(
+        "valid_to IS NULL OR valid_to >= last_seen_at",
+        name="ck_object_versions_closed_after_confirmed",
+    ),
+    # A closed version must say why -- 'superseded' and 'absent' are different findings --
+    # and must name the run accountable for the ending. An ending nobody is accountable for
+    # cannot be audited, which is the one thing this table exists for.
+    CheckConstraint(
+        "(valid_to IS NULL) = (close_reason IS NULL)",
+        name="ck_object_versions_closed_has_a_reason",
+    ),
+    CheckConstraint(
+        "(valid_to IS NULL) = (closed_by_run_id IS NULL)",
+        name="ck_object_versions_closed_has_a_run",
+    ),
+    CheckConstraint(
+        "is_present = (state IS NOT NULL)", name="ck_object_versions_presence_matches_state"
+    ),
+    CheckConstraint(
+        "is_present = (state_hash IS NOT NULL)",
+        name="ck_object_versions_presence_matches_digest",
+    ),
+    CheckConstraint(
+        f"state_hash IS NULL OR state_hash ~ '^[0-9a-f]{{{STATE_DIGEST_LENGTH}}}$'",
+        name="ck_object_versions_state_hash_shape",
+    ),
+    UniqueConstraint("object_kind", "object_key", "valid_from", name="uq_object_versions_identity"),
+    # At most one open version per object, enforced by the database rather than by the
+    # writer being careful. Two open versions would make "what is true now" return two
+    # contradictory rows, and the writer's own correctness depends on being able to read
+    # "the open version" as a single row.
+    Index(
+        "ux_object_versions_open",
+        "object_kind",
+        "object_key",
+        unique=True,
+        postgresql_where=text("valid_to IS NULL"),
+    ),
+    Index(
+        "ix_object_versions_container",
+        "object_kind",
+        "container_key",
+        "valid_from",
+        postgresql_where=text("container_key IS NOT NULL"),
+    ),
+    Index(
+        "ix_object_versions_related",
+        "object_kind",
+        "related_key",
+        "valid_from",
+        postgresql_where=text("related_key IS NOT NULL"),
+    ),
+    # Retention reads closed versions by age and nothing else; partial, because the open
+    # versions are the majority and are never candidates for removal.
+    Index(
+        "ix_object_versions_closed_at",
+        "valid_to",
+        postgresql_where=text("valid_to IS NOT NULL"),
+    ),
+    Index("ix_object_versions_last_seen_run", "last_seen_run_id"),
+    comment=(
+        "Validity intervals for every collected object. One row per state an object was "
+        "observed to hold; is_present false is a measured absence."
+    ),
 )

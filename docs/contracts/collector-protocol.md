@@ -236,8 +236,8 @@ records the run as `partial`). This is what makes the guarantee in §0 concrete:
 scan cannot delete unseen objects**, because a partial scan is structurally incapable of
 reconciling.
 
-Marking absent is not deletion: history is retained (Phase 7), and the object is recorded as
-no longer observed as of this run.
+Marking absent is not deletion: the current-state row stays, and the object's timeline gains
+a tombstone recording that it was no longer observed as of this run.
 
 **A scope must never claim more than the run read**, and the file-system scopes are where
 that bites. `directory_tree` claims the whole tree beneath a path was enumerated. A run that

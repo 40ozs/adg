@@ -21,10 +21,10 @@ collector/        Native Windows collectors (PowerShell 7 + .NET). Not container
   powershell/     Collection scripts/modules.
   service/        Long-running collector host (service/scheduled task).
 backend/          Python + FastAPI API. Owns all authorization semantics.
-  app/            Application package (api, models, collectors, access_engine, ...).
+  app/            Application package (api, models, access_engine, history, ...).
   tests/          Backend test suite.
 frontend/         Next.js + TypeScript web application.
-database/         PostgreSQL schema history.
+database/         PostgreSQL schema migrations.
   migrations/     Alembic migration scripts.
   seed/           Development seed data.
 docker/           Container build definitions.
@@ -297,6 +297,30 @@ Key invariants:
 - **Coverage is judged per scope**, `(collector, target)` — not per collector kind. A later
   success on one file server must never hide a failed scan of another, because every empty
   list below the failed one would then read as an answer.
+- **Nothing is ever marked absent by a run that did not reconcile a scope.** A failed,
+  partial or incremental scan produces *fewer observations*, not evidence of removal
+  ([ADR-0018](docs/decisions/0018-history-is-a-versioned-observation-log.md)).
+- **A change is recorded as a window, not an instant.** A collector samples rather than
+  watches, so a change is known to have happened between the last confirmation and the
+  contradicting reading, and that interval is what is reported
+  ([ADR-0019](docs/decisions/0019-a-change-is-a-window-not-an-instant.md)).
+
+### History
+
+Every collected object carries a timeline: one version per state it was observed to hold,
+with the interval it was observed over, and a tombstone when an authoritative full scan of a
+reconciled scope looked and did not find it. `HistoryService` answers as of a past instant —
+membership, the raw SMB and NTFS ACLs, resource existence, and effective access, the last of
+these through the same engine that answers live questions. Every answer reports how firmly it
+is grounded: `observed`, `inferred`, `backfilled`, or `unobserved`.
+
+Current-state tables are unchanged, so every existing query behaves exactly as before — and
+so a live answer can still count a grant a reconciled scan has proved is gone. See
+[`docs/architecture/history-model.md`](docs/architecture/history-model.md) §9.
+
+History is never deleted by default. `ADG_HISTORY_RETENTION_DAYS` and
+`ADG_HISTORY_RETENTION_ENABLED` must both be set for a prune to be possible at all, and it
+never removes an object's open version or its newest closed one.
 
 ## Security
 

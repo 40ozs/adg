@@ -29,3 +29,5 @@ Rules:
 | [0015](0015-emptiness-is-attributed-by-the-backend.md) | An empty view is attributed by the backend, never inferred from a row count | Accepted |
 | [0016](0016-an-empty-answer-names-its-own-emptiness.md) | An empty access answer names which kind of emptiness it is | Accepted |
 | [0017](0017-derived-answers-are-validated-against-collected-state.md) | A derived answer is cached against collected state, never against a clock | Accepted |
+| [0018](0018-history-is-a-versioned-observation-log.md) | History is a versioned observation log; current state stays a projection | Accepted |
+| [0019](0019-a-change-is-a-window-not-an-instant.md) | A change is recorded as a window, not an instant | Accepted |

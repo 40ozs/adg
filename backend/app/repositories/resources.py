@@ -71,7 +71,7 @@ from app.models.schema import (
     smb_share_aces,
     smb_shares,
 )
-from app.repositories.membership import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
+from app.repositories.membership import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page, RowLike
 
 __all__ = [
     "MAX_ACL_FETCH",
@@ -85,6 +85,11 @@ __all__ = [
     "ShareAceRecord",
     "ShareRecord",
     "ShareReferenceRecord",
+    "ntfs_ace_record",
+    "ntfs_resource_record",
+    "server_record",
+    "share_ace_record",
+    "share_record",
 ]
 
 ItemT = TypeVar("ItemT")
@@ -514,7 +519,7 @@ class ResourceRepository:
             statement = statement.where(servers.c.server_key > after)
 
         rows = (await self._session.execute(statement)).mappings().all()
-        return _page(rows, page_size, _server_record, lambda record: record.server_key)
+        return _page(rows, page_size, server_record, lambda record: record.server_key)
 
     async def get_server(self, server_key: str) -> ServerRecord | None:
         row = (
@@ -528,7 +533,7 @@ class ResourceRepository:
             .mappings()
             .one_or_none()
         )
-        return None if row is None else _server_record(row)
+        return None if row is None else server_record(row)
 
     async def count_servers(self) -> int:
         return int(
@@ -549,7 +554,7 @@ class ResourceRepository:
             .mappings()
             .all()
         )
-        return {row["server_key"]: _server_record(row) for row in rows}
+        return {row["server_key"]: server_record(row) for row in rows}
 
     # ----------------------------------------------------------------- shares
 
@@ -568,7 +573,7 @@ class ResourceRepository:
             statement = statement.where(smb_shares.c.share_key > after)
 
         rows = (await self._session.execute(statement)).mappings().all()
-        return _page(rows, page_size, _share_record, lambda record: record.share_key)
+        return _page(rows, page_size, share_record, lambda record: record.share_key)
 
     async def count_shares(self, server_key: str) -> int:
         statement = (
@@ -588,7 +593,7 @@ class ResourceRepository:
             .mappings()
             .one_or_none()
         )
-        return None if row is None else _share_record(row)
+        return None if row is None else share_record(row)
 
     async def shares_by_keys(self, keys: Sequence[str]) -> dict[str, ShareRecord]:
         if not keys:
@@ -602,7 +607,7 @@ class ResourceRepository:
             .mappings()
             .all()
         )
-        return {row["share_key"]: _share_record(row) for row in rows}
+        return {row["share_key"]: share_record(row) for row in rows}
 
     async def has_aces(self, share_key: str) -> bool:
         """Whether any ACE names this share, even if the share itself was never described."""
@@ -634,7 +639,7 @@ class ResourceRepository:
         )
         rows = (await self._session.execute(statement)).mappings().all()
         has_more = len(rows) > page_size
-        return tuple(_ace_record(row) for row in rows[:page_size]), has_more
+        return tuple(share_ace_record(row) for row in rows[:page_size]), has_more
 
     async def count_acl(self, share_key: str) -> int:
         statement = (
@@ -659,7 +664,7 @@ class ResourceRepository:
             .mappings()
             .one_or_none()
         )
-        return None if row is None else _ntfs_resource_record(row)
+        return None if row is None else ntfs_resource_record(row)
 
     async def get_share_root_resource(self, share_key: str) -> NtfsResourceRecord | None:
         r"""The NTFS root of one share: the directory at ``\\server\share`` itself.
@@ -684,7 +689,7 @@ class ResourceRepository:
             .mappings()
             .all()
         )
-        return {row["resource_key"]: _ntfs_resource_record(row) for row in rows}
+        return {row["resource_key"]: ntfs_resource_record(row) for row in rows}
 
     async def has_ntfs_aces(self, resource_key: str) -> bool:
         """Whether any ACE names this path, even if the directory itself was never read."""
@@ -717,7 +722,7 @@ class ResourceRepository:
         )
         rows = (await self._session.execute(statement)).mappings().all()
         has_more = len(rows) > page_size
-        return tuple(_ntfs_ace_record(row) for row in rows[:page_size]), has_more
+        return tuple(ntfs_ace_record(row) for row in rows[:page_size]), has_more
 
     async def count_ntfs_acl(self, resource_key: str) -> int:
         statement = (
@@ -757,7 +762,7 @@ class ResourceRepository:
             .mappings()
             .all()
         )
-        entries = [_ntfs_ace_record(row).acl_facts for row in rows]
+        entries = [ntfs_ace_record(row).acl_facts for row in rows]
         # A NULL DACL carries no entries by definition. Rows can nonetheless survive from a
         # run that read a real DACL before the newest run found the descriptor replaced, so
         # they are excluded from the document rather than allowed to contradict it -- and
@@ -891,7 +896,7 @@ class ResourceRepository:
         )
         grouped: dict[str, list[ShareAceRecord]] = {key: [] for key in visible}
         for row in ace_rows:
-            grouped[row["share_key"]].append(_ace_record(row))
+            grouped[row["share_key"]].append(share_ace_record(row))
 
         shares = await self.shares_by_keys(visible)
         items = tuple(
@@ -950,7 +955,7 @@ class ResourceRepository:
             .limit(max(1, limit) + 1)
         )
         rows = (await self._session.execute(statement)).mappings().all()
-        return tuple(_ntfs_ace_record(row) for row in rows)
+        return tuple(ntfs_ace_record(row) for row in rows)
 
     async def full_share_acl(
         self, share_key: str, *, limit: int = MAX_ACL_FETCH
@@ -963,7 +968,7 @@ class ResourceRepository:
             .limit(max(1, limit) + 1)
         )
         rows = (await self._session.execute(statement)).mappings().all()
-        return tuple(_ace_record(row) for row in rows)
+        return tuple(share_ace_record(row) for row in rows)
 
     async def ntfs_acls_for(
         self, keys: Sequence[str], *, limit: int = MAX_ACL_FETCH
@@ -992,7 +997,7 @@ class ResourceRepository:
             )
         )
         rows = (await self._session.execute(statement)).mappings().all()
-        return _group_by_key(rows, "resource_key", _ntfs_ace_record, limit)
+        return _group_by_key(rows, "resource_key", ntfs_ace_record, limit)
 
     async def share_acls_for(
         self, keys: Sequence[str], *, limit: int = MAX_ACL_FETCH
@@ -1011,7 +1016,7 @@ class ResourceRepository:
             )
         )
         rows = (await self._session.execute(statement)).mappings().all()
-        return _group_by_key(rows, "share_key", _ace_record, limit)
+        return _group_by_key(rows, "share_key", share_ace_record, limit)
 
     # --------------------------------------------- candidates for one principal
 
@@ -1166,7 +1171,11 @@ def _page(
     )
 
 
-def _server_record(row: RowMapping) -> ServerRecord:
+#: The record constructors are public so that :mod:`app.history.repository` can rebuild
+#: the same records from a version's stored state. One constructor per record, used by
+#: both the current-state read and the point-in-time read, is what keeps a historical
+#: answer from being a differently-shaped object than the live one it is compared with.
+def server_record(row: RowLike) -> ServerRecord:
     return ServerRecord(
         server_key=row["server_key"],
         name=row["name"],
@@ -1185,7 +1194,7 @@ def _server_record(row: RowMapping) -> ServerRecord:
     )
 
 
-def _share_record(row: RowMapping) -> ShareRecord:
+def share_record(row: RowLike) -> ShareRecord:
     return ShareRecord(
         share_key=row["share_key"],
         server_key=row["server_key"],
@@ -1204,7 +1213,7 @@ def _share_record(row: RowMapping) -> ShareRecord:
     )
 
 
-def _ntfs_resource_record(row: RowMapping) -> NtfsResourceRecord:
+def ntfs_resource_record(row: RowLike) -> NtfsResourceRecord:
     return NtfsResourceRecord(
         resource_key=row["resource_key"],
         path=row["path"],
@@ -1233,7 +1242,7 @@ def _ntfs_resource_record(row: RowMapping) -> NtfsResourceRecord:
     )
 
 
-def _ntfs_ace_record(row: RowMapping) -> NtfsAceRecord:
+def ntfs_ace_record(row: RowLike) -> NtfsAceRecord:
     return NtfsAceRecord(
         ace_key=row["ace_key"],
         resource_key=row["resource_key"],
@@ -1253,7 +1262,7 @@ def _ntfs_ace_record(row: RowMapping) -> NtfsAceRecord:
     )
 
 
-def _ace_record(row: RowMapping) -> ShareAceRecord:
+def share_ace_record(row: RowLike) -> ShareAceRecord:
     permission = row["permission"]
     return ShareAceRecord(
         ace_key=row["ace_key"],

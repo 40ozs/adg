@@ -14,21 +14,26 @@ late cannot overwrite a newer one with stale names or a stale ``is_deleted`` fla
 tool that let a late-arriving old scan resurrect a deleted group would report access that
 no longer exists.
 
-**Nothing is ever marked absent.** There is no delete path in this module — no share, no
-ACE of either layer, no directory, no principal is ever removed because a run did not
-mention it. A failed scan, a
-server that was rebooted mid-enumeration, and an ACL the collector lacked rights to read all
-produce *fewer observations*, not evidence of removal, and an audit tool that deleted on
-that basis would report access as revoked while it is still in force. Reconciled scopes are
-recorded as evidence for Phase 7, which owns absence; a partial run cannot reconcile at all,
-and the contract models refuse to build one that tries.
+**Nothing is ever deleted, and absence is recorded only by a run that earned it.** There is
+no delete path in this module — no share, no ACE of either layer, no directory, no principal
+is ever removed because a run did not mention it. A failed scan, a server that was rebooted
+mid-enumeration, and an ACL the collector lacked rights to read all produce *fewer
+observations*, not evidence of removal, and an audit tool that deleted on that basis would
+report access as revoked while it is still in force.
+
+Since Phase 7A a run that **reconciled a scope** does record absence, as a tombstone in
+``object_versions`` rather than as a deletion (:meth:`app.history.HistoryWriter.close_absent`).
+The guards that make that safe are all here: the contract models refuse to build a completion
+that reconciles while reporting anything but ``succeeded`` with no errors, :meth:`complete_run`
+refuses a scope the run never declared and refuses every scope on an incremental run, and it
+drops the reconciliation entirely when it downgrades a run for short delivery.
 """
 
 from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Final
 from uuid import UUID
 
@@ -37,7 +42,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contracts.v1 import ObservationBatch, ScanRunCompletion, ScanRunStart
-from app.domain import ScanStatus
+from app.contracts.v1.common import ObservationKind, ScopeKind
+from app.domain import CollectorKind, ScanStatus
+from app.history.writer import ClosureOutcome, HistoryOutcome, HistoryWriter
 from app.ingestion.plan import BatchPlan, plan_batch, source_fingerprint
 from app.models.schema import (
     collector_sources,
@@ -225,6 +232,10 @@ class BatchOutcome:
     share_aces_written: int = 0
     ntfs_resources_written: int = 0
     ntfs_aces_written: int = 0
+    history: HistoryOutcome = field(default_factory=HistoryOutcome)
+    """What this batch did to the version history. Reported beside the row counts because
+    they answer different questions: a replayed observation writes a row and opens no
+    version, and a batch that changes nothing is visible only here."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,6 +247,9 @@ class CompletionOutcome:
     already_completed: bool
     reconciled_scopes: int
     downgrade_reason: str | None = None
+    closures: tuple[ClosureOutcome, ...] = ()
+    """One entry per reconciled scope, saying what it marked absent — or why it marked
+    nothing. Empty for every run that did not reconcile, which is most of them."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -302,6 +316,7 @@ class IngestionService:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+        self._history = HistoryWriter(session)
 
     # ------------------------------------------------------------------ start
 
@@ -474,13 +489,18 @@ class IngestionService:
                 run_id=plan.run_id, batch_id=plan.batch_id, applied=0, duplicate=True
             )
 
-        await self._write_principals(plan, now)
-        await self._write_edges(plan, now)
-        await self._write_servers(plan, now)
-        await self._write_shares(plan, now)
-        await self._write_share_aces(plan, now)
-        await self._write_ntfs_resources(plan, now)
-        await self._write_ntfs_aces(plan, now)
+        # Each writer folds its own rows into the version history and reports what that
+        # did, so current state and history are written from one set of row dictionaries
+        # inside one transaction. They cannot describe two different objects, and a batch
+        # that fails halfway leaves neither.
+        history = HistoryOutcome()
+        history += await self._write_principals(plan, now)
+        history += await self._write_edges(plan, now)
+        history += await self._write_servers(plan, now)
+        history += await self._write_shares(plan, now)
+        history += await self._write_share_aces(plan, now)
+        history += await self._write_ntfs_resources(plan, now)
+        history += await self._write_ntfs_aces(plan, now)
         # Called here rather than from one ACL writer: a batch carrying only NTFS entries
         # produces references too, and hanging this off the share-ACE path would silently
         # drop them.
@@ -511,11 +531,12 @@ class IngestionService:
             share_aces_written=len(plan.share_aces),
             ntfs_resources_written=len(plan.ntfs_resources),
             ntfs_aces_written=len(plan.ntfs_aces),
+            history=history,
         )
 
-    async def _write_principals(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_principals(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.principals:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "principal_key": row.principal_key,
@@ -550,9 +571,10 @@ class IngestionService:
                 set_=_newest_wins(statement, principals, _PRINCIPAL_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.PRINCIPAL, rows, now)
 
         if not plan.aliases:
-            return
+            return outcome
         alias_rows = [
             {
                 "principal_key": alias.principal_key,
@@ -588,10 +610,11 @@ class IngestionService:
                 },
             )
         )
+        return outcome
 
-    async def _write_edges(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_edges(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.edges:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "edge_key": row.edge_key,
@@ -620,10 +643,12 @@ class IngestionService:
                 set_=_newest_wins(statement, membership_edges, _EDGE_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.MEMBERSHIP_EDGE, rows, now)
+        return outcome
 
-    async def _write_servers(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_servers(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.servers:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "server_key": row.server_key,
@@ -651,10 +676,12 @@ class IngestionService:
                 set_=_newest_wins(statement, servers, _SERVER_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.SERVER, rows, now)
+        return outcome
 
-    async def _write_shares(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_shares(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.shares:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "share_key": row.share_key,
@@ -680,17 +707,19 @@ class IngestionService:
         # Upsert, never insert-or-delete. A share re-pointed at a different local path is
         # the same share with a new backing directory, and a share the newest scan did not
         # mention keeps its row: absence is inferred only from a reconciled scope, by
-        # Phase 7, and never from a partial or failed run.
+        # a reconciled scope, and never from a partial or failed run.
         await self._session.execute(
             statement.on_conflict_do_update(
                 index_elements=[smb_shares.c.share_key],
                 set_=_newest_wins(statement, smb_shares, _SHARE_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.SMB_SHARE, rows, now)
+        return outcome
 
-    async def _write_share_aces(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_share_aces(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.share_aces:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "ace_key": row.ace_key,
@@ -714,7 +743,7 @@ class IngestionService:
         ]
         statement = pg_insert(smb_share_aces).values(rows)
         # An ACE removed from an ACL is not deleted here either. A share ACL that shrank
-        # between runs is a change Phase 7 detects from the run that reconciled the share
+        # between runs is a change detected from the run that reconciled the share
         # scope; deleting on sight would let one failed read erase a recorded grant.
         await self._session.execute(
             statement.on_conflict_do_update(
@@ -722,10 +751,12 @@ class IngestionService:
                 set_=_newest_wins(statement, smb_share_aces, _SHARE_ACE_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.SMB_ACE, rows, now)
+        return outcome
 
-    async def _write_ntfs_resources(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_ntfs_resources(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.ntfs_resources:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "resource_key": row.resource_key,
@@ -762,10 +793,12 @@ class IngestionService:
                 set_=_newest_wins(statement, ntfs_resources, _NTFS_RESOURCE_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.NTFS_RESOURCE, rows, now)
+        return outcome
 
-    async def _write_ntfs_aces(self, plan: BatchPlan, now: dt.datetime) -> None:
+    async def _write_ntfs_aces(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
         if not plan.ntfs_aces:
-            return
+            return HistoryOutcome()
         rows = [
             {
                 "ace_key": row.ace_key,
@@ -790,7 +823,7 @@ class IngestionService:
         ]
         statement = pg_insert(ntfs_aces).values(rows)
         # No delete path, exactly as for a share ACE. An entry removed from a DACL between
-        # runs is a change Phase 7 detects from a reconciled scope; deleting on sight would
+        # runs is a change detected from a reconciled scope; deleting on sight would
         # let a single unreadable directory erase every grant ADG had recorded for it.
         await self._session.execute(
             statement.on_conflict_do_update(
@@ -798,6 +831,8 @@ class IngestionService:
                 set_=_newest_wins(statement, ntfs_aces, _NTFS_ACE_MUTABLE, now),
             )
         )
+        outcome = await self._history.record(ObservationKind.NTFS_ACE, rows, now)
+        return outcome
 
     async def _write_references(self, plan: BatchPlan, now: dt.datetime) -> None:
         if not plan.references:
@@ -947,6 +982,7 @@ class IngestionService:
                 )
             )
 
+        closures: tuple[ClosureOutcome, ...] = ()
         if requested:
             # A row-value IN, not two independent IN lists: separate lists would match the
             # cross product and reconcile a (kind, key) pair the collector never sent.
@@ -960,6 +996,13 @@ class IngestionService:
                 )
                 .values(reconciled=True)
             )
+            closures = await self._close_reconciled(
+                run_id=run_id,
+                source_id=int(run["source_id"]),
+                scopes=requested,
+                completed_at=completion.completed_at,
+                now=now,
+            )
 
         await session.commit()
         return CompletionOutcome(
@@ -968,7 +1011,50 @@ class IngestionService:
             already_completed=False,
             reconciled_scopes=len(requested),
             downgrade_reason=downgrade_reason,
+            closures=closures,
         )
+
+    async def _close_reconciled(
+        self,
+        *,
+        run_id: UUID,
+        source_id: int,
+        scopes: Sequence[tuple[str, str]],
+        completed_at: dt.datetime,
+        now: dt.datetime,
+    ) -> tuple[ClosureOutcome, ...]:
+        """Infer absence inside every scope this run reconciled.
+
+        This is the only path in ADG that records an object as gone, and every guard that
+        makes it safe has already fired by the time it is reached: the completion model
+        refuses to reconcile unless the run reports ``succeeded`` with no errors, the caller
+        refuses a scope the run never declared, refuses any scope on an incremental run, and
+        empties ``scopes`` when it downgrades the run for short delivery. What is left to
+        decide here is only what *inside* a scope means, which is
+        :mod:`app.history.closure`'s business.
+
+        The collector kind is read rather than assumed: the rules are keyed by it, because
+        an SMB run reconciling a server has no business closing the file-system rows it is
+        structurally incapable of having looked at.
+        """
+        collector = (
+            await self._session.execute(
+                select(collector_sources.c.collector).where(collector_sources.c.id == source_id)
+            )
+        ).scalar_one()
+        outcomes = []
+        for scope_kind, scope_key in scopes:
+            outcomes.append(
+                await self._history.close_absent(
+                    run_id=run_id,
+                    collector=CollectorKind(collector),
+                    scope_kind=ScopeKind(scope_kind),
+                    scope_key=scope_key,
+                    completed_at=completed_at,
+                    now=now,
+                )
+            )
+        return tuple(outcomes)
 
     async def _replayed_completion(
         self,

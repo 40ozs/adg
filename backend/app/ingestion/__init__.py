@@ -15,7 +15,8 @@ here and nowhere else:
 * a replayed ``(run_id, batch_id)`` is acknowledged without being applied again;
 * an observation is keyed on ``(run_id, source_key)``, so even an un-deduplicated replay
   converges;
-* nothing is ever marked absent — absence arrives with reconciliation in Phase 7.
+* nothing is ever deleted, and an object is marked absent only by a run that reconciled
+  the scope containing it (Phase 7A; see :mod:`app.history`).
 """
 
 from __future__ import annotations

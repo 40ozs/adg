@@ -24,7 +24,7 @@ from __future__ import annotations
 import datetime as dt
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Final, Generic, TypeVar
+from typing import Any, Final, Generic, TypeAlias, TypeVar
 from uuid import UUID
 
 from sqlalchemy import RowMapping, Select, Text, any_, bindparam, func, or_, select
@@ -49,7 +49,15 @@ __all__ = [
     "Page",
     "PrincipalRecord",
     "PrincipalResolution",
+    "RowLike",
+    "graph_edge",
+    "principal_record",
 ]
+
+#: A database row, or a mapping shaped like one. The record constructors below are fed from
+#: two places — a live ``SELECT``, and a version's stored state rebuilt by
+#: :func:`app.history.repository.as_row` — and both must produce the same record.
+RowLike: TypeAlias = "RowMapping | Mapping[str, Any]"
 
 KEY_CHUNK: Final = 5_000
 """Keys per adjacency query. One array parameter, not one placeholder per key."""
@@ -235,7 +243,7 @@ class MembershipRepository:
             rows = (await self._session.execute(statement)).mappings().all()
             self._edges_fetched += len(rows)
             for row in rows:
-                edge = _graph_edge(row)
+                edge = graph_edge(row)
                 result[edge.origin(direction)].append(edge)
         return result
 
@@ -251,7 +259,7 @@ class MembershipRepository:
             .mappings()
             .one_or_none()
         )
-        return None if row is None else _principal_record(row)
+        return None if row is None else principal_record(row)
 
     async def resolve(self, identifier: str, host_key: str | None = None) -> PrincipalResolution:
         """Find a principal by storage key or by bare SID.
@@ -295,7 +303,7 @@ class MembershipRepository:
             .mappings()
             .all()
         )
-        records = tuple(_principal_record(row) for row in rows)
+        records = tuple(principal_record(row) for row in rows)
         if len(records) == 1:
             return PrincipalResolution(record=records[0])
         return PrincipalResolution(record=None, candidates=records)
@@ -317,7 +325,7 @@ class MembershipRepository:
                 .all()
             )
             for row in rows:
-                record = _principal_record(row)
+                record = principal_record(row)
                 found[record.principal_key] = record
         return found
 
@@ -461,7 +469,7 @@ class MembershipRepository:
 
         items = tuple(
             DirectEdgeRecord(
-                edge=_graph_edge(row),
+                edge=graph_edge(row),
                 counterpart_key=row["counterpart_key"],
                 counterpart=labels.get(row["counterpart_key"]),
                 first_observed_at=row["first_observed_at"],
@@ -495,7 +503,11 @@ class MembershipRepository:
         )
 
 
-def _graph_edge(row: RowMapping) -> GraphEdge:
+#: The record constructors are public so that :mod:`app.history.repository` can rebuild
+#: the same records from a version's stored state. One constructor per record, used by
+#: both the current-state read and the point-in-time read, is what keeps a historical
+#: answer from being a differently-shaped object than the live one it is compared with.
+def graph_edge(row: RowLike) -> GraphEdge:
     return GraphEdge(
         edge_key=row["edge_key"],
         group_key=row["group_key"],
@@ -511,7 +523,7 @@ def _optional_kind(value: str | None) -> PrincipalKind | None:
     return None if value is None else PrincipalKind(value)
 
 
-def _principal_record(row: RowMapping) -> PrincipalRecord:
+def principal_record(row: RowLike) -> PrincipalRecord:
     return PrincipalRecord(
         principal_key=row["principal_key"],
         sid=row["sid"],

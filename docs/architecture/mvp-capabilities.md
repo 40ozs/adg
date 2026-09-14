@@ -144,9 +144,12 @@ capabilities that every real role holds together.
    nothing, provably.
 2. **Does not compute risk.** There are no findings, no scores, no rules. `/risks` is a
    placeholder. Everything on screen is a fact or a derivation from facts.
-3. **Does not compare scans.** Nothing says what changed between Tuesday and Friday.
-   `/changes` is a placeholder. The evidence a later phase needs — reconciled scopes,
-   first- and last-observed stamps per object — is being recorded now.
+3. **Does not compare scans *on screen*.** `/changes` is still a placeholder and no API
+   route answers a point-in-time question. Since Phase 7A the *evidence* is no longer merely
+   being recorded: every collected object has a full timeline in `object_versions`, and
+   `HistoryService` answers what was true at a past instant — membership, raw ACLs, existence
+   and effective access — from the backend. See
+   [`history-model.md`](history-model.md). What is missing is the surface, not the data.
 4. **Does not scan files, only directories.** The contract can carry a file resource; no
    collector emits one.
 5. **Covers Windows file shares.** Not SharePoint, OneDrive, Exchange, NFS, or content

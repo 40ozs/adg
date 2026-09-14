@@ -34,12 +34,7 @@ from tests.contracts.test_fixtures import validator
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 EXPORTER = (
-    REPO_ROOT
-    / "collector"
-    / "powershell"
-    / "smb"
-    / "tests"
-    / "Export-AdgSmbFixturePayload.ps1"
+    REPO_ROOT / "collector" / "powershell" / "smb" / "tests" / "Export-AdgSmbFixturePayload.ps1"
 )
 
 pytestmark = [
@@ -165,8 +160,7 @@ class TestTheHealthyRun:
         self, payloads: dict[str, Any]
     ) -> None:
         shares = {
-            item["share_name"]: item
-            for item in observations_of(payloads, "run-01", "smb_share")
+            item["share_name"]: item for item in observations_of(payloads, "run-01", "smb_share")
         }
 
         assert shares["C$"]["is_special"] is True
@@ -260,9 +254,7 @@ class TestTheHealthyRun:
 
 
 class TestTheUnreachableServer:
-    def test_it_fails_rather_than_reporting_an_empty_server(
-        self, payloads: dict[str, Any]
-    ) -> None:
+    def test_it_fails_rather_than_reporting_an_empty_server(self, payloads: dict[str, Any]) -> None:
         completion = payloads["run-02-completion.json"]
 
         assert completion["status"] == "failed"
