@@ -11,6 +11,7 @@ import type {
   RightsView,
   TokenView,
 } from "@/lib/contracts";
+import { explainHref } from "@/lib/explanation";
 import { ambiguousLabels } from "@/lib/identity";
 import { directoryHref, shareHref } from "@/lib/resources";
 import { PrincipalName } from "@/components/Identity";
@@ -60,10 +61,19 @@ export function Rights({ rights }: { rights: RightsView }): JSX.Element {
 export function ResourceAccessTable({
   items,
   subject,
+  explainFor,
 }: {
   items: readonly ResourceAccessView[];
   /** "share" or "directory" — what each row names. */
   subject: "share" | "directory";
+  /**
+   * The principal these rows are about, as its storage key. Given, every row carries a link
+   * to the full derivation for that pair.
+   *
+   * Optional so that a caller which does not know whose answer it is showing cannot produce
+   * a link to the wrong pair — an explanation of the wrong principal is worse than no link.
+   */
+  explainFor?: string;
 }): JSX.Element {
   return (
     <div className="table-scroll">
@@ -74,6 +84,7 @@ export function ResourceAccessTable({
             <th scope="col">Access</th>
             <th scope="col">Rights</th>
             <th scope="col">Narrower layer</th>
+            {explainFor !== undefined && <th scope="col">Why</th>}
           </tr>
         </thead>
         <tbody>
@@ -103,6 +114,11 @@ export function ResourceAccessTable({
                 <Rights rights={item.rights} />
               </td>
               <td className="muted">{limitingLayerLabel(item.limiting_layer)}</td>
+              {explainFor !== undefined && (
+                <td>
+                  <Link href={explainHref(explainFor, item.resource.key)}>Explain</Link>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -120,8 +136,18 @@ export function ResourceAccessTable({
  */
 export function PrincipalAccessTable({
   items,
+  explainOn,
 }: {
   items: readonly PrincipalAccessView[];
+  /**
+   * The directory these rows are about, as its canonical UNC path. Given, every row carries
+   * a link to the full derivation for that pair — the `via` column says *which* groups, and
+   * the derivation says which entry, on which ACL, and what removing it would do.
+   *
+   * The share page passes the directory it publishes, not the share: an explanation is
+   * always anchored on a directory, and both layers are in the answer either way.
+   */
+  explainOn?: string;
 }): JSX.Element {
   const ambiguous = ambiguousLabels(items.map((item) => item.principal));
   return (
@@ -133,6 +159,7 @@ export function PrincipalAccessTable({
             <th scope="col">Access</th>
             <th scope="col">Rights</th>
             <th scope="col">Reaches it through</th>
+            {explainOn !== undefined && <th scope="col">Why</th>}
           </tr>
         </thead>
         <tbody>
@@ -167,6 +194,11 @@ export function PrincipalAccessTable({
                   </ul>
                 )}
               </td>
+              {explainOn !== undefined && (
+                <td>
+                  <Link href={explainHref(item.principal.key, explainOn)}>Explain</Link>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

@@ -324,7 +324,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
           </p>
           <EnumerationNotice enumeration={state.data.enumeration} />
           <FindingsNotice findings={state.data.findings} />
-          <PrincipalAccessTable items={state.data.items} />
+          <PrincipalAccessTable items={state.data.items} explainOn={resource.key} />
           <Pager
             navigation={pageNavigation({
               basePath: PATH,

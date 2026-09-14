@@ -1,0 +1,213 @@
+/*
+ * The access explanation screen.
+ *
+ * A CSS module rather than another block in `globals.css`: nothing here is reused by
+ * another page, and the diagram carries a dozen rules that would otherwise sit in the
+ * shell's stylesheet forever.
+ *
+ * Two rules are requirements, not taste:
+ *
+ * - Selection is never color alone. The selected route is outlined, its rows carry a
+ *   marker, and the graph node gets a thicker stroke, so the screen works in grayscale and
+ *   for a reader who cannot distinguish the accent from the border.
+ * - The diagram scrolls inside its own box. An estate with forty groups produces a wide
+ *   graph, and the page body must never scroll sideways.
+ */
+
+.explorer {
+  display: grid;
+  gap: 1rem;
+}
+
+.diagram {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0.5rem;
+}
+
+.diagram svg {
+  display: block;
+}
+
+.columnLabel {
+  fill: var(--muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nodeBox {
+  fill: var(--surface-raised);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  rx: 5;
+}
+
+.nodeBoxOnPath {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.nodeBoxSubject {
+  fill: var(--info-surface);
+}
+
+.nodeBoxAce {
+  stroke-dasharray: 3 2;
+}
+
+.nodeBoxAssumed {
+  stroke-dasharray: 2 3;
+}
+
+.nodeName {
+  fill: var(--text);
+  font-size: 0.78rem;
+}
+
+.nodeKind {
+  fill: var(--muted);
+  font-size: 0.66rem;
+}
+
+.edgeLine {
+  stroke: var(--border-strong);
+  stroke-width: 1.2;
+  fill: none;
+}
+
+.edgeLineOnPath {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.edgeLineDeny {
+  stroke: var(--bad);
+  stroke-dasharray: 4 3;
+}
+
+.edgeLineAssumed {
+  stroke-dasharray: 2 3;
+}
+
+/* A hit area wide enough to click without making the drawn line heavy. */
+.edgeTarget {
+  stroke: transparent;
+  stroke-width: 12;
+  fill: none;
+  pointer-events: stroke;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pathButton {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.1rem 0.35rem;
+  text-align: left;
+}
+
+.pathButton:hover {
+  border-color: var(--border-strong);
+}
+
+.pathSelected {
+  border-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.selectedRow > * {
+  background: color-mix(in srgb, var(--info-surface) 70%, transparent);
+}
+
+.marker {
+  display: inline-block;
+  width: 1rem;
+}
+
+.inspector {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0.75rem 1rem;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.step {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 0.75rem;
+}
+
+.stepRemovable {
+  border-left-color: var(--accent);
+}
+
+.stepKind {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.exportArea {
+  width: 100%;
+  min-height: 12rem;
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  font-size: 0.78rem;
+  padding: 0.5rem;
+}
+
+.exportButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.launcher {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 44rem;
+}
+
+.launcherField {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.launcherField input {
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+}

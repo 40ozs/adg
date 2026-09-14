@@ -578,7 +578,11 @@ async function reachPanel(
             items={state.data.items}
             subject={subject === "share" ? "shares" : "directories"}
           />
-          <ResourceAccessTable items={state.data.items} subject={subject} />
+          <ResourceAccessTable
+            items={state.data.items}
+            subject={subject}
+            explainFor={principal.key}
+          />
           <Pager
             navigation={pageNavigation({
               basePath: PATH,

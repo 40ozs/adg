@@ -1,4 +1,5 @@
 import { currentViewer } from "@/lib/auth/current";
+import { ExplainLauncher } from "@/components/ExplainLauncher";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 
@@ -26,6 +27,16 @@ export default async function AccessPage() {
       <div className="card">
         <h2>Start from an identity or a path</h2>
         <GlobalSearch />
+      </div>
+
+      <div className="card">
+        <h2>Explain one answer</h2>
+        <p className="muted">
+          Name a principal and a directory and ADG shows the whole derivation: the verdict,
+          both ACLs, every route the rights arrive by, and what removing each one would
+          actually do.
+        </p>
+        <ExplainLauncher />
       </div>
 
       <div className="card">
