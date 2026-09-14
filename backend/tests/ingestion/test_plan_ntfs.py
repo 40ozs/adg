@@ -143,7 +143,14 @@ class TestTheResourceRow:
 
     def test_a_protected_dacl_blocks_inheritance_and_is_a_boundary(self) -> None:
         plan = plan_batch(
-            batch(resource(dacl_protected=True, inheritance_enabled=False, is_acl_boundary=True))
+            batch(
+                resource(
+                    dacl_protected=True,
+                    inheritance_enabled=False,
+                    is_acl_boundary=True,
+                    boundary_reason="protected_dacl",
+                )
+            )
         )
         row = plan.ntfs_resources[0]
         assert (row.dacl_protected, row.inheritance_enabled, row.is_acl_boundary) == (
@@ -151,6 +158,9 @@ class TestTheResourceRow:
             False,
             True,
         )
+        # Stored as claimed, never re-derived in the planner: a parent is routinely in a
+        # different batch, so the claim is checked on the read side instead.
+        assert row.boundary_reason == "protected_dacl"
 
     def test_ace_count_is_what_the_descriptor_said_not_what_arrived(self) -> None:
         # They can differ when a batch carries part of a DACL, and when they do that is the

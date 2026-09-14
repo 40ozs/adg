@@ -35,6 +35,7 @@ from app.repositories import (
     MembershipRepository,
     NtfsAceRecord,
     NtfsAclRecomputation,
+    NtfsBoundaryVerification,
     NtfsResourceRecord,
     Page,
     PrincipalRecord,
@@ -111,12 +112,21 @@ class ShareAcl:
 
 @dataclass(frozen=True, slots=True)
 class ResourceDetail:
-    """A directory, the share it sits under, and how many ACEs are stored for it."""
+    """A directory, the share it sits under, and how many ACEs are stored for it.
+
+    ``boundary`` carries the collector's ACL-boundary verdict next to the one the server
+    derives from the parent it holds, on the same "report both, settle nothing" terms as
+    ``acl_hash``. ``parent`` is the parent row itself when one has been read, so a client
+    following the chain upward does not have to guess whether a missing answer means the
+    share root or an unscanned directory.
+    """
 
     resource: NtfsResourceRecord
     share: ShareRecord | None
     server: ServerRecord | None
     stored_ace_count: int
+    boundary: NtfsBoundaryVerification
+    parent: NtfsResourceRecord | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,6 +205,7 @@ class ResourceService:
             return None
         shares = await self._resources.shares_by_keys([resource.share_key])
         servers = await self._resources.servers_by_keys([resource.server_key])
+        parent_key = resource.parent_key
         return ResourceDetail(
             resource=resource,
             share=shares.get(resource.share_key),
@@ -202,6 +213,14 @@ class ResourceService:
             # What is stored, beside what the descriptor claimed. Equal is the normal case;
             # unequal means entries were read and never arrived, and the API says so.
             stored_ace_count=await self._resources.count_ntfs_acl(resource.resource_key),
+            # The claim the collector made about where permissions change, checked against
+            # the parent this database holds rather than stored unread.
+            boundary=await self._resources.verify_boundary(resource),
+            parent=(
+                None
+                if parent_key is None
+                else (await self._resources.ntfs_resources_by_keys([parent_key])).get(parent_key)
+            ),
         )
 
     async def ntfs_acl(self, resource_key: str, *, limit: int, offset: int) -> NtfsAcl:

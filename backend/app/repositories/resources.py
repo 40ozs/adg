@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, TypeVar
 from uuid import UUID
 
@@ -46,13 +46,18 @@ from app.domain import (
     AceSource,
     AceType,
     AclAceFacts,
+    AclBoundaryReason,
+    DomainValidationError,
     LocalPath,
     NormalizedAcl,
+    ResourceKind,
     SharePermission,
     ShareType,
     Sid,
     SmbShare,
     UncPath,
+    boundary_reason_for,
+    inherited_child_acl_hash,
     normalize_acl,
     parse_local_path,
     parse_unc_path,
@@ -69,8 +74,10 @@ from app.models.schema import (
 from app.repositories.membership import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 
 __all__ = [
+    "UNCOMPARED_BOUNDARY_REASONS",
     "NtfsAceRecord",
     "NtfsAclRecomputation",
+    "NtfsBoundaryVerification",
     "NtfsResourceRecord",
     "ResourceRepository",
     "ServerRecord",
@@ -212,7 +219,10 @@ class NtfsResourceRecord:
     is_acl_boundary: bool
     ace_count: int
     depth_from_share_root: int | None
+    resource_kind: ResourceKind
+    boundary_reason: AclBoundaryReason | None
     acl_hash: str | None
+    parent_acl_hash: str | None
     source_key: str
     first_observed_at: dt.datetime
     first_observed_run_id: UUID
@@ -227,6 +237,23 @@ class NtfsResourceRecord:
     def is_share_root(self) -> bool:
         """Derived from the path, never stored: the two could otherwise disagree."""
         return self.unc_path.is_share_root
+
+    @property
+    def parent_key(self) -> str | None:
+        """The containing directory's storage key, or ``None`` at a share root.
+
+        Derived from the path rather than stored beside it (ADR-0007). A parent column
+        would be a second copy of something the path already states, and on the one link
+        an auditor follows to ask *where* permissions changed, a copy that can disagree
+        with the identity it describes is the last thing worth having.
+        """
+        parent = self.unc_path.parent
+        return None if parent is None else parent.comparison_key
+
+    @property
+    def is_container(self) -> bool:
+        """Whether children inherit through the container projection rather than the object one."""
+        return self.resource_kind is ResourceKind.DIRECTORY
 
     @property
     def grants_everyone_full_access(self) -> bool:
@@ -313,6 +340,12 @@ class NtfsAclRecomputation:
     normalized: NormalizedAcl
     stored_ace_count: int
     declared_ace_count: int
+    hashed_entries: tuple[AclAceFacts, ...] = ()
+    """Exactly the entries the document was built from, which is not always every stored
+    row: a NULL DACL carries none by definition, so rows surviving from a run that read a
+    real DACL are excluded here and still counted in ``stored_ace_count``. Kept because the
+    boundary projection has to run over the same entries the digest was taken over, and
+    re-reading them would let the two drift."""
 
     @property
     def computed(self) -> str:
@@ -326,6 +359,117 @@ class NtfsAclRecomputation:
     @property
     def ace_count_agrees(self) -> bool:
         return self.stored_ace_count == self.declared_ace_count
+
+
+#: Reasons that mean the collector never made the comparison, rather than making it and
+#: finding a difference. A run that started below a share root, or could not read the
+#: parent, reports a boundary because unknown must not read as unchanged — so there is no
+#: verdict of the collector's to agree or disagree with, and ``agrees`` stays ``None``.
+UNCOMPARED_BOUNDARY_REASONS: frozenset[AclBoundaryReason] = frozenset(
+    {
+        AclBoundaryReason.SHARE_ROOT,
+        AclBoundaryReason.SCAN_ROOT,
+        AclBoundaryReason.PARENT_UNREADABLE,
+        AclBoundaryReason.PARENT_NULL_DACL,
+    }
+)
+
+#: Reasons the server can reach without the parent's entries at all.
+_SETTLED_WITHOUT_A_PARENT: frozenset[AclBoundaryReason] = frozenset(
+    {
+        AclBoundaryReason.PROTECTED_DACL,
+        AclBoundaryReason.NULL_DACL,
+        AclBoundaryReason.SHARE_ROOT,
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class NtfsBoundaryVerification:
+    """The boundary verdict the collector claimed, beside the one the server can derive.
+
+    Phase 3A stored ``is_acl_boundary`` unread: a share-root collector set it ``true``
+    because a root has no comparable parent, and nothing checked it. A tree walk claims it
+    for directories that *do* have a parent, and a wrong claim is expensive in one
+    direction — a boundary reported ``false`` tells the next scan it may stop looking, and
+    every permission change beneath it is silently dropped.
+
+    So the server redoes the arithmetic from what it holds: it takes the parent's stored
+    ACEs, projects them onto a child of this kind (:mod:`app.domain.inheritance`), and
+    compares that digest with this resource's own. Neither number overrides the other. They
+    disagree when the parent changed between the two readings, when the collector's
+    projection is wrong, or when entries were lost in transit — three different findings
+    that picking a winner would flatten into silence.
+
+    **What is comparable, and what is merely unknown.** A protected DACL and a NULL DACL
+    settle the question from this row alone. Everything else needs the parent's entries,
+    and a parent no run has read makes the comparison impossible rather than negative:
+    :attr:`comparable` is then ``false`` and :attr:`computed` is ``None``. And when the
+    collector's own reason is one of :data:`UNCOMPARED_BOUNDARY_REASONS` it never claimed a
+    comparison, so :attr:`agrees` is ``None`` even where the server can now make one — the
+    server simply knows more than the collector did, which is not the collector being wrong.
+    """
+
+    resource_key: str
+    parent_key: str | None
+    parent_observed: bool
+    reported: bool
+    reported_reason: AclBoundaryReason | None
+    reported_parent_acl_hash: str | None
+    resource_acl_hash: str
+    """The digest the server derives from this resource's stored ACEs — not the reported one."""
+
+    parent_acl_hash: str | None
+    """The same, for the parent. ``None`` when no run has read the parent."""
+
+    projected_child_acl_hash: str | None
+    """What the parent hands down to a child of this kind. ``None`` when the parent was not
+    read, or has a NULL DACL, which projects nothing at all."""
+
+    computed_reason: AclBoundaryReason | None
+
+    @property
+    def projection_available(self) -> bool:
+        """Whether the parent's entries were in reach to project and compare."""
+        return self.projected_child_acl_hash is not None
+
+    @property
+    def settled_without_the_parent(self) -> bool:
+        """Whether the verdict needs no projection at all.
+
+        A protected DACL refuses inheritance and a NULL DACL cannot have been inherited;
+        a share root's parent is outside the share, which the path alone establishes.
+        """
+        return self.computed_reason in _SETTLED_WITHOUT_A_PARENT
+
+    @property
+    def computed(self) -> bool | None:
+        """The server's own verdict, or ``None`` when it could not reach one."""
+        if self.settled_without_the_parent:
+            return True
+        return (self.computed_reason is not None) if self.projection_available else None
+
+    @property
+    def agrees(self) -> bool | None:
+        """``None`` when either side did not reach a comparable verdict."""
+        if self.computed is None:
+            return None
+        if self.reported_reason in UNCOMPARED_BOUNDARY_REASONS:
+            return None
+        return self.reported == self.computed
+
+    @property
+    def parent_acl_hash_agrees(self) -> bool | None:
+        """Whether the parent ADG holds is the reading the collector judged against.
+
+        ``False`` does not mean the verdict is wrong — the parent may simply have been
+        re-read since — but it does mean the verdict was made against a descriptor that is
+        no longer the stored one, which is exactly the case where a stale boundary hides a
+        change. ``None`` when either side is missing.
+        """
+        if self.reported_parent_acl_hash is None or self.parent_acl_hash is None:
+            return None
+        return self.reported_parent_acl_hash == self.parent_acl_hash
 
 
 class ResourceRepository:
@@ -569,6 +713,18 @@ class ResourceRepository:
         Deliberately unpaged: the digest is over the whole DACL, and hashing a page of it
         would produce a number that looks like an answer and is not one. A DACL is tens of
         entries, so reading them all costs one indexed scan.
+
+        **Stored entries can disagree about position, and that is not an error here.** An
+        ACE's identity excludes ``order_index`` — deliberately, so that reordering a DACL
+        does not look like every entry being deleted and recreated — and nothing removes an
+        entry a later scan stopped seeing. So an ACE that used to sit at position 0 and the
+        different ACE that replaced it both survive, both claiming position 0, and the
+        normalizer rightly refuses to hash that: the document would depend on which row came
+        back first. The answer is to fall back to the *unordered* form, which the normal
+        form exists to express. It says plainly that the server cannot establish evaluation
+        order from what it holds, it can never collide with an ordered digest, and
+        ``ordered: false`` reports it on the wire — all of which beats failing the request,
+        which would make one stale row take a directory's whole ACL off the air.
         """
         rows = (
             (
@@ -587,15 +743,77 @@ class ResourceRepository:
         # they are excluded from the document rather than allowed to contradict it -- and
         # stored_ace_count still reports every row, so ace_count_agrees exposes the split.
         hashed = [] if not resource.dacl_present else entries
-        return NtfsAclRecomputation(
-            reported=resource.acl_hash,
-            normalized=normalize_acl(
+        try:
+            normalized = normalize_acl(
                 dacl_present=resource.dacl_present,
                 dacl_protected=resource.dacl_protected,
                 aces=hashed,
-            ),
+            )
+        except DomainValidationError:
+            normalized = normalize_acl(
+                dacl_present=resource.dacl_present,
+                dacl_protected=resource.dacl_protected,
+                aces=[replace(entry, order_index=None) for entry in hashed],
+            )
+        return NtfsAclRecomputation(
+            reported=resource.acl_hash,
+            normalized=normalized,
             stored_ace_count=len(entries),
             declared_ace_count=resource.ace_count,
+            hashed_entries=tuple(hashed),
+        )
+
+    async def verify_boundary(self, resource: NtfsResourceRecord) -> NtfsBoundaryVerification:
+        """Redo the boundary judgement from the parent this database actually holds.
+
+        Two indexed reads: this resource's ACEs and its parent's. The projection itself is
+        pure (:func:`app.domain.projected_child_acl`), so the whole verdict is reproducible
+        from the two ACL responses a client can fetch for itself.
+
+        The parent is found by path, not by a stored link — see
+        :attr:`NtfsResourceRecord.parent_key`. A parent no run has read gives
+        ``projected_child_acl_hash=None``, which reads as *unknown*, never as *unchanged*.
+        """
+        own = await self.recompute_acl_hash(resource)
+
+        parent_key = resource.parent_key
+        parent = None if parent_key is None else await self.get_ntfs_resource(parent_key)
+
+        projection: str | None = None
+        parent_digest: str | None = None
+        if parent is not None:
+            parent_acl = await self.recompute_acl_hash(parent)
+            parent_digest = parent_acl.computed
+            projection = inherited_child_acl_hash(
+                dacl_present=parent.dacl_present,
+                aces=parent_acl.hashed_entries,
+                for_container=resource.is_container,
+            )
+
+        computed_reason = boundary_reason_for(
+            is_share_root=resource.is_share_root,
+            # The server cannot know where a walk began; that is a fact about the run, not
+            # about the estate. It judges on what it holds, and `agrees` withholds a verdict
+            # whenever the collector's own reason says it never compared either.
+            is_scan_root=False,
+            dacl_present=resource.dacl_present,
+            dacl_protected=resource.dacl_protected,
+            acl_hash=own.computed,
+            parent_dacl_present=None if parent is None else parent.dacl_present,
+            parent_projection=projection,
+        )
+
+        return NtfsBoundaryVerification(
+            resource_key=resource.resource_key,
+            parent_key=parent_key,
+            parent_observed=parent is not None,
+            reported=resource.is_acl_boundary,
+            reported_reason=resource.boundary_reason,
+            reported_parent_acl_hash=resource.parent_acl_hash,
+            resource_acl_hash=own.computed,
+            parent_acl_hash=parent_digest,
+            projected_child_acl_hash=projection,
+            computed_reason=computed_reason,
         )
 
     # ------------------------------------------------------------- references
@@ -798,7 +1016,12 @@ def _ntfs_resource_record(row: RowMapping) -> NtfsResourceRecord:
         is_acl_boundary=bool(row["is_acl_boundary"]),
         ace_count=int(row["ace_count"]),
         depth_from_share_root=row["depth_from_share_root"],
+        resource_kind=ResourceKind(row["resource_kind"]),
+        boundary_reason=(
+            None if row["boundary_reason"] is None else AclBoundaryReason(row["boundary_reason"])
+        ),
         acl_hash=row["acl_hash"],
+        parent_acl_hash=row["parent_acl_hash"],
         source_key=row["source_key"],
         first_observed_at=row["first_observed_at"],
         first_observed_run_id=row["first_observed_run_id"],

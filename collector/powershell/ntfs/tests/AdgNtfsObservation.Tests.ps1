@@ -247,24 +247,92 @@ Describe 'ConvertTo-AdgNtfsResourceObservation' {
 
     It 'reports a protected DACL as blocking inheritance and as a boundary' {
         $resource = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Locked' `
-            -DaclPresent $true -DaclProtected $true -AceCount 0 -ObservedAt $script:Observed
+            -DaclPresent $true -DaclProtected $true -AceCount 0 `
+            -BoundaryReason 'protected_dacl' -ObservedAt $script:Observed
 
         $resource.dacl_protected | Should -BeTrue
         $resource.inheritance_enabled | Should -BeFalse
         # The contract rejects the pair being inconsistent: a directory refusing inherited
         # entries is by definition a place where permissions change.
         $resource.is_acl_boundary | Should -BeTrue
+        $resource.boundary_reason | Should -Be 'protected_dacl'
     }
 
-    It 'reports a share root as a boundary even when inheritance is intact' {
-        # Its parent lies outside the share, so there is nothing to compare against; "not a
-        # boundary" would tell a later tree walk it could skip the one directory every path
-        # through the share must pass.
-        $resource = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance' `
-            -DaclPresent $true -AceCount 2 -IsShareRoot -ObservedAt $script:Observed
+    It 'refuses a protected DACL that arrives without a reason' {
+        # The pair can only be assembled by hand, and by hand is exactly where it goes
+        # wrong. Resolve-AdgAclBoundary tests protection first, so a protected resource
+        # always reaches here with a reason.
+        { ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Locked' `
+                -DaclPresent $true -DaclProtected $true -AceCount 0 -ObservedAt $script:Observed } |
+            Should -Throw '*blocks inheritance*'
+    }
 
-        $resource.inheritance_enabled | Should -BeTrue
-        $resource.is_acl_boundary | Should -BeTrue
+    It 'derives is_acl_boundary from the reason rather than taking it separately' {
+        # A boundary and the evidence for it cannot then disagree, which is the failure
+        # contract 1.3 exists to prevent. A share root is a boundary because its parent lies
+        # outside the share and there is nothing to compare against; "not a boundary" would
+        # tell a later walk it could skip the one directory every path through the share
+        # must pass.
+        $boundary = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance' `
+            -DaclPresent $true -AceCount 2 -BoundaryReason 'share_root' -ObservedAt $script:Observed
+        $inheriting = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance\Reports' `
+            -DaclPresent $true -AceCount 2 -ObservedAt $script:Observed
+
+        $boundary.is_acl_boundary | Should -BeTrue
+        $boundary.inheritance_enabled | Should -BeTrue
+        $inheriting.is_acl_boundary | Should -BeFalse
+        # Null is the only value meaning "carrying exactly what it inherited", and the
+        # contract forbids a reason on a resource that is not a boundary - so the key is
+        # omitted rather than sent as null.
+        $inheriting.PSObject.Properties['boundary_reason'] | Should -BeNullOrEmpty
+    }
+
+    It 'refuses a reason the contract cannot express' {
+        { ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance' `
+                -DaclPresent $true -AceCount 0 -BoundaryReason 'felt_like_it' -ObservedAt $script:Observed } |
+            Should -Throw '*not a boundary reason*'
+    }
+
+    It 'derives depth from the path rather than taking it from the caller' {
+        # A resume from a checkpoint and a first full walk must report the same number for
+        # the same directory, and only the path is common to both.
+        $root = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance' `
+            -DaclPresent $true -AceCount 0 -BoundaryReason 'share_root' -ObservedAt $script:Observed
+        $deep = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance\Reports\Q3' `
+            -DaclPresent $true -AceCount 0 -ObservedAt $script:Observed
+
+        $root.depth_from_share_root | Should -Be 0
+        $deep.depth_from_share_root | Should -Be 2
+    }
+
+    It 'reports a directory unless told otherwise' {
+        $resource = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance' `
+            -DaclPresent $true -AceCount 0 -BoundaryReason 'share_root' -ObservedAt $script:Observed
+        $resource.resource_kind | Should -Be 'directory'
+    }
+
+    It 'reports a file when a file-level scan read one' {
+        $resource = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId `
+            -Path '\\FS01\Finance\Budget.xlsx' -DaclPresent $true -AceCount 2 `
+            -ResourceKind 'file' -ObservedAt $script:Observed
+        $resource.resource_kind | Should -Be 'file'
+    }
+
+    It 'refuses to report a share root as a file' {
+        # A share publishes a directory. Accepting a file here would attach the share's
+        # NTFS-layer link to a leaf nothing can be a child of.
+        { ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance' `
+                -DaclPresent $true -AceCount 0 -ResourceKind 'file' -ObservedAt $script:Observed } |
+            Should -Throw '*always a directory*'
+    }
+
+    It 'records the parent digest the verdict was made against' {
+        # Not the value compared - that is the parent's projection onto a child - but which
+        # reading of the parent was judged, without which a later disagreement cannot be
+        # told from the parent simply having changed in between.
+        $resource = ConvertTo-AdgNtfsResourceObservation -RunId $script:RunId -Path '\\FS01\Finance\Reports' `
+            -DaclPresent $true -AceCount 2 -ParentAclHash ('a' * 64) -ObservedAt $script:Observed
+        $resource.parent_acl_hash | Should -Be ('a' * 64)
     }
 
     It 'distinguishes a NULL DACL from an empty one' {

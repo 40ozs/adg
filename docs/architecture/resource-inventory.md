@@ -4,7 +4,8 @@ How ADG stores what a share scan and a file-system scan observed, and what the r
 will and will not claim. The membership half of the picture is in
 [membership-graph.md](membership-graph.md); the domain types are in
 [permission-domain-model.md](permission-domain-model.md); the DACL digest is specified in
-[ntfs-acl-normalization.md](ntfs-acl-normalization.md).
+[ntfs-acl-normalization.md](ntfs-acl-normalization.md), and how a tree scan decides where
+permissions change in [ntfs-acl-boundaries.md](ntfs-acl-boundaries.md).
 
 **The two authorization layers never merge here.** Remote access over SMB is limited by the
 share ACL *and* the NTFS ACL; access at the console, or from a service on the box, is limited
@@ -41,9 +42,11 @@ observations.** `Get-SmbShareAccess` can only say `change`; a security descripto
 level as a mask would claim precision the level never had. Reconciling the two is the Phase 4
 rights algebra's job ([rights-model.md](rights-model.md)).
 
-A **directory is identified by its canonical UNC path**, case-folded. A local path such as
-`D:\Shares\Finance` names nothing on its own - it does not say which server - so it is
-recorded beside the key rather than used as one. An **NTFS ACE** is keyed by trustee, type,
+A **file-system resource is identified by its canonical UNC path**, case-folded. A local
+path such as `D:\Shares\Finance` names nothing on its own - it does not say which server - so
+it is recorded beside the key rather than used as one. A file uses the same key space as a
+directory, because the two are the same kind of securable object addressed the same way;
+`resource_kind` is what says which it is, and a share root can only ever be a directory. An **NTFS ACE** is keyed by trustee, type,
 mask, and the raw flags byte: the same trustee and mask carrying `ObjectInherit` and carrying
 `ContainerInherit` are two different entries, applying to different children. `order_index`
 is recorded and is not part of the key, exactly as for a share ACE - but a reordered *ACL* is
@@ -62,6 +65,8 @@ reported as changed, because `acl_hash` covers evaluation order
 | `grants_everyone_full_access` | `dacl_present` being false - a NULL DACL |
 | `denies_everyone` | a DACL that is present and empty |
 | an NTFS entry's `rights` list | the raw `access_mask`, through `NtfsRight` |
+| a directory's `parent_path` | the path, minus its last segment. `null` at a share root |
+| the boundary verdict the **server** reports | the parent's stored ACEs, projected onto a child of this kind |
 | a trustee's resolution | a left join against `principals` |
 
 A stored copy of a derived value is a second version of the truth that can disagree with the
@@ -87,8 +92,30 @@ Revision `0004_ntfs_resources` adds two more, and widens `principal_references`'
 
 | Table | Key | Holds |
 | --- | --- | --- |
-| `ntfs_resources` | `resource_key` | Directories whose security descriptor ADG has read |
+| `ntfs_resources` | `resource_key` | File-system resources whose security descriptor ADG has read |
 | `ntfs_aces` | `ace_key` | Raw NTFS ACEs, exactly as read |
+
+Revision `0005_ntfs_boundaries` adds three columns to `ntfs_resources`, all for the question
+a tree scan exists to answer.
+
+- **`resource_kind`** - `directory` or `file`. Not decoration: it decides which inheritance
+  projection a resource is compared against, and comparing a file against the container
+  projection would report a boundary on every file in the estate. Not nullable, defaulted to
+  `directory`, because file scanning did not exist before contract 1.3 and every existing row
+  therefore has a right answer.
+- **`boundary_reason`** - why `is_acl_boundary` is true, from the seven values in
+  [ntfs-acl-boundaries.md](ntfs-acl-boundaries.md). On a row that is *not* a boundary, `NULL`
+  is the only value and means "carrying exactly what it inherited". On one that is, `NULL`
+  means the collector predates the field. `ck_ntfs_resources_reason_implies_a_boundary`
+  constrains one direction only, which is what keeps contract 1.2 collectors working.
+- **`parent_acl_hash`** - the parent's digest as the run that wrote this row read it. *Not*
+  the value the verdict was compared against - that is the parent's projection, which the
+  server recomputes - but the record of which reading was judged, without which a later
+  disagreement cannot be told apart from the parent having changed in between.
+
+`ix_ntfs_resources_boundaries` is a partial index over `(share_key, resource_key)` where
+`is_acl_boundary`, because the boundaries are the small minority of rows a full walk writes
+and the ones that are not boundaries are never what is being looked for.
 
 `ntfs_resources.share_key` is the link between the layers: it is the `SmbShare.identity_key`
 of the share the path sits under, derived from the path itself rather than from anything a
@@ -161,7 +188,7 @@ All under `/api/v1`, all read-only.
 | `GET /shares/{share}` | One share, its server, and its ACE count |
 | `GET /shares/{share}/acl` | That share's raw **share-level** ACL, in DACL order |
 | `GET /shares/{share}/root-acl` | The raw **NTFS** ACL of the directory that share publishes |
-| `GET /resources/{path}` | One directory's descriptor facts and inheritance state |
+| `GET /resources/{path}` | One resource's descriptor facts, inheritance state, and boundary verdict |
 | `GET /resources/{path}/acl` | That directory's raw NTFS ACL, in evaluation order |
 | `GET /principals/{trustee}/shares` | Shares whose ACL names a SID |
 
@@ -178,6 +205,29 @@ A share whose NTFS root no run has read reports `root_resource: null`, and askin
 root ACL is a 404 saying so. Null means *nobody has looked*, never *nothing restricts it*:
 the two layers are collected by independent runs, and reporting the second would invent
 access.
+
+### The boundary verdict is reported twice
+
+`GET /resources/{path}` carries a `boundary` block holding the collector's claim beside the
+one the server derives from the parent it holds - the same "report both, settle nothing"
+shape `acl_hash` already uses, and for the same reason: they disagree when the parent changed
+between the two readings, when the collector's projection is wrong, or when entries were lost
+in transit, and picking a winner would bury all three.
+
+Three of its fields are easy to misread:
+
+- **`projected_child_acl_hash` is what the resource was compared against**, and it is not
+  `parent_acl_hash`. Those two differ by construction, because Windows sets the `INHERITED`
+  bit on every entry it copies down - so a comparison against the parent's own digest would
+  report every directory in the estate as a boundary.
+- **`computed: null` means the server reached no verdict**, because the parent has not been
+  read or has a NULL DACL. Null is unknown, never "no boundary".
+- **`agrees: null` means neither side compared anything.** A collector reporting `share_root`,
+  `scan_root`, `parent_unreadable` or `parent_null_dacl` never made a comparison, so the
+  server knowing more than it did is not the collector having been wrong.
+
+Everything the server used is on the wire, so a client can redo the arithmetic from the two
+ACL responses rather than taking the verdict on trust.
 
 ### Naming a share
 

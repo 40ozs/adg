@@ -47,8 +47,12 @@ READ_EXECUTE = 0x001200A9
 FINANCE_UNC = "\\\\FS01\\Finance"
 FINANCE_KEY = "\\\\fs01\\finance"
 PAYROLL_UNC = "\\\\FS01\\Finance\\Payroll"
+PAYROLL_KEY = "\\\\fs01\\finance\\payroll"
 REPORTS_UNC = "\\\\FS01\\Finance\\Reports"
 WIDE_UNC = "\\\\FS01\\Wide"
+BUDGET_UNC = "\\\\FS01\\Finance\\Budget.xlsx"
+DETACHED_UNC = "\\\\FS02\\Payroll\\Detached"
+DETACHED_PARENT_KEY = "\\\\fs02\\payroll"
 
 
 def encoded(path: str) -> str:
@@ -678,7 +682,7 @@ class TestAnOrphanedTrustee:
         stranger = "S-1-5-21-111111111-222222222-333333333-4242"
         entry = ace(run_id, 1, PAYROLL_UNC, stranger, mask=FULL_CONTROL)
         root = resource(run_id, 0, PAYROLL_UNC, ace_count=1)
-        await replay(client, run([root, entry], scope="\fs01inance\payroll"))
+        await replay(client, run([root, entry], scope=PAYROLL_KEY))
 
         body = (await client.get("/api/v1/resources/" + encoded(PAYROLL_UNC) + "/acl")).json()
 
@@ -693,3 +697,301 @@ class TestAnOrphanedTrustee:
         orphan = next(e for e in body["entries"] if e["trustee"]["sid"] == FOREIGN)
         assert orphan["access_mask"] == FULL_CONTROL
         assert "DELETE" in orphan["rights"]
+
+
+class TestTheBoundaryVerdict:
+    r"""The collector's boundary claim, checked against the parent the database holds.
+
+    Phase 3A stored ``is_acl_boundary`` unread: a share-root collector set it ``true``
+    because a root has no comparable parent, and nothing checked it. A tree walk claims it
+    for directories that *do* have a parent, and a wrong claim is expensive in exactly one
+    direction — a boundary reported ``false`` tells the next scan it may stop looking, and
+    every permission change beneath it is silently dropped.
+
+    So the server redoes the arithmetic from what it holds, and reports both answers. The
+    comparison is against what the parent **projects** onto a child, never against the
+    parent's own digest: those differ by construction, because inheritance sets the
+    INHERITED bit on every entry it copies.
+    """
+
+    @pytest.fixture(autouse=True)
+    async def stored(self, client: AsyncClient) -> None:
+        run_id = str(uuid.uuid4())
+        # A root with two inheritable entries, and a child holding exactly what Windows
+        # would have given it: the same entries with INHERITED added.
+        self.root_aces = [
+            ace(run_id, 1, FINANCE_UNC, ADMINISTRATORS, mask=FULL_CONTROL, flags=0x03, order=0),
+            ace(run_id, 2, FINANCE_UNC, FINANCE_RW, mask=READ_EXECUTE, flags=0x03, order=1),
+        ]
+        self.child_aces = [
+            ace(run_id, 3, REPORTS_UNC, ADMINISTRATORS, mask=FULL_CONTROL, flags=0x13, order=0),
+            ace(run_id, 4, REPORTS_UNC, FINANCE_RW, mask=READ_EXECUTE, flags=0x13, order=1),
+        ]
+        root = resource(
+            run_id,
+            0,
+            FINANCE_UNC,
+            ace_count=2,
+            acl_hash=digest(*self.root_aces),
+            is_acl_boundary=True,
+            boundary_reason="share_root",
+        )
+        child = resource(
+            run_id,
+            5,
+            REPORTS_UNC,
+            ace_count=2,
+            acl_hash=digest(*self.child_aces),
+            parent_acl_hash=digest(*self.root_aces),
+        )
+        await replay(
+            client, run([root, *self.root_aces, child, *self.child_aces], scope=FINANCE_KEY)
+        )
+
+    async def test_the_server_agrees_that_a_clean_child_is_not_a_boundary(
+        self, client: AsyncClient
+    ) -> None:
+        body = (await client.get("/api/v1/resources/" + encoded(REPORTS_UNC))).json()
+
+        assert body["is_acl_boundary"] is False
+        assert body["boundary"]["reported"] is False
+        assert body["boundary"]["computed"] is False
+        assert body["boundary"]["agrees"] is True
+        assert body["boundary"]["computed_reason"] is None
+
+    async def test_it_compares_against_the_projection_not_the_parents_own_digest(
+        self, client: AsyncClient
+    ) -> None:
+        # The distinction the whole design turns on. If these were equal, a child that
+        # inherited perfectly would be reported as a boundary — and so would every other
+        # directory in the estate.
+        body = (await client.get("/api/v1/resources/" + encoded(REPORTS_UNC))).json()
+        boundary = body["boundary"]
+
+        assert boundary["projected_child_acl_hash"] != boundary["parent_acl_hash"]
+        assert boundary["projected_child_acl_hash"] == boundary["resource_acl_hash"]
+
+    async def test_it_finds_the_parent_by_path_rather_than_by_a_stored_link(
+        self, client: AsyncClient
+    ) -> None:
+        body = (await client.get("/api/v1/resources/" + encoded(REPORTS_UNC))).json()
+
+        assert body["parent_path"] == FINANCE_UNC
+        assert body["boundary"]["parent_key"] == FINANCE_KEY
+        assert body["boundary"]["parent_observed"] is True
+        assert body["parent"]["key"] == FINANCE_KEY
+
+    async def test_it_confirms_the_reading_of_the_parent_the_verdict_was_made_against(
+        self, client: AsyncClient
+    ) -> None:
+        body = (await client.get("/api/v1/resources/" + encoded(REPORTS_UNC))).json()
+
+        assert body["boundary"]["reported_parent_acl_hash"] == digest(*self.root_aces)
+        assert body["boundary"]["parent_acl_hash_agrees"] is True
+
+    async def test_it_withholds_a_verdict_at_a_share_root(self, client: AsyncClient) -> None:
+        # A share root's parent lies outside the share, so there is nothing to compare —
+        # which the server can establish from the path alone, and which means the
+        # collector's claim is one it never compared either.
+        body = (await client.get("/api/v1/resources/" + encoded(FINANCE_UNC))).json()
+        boundary = body["boundary"]
+
+        assert boundary["reported"] is True
+        assert boundary["reported_reason"] == "share_root"
+        assert boundary["computed_reason"] == "share_root"
+        assert boundary["parent_key"] is None
+        assert boundary["projection_available"] is False
+        # Neither side compared anything, so there is nothing to agree about.
+        assert boundary["agrees"] is None
+
+    async def test_it_disagrees_out_loud_when_a_child_was_edited(self, client: AsyncClient) -> None:
+        # The case that matters: a collector that reported no boundary for a directory whose
+        # stored entries do not match what its parent hands down. Left unchecked, the next
+        # scan would stop there.
+        run_id = str(uuid.uuid4())
+        entries = [
+            ace(run_id, 1, PAYROLL_UNC, ADMINISTRATORS, mask=FULL_CONTROL, flags=0x13, order=0),
+            ace(run_id, 2, PAYROLL_UNC, ALICE, mask=FULL_CONTROL, flags=0x03, order=1),
+        ]
+        edited = resource(
+            run_id, 0, PAYROLL_UNC, ace_count=2, acl_hash=digest(*entries), is_acl_boundary=False
+        )
+        await replay(client, run([edited, *entries], scope=FINANCE_KEY))
+
+        boundary = (await client.get("/api/v1/resources/" + encoded(PAYROLL_UNC))).json()[
+            "boundary"
+        ]
+
+        assert boundary["reported"] is False
+        assert boundary["computed"] is True
+        assert boundary["computed_reason"] == "acl_differs_from_parent"
+        assert boundary["agrees"] is False
+
+    async def test_it_reaches_no_verdict_when_the_parent_was_never_read(
+        self, client: AsyncClient
+    ) -> None:
+        # Unknown, never "no boundary". A parent nobody has read cannot settle anything, and
+        # a server that answered `false` here would be inventing the one value that lets a
+        # later scan stop looking.
+        run_id = str(uuid.uuid4())
+        entries = [ace(run_id, 1, DETACHED_UNC, ADMINISTRATORS, mask=FULL_CONTROL, flags=0x13)]
+        detached = resource(
+            run_id,
+            0,
+            DETACHED_UNC,
+            ace_count=1,
+            acl_hash=digest(*entries),
+            is_acl_boundary=True,
+            boundary_reason="scan_root",
+        )
+        await replay(client, run([detached, *entries], scope=DETACHED_PARENT_KEY))
+
+        body = (await client.get("/api/v1/resources/" + encoded(DETACHED_UNC))).json()
+        boundary = body["boundary"]
+
+        assert boundary["parent_key"] == DETACHED_PARENT_KEY
+        assert boundary["parent_observed"] is False
+        assert boundary["projection_available"] is False
+        assert boundary["computed"] is None
+        assert boundary["agrees"] is None
+        assert body["parent"] is None
+
+    async def test_a_protected_dacl_is_settled_without_the_parent(
+        self, client: AsyncClient
+    ) -> None:
+        await replay(client, storable_document("09-broken-inheritance"))
+
+        response = await client.get("/api/v1/resources/" + encoded(PAYROLL_UNC))
+        assert response.status_code == 200, response.text
+        boundary = response.json()["boundary"]
+
+        assert boundary["computed_reason"] == "protected_dacl"
+        assert boundary["computed"] is True
+
+    async def test_stored_entries_that_disagree_about_position_do_not_fail_the_request(
+        self, client: AsyncClient
+    ) -> None:
+        # An ACE's identity excludes order_index — deliberately, so reordering a DACL does
+        # not look like every entry being deleted and recreated — and nothing removes an
+        # entry a later scan stopped seeing. So the ACE that used to sit at position 0 and
+        # the different one that replaced it both survive, both claiming position 0. The
+        # normalizer rightly refuses to hash that, and the server falls back to the
+        # unordered form rather than taking a directory's whole ACL off the air.
+        run_id = str(uuid.uuid4())
+        replacement = [
+            ace(run_id, 1, REPORTS_UNC, ALICE, mask=FULL_CONTROL, flags=0x13, order=0),
+        ]
+        rescanned = resource(run_id, 0, REPORTS_UNC, ace_count=1, acl_hash=digest(*replacement))
+        await replay(client, run([rescanned, *replacement], scope=FINANCE_KEY))
+
+        response = await client.get("/api/v1/resources/" + encoded(REPORTS_UNC) + "/acl")
+        assert response.status_code == 200, response.text
+        body = response.json()
+
+        # Reported plainly rather than papered over: the digest says it could not establish
+        # evaluation order, and the entry counts say entries are there that the newest
+        # descriptor did not declare.
+        assert body["acl_hash"]["ordered"] is False
+        assert body["acl_hash"]["agrees"] is False
+        assert body["acl_hash"]["ace_count_agrees"] is False
+
+        detail = await client.get("/api/v1/resources/" + encoded(REPORTS_UNC))
+        assert detail.status_code == 200, detail.text
+
+    async def test_the_verdict_is_reproducible_from_the_two_acl_responses(
+        self, client: AsyncClient
+    ) -> None:
+        # Everything the server used is on the wire, so a client can check the arithmetic
+        # rather than taking the verdict on trust.
+        boundary = (await client.get("/api/v1/resources/" + encoded(REPORTS_UNC))).json()[
+            "boundary"
+        ]
+        parent_acl = (await client.get("/api/v1/resources/" + encoded(FINANCE_UNC) + "/acl")).json()
+        own_acl = (await client.get("/api/v1/resources/" + encoded(REPORTS_UNC) + "/acl")).json()
+
+        assert boundary["parent_acl_hash"] == parent_acl["acl_hash"]["computed"]
+        assert boundary["resource_acl_hash"] == own_acl["acl_hash"]["computed"]
+
+
+class TestAFileResource:
+    """Opt-in file scanning, stored and reported as a distinct kind."""
+
+    @pytest.fixture(autouse=True)
+    async def stored(self, client: AsyncClient) -> None:
+        run_id = str(uuid.uuid4())
+        entries = [ace(run_id, 1, BUDGET_UNC, ADMINISTRATORS, mask=FULL_CONTROL, flags=0x10)]
+        budget = resource(
+            run_id,
+            0,
+            BUDGET_UNC,
+            ace_count=1,
+            acl_hash=digest(*entries),
+            resource_kind="file",
+        )
+        await replay(client, run([budget, *entries], scope=FINANCE_KEY))
+
+    async def test_it_is_stored_and_reported_as_a_file(self, client: AsyncClient) -> None:
+        body = (await client.get("/api/v1/resources/" + encoded(BUDGET_UNC))).json()
+        assert body["resource_kind"] == "file"
+
+    async def test_a_directory_is_reported_as_one_without_being_told(
+        self, client: AsyncClient
+    ) -> None:
+        # Every contract 1.2 payload meant "directory", which is why the column is defaulted
+        # rather than nullable: there is a right answer for those rows.
+        await replay(client, storable_document("09-broken-inheritance"))
+        body = (await client.get("/api/v1/resources/" + encoded(FINANCE_UNC))).json()
+        assert body["resource_kind"] == "directory"
+
+    async def test_it_still_belongs_to_the_share_in_its_own_path(self, client: AsyncClient) -> None:
+        body = (await client.get("/api/v1/resources/" + encoded(BUDGET_UNC))).json()
+        assert body["share_key"] == "fs01|finance"
+        assert body["is_share_root"] is False
+
+
+class TestAPre13Collector:
+    """A payload from a collector that predates boundary_reason is still accepted."""
+
+    async def test_a_boundary_with_no_reason_is_stored_as_reported(
+        self, client: AsyncClient, session: AsyncSession
+    ) -> None:
+        # The additive promise: a 1.0 through 1.2 collector sets is_acl_boundary on a share
+        # root and has never heard of the reason field. Rejecting it would make the bump
+        # breaking, and backfilling a reason would write a verdict nobody made.
+        run_id = str(uuid.uuid4())
+        legacy = resource(run_id, 0, FINANCE_UNC, ace_count=0, is_acl_boundary=True)
+        await replay(client, run([legacy], scope=FINANCE_KEY))
+
+        stored = (
+            await session.execute(
+                sa.select(ntfs_resources.c.is_acl_boundary, ntfs_resources.c.boundary_reason).where(
+                    ntfs_resources.c.resource_key == FINANCE_KEY
+                )
+            )
+        ).one()
+        assert stored.is_acl_boundary is True
+        assert stored.boundary_reason is None
+
+        body = (await client.get("/api/v1/resources/" + encoded(FINANCE_UNC))).json()
+        assert body["is_acl_boundary"] is True
+        assert body["boundary_reason"] is None
+        # And the server still offers its own derivation, which is more than the collector
+        # was able to say.
+        assert body["boundary"]["computed_reason"] == "share_root"
+
+    async def test_a_reason_without_a_boundary_is_refused_at_every_version(
+        self, client: AsyncClient
+    ) -> None:
+        run_id = str(uuid.uuid4())
+        contradictory = resource(
+            run_id, 0, FINANCE_UNC, ace_count=0, is_acl_boundary=False, boundary_reason="share_root"
+        )
+        document = run([contradictory], scope=FINANCE_KEY)
+
+        await client.post("/api/v1/scan-runs", json=document["start"])
+        response = await client.post(
+            f"/api/v1/scan-runs/{document['start']['run_id']}/batches", json=document["batches"][0]
+        )
+
+        assert response.status_code == 422
+        assert "boundary" in response.text.lower()

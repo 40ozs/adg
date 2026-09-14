@@ -8,6 +8,13 @@ compares the two over a real DACL; changing either side alone fails that test.
 See [ADR-0008](../decisions/0008-acl-normal-form-and-hash.md) for why the hash exists and
 what it deliberately excludes.
 
+**The digest is never compared parent-to-child.** A perfectly inheriting child has a
+different digest from its parent, because Windows sets the `INHERITED` bit on every entry it
+copies down — so a tree scan compares a resource against the DACL its parent *projects* onto
+a child, a separate derivation over this same normal form.
+[ntfs-acl-boundaries.md](ntfs-acl-boundaries.md) specifies it, and is the document to read
+before using an `acl_hash` to decide anything about a tree.
+
 ---
 
 ## 1. The problem

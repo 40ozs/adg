@@ -440,7 +440,11 @@ function ConvertTo-AdgShareAceObservation {
             continue
         }
 
-        $mask = [long] ([uint32] (Get-AdgProperty $ace 'AccessMask'))
+        # Masked rather than cast. An access mask is unsigned 32 bits and .NET surfaces it as
+        # a signed Int32, so every mask carrying a generic right arrives negative - and a
+        # plain [uint32] cast throws on those, because PowerShell's conversion is
+        # range-checked rather than a reinterpretation.
+        $mask = ([long] (Get-AdgProperty $ace 'AccessMask')) -band 0xFFFFFFFFL
 
         $observations.Add((New-AdgObservation -Kind 'smb_ace' -RunId $RunId -ObservedAt $ObservedAt `
                     -SourceKey (Get-AdgSmbAceKey -ServerName $ServerName -ShareName $ShareName -TrusteeSid $sid `

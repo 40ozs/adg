@@ -1,10 +1,14 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 <#
-    Configuration: which share roots a run will read, and what it refuses to accept.
+    Configuration: where a walk starts, how far it goes, and what it refuses to accept.
 
     The refusals matter more than the acceptances here. A configuration mistake that is
     caught turns into a message naming the field; one that is not turns into a scan that
-    reads the wrong thing, or a resource observation carrying a boundary nobody established.
+    reads the wrong thing, or - worse - one that declares a reach it never had.
+
+    Every numeric limit is refused rather than clamped. A maxDepth of 100000 is a typo, not
+    a request, and quietly reducing it to something workable produces a scan whose declared
+    reach and actual reach differ, which is the one thing a scope must never do.
 #>
 
 BeforeAll {
@@ -38,40 +42,149 @@ Describe 'Test-AdgShareRootPath' {
     }
 
     It 'does not mistake a directory inside a share for the share root' {
+        # Still load-bearing after the walk lifted the configuration restriction: a share
+        # root is an ACL boundary by fiat, because its parent lies outside the share.
         Test-AdgShareRootPath '\\FS01\Finance\Reports' | Should -BeFalse
+    }
+}
+
+Describe 'Path patterns' {
+    It 'matches the directory a pattern names' {
+        Test-AdgPathMatch -Path '\\FS01\Finance\Archive' -Pattern '\\FS01\Finance\Archive' | Should -BeTrue
+    }
+
+    It 'matches everything beneath it, which is what an operator means by a subtree' {
+        Test-AdgPathMatch -Path '\\FS01\Finance\Archive\2019' -Pattern '\\FS01\Finance\Archive' | Should -BeTrue
+    }
+
+    It 'does not match a sibling whose name merely starts the same way' {
+        Test-AdgPathMatch -Path '\\FS01\Finance\Archived' -Pattern '\\FS01\Finance\Archive' | Should -BeFalse
+    }
+
+    It 'honours a wildcard' {
+        Test-AdgPathMatch -Path '\\FS01\Payroll\Archive' -Pattern '\\FS01\*\Archive' | Should -BeTrue
+    }
+
+    It 'is case-insensitive, as the file systems these paths name are' {
+        Test-AdgPathMatch -Path '\\fs01\finance\archive' -Pattern '\\FS01\Finance\Archive' | Should -BeTrue
+    }
+
+    It 'accepts a pattern written with forward slashes or a trailing separator' {
+        Test-AdgPathMatch -Path '\\FS01\Finance\Archive' -Pattern '//FS01/Finance/Archive/' | Should -BeTrue
+    }
+
+    It 'ignores an empty pattern rather than matching everything' {
+        Test-AdgPathMatch -Path '\\FS01\Finance' -Pattern '' | Should -BeFalse
+    }
+}
+
+Describe 'Test-AdgPatternReachesBelow' {
+    It 'sees that a pattern can still match below an ancestor' {
+        # The difference between a walk that honours includePaths and one that stops at the
+        # first directory outside it.
+        Test-AdgPatternReachesBelow -Path '\\FS01\Finance' -Pattern '\\FS01\*\HR' | Should -BeTrue
+    }
+
+    It 'sees that it cannot, once the prefix diverges' {
+        Test-AdgPatternReachesBelow -Path '\\FS02\Finance' -Pattern '\\FS01\Finance\HR' | Should -BeFalse
+    }
+
+    It 'is false for a pattern no deeper than the path' {
+        Test-AdgPatternReachesBelow -Path '\\FS01\Finance\HR' -Pattern '\\FS01\Finance' | Should -BeFalse
+    }
+}
+
+Describe 'Test-AdgPathInScope' {
+    It 'reads and descends everything when neither list is set' {
+        $scope = Test-AdgPathInScope -Path '\\FS01\Finance\Anything' -Include @() -Exclude @()
+        $scope.Read | Should -BeTrue
+        $scope.Descend | Should -BeTrue
+    }
+
+    It 'stops both at an excluded subtree' {
+        $scope = Test-AdgPathInScope -Path '\\FS01\Finance\Archive\2019' `
+            -Include @() -Exclude @('\\FS01\Finance\Archive')
+        $scope.Read | Should -BeFalse
+        $scope.Descend | Should -BeFalse
+        $scope.Excluded | Should -BeTrue
+    }
+
+    It 'passes through an ancestor of an included path without reporting it' {
+        $scope = Test-AdgPathInScope -Path '\\FS01\Finance' `
+            -Include @('\\FS01\Finance\Departments\HR') -Exclude @()
+        $scope.Read | Should -BeFalse
+        $scope.Descend | Should -BeTrue
+    }
+
+    It 'reads and descends an included path' {
+        $scope = Test-AdgPathInScope -Path '\\FS01\Finance\Departments\HR' `
+            -Include @('\\FS01\Finance\Departments\HR') -Exclude @()
+        $scope.Read | Should -BeTrue
+        $scope.Descend | Should -BeTrue
+    }
+
+    It 'stops at a path no include pattern can reach' {
+        $scope = Test-AdgPathInScope -Path '\\FS01\Finance\Payroll' `
+            -Include @('\\FS01\Finance\Departments\HR') -Exclude @()
+        $scope.Read | Should -BeFalse
+        $scope.Descend | Should -BeFalse
+    }
+
+    It 'lets exclusion win over inclusion' {
+        # The narrower instruction is the one that was meant, and the alternative is a rule
+        # whose outcome depends on the order two lists happen to be written in.
+        $scope = Test-AdgPathInScope -Path '\\FS01\Finance\Archive' `
+            -Include @('\\FS01\Finance') -Exclude @('\\FS01\Finance\Archive')
+        $scope.Read | Should -BeFalse
+        $scope.Excluded | Should -BeTrue
     }
 }
 
 Describe 'Import-AdgNtfsTarget' {
     It 'takes roots from the file and the parameter together' {
+        $path = New-ConfigFile @{ scanRoots = @('\\FS01\Finance') }
+        $settings = Import-AdgNtfsTarget -Path $path -ScanRoot '\\FS02\Departments'
+
+        $settings.ScanRoots | Should -Be @('\\FS01\Finance', '\\FS02\Departments')
+    }
+
+    It 'still accepts the Phase 3A spellings, in the file and on the command line' {
+        # An existing configuration and an existing command line both keep working. The new
+        # name says directory rather than share because a scan root need no longer be one.
         $path = New-ConfigFile @{ shareRoots = @('\\FS01\Finance') }
         $settings = Import-AdgNtfsTarget -Path $path -ShareRoot '\\FS02\Departments'
-
-        $settings.ShareRoots | Should -Be @('\\FS01\Finance', '\\FS02\Departments')
+        $settings.ScanRoots | Should -Be @('\\FS01\Finance', '\\FS02\Departments')
     }
 
     It 'canonicalizes what it was given' {
-        $settings = Import-AdgNtfsTarget -ShareRoot '//fs01/finance/'
-        $settings.ShareRoots | Should -Be @('\\fs01\finance')
+        $settings = Import-AdgNtfsTarget -ScanRoot '//fs01/finance/'
+        $settings.ScanRoots | Should -Be @('\\fs01\finance')
     }
 
     It 'collapses two spellings of one root into one target' {
         # Otherwise the run would read the same descriptor twice and declare its scope
         # twice, which the contract rejects as an ambiguous claim of coverage.
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance', '//fs01/FINANCE'
-        @($settings.ShareRoots).Count | Should -Be 1
+        $settings = Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance', '//fs01/FINANCE'
+        @($settings.ScanRoots).Count | Should -Be 1
     }
 
-    It 'refuses a path inside a share, and says which root to configure instead' {
-        # Phase 3A reads roots only: whether a subdirectory's DACL differs from its parent's
-        # cannot be established without the ancestors, and a guessed boundary would mislead
-        # the recursive scan that follows.
-        { Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance\Reports' } |
-            Should -Throw '*\\FS01\Finance*'
+    It 'accepts a path inside a share, which Phase 3A refused' {
+        # The tree walk reads the ancestors, so the restriction is lifted. What a deeper
+        # start costs is reported rather than hidden: the starting directory's boundary is
+        # scan_root, and the run cannot reconcile the share's tree.
+        $settings = Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance\Reports'
+        $settings.ScanRoots | Should -Be @('\\FS01\Finance\Reports')
+    }
+
+    It 'refuses a root that sits inside another root' {
+        # Walking both would read every directory beneath the inner one twice, and report it
+        # as a scan_root boundary in one run and a properly compared directory in the other.
+        { Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance', '\\FS01\Finance\Reports' } |
+            Should -Throw '*sits inside*'
     }
 
     It 'refuses a local path, which does not say which server it is on' {
-        { Import-AdgNtfsTarget -ShareRoot 'D:\Shares\Finance' } | Should -Throw '*not a usable share root*'
+        { Import-AdgNtfsTarget -ScanRoot 'D:\Shares\Finance' } | Should -Throw '*not a usable scan root*'
     }
 
     It 'refuses to run with no targets at all' {
@@ -82,23 +195,89 @@ Describe 'Import-AdgNtfsTarget' {
     }
 
     It 'defaults the settings a caller did not state' {
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance'
+        $settings = Import-AdgNtfsTarget -ScanRoot '\\FS01\Finance'
 
         $settings.RetryCount | Should -Be 1
         $settings.BatchSize | Should -Be 500
+        $settings.MaxDepth | Should -Be 64
+        $settings.ConcurrencyLimit | Should -Be 1
+        # No deadline: a scan runs to completion rather than stopping part way and leaving
+        # the operator to notice.
+        $settings.TimeoutSeconds | Should -Be 0
+        # Off, and expensive: an estate holds orders of magnitude more files than
+        # directories, and the cost is the operator's to accept deliberately.
+        $settings.IncludeFiles | Should -BeFalse
+        # A junction's own ACL is read; what lies below it belongs to the target.
+        $settings.ReparsePointPolicy | Should -Be 'skip'
+        $settings.CheckpointPath | Should -BeNullOrEmpty
         # On by default: an orphaned SID on a folder ACL is a finding the backend cannot
         # infer from the ACE alone.
         $settings.ReportUnresolved | Should -BeTrue
     }
 
-    It 'rejects a batch size outside the contract' {
-        $path = New-ConfigFile @{ shareRoots = @('\\FS01\Finance'); batchSize = 5000 }
-        { Import-AdgNtfsTarget -Path $path } | Should -Throw '*batchSize*'
+    It 'rejects <Field> outside its range rather than clamping it' -ForEach @(
+        @{ Field = 'batchSize'; Value = 5000 }
+        @{ Field = 'retryCount'; Value = 99 }
+        @{ Field = 'retryDelaySeconds'; Value = 9999 }
+        @{ Field = 'maxDepth'; Value = 100000 }
+        @{ Field = 'concurrencyLimit'; Value = 0 }
+        @{ Field = 'timeoutSeconds'; Value = -1 }
+        @{ Field = 'checkpointIntervalSeconds'; Value = 0 }
+    ) {
+        $path = New-ConfigFile @{ scanRoots = @('\\FS01\Finance'); $Field = $Value }
+        { Import-AdgNtfsTarget -Path $path } | Should -Throw "*$Field*"
     }
 
-    It 'rejects a retry count outside its range' {
-        $path = New-ConfigFile @{ shareRoots = @('\\FS01\Finance'); retryCount = 99 }
-        { Import-AdgNtfsTarget -Path $path } | Should -Throw '*retryCount*'
+    It 'reads the whole scan policy out of the file' {
+        $path = New-ConfigFile @{
+            scanRoots                 = @('\\FS01\Finance')
+            maxDepth                  = 8
+            includePaths              = @('\\FS01\Finance\Departments')
+            excludePaths              = @('\\FS01\Finance\Archive')
+            reparsePointPolicy        = 'follow'
+            concurrencyLimit          = 8
+            timeoutSeconds            = 3600
+            includeFiles              = $true
+            checkpointIntervalSeconds = 120
+        }
+        $settings = Import-AdgNtfsTarget -Path $path
+
+        $settings.MaxDepth | Should -Be 8
+        $settings.IncludePaths | Should -Be @('\\FS01\Finance\Departments')
+        $settings.ExcludePaths | Should -Be @('\\FS01\Finance\Archive')
+        $settings.ReparsePointPolicy | Should -Be 'follow'
+        $settings.ConcurrencyLimit | Should -Be 8
+        $settings.TimeoutSeconds | Should -Be 3600
+        $settings.IncludeFiles | Should -BeTrue
+        $settings.CheckpointIntervalSeconds | Should -Be 120
+    }
+
+    It 'accepts a depth of zero, which reads the roots and nothing below them' {
+        $path = New-ConfigFile @{ scanRoots = @('\\FS01\Finance'); maxDepth = 0 }
+        (Import-AdgNtfsTarget -Path $path).MaxDepth | Should -Be 0
+    }
+
+    It 'rejects a reparse policy it does not implement, and names the three that exist' {
+        $path = New-ConfigFile @{ scanRoots = @('\\FS01\Finance'); reparsePointPolicy = 'resolve' }
+        { Import-AdgNtfsTarget -Path $path } | Should -Throw '*skip*ignore*follow*'
+    }
+
+    It 'rejects a path pattern that is not a UNC path' {
+        # Patterns are matched against canonical UNC paths, so one that cannot be is one
+        # that silently matches nothing - and an exclude that matches nothing is an exclude
+        # the operator believes is protecting a subtree.
+        $path = New-ConfigFile @{ scanRoots = @('\\FS01\Finance'); excludePaths = @('Archive') }
+        { Import-AdgNtfsTarget -Path $path } | Should -Throw '*not a UNC path pattern*'
+    }
+
+    It 'refuses a checkpoint path in a directory that does not exist' {
+        # A checkpoint that cannot be written is discovered when the scan is interrupted,
+        # which is the worst possible moment to find out.
+        $path = New-ConfigFile @{
+            scanRoots      = @('\\FS01\Finance')
+            checkpointPath = (Join-Path $script:Root 'no-such-directory\scan.json')
+        }
+        { Import-AdgNtfsTarget -Path $path } | Should -Throw '*directory that does not exist*'
     }
 
     It 'names the file when it is not valid JSON' {
@@ -118,7 +297,7 @@ Describe 'Import-AdgNtfsTarget' {
         $moduleRoot = Split-Path -Parent $PSScriptRoot
         $settings = Import-AdgNtfsTarget -Path (Join-Path $moduleRoot 'adg-ntfs-targets.example.json')
 
-        @($settings.ShareRoots).Count | Should -Be 3
-        $settings.ShareRoots[0] | Should -Be '\\FS01\Finance'
+        @($settings.ScanRoots).Count | Should -Be 3
+        $settings.ScanRoots[0] | Should -Be '\\FS01\Finance'
     }
 }

@@ -19,13 +19,35 @@
     against the Python implementations. Changing either side alone fails that test.
 #>
 
-# Contract 1.2: ntfs_resource gained the optional acl_hash.
-$script:AdgSchemaVersion = '1.2'
+# Contract 1.3: ntfs_resource gained resource_kind, boundary_reason and parent_acl_hash.
+$script:AdgSchemaVersion = '1.3'
 
 # First line of the normalized ACL document. Mirrors ACL_NORMAL_FORM_VERSION. A change of
 # format changes this token, so two digests from different formats can never be compared as
 # though they agreed.
 $script:AdgAclNormalFormVersion = 'adg-acl/1'
+
+# Mirrors SUBSTITUTED_TRUSTEES in app/domain/inheritance.py. CREATOR OWNER and CREATOR
+# GROUP: a parent carrying one hands a child the propagating half of the entry plus an ACE
+# naming whoever created that child, which is not a fact about the parent and cannot be
+# predicted. OWNER RIGHTS (S-1-3-4) looks like a sibling and is not one - Windows inherits it
+# like any other trustee and resolves it against the current owner at access time.
+$script:AdgSubstitutedTrustees = @('S-1-3-0', 'S-1-3-1')
+
+# Mirrors AclBoundaryReason in app/domain/inheritance.py, and the aclBoundaryReason
+# enumeration in common.schema.json. Checked by hand rather than through a ValidateSet
+# attribute, because $null has to be accepted here and is the most important value in the
+# list: it is the only one that means "carrying exactly what it inherited", and a
+# [string] parameter turns $null into an empty string that no ValidateSet can allow.
+$script:AdgBoundaryReasons = @(
+    'share_root'
+    'scan_root'
+    'protected_dacl'
+    'null_dacl'
+    'parent_null_dacl'
+    'parent_unreadable'
+    'acl_differs_from_parent'
+)
 
 function Get-AdgProperty {
     <#
@@ -139,6 +161,45 @@ function Get-AdgNtfsResourceKey {
     [OutputType([string])]
     param([Parameter(Mandatory)][string] $Path)
     return "resource|$(Get-AdgResourceComparisonKey $Path)"
+}
+
+function Get-AdgParentPath {
+    <#
+        .SYNOPSIS
+            The containing directory's canonical UNC path, or $null at a share root.
+        .DESCRIPTION
+            Mirrors UncPath.parent. A share root's parent lies outside the share - often
+            outside anything ADG audits - so there is nothing to return and nothing to
+            compare a root against.
+
+            Purely textual. Resolving a parent through the file system would need a round
+            trip per directory during a walk that is already one round trip per directory,
+            and it would answer differently for a path reached through a junction.
+    #>
+    [OutputType([string])]
+    param([Parameter(Mandatory)][string] $Path)
+
+    $canonical = ConvertTo-AdgUncPath $Path
+    $parts = @($canonical.Substring(2).Split('\'))
+    if ($parts.Count -le 2) { return $null }
+    return '\\' + (($parts[0..($parts.Count - 2)]) -join '\')
+}
+
+function Get-AdgDepthFromShareRoot {
+    <#
+        .SYNOPSIS
+            How many directories below \\server\share this path sits. 0 at the root.
+        .DESCRIPTION
+            A function of the path and nothing else, which is why it is derived here rather
+            than counted by the walk: a resume from a checkpoint, a scan rooted below the
+            share root, and a first full walk must all report the same number for the same
+            directory, and only the path is common to the three.
+    #>
+    [OutputType([int])]
+    param([Parameter(Mandatory)][string] $Path)
+
+    $canonical = ConvertTo-AdgUncPath $Path
+    return (@($canonical.Substring(2).Split('\')).Count - 2)
 }
 
 function Get-AdgNtfsAceKey {
@@ -350,6 +411,354 @@ function Get-AdgAclHash {
     return (Get-AdgNormalizedAcl -DaclPresent $DaclPresent -DaclProtected $DaclProtected -Ace $Ace).Digest
 }
 
+# --- Inheritance: what a parent hands down, and where that stops ---------------------------
+
+function ConvertTo-AdgMappedGenericRight {
+    <#
+        .SYNOPSIS
+            An access mask with its generic bits replaced by what they stand for.
+        .DESCRIPTION
+            Mirrors app/domain/inheritance.py::map_generic_rights.
+
+            GENERIC_READ and its siblings are not rights; they are an indirection Windows
+            resolves through the object type's generic mapping when it materializes an ACE
+            onto a real object. For a file-system object that mapping is fixed, and it is
+            why a directory's stored DACL and its parent's inheritable entry can carry
+            different masks while describing exactly the same grant.
+
+            **This does not license expanding generic rights anywhere else.** Every mask this
+            collector reports is exactly as read; a reported expansion would bake one
+            interpretation into a stored fact. The expansion here is never reported - it
+            exists so a prediction can be compared against what Windows actually wrote.
+    #>
+    [OutputType([long])]
+    param([Parameter(Mandatory)][long] $Mask)
+
+    $specific = $Mask -band 0x0FFFFFFFL
+    if ($Mask -band 0x80000000L) { $specific = $specific -bor 0x00120089L }  # GENERIC_READ
+    if ($Mask -band 0x40000000L) { $specific = $specific -bor 0x00120116L }  # GENERIC_WRITE
+    if ($Mask -band 0x20000000L) { $specific = $specific -bor 0x001200A0L }  # GENERIC_EXECUTE
+    if ($Mask -band 0x10000000L) { $specific = $specific -bor 0x001F01FFL }  # GENERIC_ALL
+    return $specific
+}
+
+function Get-AdgInheritedAceFlag {
+    <#
+        .SYNOPSIS
+            The flag byte a child receives from one ordinary parent ACE, or $null for none.
+        .DESCRIPTION
+            "Ordinary" is doing work: this is the single-entry case, which holds for an ACE
+            whose mask carries no generic bits and whose trustee Windows does not
+            substitute. Those two exceptions each split one parent entry into two child
+            entries - see Get-AdgInheritedAce.
+
+            Mirrors app/domain/inheritance.py::project_inherited_ace_flags. Read that module
+            for the measured table; the three rules that are easiest to get wrong from
+            memory:
+
+              * INHERIT_ONLY is not a propagation stop. It says the ACE does not apply to
+                the object holding it, which is a statement about the parent, and CI|IO
+                propagates to a child container exactly as plain CI does.
+              * an OBJECT_INHERIT-only ACE still reaches a child container, as
+                OI|IO|INHERITED (0x19), so it can carry on down to the files below. Dropping
+                it would make every folder under a "files only" grant look like a boundary.
+              * NO_PROPAGATE_INHERIT clears OI, CI, NP and IO from the copy, which is what
+                makes the grandchild inherit nothing.
+
+            The parent ACE's own INHERITED bit is irrelevant - an entry the parent inherited
+            propagates exactly as one set on the parent does - and is overwritten in the
+            result.
+
+        .PARAMETER ForContainer
+            Whether the child is a directory. A file receives no inheritance flags at all,
+            having nothing below it to pass them to.
+    #>
+    [OutputType([object])]
+    param(
+        [Parameter(Mandatory)][int] $AceFlags,
+        [bool] $ForContainer = $true
+    )
+
+    $flags = $AceFlags -band 0xFF
+    $objectInherit = ($flags -band 0x01) -ne 0
+    $containerInherit = ($flags -band 0x02) -ne 0
+    $noPropagate = ($flags -band 0x04) -ne 0
+
+    if (-not $ForContainer) {
+        # A file is a leaf: it either receives the entry or does not, and never carries
+        # inheritance flags of its own. NO_PROPAGATE does not withhold it - that bit stops
+        # grandchildren, and a file has none.
+        if ($objectInherit) { return 0x10 }
+        return $null
+    }
+
+    if ($containerInherit) {
+        # Applies to this child and stops.
+        if ($noPropagate) { return 0x10 }
+        # Keeps propagating with the same reach. INHERIT_ONLY is dropped: the entry does
+        # apply to the child container it just landed on.
+        return (0x10 -bor ($flags -band 0x03))
+    }
+
+    if ($objectInherit) {
+        # The entry is for immediate children that are files. This one is not.
+        if ($noPropagate) { return $null }
+        # Grants nothing on this container - which is what INHERIT_ONLY says - but has to
+        # be carried so the files below still receive it.
+        return 0x19
+    }
+
+    return $null
+}
+
+function Get-AdgInheritedAce {
+    <#
+        .SYNOPSIS
+            What one parent ACE becomes on a child: nothing, one entry, or two.
+        .DESCRIPTION
+            Mirrors app/domain/inheritance.py::project_inherited_ace, which carries the full
+            reasoning. The two-entry case is not an edge case: it fires on any ACE carrying
+            a generic right, and 0xe0010000 - the generic form of Modify - sits on almost
+            every directory created through Explorer. Missing it reports every one of those
+            directories as a boundary, and it is invisible to any test whose fixture masks
+            happen to be specific.
+
+            A generic mask is an indirection Windows cannot apply to an object without
+            resolving it, so materializing such an ACE onto a child writes both halves of
+            what the parent meant: the **effective** copy, mapped and with every inheritance
+            flag cleared, and the **propagating** copy, unmapped and INHERIT_ONLY so it keeps
+            descending. The parent's own DACL holds the same pair, which is why this is a
+            fixed point rather than something that grows with depth.
+
+            CREATOR OWNER and CREATOR GROUP split halfway: the propagating copy descends
+            with INHERIT_ONLY preserved, and the effective copy names whoever created the
+            child - not a fact about the parent, so it is not predicted here.
+
+        .OUTPUTS
+            The entries, effective first then propagating, without OrderIndex.
+    #>
+    [OutputType([object[]])]
+    param(
+        [Parameter(Mandatory)] $Entry,
+        [bool] $ForContainer = $true
+    )
+
+    $trustee = [string] (Get-AdgProperty $Entry 'TrusteeSid')
+    $aceType = [string] (Get-AdgProperty $Entry 'AceType')
+    $mask = [long] (Get-AdgProperty $Entry 'AccessMask')
+    $flags = [int] (Get-AdgProperty $Entry 'AceFlags') -band 0xFF
+
+    $containerInherit = ($flags -band 0x02) -ne 0
+    $objectInherit = ($flags -band 0x01) -ne 0
+    $noPropagate = ($flags -band 0x04) -ne 0
+
+    $generic = ($mask -band 0xF0000000L) -ne 0
+    $substituted = $trustee -in $script:AdgSubstitutedTrustees
+
+    $projected = [System.Collections.Generic.List[object]]::new()
+
+    if (-not $ForContainer) {
+        # A file receives the effective copy or nothing. It never propagates, and a
+        # substituted trustee's effective copy names the creator, which is unpredictable.
+        if (-not $substituted -and $objectInherit) {
+            $projected.Add([pscustomobject]@{
+                    TrusteeSid = $trustee; AceType = $aceType
+                    AccessMask = ConvertTo-AdgMappedGenericRight $mask
+                    AceFlags   = 0x10
+                })
+        }
+        return , $projected.ToArray()
+    }
+
+    if (-not ($generic -or $substituted)) {
+        $single = Get-AdgInheritedAceFlag -AceFlags $flags -ForContainer $true
+        if ($null -ne $single) {
+            $projected.Add([pscustomobject]@{
+                    TrusteeSid = $trustee; AceType = $aceType
+                    AccessMask = $mask; AceFlags = [int] $single
+                })
+        }
+        return , $projected.ToArray()
+    }
+
+    # The effective copy exists only where the entry applies to a child container, and only
+    # where the trustee is knowable.
+    if ($containerInherit -and -not $substituted) {
+        $projected.Add([pscustomobject]@{
+                TrusteeSid = $trustee; AceType = $aceType
+                AccessMask = ConvertTo-AdgMappedGenericRight $mask
+                AceFlags   = 0x10
+            })
+    }
+    # The propagating copy carries the original mask unmapped, because it is still an
+    # indirection for whatever object it eventually lands on.
+    if (($containerInherit -or $objectInherit) -and -not $noPropagate) {
+        $projected.Add([pscustomobject]@{
+                TrusteeSid = $trustee; AceType = $aceType
+                AccessMask = $mask
+                AceFlags   = 0x10 -bor 0x08 -bor ($flags -band 0x03)
+            })
+    }
+    return , $projected.ToArray()
+}
+
+function Get-AdgInheritedAceProjection {
+    <#
+        .SYNOPSIS
+            The entries a child inherits from a parent DACL, in the parent's relative order.
+        .DESCRIPTION
+            Mirrors app/domain/inheritance.py::project_inherited_acl. Positions are
+            renumbered from zero over the surviving entries, which loses nothing: the
+            normalized form reduces positions to their rank anyway, and renumbering is what
+            lets a projection built from a live descriptor equal one built from stored rows.
+
+            A parent entry that does not descend is dropped rather than represented, so an
+            empty result means "this parent hands its children nothing" - an ordinary DACL
+            of explicit, non-inheritable entries. One carrying a generic right produces
+            *two*, which is why this cannot be a simple map: see Get-AdgInheritedAce.
+    #>
+    [OutputType([object[]])]
+    param(
+        [AllowNull()][object[]] $Ace,
+        [bool] $ForContainer = $true
+    )
+
+    $entries = @($Ace ?? @())
+    if ($entries.Count -eq 0) { return , @() }
+
+    # Ordinal throughout, and sorted by the reported position rather than by the order the
+    # entries were handed over: rows read back from storage arrive in whatever order the
+    # query produced, and the projection has to be the same document either way. Entries
+    # with no position sort last, by content.
+    $decorated = [System.Collections.Generic.List[object]]::new()
+    foreach ($entry in $entries) {
+        $content = Get-AdgAceContentLine `
+            -TrusteeSid ([string] (Get-AdgProperty $entry 'TrusteeSid')) `
+            -AceType ([string] (Get-AdgProperty $entry 'AceType')) `
+            -AccessMask ([long] (Get-AdgProperty $entry 'AccessMask')) `
+            -AceFlags ([int] (Get-AdgProperty $entry 'AceFlags'))
+
+        $order = Get-AdgProperty $entry 'OrderIndex'
+        $key = if ($null -eq $order) { "1|9999999999|$content" }
+        else { '0|{0:d10}|{1}' -f [int] $order, $content }
+
+        $decorated.Add([pscustomobject]@{ Key = $key; Entry = $entry })
+    }
+    # A .NET comparison rather than Sort-Object: the default string comparison is
+    # culture-aware, which would order the same DACL differently on a machine with a
+    # different locale and produce a projection Python could never reproduce.
+    $decorated.Sort([System.Comparison[object]] {
+            param($left, $right)
+            [System.String]::CompareOrdinal($left.Key, $right.Key)
+        })
+
+    $projected = [System.Collections.Generic.List[object]]::new()
+    foreach ($item in $decorated) {
+        # Assigned before iterating: Get-AdgInheritedAce returns `, $array`, so piping or
+        # wrapping the call would hand back an array holding an array.
+        $children = Get-AdgInheritedAce -Entry $item.Entry -ForContainer $ForContainer
+        foreach ($child in @($children)) {
+            $projected.Add([pscustomobject]@{
+                    TrusteeSid = $child.TrusteeSid
+                    AceType    = $child.AceType
+                    AccessMask = [long] $child.AccessMask
+                    AceFlags   = [int] $child.AceFlags
+                    OrderIndex = $projected.Count
+                })
+        }
+    }
+
+    # The comma keeps an empty projection an empty array rather than nothing at all.
+    return , $projected.ToArray()
+}
+
+function Get-AdgProjectedChildAclHash {
+    <#
+        .SYNOPSIS
+            The digest a cleanly inheriting child of this DACL would carry, or $null.
+        .DESCRIPTION
+            This is the value a child's own acl_hash is compared against - never the
+            parent's own digest. A parent's explicit ACE carrying CONTAINER_INHERIT (0x02)
+            arrives at the child as the same ACE with INHERITED added (0x12), so the two
+            DACLs differ byte for byte precisely *because* inheritance worked. Comparing a
+            child to its parent directly would report every directory in the estate as a
+            boundary.
+
+            $null means the parent cannot project: a NULL DACL produces no entries, and what
+            a child of it ends up holding comes from the creating process's default DACL,
+            which is not a fact about the parent.
+
+            The projected document is always dacl_present=true and dacl_protected=false.
+            Inheritance produces a present DACL even when it produces no entries, and a
+            child that is itself protected is a boundary on that basis alone - so a
+            projection claiming protection could only ever make a boundary invisible.
+    #>
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][bool] $DaclPresent,
+        [AllowNull()][object[]] $Ace,
+        [bool] $ForContainer = $true
+    )
+
+    if (-not $DaclPresent) { return $null }
+    $projected = Get-AdgInheritedAceProjection -Ace $Ace -ForContainer $ForContainer
+    return Get-AdgAclHash -DaclPresent $true -DaclProtected $false -Ace $projected
+}
+
+function Resolve-AdgAclBoundary {
+    <#
+        .SYNOPSIS
+            Why this resource is a boundary, or $null when it carries what it inherited.
+        .DESCRIPTION
+            Mirrors app/domain/inheritance.py::boundary_reason_for, including the order of
+            the tests, which is the order of certainty: a protected DACL is a boundary
+            whatever a projection says, and a resource whose parent nobody read is unknown
+            rather than unchanged.
+
+            $null is the only value that means "not a boundary". Every unknowable case -
+            a scan root, an unreadable parent, a parent with a NULL DACL - returns a reason
+            and therefore reports a boundary. The asymmetry is deliberate: a boundary that
+            is not really there costs one extra stored ACL, while a boundary reported false
+            tells the next scan it may stop looking and silently drops every permission
+            change beneath it.
+
+        .PARAMETER AclHash
+            This resource's own digest, or $null when its DACL was only partly read and no
+            digest could honestly be taken over it.
+
+        .PARAMETER ParentDaclPresent
+            The parent's dacl_present, or $null when the parent was not read at all.
+
+        .PARAMETER ParentProjection
+            Get-AdgProjectedChildAclHash for the parent, or $null when it projects nothing.
+    #>
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][bool] $DaclPresent,
+        [bool] $DaclProtected = $false,
+        [switch] $IsShareRoot,
+        [switch] $IsScanRoot,
+        [AllowNull()][string] $AclHash,
+        [AllowNull()][System.Nullable[bool]] $ParentDaclPresent,
+        [AllowNull()][string] $ParentProjection
+    )
+
+    if ($DaclProtected) { return 'protected_dacl' }
+    if (-not $DaclPresent) { return 'null_dacl' }
+    if ($IsShareRoot) { return 'share_root' }
+    if ($IsScanRoot) { return 'scan_root' }
+    if ($null -eq $ParentDaclPresent) { return 'parent_unreadable' }
+    if (-not $ParentDaclPresent) { return 'parent_null_dacl' }
+    # Either side missing a digest means the comparison was never made. An unread ACL is
+    # not an unchanged one, and calling it unchanged is what would let a later scan stop at
+    # a directory whose permissions nobody has established.
+    if ([string]::IsNullOrWhiteSpace($ParentProjection) -or [string]::IsNullOrWhiteSpace($AclHash)) {
+        return 'parent_unreadable'
+    }
+    if ($AclHash -cne $ParentProjection) { return 'acl_differs_from_parent' }
+    return $null
+}
+
 # --- Raw descriptor values to contract enumerations ---------------------------------------
 
 function ConvertTo-AdgAceType {
@@ -373,6 +782,32 @@ function ConvertTo-AdgAceType {
         '^(1|AccessDenied|Deny)$' { return 'deny' }
         default { return $null }
     }
+}
+
+function ConvertTo-AdgAccessMask {
+    <#
+        .SYNOPSIS
+            A raw access mask as an unsigned 32-bit value, whatever signed form it arrived in.
+        .DESCRIPTION
+            An access mask is unsigned 32 bits. .NET surfaces it as a signed Int32, so every
+            mask with the top bit set - which is every mask carrying a generic right -
+            arrives negative: GENERIC_READ alone is -2147483648, and the ACE that provoked
+            this function, GENERIC_ALL|GENERIC_EXECUTE with standard bits, is -536805376.
+
+            A plain `[uint32] $value` cast **throws** on those, because PowerShell's
+            conversion is range-checked rather than a reinterpretation. That is the whole
+            defect: a collector that crashes on any directory whose DACL holds a generic
+            right crashes on a large share of a real estate, while passing every test whose
+            fixture masks happen to be positive.
+
+            Masking against 0xFFFFFFFF as a long is the reinterpretation - two's complement
+            in, the same 32 bits out - and it leaves an already-unsigned value untouched.
+    #>
+    [OutputType([long])]
+    param([Parameter(Mandatory)][AllowNull()] $Value)
+
+    if ($null -eq $Value) { return [long] 0 }
+    return ([long] $Value) -band 0xFFFFFFFFL
 }
 
 function Test-AdgSidString {
@@ -545,7 +980,7 @@ function ConvertTo-AdgNtfsAceObservation {
             continue
         }
 
-        $mask = [long] ([uint32] (Get-AdgProperty $entry 'AccessMask'))
+        $mask = ConvertTo-AdgAccessMask (Get-AdgProperty $entry 'AccessMask')
         $flags = [int] (Get-AdgProperty $entry 'AceFlags')
         # 0x10 is INHERITED_ACE. source and the flag are two spellings of one fact, and the
         # contract rejects a payload where they disagree, so it is derived rather than taken
@@ -607,11 +1042,22 @@ function ConvertTo-AdgNtfsResourceObservation {
             passes -Incomplete, and AclHash is then omitted rather than computed over the
             part that was readable.
 
-        .PARAMETER IsShareRoot
-            A share root is always reported as an ACL boundary. Its parent lies outside the
-            share - often outside anything ADG audits - so there is nothing to compare it
-            against, and "not a boundary" would tell a later tree walk it could skip the one
-            directory every path through the share must pass.
+        .PARAMETER BoundaryReason
+            Why this resource is a place where permissions change, from
+            Resolve-AdgAclBoundary. $null - the default - is the only value that means it is
+            carrying exactly what its parent hands down, and is_acl_boundary follows from
+            it rather than being passed separately: a boundary and the evidence for it
+            cannot then disagree, which is the failure contract 1.3 exists to prevent.
+
+        .PARAMETER ParentAclHash
+            The parent's own acl_hash as this run read it. Not the value the verdict was
+            compared against - that is the parent's projection onto a child - but the record
+            of which reading of the parent was judged, without which a later disagreement
+            cannot be told from the parent simply having changed in between.
+
+        .PARAMETER ResourceKind
+            'directory' or 'file'. A file inherits through the object projection rather than
+            the container one, and is never traversed.
     #>
     [OutputType([System.Collections.Specialized.OrderedDictionary])]
     param(
@@ -623,9 +1069,10 @@ function ConvertTo-AdgNtfsResourceObservation {
         [string] $GroupSid,
         [string] $LocalPath,
         [int] $AceCount = 0,
-        [Nullable[int]] $DepthFromShareRoot,
-        [switch] $IsShareRoot,
+        [ValidateSet('directory', 'file')][string] $ResourceKind = 'directory',
+        [AllowNull()][AllowEmptyString()][string] $BoundaryReason,
         [string] $AclHash,
+        [string] $ParentAclHash,
         [string] $ObservedAt
     )
 
@@ -635,11 +1082,24 @@ function ConvertTo-AdgNtfsResourceObservation {
     if (-not $DaclPresent -and $AceCount -ne 0) {
         throw "A NULL DACL on $path carries no ACEs, but ace_count=$AceCount was supplied. Report ace_count=0, and do not confuse it with a present but empty DACL, which grants nobody access."
     }
+    if ($ResourceKind -eq 'file' -and $parts.Count -eq 2) {
+        throw "$path is a share root, which is always a directory; it cannot be reported as a file."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($BoundaryReason) -and
+        $BoundaryReason -notin $script:AdgBoundaryReasons) {
+        throw "'$BoundaryReason' is not a boundary reason the contract can express. Derive it with Resolve-AdgAclBoundary, which returns one of: $($script:AdgBoundaryReasons -join ', '), or nothing at all when the resource carries exactly what it inherited."
+    }
 
     # SE_DACL_PROTECTED means the object refuses inherited entries, which is by definition a
-    # place where permissions change. The contract rejects the pair being inconsistent.
+    # place where permissions change. The contract rejects the pair being inconsistent, and
+    # Resolve-AdgAclBoundary tests protection first for exactly that reason - so a protected
+    # resource always arrives here with a reason, and this is only a guard against a caller
+    # that assembled the pair by hand.
     $inheritanceEnabled = -not $DaclProtected
-    $isBoundary = $DaclProtected -or [bool] $IsShareRoot
+    if ($DaclProtected -and [string]::IsNullOrWhiteSpace($BoundaryReason)) {
+        throw "$path blocks inheritance, which is by definition an ACL boundary, but no boundary_reason was supplied. Derive it with Resolve-AdgAclBoundary rather than assembling the pair by hand."
+    }
+    $isBoundary = -not [string]::IsNullOrWhiteSpace($BoundaryReason)
 
     if ($OwnerSid -and -not (Test-AdgSidString $OwnerSid)) { $OwnerSid = $null }
     if ($GroupSid -and -not (Test-AdgSidString $GroupSid)) { $GroupSid = $null }
@@ -657,7 +1117,13 @@ function ConvertTo-AdgNtfsResourceObservation {
         inheritance_enabled   = $inheritanceEnabled
         is_acl_boundary       = $isBoundary
         ace_count             = $AceCount
-        depth_from_share_root = if ($null -eq $DepthFromShareRoot) { $null } else { [int] $DepthFromShareRoot }
+        # Derived from the path, never counted by the walk: a resume from a checkpoint and
+        # a first full walk must report the same number for the same directory, and only
+        # the path is common to both.
+        depth_from_share_root = Get-AdgDepthFromShareRoot $path
+        resource_kind         = $ResourceKind
+        boundary_reason       = if ($isBoundary) { $BoundaryReason } else { $null }
         acl_hash              = if ([string]::IsNullOrWhiteSpace($AclHash)) { $null } else { $AclHash }
+        parent_acl_hash       = if ([string]::IsNullOrWhiteSpace($ParentAclHash)) { $null } else { $ParentAclHash }
     }
 }

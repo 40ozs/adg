@@ -169,7 +169,10 @@ _NTFS_RESOURCE_MUTABLE: Final[tuple[str, ...]] = (
     "is_acl_boundary",
     "ace_count",
     "depth_from_share_root",
+    "resource_kind",
+    "boundary_reason",
     "acl_hash",
+    "parent_acl_hash",
     "source_key",
 )
 
@@ -703,7 +706,10 @@ class IngestionService:
                 "is_acl_boundary": row.is_acl_boundary,
                 "ace_count": row.ace_count,
                 "depth_from_share_root": row.depth_from_share_root,
+                "resource_kind": row.resource_kind,
+                "boundary_reason": row.boundary_reason,
                 "acl_hash": row.acl_hash,
+                "parent_acl_hash": row.parent_acl_hash,
                 "source_key": row.source_key,
                 "first_observed_at": row.observed_at,
                 "first_observed_run_id": row.run_id,

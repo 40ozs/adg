@@ -15,7 +15,8 @@ logic: effective-access semantics live in the backend (`backend/app/access_engin
 - `powershell/smb/` — SMB shares and raw share-level ACLs (Phase 2A). See its
   [README](powershell/smb/README.md) for the privileges, firewall rules, and remote-management
   prerequisites collection needs.
-- `powershell/ntfs/` — the NTFS security descriptors of share roots (Phase 3A). See its
+- `powershell/ntfs/` — the NTFS security descriptors of directory trees, and where
+  permissions change within them (Phases 3A and 3B). See its
   [README](powershell/ntfs/README.md) for the privileges it needs and, just as importantly,
   the ones it refuses to acquire.
 

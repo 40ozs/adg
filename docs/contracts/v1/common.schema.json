@@ -69,6 +69,30 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
+    "resourceKind": {
+      "title": "What kind of file-system object a resource observation describes",
+      "description": "Directories are the default and the only kind contract 1.2 could express. File-level scanning is opt-in in a collector and reports 'file'; a file is never traversed, and it inherits through the object projection (OBJECT_INHERIT) rather than the container one. Added in contract 1.3.",
+      "type": "string",
+      "enum": [
+        "directory",
+        "file"
+      ],
+      "default": "directory"
+    },
+    "aclBoundaryReason": {
+      "title": "Why a resource is reported as a place where permissions change",
+      "description": "Non-null exactly when is_acl_boundary is true. A bare boolean cannot tell 'an administrator set permissions here' from 'the collector could not see the parent, so it does not know' - two findings that call for different responses. The four unknowable reasons (share_root, scan_root, parent_unreadable, parent_null_dacl) all report is_acl_boundary true: a boundary that is not there costs one extra stored ACL, while a boundary reported false tells a later scan it may stop looking. Added in contract 1.3.",
+      "type": "string",
+      "enum": [
+        "share_root",
+        "scan_root",
+        "protected_dacl",
+        "null_dacl",
+        "parent_null_dacl",
+        "parent_unreadable",
+        "acl_differs_from_parent"
+      ]
+    },
     "aceType": {
       "description": "DACL entry type. Audit (SACL) entries govern logging, not access, and must never be reported here.",
       "type": "string",

@@ -20,6 +20,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validato
 from app.domain import (
     AceSource,
     AceType,
+    AclBoundaryReason,
     CollectorKind,
     DomainValidationError,
     GroupScope,
@@ -27,13 +28,14 @@ from app.domain import (
     MembershipEdgeKind,
     ObservationSource,
     PrincipalKind,
+    ResourceKind,
     SharePermission,
     ShareType,
     Sid,
     UnresolvedReason,
 )
 
-SCHEMA_VERSION: Final = "1.2"
+SCHEMA_VERSION: Final = "1.3"
 """Current contract version. Minor bumps are additive; a breaking change means v2.
 
 Only a default for payloads this codebase constructs. Every ``1.x`` is accepted on the
@@ -41,7 +43,21 @@ wire, which is what makes an additive bump additive: a collector still sending `
 correct, it simply omits the fields later minors added.
 """
 
-SCHEMA_VERSION_PATTERN: Final = re.compile(r"^1\.[0-9]+$")
+SCHEMA_VERSION_PATTERN: Final = re.compile(r"^1\.([0-9]+)$")
+
+
+def schema_minor(value: str) -> int:
+    """The minor number of a ``1.x`` version string, or ``0`` when it is not one.
+
+    A rule a later minor introduces must apply only to payloads claiming that minor, or the
+    bump is not additive: a collector still sending ``1.0`` is correct, and holding it to a
+    field it has never heard of would reject it for being old rather than for being wrong.
+    ``0`` for an unparsable value errs in the same direction, and the version validator has
+    already rejected such a payload by the time any rule looks at it.
+    """
+    match = SCHEMA_VERSION_PATTERN.match(value.strip())
+    return int(match.group(1)) if match else 0
+
 
 MAX_BATCH_OBSERVATIONS: Final = 1000
 """An oversized batch is rejected, never truncated: silent truncation looks like coverage."""
@@ -57,6 +73,7 @@ __all__ = [
     "SCHEMA_VERSION",
     "AceSource",
     "AceType",
+    "AclBoundaryReason",
     "CollectorKind",
     "ContractModel",
     "GroupScope",
@@ -65,6 +82,7 @@ __all__ = [
     "ObservationBase",
     "ObservationKind",
     "PrincipalKind",
+    "ResourceKind",
     "Scope",
     "ScopeKind",
     "SharePermission",
@@ -73,6 +91,7 @@ __all__ = [
     "UnresolvedReason",
     "canonical_sid",
     "normalize_host",
+    "schema_minor",
     "to_utc",
 ]
 

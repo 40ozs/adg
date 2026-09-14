@@ -3,29 +3,67 @@
     "ADG NTFS collector targets. Copy to adg-ntfs-targets.json and edit.",
     "This file holds NO credentials. Collection runs as the identity of the process - a group",
     "managed service account in production - so that no password exists to store or leak.",
-    "Share roots are explicit: ADG never sweeps an estate it was not pointed at. Generate this",
+    "Scan roots are explicit: ADG never sweeps an estate it was not pointed at. Generate this",
     "list from ADG's own share inventory (GET /api/v1/servers/{server}/shares) rather than by",
     "probing, and keep it under change control alongside the rest of your configuration."
   ],
 
-  "shareRoots": [
+  "scanRoots": [
     "\\\\FS01\\Finance",
     "\\\\FS01\\Projects",
     "\\\\FS02\\Departments"
   ],
 
   "$comment_roots": [
-    "Share roots only in this phase. A path inside a share - \\\\FS01\\Finance\\Reports - is",
-    "refused, because whether its DACL differs from its parent's cannot be established",
-    "without reading the ancestors, and a guessed boundary would mislead the recursive scan",
-    "that follows."
+    "A scan root may be a share root or any directory inside one. Starting below a share root",
+    "is cheaper and it costs something: the starting directory's parent is not read, so its",
+    "boundary is reported as 'scan_root' - unknown, and therefore a boundary - rather than",
+    "compared against anything, and the run cannot reconcile the share's tree.",
+    "shareRoots is still accepted as a spelling of this field, so a Phase 3A configuration",
+    "keeps working unchanged.",
+    "One root may not sit inside another: both runs would read the same subtree, and report",
+    "it as a compared directory in one and a scan_root boundary in the other."
   ],
 
   "retryCount": 1,
   "retryDelaySeconds": 2,
 
-  "$comment_batchSize": "Observations per batch. The contract's ceiling is 1000. A directory's resource observation and all of its ACEs always travel in one batch, so a batch may exceed this slightly rather than split a DACL - the server can only verify a reported acl_hash against a complete one.",
+  "$comment_batchSize": "Observations per batch. The contract's ceiling is 1000. A resource observation and all of its ACEs always travel in one batch, so a batch may exceed this slightly rather than split a DACL - the server can only verify a reported acl_hash against a complete one.",
   "batchSize": 500,
+
+  "$comment_maxDepth": "How many levels below a scan root to walk. 0 reads the roots and nothing else. The default of 64 is past any tree a file server holds in practice; it exists so that a misconfiguration cannot become a walk that never ends. Reaching the limit is reported as an error and stops that tree from being reconciled, so a limit that was actually hit is never mistaken for a tree that ended.",
+  "maxDepth": 64,
+
+  "$comment_excludePaths": "UNC path patterns whose directories and subtrees are not read at all. A pattern matches the directory it names and everything beneath it, and PowerShell wildcards work: \\\\FS01\\*\\Archive covers every share on a server. Excluding anything makes the run incremental, so it reconciles nothing.",
+  "excludePaths": [],
+
+  "$comment_includePaths": "UNC path patterns restricting which directories are reported. The walk still passes through the directories between a root and a match - it has to, to reach them - and reports none of them, so a reported directory whose parent was passed over carries boundary_reason 'parent_unreadable'. Setting this makes the run incremental.",
+  "includePaths": [],
+
+  "$comment_reparsePointPolicy": [
+    "What to do at a junction or symlink. 'skip' (the default) reads its own descriptor - it",
+    "is a real directory with a real ACL - and does not descend, because what lies below it",
+    "belongs to the target and is reported under the target's own path. 'ignore' does not read",
+    "it at all. 'follow' descends, guarded by the reparse targets already crossed on that",
+    "branch: a junction whose target the branch has crossed before is read and not followed,",
+    "because a visited-path set cannot catch that cycle - every trip round it produces a path",
+    "nothing has seen. Any of the three leaves paths under the junction unreported, so a tree",
+    "containing one is never reconciled."
+  ],
+  "reparsePointPolicy": "skip",
+
+  "$comment_concurrencyLimit": "How many descriptor reads may be in flight at once. Reading a security descriptor over SMB is almost entirely latency, so 8 to 16 is a large win against a remote file server and none at all against a local disk. It changes throughput only: the walk's decisions stay sequential and its output is identical at every setting.",
+  "concurrencyLimit": 1,
+
+  "$comment_timeoutSeconds": "Stop after this long, write a checkpoint, and report the run as 'canceled'. 0 is no limit. A scan that runs out of time never reports the part it reached as the whole; setting this makes the run incremental, so it reconciles nothing.",
+  "timeoutSeconds": 0,
+
+  "$comment_includeFiles": "Read the DACL of every file as well as every directory. Off by default and expensive: an estate holds orders of magnitude more files than directories, and this turns a scan measured in minutes into one measured in days. A file is never traversed, and it is compared against the object projection of its directory rather than the container one.",
+  "includeFiles": false,
+
+  "$comment_checkpointPath": "Where to record the frontier so an interrupted scan can be resumed with -Resume. Leave empty to disable checkpointing. The file holds pending directories and the parent facts each needs to judge its own boundary - no observations, and no credentials. Resuming is refused if the roots, depth, patterns, reparse policy, or file setting have changed since it was written.",
+  "checkpointPath": "",
+  "checkpointIntervalSeconds": 30,
 
   "$comment_reportUnresolvedPrincipals": "Emit a principal observation for every trustee SID that did not resolve to a name. Leave it on: an orphaned SID on a folder ACL is one of the findings this tool exists to produce, and the backend cannot infer it from the ACE alone.",
   "reportUnresolvedPrincipals": true

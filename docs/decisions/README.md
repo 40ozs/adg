@@ -20,3 +20,4 @@ Rules:
 | [0006](0006-bounded-in-process-traversal.md) | Membership traversal is bounded, in-process, and reports its own limits | Accepted |
 | [0007](0007-resolution-is-a-join.md) | A trustee's resolution is computed at query time, never stored | Accepted |
 | [0008](0008-acl-normal-form-and-hash.md) | A DACL has one normalized form, and its hash excludes the owner | Accepted |
+| [0009](0009-boundaries-are-derived-from-a-projection.md) | An ACL boundary is derived from the parent's projection, and unknown is a boundary | Accepted |

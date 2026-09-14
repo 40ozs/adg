@@ -132,14 +132,38 @@ class SmbShare:
         return self.share_type is ShareType.DISK
 
 
+class ResourceKind(StrEnum):
+    """Whether a file-system resource is a container or a leaf.
+
+    The distinction is not cosmetic: it decides which inheritance projection applies. A
+    directory receives its parent's ``CONTAINER_INHERIT`` entries and keeps propagating
+    them; a file receives the ``OBJECT_INHERIT`` ones with every inheritance flag stripped,
+    because it has nothing below it to pass them to (:mod:`app.domain.inheritance`).
+    Comparing a file's DACL against the container projection would report a boundary on
+    every file in the estate.
+
+    ``DIRECTORY`` is the default, and is what every contract 1.2 payload meant: file
+    scanning did not exist before 1.3.
+    """
+
+    DIRECTORY = "directory"
+    FILE = "file"
+
+
 @dataclass(frozen=True, slots=True)
 class DirectoryResource:
-    """A directory whose NTFS security descriptor ADG has observed or intends to observe.
+    """A file-system resource whose NTFS security descriptor ADG has observed.
 
     ADG does not inventory every directory: it records the ones where permissions actually
-    change. ``is_acl_boundary`` marks a directory whose DACL differs from its parent's —
-    the Phase 3 scanner walks down only while inheritance holds, because an estate has
-    millions of directories and only thousands of distinct permission decisions.
+    change. ``is_acl_boundary`` marks a resource whose DACL differs from what its parent
+    hands down — the Phase 3 scanner walks down only while inheritance holds, because an
+    estate has millions of directories and only thousands of distinct permission decisions.
+
+    The type is named for the only kind it could hold before contract 1.3 added opt-in file
+    scanning. The name is kept rather than widened because ``identity_key`` is the stored
+    key of every NTFS row ADG holds, and because the phase handoffs are a historical ledger
+    that names this type. ``resource_kind`` is what actually says which kind of object a
+    row describes.
     """
 
     path: UncPath
@@ -148,6 +172,7 @@ class DirectoryResource:
     is_acl_boundary: bool = False
     inheritance_enabled: bool = True
     depth_from_share_root: int | None = None
+    resource_kind: ResourceKind = ResourceKind.DIRECTORY
 
     def __post_init__(self) -> None:
         if self.depth_from_share_root is not None and self.depth_from_share_root < 0:
@@ -161,6 +186,16 @@ class DirectoryResource:
                 "A directory that blocks inheritance is by definition an ACL boundary; "
                 "recording otherwise would hide where permissions change.",
                 field="is_acl_boundary",
+            )
+        # A share publishes a directory. Accepting a file here would attach a share's
+        # NTFS-layer link to a leaf nothing can be a child of, and `share_root_acl` would
+        # then answer with a file's ACL.
+        if self.resource_kind is ResourceKind.FILE and self.path.is_share_root:
+            raise DomainValidationError(
+                f"{self.path.value} is a share root, which is always a directory; it "
+                "cannot be reported as a file.",
+                value=self.path.value,
+                field="resource_kind",
             )
 
     @property

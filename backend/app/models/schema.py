@@ -52,6 +52,7 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
@@ -60,10 +61,12 @@ from app.domain import (
     ACL_HASH_LENGTH,
     AceSource,
     AceType,
+    AclBoundaryReason,
     GroupScope,
     GroupType,
     MembershipEdgeKind,
     PrincipalKind,
+    ResourceKind,
     ScanStatus,
     SharePermission,
     ShareType,
@@ -589,10 +592,32 @@ ntfs_resources = Table(
     # is exactly the silent under-reporting an audit tool has to surface.
     Column("ace_count", Integer, nullable=False),
     Column("depth_from_share_root", Integer, nullable=True),
+    # Directory unless an opt-in file scan reported otherwise (contract 1.3). Defaulted
+    # rather than nullable: every row written before file scanning existed described a
+    # directory, so there is a right answer for them and no need for a third state.
+    Column(
+        "resource_kind",
+        String(32),
+        nullable=False,
+        server_default=ResourceKind.DIRECTORY.value,
+    ),
+    # Why this resource is a boundary (contract 1.3). NULL is not "unknown": it is the
+    # only value that means "carrying exactly what it inherited". The unknown cases have
+    # their own reasons -- parent_unreadable, parent_null_dacl, scan_root -- and all of
+    # them set is_acl_boundary, because a boundary wrongly reported false tells a later
+    # scan it may stop looking.
+    Column("boundary_reason", String(32), nullable=True),
     # The collector's digest of the normalized DACL it read (contract 1.2). Stored as
     # reported and never rewritten from the stored ACEs: the point of keeping it is that
     # it can disagree with them.
     Column("acl_hash", String(ACL_HASH_LENGTH), nullable=True),
+    # The parent's digest as the same run read it (contract 1.3). Not the value the
+    # boundary verdict was compared against -- that is the parent's projection onto a
+    # child, which the server recomputes from the parent's stored ACEs -- but the record
+    # of WHICH reading of the parent was judged against, without which a disagreement
+    # between collector and server cannot be told from the parent having simply changed
+    # in between.
+    Column("parent_acl_hash", String(ACL_HASH_LENGTH), nullable=True),
     Column("source_key", String(KEY_LENGTH), nullable=False),
     _timestamp("first_observed_at"),
     Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
@@ -616,6 +641,22 @@ ntfs_resources = Table(
         f"acl_hash IS NULL OR acl_hash ~ '^[0-9a-f]{{{ACL_HASH_LENGTH}}}$'",
         name="ck_ntfs_resources_acl_hash_shape",
     ),
+    CheckConstraint(
+        f"parent_acl_hash IS NULL OR parent_acl_hash ~ '^[0-9a-f]{{{ACL_HASH_LENGTH}}}$'",
+        name="ck_ntfs_resources_parent_acl_hash_shape",
+    ),
+    _enum_check("resource_kind", ResourceKind),
+    _enum_check("boundary_reason", AclBoundaryReason, nullable=True),
+    # A reason on a non-boundary contradicts itself and is refused at every contract
+    # version. The converse is deliberately NOT constrained: a collector speaking 1.0
+    # through 1.2 sets is_acl_boundary on a share root and has never heard of the reason
+    # field, so a boundary with a NULL reason is a real row meaning "the collector that
+    # wrote this predates the field" -- which the API reports as it stands rather than
+    # backfilling a verdict nobody made.
+    CheckConstraint(
+        "boundary_reason IS NULL OR is_acl_boundary",
+        name="ck_ntfs_resources_reason_implies_a_boundary",
+    ),
     # Every directory under one share, and every one on one server, are the two ways this
     # table is walked. The trailing key makes each index cover keyset paging as well.
     Index("ix_ntfs_resources_share", "share_key", "resource_key"),
@@ -623,8 +664,20 @@ ntfs_resources = Table(
     # "Which directories carry this exact DACL" is what turns thousands of boundaries into
     # the few dozen distinct permission decisions behind them.
     Index("ix_ntfs_resources_acl_hash", "acl_hash"),
+    # "Where do permissions change under this share" is the question a tree scan exists to
+    # answer, and the one an auditor asks first. Partial, because the boundaries are the
+    # small minority of rows and the non-boundaries are never the thing being looked for.
+    Index(
+        "ix_ntfs_resources_boundaries",
+        "share_key",
+        "resource_key",
+        postgresql_where=text("is_acl_boundary"),
+    ),
     Index("ix_ntfs_resources_last_observed_run", "last_observed_run_id"),
-    comment="Directories whose NTFS security descriptor ADG has read, keyed by UNC path.",
+    comment=(
+        "File-system resources whose NTFS security descriptor ADG has read, keyed by UNC "
+        "path. Directories unless resource_kind says otherwise."
+    ),
 )
 
 

@@ -21,6 +21,7 @@ from app.repositories.membership import (
 from app.repositories.resources import (
     NtfsAceRecord,
     NtfsAclRecomputation,
+    NtfsBoundaryVerification,
     NtfsResourceRecord,
     ResourceRepository,
     ServerRecord,
@@ -36,6 +37,7 @@ __all__ = [
     "MembershipRepository",
     "NtfsAceRecord",
     "NtfsAclRecomputation",
+    "NtfsBoundaryVerification",
     "NtfsResourceRecord",
     "Page",
     "PrincipalRecord",

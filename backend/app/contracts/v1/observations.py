@@ -22,16 +22,19 @@ from app.contracts.v1.common import (
     MAX_ACE_FLAGS,
     AceSource,
     AceType,
+    AclBoundaryReason,
     GroupScope,
     GroupType,
     MembershipEdgeKind,
     ObservationBase,
     PrincipalKind,
+    ResourceKind,
     SharePermission,
     ShareType,
     UnresolvedReason,
     canonical_sid,
     normalize_host,
+    schema_minor,
 )
 from app.domain import (
     ACL_HASH_ALGORITHM,
@@ -60,6 +63,11 @@ from app.domain import (
 )
 
 INHERITED_ACE_FLAG = int(AceFlag.INHERITED)
+
+_BOUNDARY_REASON_MINOR = 3
+"""The contract minor that introduced ``boundary_reason``. A payload declaring this or
+later must explain a boundary it claims; an earlier one predates the field and is stored
+with the reason unset."""
 
 
 class PrincipalObservation(ObservationBase):
@@ -397,7 +405,7 @@ class SmbAceObservation(ObservationBase):
 
 
 class NtfsResourceObservation(ObservationBase):
-    """A directory plus its descriptor-level facts."""
+    """A file-system resource plus its descriptor-level facts."""
 
     kind: Literal["ntfs_resource"] = "ntfs_resource"
 
@@ -414,12 +422,35 @@ class NtfsResourceObservation(ObservationBase):
     inheritance_enabled: bool = True
     is_acl_boundary: bool = False
     depth_from_share_root: int | None = Field(default=None, ge=0)
+    resource_kind: ResourceKind = Field(
+        default=ResourceKind.DIRECTORY,
+        description=(
+            "Directory unless a collector scanned files, which is opt-in. Added in "
+            "contract 1.3; absent means directory, which is what every 1.2 payload meant."
+        ),
+    )
     acl_hash: str | None = Field(
         default=None,
         description=(
             "Digest of the normalized DACL as the collector read it. Added in contract "
             "1.2. None means the collector did not compute one, which is not the same as "
             "an empty ACL."
+        ),
+    )
+    parent_acl_hash: str | None = Field(
+        default=None,
+        description=(
+            "The parent's acl_hash as the same run read it. Added in contract 1.3. It "
+            "names which reading of the parent the boundary verdict was made against, "
+            "which is what makes that verdict reproducible; the value actually compared "
+            "against is the parent's projection onto a child, which the server recomputes."
+        ),
+    )
+    boundary_reason: AclBoundaryReason | None = Field(
+        default=None,
+        description=(
+            "Why is_acl_boundary is true. Added in contract 1.3, and required whenever "
+            "the flag is set: a boundary with no reason is a verdict with no evidence."
         ),
     )
 
@@ -449,7 +480,7 @@ class NtfsResourceObservation(ObservationBase):
     def _canonical_sids(cls, value: str | None) -> str | None:
         return None if value is None else canonical_sid(value)
 
-    @field_validator("acl_hash")
+    @field_validator("acl_hash", "parent_acl_hash")
     @classmethod
     def _validate_acl_hash(cls, value: str | None) -> str | None:
         if value is None:
@@ -475,6 +506,32 @@ class NtfsResourceObservation(ObservationBase):
             raise ValueError(
                 "A resource that blocks inheritance is by definition an ACL boundary; "
                 "recording otherwise would hide where permissions change."
+            )
+        # A boundary with no reason is a verdict with no evidence — but only a payload
+        # that claims 1.3 can be held to it. A 1.2 collector reporting a share root sets
+        # the flag and has never heard of the field, and rejecting it would make an
+        # additive bump breaking. Such a row stores boundary_reason NULL, which reads as
+        # "the collector that wrote this predates the field" rather than as a reason.
+        if (
+            self.is_acl_boundary
+            and self.boundary_reason is None
+            and schema_minor(self.schema_version) >= _BOUNDARY_REASON_MINOR
+        ):
+            raise ValueError(
+                f"is_acl_boundary is true but boundary_reason is absent, and this payload "
+                f"declares schema_version {self.schema_version!r}, which requires it. Say "
+                f"why: {', '.join(reason.value for reason in AclBoundaryReason)}. A scan "
+                "that cannot compare against the parent reports 'scan_root', "
+                "'parent_unreadable', or 'parent_null_dacl' — all of which mean unknown, "
+                "which is reported as a boundary rather than as unchanged."
+            )
+        # The other direction holds at every version: a reason on a non-boundary
+        # contradicts itself, and no collector of any minor can have meant it.
+        if not self.is_acl_boundary and self.boundary_reason is not None:
+            raise ValueError(
+                f"boundary_reason {self.boundary_reason.value!r} was reported for a "
+                "resource whose is_acl_boundary is false. Nothing explains a boundary "
+                "that is not claimed; send the flag, or omit the reason."
             )
         # server_name and share_name are conveniences; the path is the identity. Letting
         # them disagree would attach a directory to a share it is not inside, and the link
@@ -517,6 +574,7 @@ class NtfsResourceObservation(ObservationBase):
             is_acl_boundary=self.is_acl_boundary,
             inheritance_enabled=self.inheritance_enabled,
             depth_from_share_root=self.depth_from_share_root,
+            resource_kind=self.resource_kind,
         )
 
     def to_descriptor_facts(self) -> SecurityDescriptorFacts:

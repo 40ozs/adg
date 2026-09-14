@@ -1,55 +1,49 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 <#
-    Orchestration: an imaginary estate of share roots, with no file system.
+    Orchestration: what a run declares it looked at, and what it will let the backend act on.
 
     Every function that touches a file system lives in AdgNtfsSource.ps1 and is mocked here,
-    so these tests exercise the parts that decide what a scan *means*: what it declares it
-    looked at, what it will let the backend mark absent, what it refuses to claim when
-    something went wrong, and what it refuses to hash when it could not read everything.
+    so these tests exercise the parts that decide what a scan *means*: the scopes it
+    declares, the batches it streams, the status it reports, and - the one with teeth -
+    which scopes it is willing to reconcile.
 
-    The cases the phase requires - an ordinary root, a protected DACL, a NULL DACL, an
-    unreadable descriptor, and an unresolved trustee - are each a Context below.
+    Reconciliation is new in this phase and is the only thing in ADG that can mark an object
+    absent. Phase 3A could never reach it: a share-root read enumerates no tree, so every run
+    it produced was incremental by construction. A tree walk can enumerate a tree, so the
+    question becomes real - and most of what follows is about the cases where the answer is
+    still no.
 #>
 
 BeforeAll {
     $moduleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module (Join-Path $moduleRoot 'AdgNtfsCollector.psd1') -Force
 
-    $script:FinanceRw = 'S-1-5-21-1004336348-1177238915-682003330-1202'
-    $script:Orphan = 'S-1-5-21-1004336348-1177238915-682003330-9999'
+    $script:Admins = 'S-1-5-32-544'
+    $script:Users = 'S-1-5-21-1004336348-1177238915-682003330-1201'
 
     function New-Ace {
-        param(
-            [string] $AceType = 'AccessAllowed',
-            [int] $AceFlags = 3,
-            [long] $AccessMask = 1179817,
-            [string] $TrusteeSid = 'S-1-5-11',
-            [AllowNull()][string] $TrusteeName = 'CORP\Authenticated Users'
-        )
+        param([int] $AceFlags = 0x03, [long] $AccessMask = 0x001200A9, [string] $TrusteeSid = 'S-1-5-32-544')
         return [pscustomobject]@{
-            AceType     = $AceType
-            AceFlags    = $AceFlags
-            AccessMask  = $AccessMask
-            TrusteeSid  = $TrusteeSid
-            TrusteeName = $TrusteeName
+            AceType = 'AccessAllowed'; AceFlags = $AceFlags; AccessMask = $AccessMask
+            TrusteeSid = $TrusteeSid; TrusteeName = 'BUILTIN\Administrators'
         }
     }
 
-    # An estate expressed as a map from case-folded path to descriptor. A path that is not
-    # in the map does not exist; a descriptor that is $null throws when read, which is what
-    # an access denial looks like from here.
+    function New-Node {
+        param([string[]] $Children = @(), [object[]] $Dacl = @(), [bool] $Present = $true,
+            [bool] $Protected = $false, [switch] $Denied)
+        return @{ Children = $Children; Dacl = $Dacl; Present = $Present; Protected = $Protected; Denied = [bool] $Denied }
+    }
+
     function Set-TestEstate {
         param([Parameter(Mandatory)][hashtable] $Estate)
 
-        # Two scoping rules meet here, and getting either wrong makes every mock below
-        # silently do nothing:
-        #
-        #   * the mock body runs in the module's session state, where nothing from this test
-        #     file is visible. GetNewClosure() is what carries $Estate in;
-        #   * a closed-over body does NOT see the mocked function's parameters as inherited
-        #     variables. $Path comes back empty, ContainsKey('') is false, and every path
-        #     looks absent - which reads exactly like a real estate where nothing is there.
-        #     Declaring param() makes Pester bind the call's arguments instead.
+        # The two scoping rules that make or break every mock here: the body runs in the
+        # module's session state where nothing from this file is visible, so GetNewClosure()
+        # carries $Estate in - and a closed-over body does not see the mocked function's
+        # parameters as inherited variables, so param() is what binds $Path. Without it
+        # every lookup misses and the estate looks empty, which reads exactly like a real
+        # file server where nothing is there.
         Mock -ModuleName AdgNtfsCollector Test-AdgResourceExists {
             param([string] $Path)
             $Estate.ContainsKey($Path.ToLowerInvariant())
@@ -57,397 +51,447 @@ BeforeAll {
 
         Mock -ModuleName AdgNtfsCollector Get-AdgDirectorySecurity {
             param([string] $Path)
-            $descriptor = $Estate[$Path.ToLowerInvariant()]
-            if ($null -eq $descriptor) { throw "Access to the path '$Path' is denied." }
-            $descriptor
+            $node = $Estate[$Path.ToLowerInvariant()]
+            if ($null -eq $node) { throw "The system cannot find the path '$Path'." }
+            if ($node.Denied) { throw "Access to the path '$Path' is denied." }
+            @{
+                OwnerSid = 'S-1-5-32-544'; GroupSid = $null
+                DaclPresent = $node.Present; DaclProtected = $node.Protected; Ace = $node.Dacl
+            }
+        }.GetNewClosure()
+
+        Mock -ModuleName AdgNtfsCollector Get-AdgChildDirectory {
+            param([string] $Path)
+            $node = $Estate[$Path.ToLowerInvariant()]
+            if ($null -eq $node) { throw "The system cannot find the path '$Path'." }
+            $children = foreach ($name in $node.Children) {
+                [pscustomobject]@{ Name = $name; Path = "$Path\$name"; IsReparsePoint = $false; LinkTarget = $null }
+            }
+            , @($children)
         }.GetNewClosure()
     }
 
-    function New-Descriptor {
-        param(
-            [bool] $DaclPresent = $true,
-            [bool] $DaclProtected = $false,
-            [string] $OwnerSid = 'S-1-5-32-544',
-            [object[]] $Ace = @()
-        )
+    function New-CleanEstate {
+        $root = @((New-Ace -AceFlags 0x03 -AccessMask 0x001F01FF), (New-Ace -AceFlags 0x03 -TrusteeSid $Users))
+        $inherited = @((New-Ace -AceFlags 0x13 -AccessMask 0x001F01FF), (New-Ace -AceFlags 0x13 -TrusteeSid $Users))
         return @{
-            OwnerSid      = $OwnerSid
-            GroupSid      = $null
-            DaclPresent   = $DaclPresent
-            DaclProtected = $DaclProtected
-            Ace           = $Ace
+            '\\fs01\finance'            = New-Node -Children @('Reports', 'Payroll') -Dacl $root
+            '\\fs01\finance\reports'    = New-Node -Children @('Q3') -Dacl $inherited
+            '\\fs01\finance\reports\q3' = New-Node -Dacl $inherited
+            '\\fs01\finance\payroll'    = New-Node -Dacl $inherited
+            '\\fs02\payroll'            = New-Node -Dacl $root
         }
     }
 
-    function Get-TestRun {
-        # Assigned before indexing, never @(Invoke-AdgNtfsScan ...)[0]. The scan returns its
+    function Get-Settings {
+        param([string[]] $ScanRoot = @('\\FS01\Finance'), [hashtable] $Override = @{})
+        $settings = Import-AdgNtfsTarget -ScanRoot $ScanRoot
+        foreach ($key in $Override.Keys) { $settings.$key = $Override[$key] }
+        return $settings
+    }
+
+    # Defined here rather than inside the Describe that uses it: code in a Describe body
+    # runs during Pester's discovery pass, and a function defined there does not survive
+    # into the run pass where the It blocks execute.
+    function New-ObservationGroup {
+        param([int] $Count)
+        return @(1..$Count | ForEach-Object { [ordered]@{ kind = 'ntfs_ace'; n = $_ } })
+    }
+
+    # Records the whole conversation with the sink, in order, so a test can assert on what
+    # was sent and when rather than only on what the run object says afterwards.
+    function Invoke-TestScan {
+        param(
+            [Parameter(Mandatory)][pscustomobject] $Settings,
+            [switch] $PerScanRoot,
+            [string[]] $ScanRoot
+        )
+        $events = [System.Collections.Generic.List[object]]::new()
+        $onStart = { param($p) $events.Add([pscustomobject]@{ Kind = 'start'; Payload = $p }) }.GetNewClosure()
+        $onBatch = { param($p) $events.Add([pscustomobject]@{ Kind = 'batch'; Payload = $p }) }.GetNewClosure()
+        $onCompletion = { param($p) $events.Add([pscustomobject]@{ Kind = 'completion'; Payload = $p }) }.GetNewClosure()
+
+        # Assigned before wrapping, never @(Invoke-AdgNtfsScan ...)[0]. The scan returns its
         # runs through the `, $array` idiom - which is what stops PowerShell unrolling an
-        # empty result to nothing - so it writes the array as ONE object. Wrapping that call
-        # in @() therefore yields a one-element array holding the array, and everything
-        # downstream silently works on the wrong thing: a count of 1 for three runs, and a
-        # member lookup that finds nothing when the single run's Batches list is empty.
-        param([Parameter(Mandatory)] $Settings, [switch] $PerShareRoot)
-        $runs = Invoke-AdgNtfsScan -Settings $Settings -RunPerShareRoot:$PerShareRoot
-        return $runs[0]
-    }
-
-    function Get-TestRunSet {
-        param([Parameter(Mandatory)] $Settings, [switch] $PerShareRoot)
-        $runs = Invoke-AdgNtfsScan -Settings $Settings -RunPerShareRoot:$PerShareRoot
-        return , @($runs)
-    }
-
-    function Get-Observations {
-        # The comma operator is load bearing. PowerShell unrolls a returned array, so a
-        # one-element result would come back as a bare observation - and .Count on an
-        # ordered dictionary is its number of keys, which silently turns "one observation"
-        # into however many fields it happens to have.
-        param([Parameter(Mandatory)] $Run)
-        $items = [System.Collections.Generic.List[object]]::new()
-        foreach ($batch in @($Run.Batches)) {
-            foreach ($observation in @($batch.observations)) { $items.Add($observation) }
+        # empty result to nothing - so it writes the array as ONE object. Wrapping the call
+        # in @() would yield a one-element array holding the array, and everything
+        # downstream would silently work on the wrong thing: a count of 1 for two runs.
+        $runs = if ($PSBoundParameters.ContainsKey('ScanRoot')) {
+            $single = Invoke-AdgNtfsScanRun -Settings $Settings -ScanRoot $ScanRoot `
+                -OnStart $onStart -OnBatch $onBatch -OnCompletion $onCompletion
+            @($single)
         }
-        return , $items.ToArray()
-    }
+        else {
+            $result = Invoke-AdgNtfsScan -Settings $Settings -OnStart $onStart -OnBatch $onBatch `
+                -OnCompletion $onCompletion -RunPerScanRoot:$PerScanRoot
+            @($result)
+        }
 
-    function Select-Kind {
-        # No comma wrapper here, unlike Get-Observations. Callers immediately re-wrap with
-        # @(), and a wrapper on top of that would make every count 1: one array.
-        param([Parameter(Mandatory)] $Observations, [Parameter(Mandatory)][string] $Kind)
-        return @($Observations) | Where-Object { $_.kind -eq $Kind }
-    }
+        $batches = @($events | Where-Object { $_.Kind -eq 'batch' } | ForEach-Object { $_.Payload })
+        $observations = [System.Collections.Generic.List[object]]::new()
+        foreach ($batch in $batches) { foreach ($item in $batch.observations) { $observations.Add($item) } }
 
-    $script:Settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance'
-    $script:Settings.RetryCount = 0
-    $script:Settings.RetryDelaySeconds = 0
+        return [pscustomobject]@{
+            Runs         = $runs
+            Run          = $runs[0]
+            Events       = $events.ToArray()
+            Batches      = $batches
+            Observations = $observations.ToArray()
+            Resources    = @($observations | Where-Object { $_.kind -eq 'ntfs_resource' })
+        }
+    }
 }
 
-Describe 'A share root with inheritance intact' {
-    BeforeAll {
-        Set-TestEstate @{
-            '\\fs01\finance' = New-Descriptor -Ace @(
-                New-Ace -AceType 'AccessDenied' -AceFlags 3
-                New-Ace -TrusteeSid $script:FinanceRw -TrusteeName 'CORP\Finance-RW' -AccessMask 1245631 -AceFlags 3
-                New-Ace -TrusteeSid 'S-1-5-32-544' -TrusteeName 'BUILTIN\Administrators' -AccessMask 2032127 -AceFlags 19
-            )
-        }
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance'
-        $settings.RetryCount = 0
-        $settings.RetryDelaySeconds = 0
-        $script:Run = Get-TestRun -Settings $settings
-        $script:Items = Get-Observations -Run $script:Run
+Describe 'The batch writer' {
+    BeforeEach {
+        # The list is created as a local and captured as one. GetNewClosure() copies the
+        # *local* variables in scope, and $script:Emitted is not one of them - a closure
+        # written over the script-scoped name captures $null, and every Add() then fails on
+        # a null-valued expression at the first batch that is actually emitted. Both names
+        # here refer to one List, so the tests can read $Emitted and the writer can fill it.
+        $emitted = [System.Collections.Generic.List[object]]::new()
+        $script:Emitted = $emitted
+        $script:Writer = New-AdgNtfsBatchWriter -RunId ([guid]::NewGuid().ToString()) -BatchSize 4 `
+            -OnBatch { param($b) $emitted.Add($b) }.GetNewClosure()
     }
 
-    It 'reports the directory and every entry of its DACL' {
-        @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource').Count | Should -Be 1
-        @(Select-Kind -Observations $script:Items -Kind 'ntfs_ace').Count | Should -Be 3
+    It 'emits nothing until a batch is full' {
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 3)
+        $Emitted.Count | Should -Be 0
     }
 
-    It 'reports ace_count equal to the number of entries it sent' {
-        # The contract requires the two to match; a resource claiming more entries than
-        # arrived would look like ACEs lost in transit.
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $resource.ace_count | Should -Be @(Select-Kind -Observations $script:Items -Kind 'ntfs_ace').Count
+    It 'never splits a resource across two batches' {
+        # The backend skips its acl_hash check when a batch holds fewer than the declared
+        # ace_count, so a split silently disables the only check that catches ACEs lost in
+        # transit. A batch over the requested size costs nothing; a split costs that.
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 3)
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 3)
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+
+        $Emitted.Count | Should -Be 2
+        @($Emitted[0].observations).Count | Should -Be 3
+        @($Emitted[1].observations).Count | Should -Be 3
     }
 
-    It 'marks the root a boundary and leaves inheritance enabled' {
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $resource.inheritance_enabled | Should -BeTrue
-        $resource.is_acl_boundary | Should -BeTrue
-        $resource.depth_from_share_root | Should -Be 0
+    It 'lets one oversized group exceed the requested batch size rather than cutting it' {
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 9)
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        @($Emitted[0].observations).Count | Should -Be 9
     }
 
-    It 'carries an acl_hash the server can recompute' {
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $resource.acl_hash | Should -Match '^[0-9a-f]{64}$'
+    It 'refuses a group past the contract ceiling rather than truncating it' {
+        # Truncating would look exactly like a shorter ACL, which is the one thing an audit
+        # tool must never produce.
+        { Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 1001) } |
+            Should -Throw '*exceeds the contract*'
     }
 
-    It 'hashes exactly the entries it reported' {
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $facts = @(Select-Kind -Observations $script:Items -Kind 'ntfs_ace') | ForEach-Object {
-            [pscustomobject]@{
-                TrusteeSid = $_.trustee_sid
-                AceType    = $_.ace_type
-                AccessMask = $_.access_mask
-                AceFlags   = $_.ace_flags
-                OrderIndex = $_.order_index
+    It 'numbers batches from one, without gaps' {
+        1..3 | ForEach-Object { Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 4) }
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        @($Emitted | ForEach-Object { $_.sequence }) | Should -Be @(1, 2, 3)
+    }
+
+    It 'gives every batch its own id' {
+        1..3 | ForEach-Object { Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 4) }
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        @($Emitted | ForEach-Object { $_.batch_id } | Sort-Object -Unique).Count | Should -Be 3
+    }
+
+    It 'marks only the last batch final' {
+        1..3 | ForEach-Object { Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 4) }
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        @($Emitted | ForEach-Object { $_.is_final }) | Should -Be @($false, $false, $true)
+    }
+
+    It 'emits nothing at all for a run that read nothing' {
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        $Emitted.Count | Should -Be 0
+    }
+
+    It 'ignores an empty group' {
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group @()
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group $null
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        $Emitted.Count | Should -Be 0
+    }
+
+    It 'counts what it emitted' {
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 4)
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 2)
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        $Writer.BatchCount | Should -Be 2
+        $Writer.ObservationCount | Should -Be 6
+    }
+
+    It 'stamps the current contract version on every batch' {
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group (New-ObservationGroup 1)
+        Complete-AdgNtfsBatchWriter -Writer $Writer
+        $Emitted[0].schema_version | Should -Be '1.3'
+    }
+}
+
+Describe 'Streaming a run' {
+    BeforeEach {
+        Set-TestEstate (New-CleanEstate)
+        $script:Scan = Invoke-TestScan -Settings (Get-Settings)
+    }
+
+    It 'sends the start, then the batches, then the completion' {
+        # A batch sent after the completion is refused by the server and its observations are
+        # simply lost, so the order is not a convention.
+        $kinds = @($Scan.Events | ForEach-Object { $_.Kind })
+        $kinds[0] | Should -Be 'start'
+        $kinds[-1] | Should -Be 'completion'
+        @($kinds[1..($kinds.Count - 2)] | Sort-Object -Unique) | Should -Be @('batch')
+    }
+
+    It 'declares one directory_tree scope per scan root' {
+        $start = @($Scan.Events | Where-Object { $_.Kind -eq 'start' })[0].Payload
+        @($start.scopes).Count | Should -Be 1
+        $start.scopes[0].kind | Should -Be 'directory_tree'
+        $start.scopes[0].key | Should -Be '\\fs01\finance'
+    }
+
+    It 'names the collector and the method it used' {
+        $start = @($Scan.Events | Where-Object { $_.Kind -eq 'start' })[0].Payload
+        $start.source.collector | Should -Be 'ntfs'
+        $start.source.method | Should -Be 'DirectorySecurity.GetSecurityDescriptorBinaryForm'
+    }
+
+    It 'reports every directory it read' {
+        @($Scan.Resources).Count | Should -Be 4
+    }
+
+    It 'counts in the completion what it actually emitted' {
+        $completion = @($Scan.Events | Where-Object { $_.Kind -eq 'completion' })[0].Payload
+        $completion.batch_count | Should -Be @($Scan.Batches).Count
+        $completion.observation_count | Should -Be @($Scan.Observations).Count
+    }
+
+    It 'keeps every resource with its own entries in one batch' {
+        foreach ($batch in $Scan.Batches) {
+            $declared = @{}
+            foreach ($observation in $batch.observations) {
+                if ($observation.kind -ne 'ntfs_resource') { continue }
+                $declared[$observation.path] = $observation.ace_count
+            }
+            foreach ($path in $declared.Keys) {
+                $aces = @($batch.observations | Where-Object { $_.kind -eq 'ntfs_ace' -and $_.path -eq $path })
+                $aces.Count | Should -Be $declared[$path] -Because "$path must arrive with its whole DACL"
             }
         }
-        $resource.acl_hash | Should -BeExactly (Get-AdgAclHash -DaclPresent $true -DaclProtected $false -Ace $facts)
-    }
-
-    It 'keeps the directory and its entries in one batch' {
-        # The server verifies a reported acl_hash against the entries that arrive with it,
-        # and skips the check when the batch holds fewer than ace_count. A split would
-        # silently disable the one check that catches ACEs lost in transit.
-        @($script:Run.Batches).Count | Should -Be 1
-    }
-
-    It 'succeeds, and still reconciles nothing' {
-        # A share-root read enumerates no directory tree. Reconciling the directory_tree
-        # scope would mark every directory under the root as deleted.
-        $script:Run.Completion.status | Should -Be 'succeeded'
-        @($script:Run.Completion.reconciled_scopes).Count | Should -Be 0
-        $script:Run.Start.incremental | Should -BeTrue
-    }
-
-    It 'declares the tree it looked at, so a later full walk can reconcile it' {
-        @($script:Run.Start.scopes).Count | Should -Be 1
-        $script:Run.Start.scopes[0].kind | Should -Be 'directory_tree'
-        $script:Run.Start.scopes[0].key | Should -Be '\\fs01\finance'
-    }
-
-    It 'names itself an ntfs collector reading a security descriptor' {
-        $script:Run.Start.source.collector | Should -Be 'ntfs'
-        $script:Run.Start.source.method | Should -Be 'DirectorySecurity.GetSecurityDescriptorBinaryForm'
     }
 }
 
-Describe 'A share root that blocks inheritance' {
-    BeforeAll {
-        Set-TestEstate @{
-            '\\fs01\locked' = New-Descriptor -DaclProtected $true -Ace @(New-Ace -AceFlags 3)
-        }
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Locked'
-        $settings.RetryCount = 0
-        $script:Run = Get-TestRun -Settings $settings
-        $script:Items = Get-Observations -Run $script:Run
+Describe 'Status' {
+    It 'is succeeded for a clean, complete walk' {
+        Set-TestEstate (New-CleanEstate)
+        (Invoke-TestScan -Settings (Get-Settings)).Run.Status | Should -Be 'succeeded'
     }
 
-    It 'reports the protection explicitly rather than leaving it to be inferred' {
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $resource.dacl_protected | Should -BeTrue
-        $resource.inheritance_enabled | Should -BeFalse
-        $resource.is_acl_boundary | Should -BeTrue
+    It 'is partial when anything went wrong' {
+        $estate = New-CleanEstate
+        $estate['\\fs01\finance\payroll'] = New-Node -Denied
+        Set-TestEstate $estate
+        (Invoke-TestScan -Settings (Get-Settings)).Run.Status | Should -Be 'partial'
     }
 
-    It 'hashes differently from the same entries without protection' {
-        $protected = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0].acl_hash
-        $entry = [pscustomobject]@{
-            TrusteeSid = 'S-1-5-11'; AceType = 'allow'; AccessMask = 1179817; AceFlags = 3; OrderIndex = 0
-        }
-        $protected | Should -Not -Be (Get-AdgAclHash -DaclPresent $true -DaclProtected $false -Ace @($entry))
-    }
-}
-
-Describe 'A share root with a NULL DACL' {
-    BeforeAll {
-        Set-TestEstate @{ '\\fs01\wide' = New-Descriptor -DaclPresent $false }
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Wide'
-        $settings.RetryCount = 0
-        $script:Run = Get-TestRun -Settings $settings
-        $script:Items = Get-Observations -Run $script:Run
-    }
-
-    It 'reports it as dacl_present false with no entries, never as an empty ACL' {
-        # A NULL DACL grants every user full access; an empty DACL grants nobody access.
-        # Collapsing them would invert the answer.
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $resource.dacl_present | Should -BeFalse
-        $resource.ace_count | Should -Be 0
-        @(Select-Kind -Observations $script:Items -Kind 'ntfs_ace').Count | Should -Be 0
-    }
-
-    It 'raises it as a finding as well as reporting it' {
-        $script:Run.Completion.status | Should -Be 'partial'
-        @($script:Run.Completion.errors)[0].code | Should -Be 'null_dacl'
-    }
-}
-
-Describe 'A share root whose descriptor cannot be read' {
-    BeforeAll {
-        Set-TestEstate @{ '\\fs01\secret' = $null }
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Secret'
-        $settings.RetryCount = 0
-        $settings.RetryDelaySeconds = 0
-        $script:Run = Get-TestRun -Settings $settings
-    }
-
-    It 'reports no resource observation at all' {
-        # An observation asserts the object was seen. An unreadable descriptor was not seen,
-        # and a resource row with no ACEs would read as "nobody has access".
-        #
-        # Assigned before counting: Get-Observations returns through the `, $array` idiom,
-        # so @(Get-Observations ...) would be a one-element array holding an empty one.
-        $items = Get-Observations -Run $script:Run
-        @($items).Count | Should -Be 0
-    }
-
-    It 'fails the run, because coverage is unknown rather than merely incomplete' {
-        $script:Run.Completion.status | Should -Be 'failed'
-        @($script:Run.Completion.errors)[0].code | Should -Be 'access_denied'
-    }
-
-    It 'says what right the read needed, and that ADG will not acquire it' {
-        @($script:Run.Completion.errors)[0].message | Should -Match 'READ_CONTROL'
-        @($script:Run.Completion.errors)[0].message | Should -Match 'never takes ownership'
-    }
-}
-
-Describe 'A share root that is not there' {
-    BeforeAll {
+    It 'is failed when no root could be read at all' {
+        # Coverage is then unknown rather than merely incomplete, which is a different fact
+        # and calls for a different response.
         Set-TestEstate @{}
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS02\Gone'
-        $settings.RetryCount = 0
-        $script:Run = Get-TestRun -Settings $settings
+        $scan = Invoke-TestScan -Settings (Get-Settings)
+        $scan.Run.Status | Should -Be 'failed'
+        $scan.Run.Summary.ScanRootsRead | Should -Be 0
     }
 
-    It 'distinguishes "not there" from "there and unreadable"' {
-        # They call for different fixes, and an audit that reports them identically sends
-        # somebody to the wrong place.
-        @($script:Run.Completion.errors)[0].code | Should -Be 'path_not_found'
-        $script:Run.Completion.status | Should -Be 'failed'
-    }
+    It 'never reports succeeded alongside an error' {
+        # The contract rejects that combination, for the right reason: reporting complete
+        # coverage that was not achieved understates access.
+        $estate = New-CleanEstate
+        $estate['\\fs01\finance\payroll'] = New-Node -Present $false
+        Set-TestEstate $estate
 
-    It 'still declares the scope it set out to look at' {
-        @($script:Run.Start.scopes).Count | Should -Be 1
-        @($script:Run.Completion.reconciled_scopes).Count | Should -Be 0
+        $scan = Invoke-TestScan -Settings (Get-Settings)
+        $completion = @($scan.Events | Where-Object { $_.Kind -eq 'completion' })[0].Payload
+        $completion.error_count | Should -BeGreaterThan 0
+        $completion.status | Should -Not -Be 'succeeded'
     }
 }
 
-Describe 'An orphaned trustee' {
-    BeforeAll {
-        Set-TestEstate @{
-            '\\fs01\finance' = New-Descriptor -Ace @(
-                New-Ace -TrusteeSid $script:Orphan -TrusteeName $null -AceFlags 3
-            )
+Describe 'Intent: the incremental flag' {
+    It 'declares a full enumeration for a plain configured walk' {
+        # The first time an ADG file-system run has been able to say this. Phase 3A marked
+        # every run incremental by construction.
+        Set-TestEstate (New-CleanEstate)
+        (Invoke-TestScan -Settings (Get-Settings)).Run.Incremental | Should -BeFalse
+    }
+
+    It 'declares incremental when <Field> says the run will not look at all of it' -ForEach @(
+        @{ Field = 'IncludePaths'; Value = @('\\FS01\Finance\Reports') }
+        @{ Field = 'ExcludePaths'; Value = @('\\FS01\Finance\Archive') }
+        @{ Field = 'TimeoutSeconds'; Value = 30 }
+    ) {
+        Set-TestEstate (New-CleanEstate)
+        (Invoke-TestScan -Settings (Get-Settings -Override @{ $Field = $Value })).Run.Incremental |
+            Should -BeTrue
+    }
+
+    It 'does not treat a depth limit as an intent to under-enumerate' {
+        # A depth limit is an upper bound a shallow tree never reaches. Declaring incremental
+        # because a limit existed would forbid reconciliation on every configured scan; the
+        # walk finds out during the scan whether it was actually hit.
+        Set-TestEstate (New-CleanEstate)
+        (Invoke-TestScan -Settings (Get-Settings -Override @{ MaxDepth = 64 })).Run.Incremental | Should -BeFalse
+    }
+
+    It 'is decided before the walk, because the server refuses to let it change' {
+        Set-TestEstate (New-CleanEstate)
+        $scan = Invoke-TestScan -Settings (Get-Settings)
+        $start = @($scan.Events | Where-Object { $_.Kind -eq 'start' })[0].Payload
+        $start.incremental | Should -Be $scan.Run.Incremental
+    }
+}
+
+Describe 'Achievement: what a run will let the backend mark absent' {
+    It 'reconciles a tree it enumerated completely' {
+        Set-TestEstate (New-CleanEstate)
+        $scan = Invoke-TestScan -Settings (Get-Settings)
+        @($scan.Run.ReconciledScopes).Count | Should -Be 1
+        @($scan.Run.ReconciledScopes)[0].kind | Should -Be 'directory_tree'
+        @($scan.Run.ReconciledScopes)[0].key | Should -Be '\\fs01\finance'
+    }
+
+    It 'reconciles nothing when a depth limit was actually reached' {
+        Set-TestEstate (New-CleanEstate)
+        $scan = Invoke-TestScan -Settings (Get-Settings -Override @{ MaxDepth = 1 })
+        @($scan.Run.ReconciledScopes).Count | Should -Be 0
+    }
+
+    It 'reconciles nothing when a descriptor could not be read' {
+        $estate = New-CleanEstate
+        $estate['\\fs01\finance\payroll'] = New-Node -Denied
+        Set-TestEstate $estate
+        @((Invoke-TestScan -Settings (Get-Settings)).Run.ReconciledScopes).Count | Should -Be 0
+    }
+
+    It 'reconciles nothing when a NULL DACL was found' {
+        # A NULL DACL is a finding, a finding is an error, and a run with any error cannot
+        # reconcile. Stricter than strictly necessary, and deliberately so: the run is still
+        # fully reported, it simply does not get to mark anything absent.
+        $estate = New-CleanEstate
+        $estate['\\fs01\finance\payroll'] = New-Node -Present $false
+        Set-TestEstate $estate
+        @((Invoke-TestScan -Settings (Get-Settings)).Run.ReconciledScopes).Count | Should -Be 0
+    }
+
+    It 'reconciles only the trees that were themselves complete' {
+        # Per-root, not all-or-nothing: one unreadable tree must not cost the reconciliation
+        # of a tree that was read end to end.
+        $estate = New-CleanEstate
+        $estate['\\fs02\payroll'] = New-Node -Children @('Sealed') -Dacl @((New-Ace))
+        $estate['\\fs02\payroll\sealed'] = New-Node -Denied
+        Set-TestEstate $estate
+
+        $settings = Get-Settings -ScanRoot @('\\FS01\Finance', '\\FS02\Payroll')
+        $scan = Invoke-TestScan -Settings $settings -PerScanRoot
+        @($scan.Runs).Count | Should -Be 2
+
+        $finance = @($scan.Runs | Where-Object { $_.Start.source.target -eq '\\FS01\Finance' })[0]
+        $payroll = @($scan.Runs | Where-Object { $_.Start.source.target -eq '\\FS02\Payroll' })[0]
+        @($finance.ReconciledScopes).Count | Should -Be 1
+        @($payroll.ReconciledScopes).Count | Should -Be 0
+    }
+
+    It 'never reconciles a scope it did not declare' {
+        Set-TestEstate (New-CleanEstate)
+        $scan = Invoke-TestScan -Settings (Get-Settings)
+        $start = @($scan.Events | Where-Object { $_.Kind -eq 'start' })[0].Payload
+        $declared = @($start.scopes | ForEach-Object { "$($_.kind)|$($_.key)" })
+        foreach ($scope in $scan.Run.ReconciledScopes) {
+            $declared | Should -Contain "$($scope.kind)|$($scope.key)"
         }
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance'
-        $settings.RetryCount = 0
-        $script:Run = Get-TestRun -Settings $settings
-        $script:Items = Get-Observations -Run $script:Run
     }
 
-    It 'reports the ACE and an unresolved principal beside it' {
-        @(Select-Kind -Observations $script:Items -Kind 'ntfs_ace').Count | Should -Be 1
-        $principal = @(Select-Kind -Observations $script:Items -Kind 'principal')[0]
-        $principal.principal_kind | Should -Be 'unresolved'
-        $principal.sid | Should -Be $script:Orphan
-    }
-
-    It 'still succeeds: an orphaned SID is a finding, not a failure' {
-        $script:Run.Completion.status | Should -Be 'succeeded'
-    }
-
-    It 'omits the unresolved principal when the caller turned it off' {
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance'
-        $settings.RetryCount = 0
-        $settings.ReportUnresolved = $false
-        $run = Get-TestRun -Settings $settings
-
-        $items = Get-Observations -Run $run
-        @(Select-Kind -Observations $items -Kind 'principal').Count | Should -Be 0
-        @(Select-Kind -Observations $items -Kind 'ntfs_ace').Count | Should -Be 1
+    It 'reconciles nothing for a root it never managed to enter' {
+        Set-TestEstate @{}
+        @((Invoke-TestScan -Settings (Get-Settings)).Run.ReconciledScopes).Count | Should -Be 0
     }
 }
 
-Describe 'A DACL holding an entry the contract cannot express' {
-    BeforeAll {
-        Set-TestEstate @{
-            '\\fs01\odd' = New-Descriptor -Ace @(
-                New-Ace -AceFlags 3
-                New-Ace -AceType 'AccessAllowedCallback' -AceFlags 3 -TrusteeSid 'S-1-1-0' -TrusteeName 'Everyone'
-            )
-        }
-        $settings = Import-AdgNtfsTarget -ShareRoot '\\FS01\Odd'
-        $settings.RetryCount = 0
-        $script:Run = Get-TestRun -Settings $settings
-        $script:Items = Get-Observations -Run $script:Run
+Describe 'One run or several' {
+    BeforeEach {
+        Set-TestEstate (New-CleanEstate)
+        $script:Settings = Get-Settings -ScanRoot @('\\FS01\Finance', '\\FS02\Payroll')
     }
 
-    It 'reports what it could and records an error for what it could not' {
-        @(Select-Kind -Observations $script:Items -Kind 'ntfs_ace').Count | Should -Be 1
-        $script:Run.Completion.status | Should -Be 'partial'
-        @($script:Run.Completion.errors)[0].code | Should -Be 'unmappable_ace_type'
+    It 'covers every root in one run by default' {
+        $scan = Invoke-TestScan -Settings $Settings
+        @($scan.Runs).Count | Should -Be 1
+        @($scan.Run.Start.scopes).Count | Should -Be 2
     }
 
-    It 'omits the acl_hash entirely rather than hashing half a DACL' {
-        # A digest over part of a DACL is indistinguishable from a digest of all of it, and
-        # comparing one to a parent's would answer the boundary question wrong without ever
-        # looking wrong.
-        $resource = @(Select-Kind -Observations $script:Items -Kind 'ntfs_resource')[0]
-        $resource.Contains('acl_hash') | Should -BeFalse
-    }
-}
-
-Describe 'Split-AdgNtfsObservationBatch' {
-    It 'returns an empty array rather than nothing when there is nothing to send' {
-        # A bare `return @()` unrolls to nothing, and .Count on $null then fails under
-        # strict mode - in the caller, far from here.
-        $batches = Split-AdgNtfsObservationBatch -RunId ([guid]::NewGuid().ToString()) -Group @()
-        @($batches).Count | Should -Be 0
-    }
-
-    It 'never splits one directory across two batches' {
-        $runId = [guid]::NewGuid().ToString()
-        $group = @(1..7 | ForEach-Object { [ordered]@{ kind = 'ntfs_ace'; n = $_ } })
-        $batches = Split-AdgNtfsObservationBatch -RunId $runId -Group @(, $group) -BatchSize 3
-
-        @($batches).Count | Should -Be 1
-        @($batches[0].observations).Count | Should -Be 7
-    }
-
-    It 'starts a new batch rather than overfilling one' {
-        $runId = [guid]::NewGuid().ToString()
-        $first = @(1..2 | ForEach-Object { [ordered]@{ n = $_ } })
-        $second = @(3..4 | ForEach-Object { [ordered]@{ n = $_ } })
-        $batches = Split-AdgNtfsObservationBatch -RunId $runId -Group @($first, $second) -BatchSize 3
-
-        @($batches).Count | Should -Be 2
-        $batches[0].sequence | Should -Be 1
-        $batches[0].is_final | Should -BeFalse
-        $batches[1].sequence | Should -Be 2
-        $batches[1].is_final | Should -BeTrue
-    }
-
-    It 'gives every batch its own id, generated once so a retry is recognized' {
-        $runId = [guid]::NewGuid().ToString()
-        $group = @([ordered]@{ n = 1 })
-        $batches = Split-AdgNtfsObservationBatch -RunId $runId -Group @($group, $group) -BatchSize 1
-
-        $batches[0].batch_id | Should -Not -Be $batches[1].batch_id
-        $batches[0].run_id | Should -Be $runId
-    }
-
-    It 'refuses a directory whose DACL exceeds the contract ceiling' {
-        $group = @(1..1001 | ForEach-Object { [ordered]@{ n = $_ } })
-        { Split-AdgNtfsObservationBatch -RunId ([guid]::NewGuid().ToString()) -Group @(, $group) } |
-            Should -Throw '*ceiling of 1000*'
-    }
-}
-
-Describe 'Several roots in one run' {
-    BeforeAll {
-        Set-TestEstate @{
-            '\\fs01\finance'  = New-Descriptor -Ace @(New-Ace -AceFlags 3)
-            '\\fs01\projects' = New-Descriptor -Ace @(New-Ace -AceFlags 3)
-        }
-        $script:Combined = Import-AdgNtfsTarget -ShareRoot '\\FS01\Finance', '\\FS01\Projects', '\\FS01\Gone'
-        $script:Combined.RetryCount = 0
-        $script:Combined.RetryDelaySeconds = 0
-    }
-
-    It 'declares one scope per root and reports the ones it could not read' {
-        $run = Get-TestRun -Settings $script:Combined
-
-        @($run.Start.scopes).Count | Should -Be 3
-        $run.Completion.status | Should -Be 'partial'
-        $run.Summary.ShareRootsRead | Should -Be 2
-        @($run.Summary.ShareRootsUnread) | Should -Be @('\\FS01\Gone')
-    }
-
-    It 'contains the blast radius when asked for a run per root' {
-        # One unreadable root downgrades a combined run; per-root runs keep the healthy ones
-        # reporting 'succeeded', which is what an operator reads.
-        $runs = Get-TestRunSet -Settings $script:Combined -PerShareRoot
-
-        @($runs).Count | Should -Be 3
-        @($runs | Where-Object { $_.Completion.status -eq 'succeeded' }).Count | Should -Be 2
-        @($runs | Where-Object { $_.Completion.status -eq 'failed' }).Count | Should -Be 1
+    It 'emits one run per root when asked' {
+        $scan = Invoke-TestScan -Settings $Settings -PerScanRoot
+        @($scan.Runs).Count | Should -Be 2
+        foreach ($run in $scan.Runs) { @($run.Start.scopes).Count | Should -Be 1 }
     }
 
     It 'gives each run its own id' {
-        $runs = Get-TestRunSet -Settings $script:Combined -PerShareRoot
-        @($runs | ForEach-Object { $_.RunId } | Sort-Object -Unique).Count | Should -Be 3
+        $scan = Invoke-TestScan -Settings $Settings -PerScanRoot
+        @($scan.Runs | ForEach-Object { $_.RunId } | Sort-Object -Unique).Count | Should -Be 2
+    }
+
+    It 'refuses to share one checkpoint between several runs' {
+        # Each run would resume the previous one's frontier and walk the wrong tree.
+        $Settings.CheckpointPath = Join-Path ([System.IO.Path]::GetTempPath()) 'adg-shared.checkpoint.json'
+        { Invoke-TestScan -Settings $Settings -PerScanRoot } | Should -Throw '*cannot be shared*'
+    }
+
+    It 'lets one unreadable root downgrade only its own run' {
+        $estate = New-CleanEstate
+        $estate.Remove('\\fs02\payroll')
+        Set-TestEstate $estate
+
+        $scan = Invoke-TestScan -Settings $Settings -PerScanRoot
+        @($scan.Runs | Where-Object { $_.Status -eq 'succeeded' }).Count | Should -Be 1
+        @($scan.Runs | Where-Object { $_.Status -eq 'failed' }).Count | Should -Be 1
+    }
+}
+
+Describe 'Test-AdgNtfsFullEnumerationIntent' {
+    It 'is true for a configuration that sets out to read everything' {
+        Test-AdgNtfsFullEnumerationIntent -Settings (Get-Settings) | Should -BeTrue
+    }
+
+    It 'is false while resuming, whatever the settings say' {
+        Test-AdgNtfsFullEnumerationIntent -Settings (Get-Settings) -Resuming | Should -BeFalse
+    }
+}
+
+Describe 'A scan rooted below a share root' {
+    BeforeEach {
+        Set-TestEstate (New-CleanEstate)
+        $script:Scan = Invoke-TestScan -Settings (Get-Settings -ScanRoot @('\\FS01\Finance\Reports'))
+    }
+
+    It 'is accepted, which Phase 3A refused' {
+        @($Scan.Resources | ForEach-Object { $_.path }) | Should -Contain '\\FS01\Finance\Reports'
+    }
+
+    It 'declares the tree it actually walked, not the share above it' {
+        @($Scan.Run.Start.scopes)[0].key | Should -Be '\\fs01\finance\reports'
+    }
+
+    It 'reports its starting directory as a boundary it could not establish' {
+        $root = @($Scan.Resources | Where-Object { $_.path -eq '\\FS01\Finance\Reports' })[0]
+        $root.is_acl_boundary | Should -BeTrue
+        $root.boundary_reason | Should -Be 'scan_root'
+    }
+
+    It 'still compares the directories below it normally' {
+        $child = @($Scan.Resources | Where-Object { $_.path -eq '\\FS01\Finance\Reports\Q3' })[0]
+        $child.is_acl_boundary | Should -BeFalse
     }
 }

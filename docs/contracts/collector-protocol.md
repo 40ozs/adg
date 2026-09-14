@@ -243,10 +243,27 @@ no longer observed as of this run.
 that bites. `directory_tree` claims the whole tree beneath a path was enumerated. A run that
 reads share *roots* and nothing else has enumerated no tree, so reconciling that scope would
 mark every directory under every root as deleted. Such a run therefore declares its
-`directory_tree` scopes - they state what it set out to look at, and a later full walk
-reconciles them - but marks itself `incremental`, which the server refuses to let reconcile
-at all. The NTFS collector shipped in Phase 3A does exactly this on every run, including a
-clean one.
+`directory_tree` scopes - they state what it set out to look at - but marks itself
+`incremental`, which the server refuses to let reconcile at all. The NTFS collector shipped
+in Phase 3A did exactly this on every run, including a clean one.
+
+**A walk that really did enumerate a tree may claim it**, which the recursive scanner added
+in Phase 3B. Two separate statements are involved and conflating them gets it wrong in one
+direction or the other:
+
+* `incremental` in the **start** envelope is a statement of *intent*, and it has to be made
+  before a single directory is read, because the server refuses to let it change mid-run. It
+  is `false` only when nothing in the configuration already says the run will look at part of
+  its scope: no include or exclude patterns, no deadline, not resuming a checkpoint. A depth
+  *limit* is deliberately not in that list - it is an upper bound a shallow tree never
+  reaches, and treating it as intent would forbid reconciliation on every configured scan.
+* `reconciled_scopes` in the **completion** envelope is a statement of *achievement*, decided
+  from what actually happened. A tree is listed only if the walk read its root and skipped
+  nothing at all beneath it: no depth limit reached, no exclude pattern applied, no junction
+  left unfollowed, no descriptor denied, no directory left unlistable, no timeout, no resume.
+
+A collector that cannot separate those two ends up either never reconciling anything or
+reconciling a truncated scan - and the second marks live permissions as revoked.
 
 ---
 
@@ -453,3 +470,61 @@ Three rules bind a collector that sends one:
 A batch whose reported digest contradicts the entries sent with it is rejected with `422`,
 and nothing in it is stored. The error carries both digests and the normalized document the
 server hashed.
+
+### 1.3 (Phase 3B)
+
+`ntfs_resource` gains three optional fields, all additive: a `1.0` through `1.2` payload that
+omits them is still valid, and every `1.x` server accepts all four minors.
+
+| Field | Carries |
+| --- | --- |
+| `resource_kind` | `directory` (the default, and what every earlier payload meant) or `file` |
+| `boundary_reason` | Why `is_acl_boundary` is true |
+| `parent_acl_hash` | The parent's `acl_hash` as this run read it |
+
+**`resource_kind` could not be derived**, and it is not decoration: it decides which
+inheritance projection a resource is compared against. A directory receives its parent's
+`CONTAINER_INHERIT` entries and keeps propagating them; a file receives the `OBJECT_INHERIT`
+ones with every inheritance flag stripped. Those are different documents, so comparing a file
+against the container projection would report a boundary on every file in an estate. A path
+does not say which kind it names, and a share root is always a directory - reporting one as a
+file is rejected.
+
+**`boundary_reason` is required when `is_acl_boundary` is true and forbidden when it is
+false** - but the first half of that rule applies only to payloads that declare `1.3` or
+later. A `1.2` collector sets the flag on a share root and has never heard of the field;
+holding it to a rule it predates would reject it for being old rather than for being wrong,
+which is not what "additive" means. Such rows store the reason as null, which reads as *the
+collector that wrote this predates the field* rather than as a reason. The other half of the
+rule holds at every version: a reason on a resource that is not a boundary contradicts
+itself, and no collector of any minor can have meant it.
+
+The seven values, and what each means, are specified in
+[`docs/architecture/ntfs-acl-boundaries.md`](../architecture/ntfs-acl-boundaries.md) and
+decided in
+[ADR-0009](../decisions/0009-boundaries-are-derived-from-a-projection.md). Four of them -
+`share_root`, `scan_root`, `parent_unreadable`, `parent_null_dacl` - mean the comparison was
+never made, and all four still report a boundary. **Unknown is a boundary**: one that is not
+really there costs a scan one extra stored ACL, while one reported `false` tells the next scan
+it may stop looking.
+
+**`parent_acl_hash` is not the value the verdict was compared against.** That value is the
+parent's *projection* onto a child, which the server recomputes from the parent's own stored
+entries. What this field records is *which reading of the parent* was judged - without it, a
+later disagreement between collector and server cannot be told apart from the parent simply
+having been changed in between.
+
+Two rules bind a collector that sends these:
+
+* derive `is_acl_boundary` **from** the reason rather than sending them as two independent
+  fields. A boundary and the evidence for it cannot then disagree, which is the failure this
+  minor exists to prevent;
+* compare against the parent's projection, never against the parent's own `acl_hash`. Windows
+  sets the `INHERITED` bit on every entry it copies down, so a perfectly inheriting child has
+  a different digest from its parent - and that comparison reports every directory in the
+  estate as a boundary.
+
+The server stores the claim as sent and reports its own derivation beside it on
+`GET /resources/{path}`. Neither overrides the other: they disagree when the parent changed
+between the two readings, when the collector's projection is wrong, or when entries were lost
+in transit, and picking a winner would bury all three.

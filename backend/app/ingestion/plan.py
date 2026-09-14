@@ -297,7 +297,10 @@ class NtfsResourceRow:
     is_acl_boundary: bool
     ace_count: int
     depth_from_share_root: int | None
+    resource_kind: str
+    boundary_reason: str | None
     acl_hash: str | None
+    parent_acl_hash: str | None
     source_key: str
     observed_at: dt.datetime
     run_id: UUID
@@ -766,7 +769,17 @@ def _ntfs_resource_row(observation: NtfsResourceObservation, run_id: UUID) -> Nt
         # when they do that is the finding: entries were read and never arrived.
         ace_count=facts.ace_count,
         depth_from_share_root=resource.depth_from_share_root,
+        resource_kind=resource.resource_kind.value,
+        # Stored exactly as claimed, never re-derived here. The planner holds one batch and
+        # a parent is routinely in a different one, so the claim is checked on the read
+        # side, where the parent's own ACEs are in reach -- the same arrangement acl_hash
+        # has, and for the same reason: a verdict and the evidence for it are reported
+        # side by side rather than settled by whichever arrived first.
+        boundary_reason=(
+            None if observation.boundary_reason is None else observation.boundary_reason.value
+        ),
         acl_hash=observation.acl_hash,
+        parent_acl_hash=observation.parent_acl_hash,
         source_key=observation.source_key,
         observed_at=observation.observed_at,
         run_id=run_id,

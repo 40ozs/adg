@@ -154,8 +154,8 @@ Resources and raw ACLs, share layer and file-system layer (see
 | `GET /api/v1/shares/{share}` | One share by key (`fs01\|finance`) or UNC path, with its server and ACE count. |
 | `GET /api/v1/shares/{share}/acl` | That share's **share-level** ACL in DACL order, trustees resolved where known. |
 | `GET /api/v1/shares/{share}/root-acl` | The raw **NTFS** ACL of the directory that share publishes. |
-| `GET /api/v1/resources/{path}` | One directory's descriptor facts: owner, NULL-DACL state, inheritance, boundary. |
-| `GET /api/v1/resources/{path}/acl` | That directory's NTFS ACL in evaluation order, with the ACL digest. |
+| `GET /api/v1/resources/{path}` | One resource's descriptor facts — owner, NULL-DACL state, inheritance — and its boundary verdict beside the one the server derives. |
+| `GET /api/v1/resources/{path}/acl` | That resource's NTFS ACL in evaluation order, with the ACL digest. |
 | `GET /api/v1/principals/{sid}/shares` | Shares whose ACL names a SID. |
 
 > Each ACL response carries a `kind` — `raw_smb_acl` or `raw_ntfs_acl`. **These are observed
@@ -167,6 +167,11 @@ Resources and raw ACLs, share layer and file-system layer (see
 > share ACL **and** the NTFS ACL; access at the console is limited only by the second. A
 > share whose NTFS root nothing has read reports `root_resource: null` — *nobody has looked*,
 > never *nothing restricts it*.
+>
+> A resource's `boundary` block is where the tree scan's answer lives: whether permissions
+> change here, why, and what the server derives independently from the parent it holds. It is
+> compared against what the parent **projects** onto a child rather than against the parent's
+> own digest — see [ACL boundaries](docs/architecture/ntfs-acl-boundaries.md).
 
 The web application's **System status** page (`http://localhost:3000/status`) renders the
 same information from the browser's point of view.

@@ -74,6 +74,7 @@ from app.repositories import (
     MembershipRepository,
     NtfsAceRecord,
     NtfsAclRecomputation,
+    NtfsBoundaryVerification,
     NtfsResourceRecord,
     ResourceRepository,
     ServerRecord,
@@ -254,6 +255,97 @@ class NtfsResourceSummary(BaseModel):
     declared_ace_count: int = Field(
         description="How many entries the descriptor said it had, as the collector read it."
     )
+    resource_kind: str = Field(
+        description=(
+            "directory or file. A file is never traversed, and it inherits through the "
+            "object projection rather than the container one."
+        )
+    )
+    parent_path: str | None = Field(
+        default=None,
+        description=(
+            "Derived from the path, never stored. Null at a share root, whose parent lies "
+            "outside the share — often outside anything ADG audits."
+        ),
+    )
+    boundary_reason: str | None = Field(
+        default=None,
+        description=(
+            "Why is_acl_boundary is true, as the collector reported it. Null is the only "
+            "value meaning 'carrying exactly what it inherited'; the cases where nobody "
+            "knows — scan_root, parent_unreadable, parent_null_dacl — say so and still set "
+            "the flag."
+        ),
+    )
+
+
+class BoundaryView(BaseModel):
+    """The collector's boundary verdict beside the one the server derives from the parent.
+
+    Both, never one — the rule ``acl_hash`` already follows. A disagreement means the parent
+    changed between the two readings, or the collector's projection is wrong, or entries
+    were lost in transit. Each is a finding, and choosing a winner here would bury all three.
+
+    ``projected_child_acl_hash`` is the value that matters and the one most easily got
+    wrong: a child is compared against **what its parent hands down**, not against the
+    parent's own digest. Those differ by construction, because inheritance sets the
+    INHERITED bit on every entry it copies — so comparing a child to its parent directly
+    would report every directory in the estate as a boundary.
+    """
+
+    reported: bool = Field(description="is_acl_boundary exactly as the collector sent it.")
+    reported_reason: str | None = None
+    computed: bool | None = Field(
+        default=None,
+        description=(
+            "The server's verdict from the parent it holds. Null means it could not reach "
+            "one: the parent has not been read, or has a NULL DACL, which projects nothing "
+            "at all. Null is unknown, never 'no boundary'."
+        ),
+    )
+    computed_reason: str | None = None
+    agrees: bool | None = Field(
+        default=None,
+        description=(
+            "Null when either side made no comparison. A collector reporting share_root, "
+            "scan_root, parent_unreadable or parent_null_dacl never compared anything, so "
+            "the server now knowing more is not the collector having been wrong."
+        ),
+    )
+    parent_key: str | None = Field(
+        default=None, description="Derived from the path. Null at a share root."
+    )
+    parent_observed: bool = Field(description="Whether any run has read the parent's descriptor.")
+    projection_available: bool = Field(
+        description="Whether the parent's entries were in reach to project and compare."
+    )
+    projected_child_acl_hash: str | None = Field(
+        default=None,
+        description=(
+            "The digest a cleanly inheriting child of this parent would carry, computed by "
+            "the server from the parent's stored ACEs. The value the resource's own digest "
+            "is compared against."
+        ),
+    )
+    resource_acl_hash: str = Field(
+        description="The digest the server derives from this resource's stored ACEs."
+    )
+    parent_acl_hash: str | None = Field(
+        default=None, description="The same, for the parent. Null when it has not been read."
+    )
+    reported_parent_acl_hash: str | None = Field(
+        default=None,
+        description="The parent's digest as the collector saw it when it made the verdict.",
+    )
+    parent_acl_hash_agrees: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the parent ADG holds is the reading the verdict was made against. "
+            "False does not make the verdict wrong — the parent may have been re-read "
+            "since — but it does make it stale, which is how a boundary that moved goes "
+            "unnoticed."
+        ),
+    )
 
 
 class NtfsResourceDetailView(NtfsResourceSummary):
@@ -268,6 +360,15 @@ class NtfsResourceDetailView(NtfsResourceSummary):
             "read and never arrived — a coverage gap, reported rather than reconciled away."
         )
     )
+    parent: NtfsResourceSummary | None = Field(
+        default=None,
+        description=(
+            "The containing directory, when a run has read it. Null at a share root and "
+            "also when the parent is simply unscanned; boundary.parent_key and "
+            "boundary.parent_observed tell those two apart."
+        ),
+    )
+    boundary: BoundaryView
     provenance: ProvenanceView
 
 
@@ -703,6 +804,8 @@ async def get_resource(resource: ResourcePath, session: Session) -> NtfsResource
         share=None if detail.share is None else _share_summary(detail.share),
         server=None if detail.server is None else _server_summary(detail.server),
         stored_ace_count=detail.stored_ace_count,
+        parent=None if detail.parent is None else _ntfs_resource_summary(detail.parent),
+        boundary=_boundary_view(detail.boundary),
         provenance=_provenance(detail.resource),
     )
 
@@ -919,6 +1022,32 @@ def _ntfs_resource_summary(record: NtfsResourceRecord) -> NtfsResourceSummary:
         grants_everyone_full_access=record.grants_everyone_full_access,
         denies_everyone=record.denies_everyone,
         declared_ace_count=record.ace_count,
+        resource_kind=record.resource_kind.value,
+        # Both derived from the path every time, so neither can disagree with it.
+        parent_path=(None if record.unc_path.parent is None else record.unc_path.parent.value),
+        boundary_reason=(None if record.boundary_reason is None else record.boundary_reason.value),
+    )
+
+
+def _boundary_view(verification: NtfsBoundaryVerification) -> BoundaryView:
+    return BoundaryView(
+        reported=verification.reported,
+        reported_reason=(
+            None if verification.reported_reason is None else verification.reported_reason.value
+        ),
+        computed=verification.computed,
+        computed_reason=(
+            None if verification.computed_reason is None else verification.computed_reason.value
+        ),
+        agrees=verification.agrees,
+        parent_key=verification.parent_key,
+        parent_observed=verification.parent_observed,
+        projection_available=verification.projection_available,
+        projected_child_acl_hash=verification.projected_child_acl_hash,
+        resource_acl_hash=verification.resource_acl_hash,
+        parent_acl_hash=verification.parent_acl_hash,
+        reported_parent_acl_hash=verification.reported_parent_acl_hash,
+        parent_acl_hash_agrees=verification.parent_acl_hash_agrees,
     )
 
 

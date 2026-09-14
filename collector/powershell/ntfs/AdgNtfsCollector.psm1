@@ -12,15 +12,18 @@
     tested:
 
         AdgNtfsObservation.ps1  raw descriptors to contract observations (pure)
-        AdgNtfsConfig.ps1       which share roots to read, and what is refused
+        AdgNtfsConfig.ps1       where a walk starts, how far it goes, what it refuses
         AdgNtfsSource.ps1       the only code that touches a file system (the test seam)
-        AdgNtfsScan.ps1         orchestration, retries, scopes, batching
+        AdgNtfsCheckpoint.ps1   enough state to resume a walk, and nothing more
+        AdgNtfsWalk.ps1         the traversal, its loop guards, and its metrics
+        AdgNtfsScan.ps1         streaming batches, scopes, and reconciliation
         AdgNtfsTransport.ps1    submission, with the contract's retry rules
 
-    Two derivations in AdgNtfsObservation.ps1 are mirrors of backend code and must not drift
-    from it: the source keys (backend/app/contracts/v1/keys.py) and the ACL normal form and
-    its hash (backend/app/domain/acl_hash.py). A contract test runs this collector and
-    compares both against the Python implementations.
+    Three derivations here are mirrors of backend code and must not drift from it: the
+    source keys (backend/app/contracts/v1/keys.py), the ACL normal form and its hash
+    (backend/app/domain/acl_hash.py), and the inheritance projection that decides where
+    permissions change (backend/app/domain/inheritance.py). A contract test runs this
+    collector and compares all three against the Python implementations.
 
     See README.md for the privileges collection needs, and
     docs/contracts/collector-protocol.md for the normative protocol.
@@ -36,6 +39,8 @@ $files = @(
     'AdgNtfsObservation.ps1'
     'AdgNtfsConfig.ps1'
     'AdgNtfsSource.ps1'
+    'AdgNtfsCheckpoint.ps1'
+    'AdgNtfsWalk.ps1'
     'AdgNtfsScan.ps1'
     'AdgNtfsTransport.ps1'
 )
@@ -49,13 +54,20 @@ foreach ($file in $files) {
 }
 
 Export-ModuleMember -Function @(
-    # Configuration and filtering
+    # Configuration, filtering, and scope
     'Import-AdgNtfsTarget'
     'Test-AdgShareRootPath'
+    'Test-AdgPathMatch'
+    'Test-AdgPatternReachesBelow'
+    'Test-AdgPathInScope'
 
     # Acquisition (the mock seam)
     'Test-AdgResourceExists'
+    'Get-AdgChildDirectory'
+    'Get-AdgChildFile'
     'Get-AdgDirectorySecurity'
+    'Get-AdgFileSecurity'
+    'ConvertFrom-AdgRawSecurityDescriptor'
     'Resolve-AdgTrusteeName'
 
     # Contract
@@ -64,6 +76,8 @@ Export-ModuleMember -Function @(
     'ConvertTo-AdgUncPath'
     'Get-AdgResourceComparisonKey'
     'Get-AdgNtfsResourceKey'
+    'Get-AdgParentPath'
+    'Get-AdgDepthFromShareRoot'
     'Get-AdgNtfsAceKey'
     'Get-AdgPrincipalKey'
     'Get-AdgAceContentLine'
@@ -71,6 +85,7 @@ Export-ModuleMember -Function @(
     'Get-AdgAclHash'
     'Get-AdgSha256Hex'
     'ConvertTo-AdgAceType'
+    'ConvertTo-AdgAccessMask'
     'Test-AdgSidString'
     'New-AdgObservation'
     'New-AdgCollectorError'
@@ -78,11 +93,43 @@ Export-ModuleMember -Function @(
     'ConvertTo-AdgNtfsAceObservation'
     'ConvertTo-AdgNtfsResourceObservation'
 
+    # Inheritance and boundaries
+    'ConvertTo-AdgMappedGenericRight'
+    'Get-AdgInheritedAceFlag'
+    'Get-AdgInheritedAce'
+    'Get-AdgInheritedAceProjection'
+    'Get-AdgProjectedChildAclHash'
+    'Resolve-AdgAclBoundary'
+
+    # Traversal
+    'Invoke-AdgParallelMap'
+    'New-AdgNtfsWalkMetric'
+    'ConvertTo-AdgNtfsResourceGroup'
+    'Read-AdgNtfsSecurity'
+    'Read-AdgNtfsDirectoryUnit'
+    'Read-AdgNtfsFileGroup'
+    'Invoke-AdgNtfsDirectoryWalk'
+
+    # Checkpointing
+    'Get-AdgScanFingerprint'
+    'New-AdgNtfsCheckpoint'
+    'Save-AdgNtfsCheckpoint'
+    'Import-AdgNtfsCheckpoint'
+    'Remove-AdgNtfsCheckpoint'
+
     # Orchestration and transport
-    'Get-AdgNtfsResourceObservation'
-    'Split-AdgNtfsObservationBatch'
+    'New-AdgNtfsBatchWriter'
+    'Add-AdgNtfsObservationGroup'
+    'Send-AdgNtfsPendingBatch'
+    'Complete-AdgNtfsBatchWriter'
+    'Test-AdgNtfsFullEnumerationIntent'
     'Invoke-AdgNtfsScan'
     'Invoke-AdgNtfsScanRun'
     'Invoke-AdgPost'
-    'Send-AdgNtfsScanRun'
+    'New-AdgNtfsTransport'
+    'Send-AdgNtfsStart'
+    'Send-AdgNtfsBatch'
+    'Send-AdgNtfsCompletion'
+    'New-AdgNtfsFileSink'
+    'Write-AdgNtfsPayload'
 )

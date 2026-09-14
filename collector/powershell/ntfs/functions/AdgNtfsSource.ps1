@@ -31,6 +31,153 @@ function Test-AdgResourceExists {
     return Test-Path -LiteralPath $Path -PathType Container
 }
 
+function Get-AdgChildDirectory {
+    <#
+        .SYNOPSIS
+            The immediate subdirectories of one directory, with their reparse state.
+        .DESCRIPTION
+            The walk's only way down. It returns Name, Path, IsReparsePoint and LinkTarget
+            and nothing else: which of those children to descend into is policy, and policy
+            belongs in the layer that can be exercised without a file system.
+
+            Reparse state is reported for every child, whether or not the caller intends to
+            follow one. A junction and an ordinary directory are indistinguishable by name,
+            and a walk that does not ask here will follow a loop until it runs out of path.
+
+            LinkTarget is whatever the reparse point stores, unresolved. Resolving it would
+            need the file system walked again from the target, and an unresolvable target -
+            a junction to a volume that is gone - is an ordinary finding rather than a
+            reason to abandon the parent.
+
+        .OUTPUTS
+            An array of objects with Name, Path, IsReparsePoint, and LinkTarget.
+    #>
+    [OutputType([object[]])]
+    param([Parameter(Mandatory)][string] $Path)
+
+    $children = [System.Collections.Generic.List[object]]::new()
+    foreach ($info in [System.IO.DirectoryInfo]::new($Path).EnumerateDirectories()) {
+        $linkTarget = $null
+        try { $linkTarget = $info.LinkTarget }
+        catch { Write-Verbose "LinkTarget of $($info.FullName) was unreadable: $($_.Exception.Message)" }
+
+        $children.Add([pscustomobject]@{
+                Name           = $info.Name
+                Path           = $info.FullName
+                IsReparsePoint = ($info.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0
+                LinkTarget     = $linkTarget
+            })
+    }
+    # The comma keeps an empty directory an empty array rather than nothing at all, which
+    # strict mode turns into a .Count failure in the caller.
+    return , $children.ToArray()
+}
+
+function Get-AdgChildFile {
+    <#
+        .SYNOPSIS
+            The immediate files of one directory, for an opt-in file-level scan.
+        .DESCRIPTION
+            Never called unless file scanning is switched on. A file has a DACL like any
+            other securable object and a file whose ACL differs from its folder's is a real
+            finding - but an estate has orders of magnitude more files than directories, and
+            reading every one of them turns a scan that takes minutes into one that takes
+            days. Which is why the default is off, and why the cost is the operator's to
+            accept deliberately.
+    #>
+    [OutputType([object[]])]
+    param([Parameter(Mandatory)][string] $Path)
+
+    $children = [System.Collections.Generic.List[object]]::new()
+    foreach ($info in [System.IO.DirectoryInfo]::new($Path).EnumerateFiles()) {
+        $children.Add([pscustomobject]@{
+                Name           = $info.Name
+                Path           = $info.FullName
+                IsReparsePoint = ($info.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0
+            })
+    }
+    return , $children.ToArray()
+}
+
+function ConvertFrom-AdgRawSecurityDescriptor {
+    <#
+        .SYNOPSIS
+            A .NET security descriptor reduced to the facts the contract carries.
+        .DESCRIPTION
+            Shared by the directory and file readers so the two cannot drift. A file's DACL
+            and a directory's are the same structure, and reading them through two
+            near-identical blocks is how one of them quietly stops reporting DaclPresent.
+
+            Everything is taken from the raw binary form rather than from the rule
+            collection, for the three reasons set out in Get-AdgDirectorySecurity.
+    #>
+    [OutputType([hashtable])]
+    param([Parameter(Mandatory)] $Acl)
+
+    # One binary round trip, then everything is read from the raw descriptor. This is the
+    # form Windows actually stores, so nothing below is a reconstruction.
+    $raw = [System.Security.AccessControl.RawSecurityDescriptor]::new($Acl.GetSecurityDescriptorBinaryForm(), 0)
+
+    $control = $raw.ControlFlags
+    $daclPresent = ($control -band [System.Security.AccessControl.ControlFlags]::DiscretionaryAclPresent) -ne 0
+    $daclProtected = ($control -band [System.Security.AccessControl.ControlFlags]::DiscretionaryAclProtected) -ne 0
+
+    $entries = [System.Collections.Generic.List[object]]::new()
+    if ($daclPresent -and $null -ne $raw.DiscretionaryAcl) {
+        foreach ($ace in $raw.DiscretionaryAcl) {
+            $sid = $null
+            $sidProperty = $ace.PSObject.Properties['SecurityIdentifier']
+            if ($null -ne $sidProperty -and $null -ne $sidProperty.Value) {
+                $sid = [string] $sidProperty.Value.Value
+            }
+
+            $entries.Add([pscustomobject]@{
+                    AceType     = [string] $ace.AceType
+                    AceFlags    = [int] $ace.AceFlags
+                    AccessMask  = ConvertTo-AdgAccessMask $ace.AccessMask
+                    TrusteeSid  = $sid
+                    TrusteeName = Resolve-AdgTrusteeName $sid
+                })
+        }
+    }
+
+    return @{
+        OwnerSid      = if ($null -eq $raw.Owner) { $null } else { [string] $raw.Owner.Value }
+        GroupSid      = if ($null -eq $raw.Group) { $null } else { [string] $raw.Group.Value }
+        DaclPresent   = $daclPresent
+        DaclProtected = $daclProtected
+        Ace           = $entries.ToArray()
+    }
+}
+
+function Get-AdgFileSecurity {
+    <#
+        .SYNOPSIS
+            One file's raw security descriptor, for an opt-in file-level scan.
+        .DESCRIPTION
+            The same descriptor a directory carries, read the same way. A file is a leaf: it
+            holds inherited entries and explicit ones, and the explicit ones are exactly what
+            a file-level scan exists to find - but nothing inherits *from* it, so the walk
+            never descends here and never projects from here.
+    #>
+    [OutputType([hashtable])]
+    param([Parameter(Mandatory)][string] $Path)
+
+    $sections = [System.Security.AccessControl.AccessControlSections]::Access -bor
+    [System.Security.AccessControl.AccessControlSections]::Owner -bor
+    [System.Security.AccessControl.AccessControlSections]::Group
+
+    $info = [System.IO.FileInfo]::new($Path)
+    $acl = if ([System.IO.FileSystemAclExtensions] -as [type]) {
+        [System.IO.FileSystemAclExtensions]::GetAccessControl($info, $sections)
+    }
+    else {
+        Get-Acl -LiteralPath $Path -ErrorAction Stop
+    }
+
+    return ConvertFrom-AdgRawSecurityDescriptor -Acl $acl
+}
+
 function Get-AdgDirectorySecurity {
     <#
         .SYNOPSIS
@@ -82,40 +229,7 @@ function Get-AdgDirectorySecurity {
         Get-Acl -LiteralPath $Path -ErrorAction Stop
     }
 
-    # One binary round trip, then everything is read from the raw descriptor. This is the
-    # form Windows actually stores, so nothing below is a reconstruction.
-    $raw = [System.Security.AccessControl.RawSecurityDescriptor]::new($acl.GetSecurityDescriptorBinaryForm(), 0)
-
-    $control = $raw.ControlFlags
-    $daclPresent = ($control -band [System.Security.AccessControl.ControlFlags]::DiscretionaryAclPresent) -ne 0
-    $daclProtected = ($control -band [System.Security.AccessControl.ControlFlags]::DiscretionaryAclProtected) -ne 0
-
-    $entries = [System.Collections.Generic.List[object]]::new()
-    if ($daclPresent -and $null -ne $raw.DiscretionaryAcl) {
-        foreach ($ace in $raw.DiscretionaryAcl) {
-            $sid = $null
-            $sidProperty = $ace.PSObject.Properties['SecurityIdentifier']
-            if ($null -ne $sidProperty -and $null -ne $sidProperty.Value) {
-                $sid = [string] $sidProperty.Value.Value
-            }
-
-            $entries.Add([pscustomobject]@{
-                    AceType     = [string] $ace.AceType
-                    AceFlags    = [int] $ace.AceFlags
-                    AccessMask  = [long] ([uint32] $ace.AccessMask)
-                    TrusteeSid  = $sid
-                    TrusteeName = Resolve-AdgTrusteeName $sid
-                })
-        }
-    }
-
-    return @{
-        OwnerSid      = if ($null -eq $raw.Owner) { $null } else { [string] $raw.Owner.Value }
-        GroupSid      = if ($null -eq $raw.Group) { $null } else { [string] $raw.Group.Value }
-        DaclPresent   = $daclPresent
-        DaclProtected = $daclProtected
-        Ace           = $entries.ToArray()
-    }
+    return ConvertFrom-AdgRawSecurityDescriptor -Acl $acl
 }
 
 function Resolve-AdgTrusteeName {
