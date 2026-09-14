@@ -307,16 +307,43 @@ added or changed.
 
 ## `git status --short`
 
-Immediately after the commit (the untracked and modified entries below belong to the
-concurrent Phase 5B session, and were deliberately left out of it):
+Immediately after the commit. **Every entry below belongs to the concurrent Phase 5B
+session** and was deliberately left out of it:
 
 ```
+ M backend/app/access_engine/__init__.py
+ M backend/app/api/__init__.py
+ M backend/app/api/access.py
+ M backend/app/domain/__init__.py
+ M backend/app/repositories/__init__.py
+ M backend/tests/api/test_access_bounds.py
  M backend/tests/contracts/test_smb_collector.py
 ?? backend/app/access_engine/verdict.py
+?? backend/app/api/caching.py
+?? backend/app/api/groups.py
 ?? backend/app/contracts/derived.py
+?? backend/app/domain/basis.py
+?? backend/app/repositories/basis.py
+?? backend/tests/access_engine/test_verdict.py
+?? backend/tests/api/test_caching.py
+?? backend/tests/db/test_explanation_api.py
+?? backend/tests/domain/test_basis.py
 ?? docs/contracts/v1/access-explanation.schema.json
 ?? docs/contracts/v1/access-paths.schema.json
 ?? docs/contracts/v1/resource-impact.schema.json
 ```
 
-**Commit:** see the follow-up line added below once the hash exists.
+`backend/app/api/__init__.py` shows as modified because that session has already added its
+`groups` router to `build_api_router`, behind `ACCESS_READ`. Its version was **not**
+committed here: `app/api/groups.py` is still untracked, so a commit importing it could not
+be checked out and run. The committed content was staged from a prepared blob rather than
+from the working tree, and the whole commit was verified in a throwaway worktree at `HEAD`
+plus this phase's files only — **3,954 passed, 0 failed**, `ruff check` clean.
+
+**One thing that session must do:** regenerate `docs/contracts/v1/openapi.json`
+(`python -m app.contracts.openapi`) before committing Phase 5B. The committed snapshot
+describes the 31 routes this commit serves; `tests/contracts/test_openapi_snapshot.py`
+fails in the shared working tree until the new routes are published into it. That is the
+test working, not a defect.
+
+**Commit:** `8336ecc` — 103 files, +22,003/-160. Handoff hash recorded in the follow-up.
