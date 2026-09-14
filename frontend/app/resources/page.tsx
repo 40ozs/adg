@@ -4,6 +4,7 @@ import { fetchCollectionStatus, fetchServers } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { serverHref } from "@/lib/resources";
 import { classify } from "@/lib/state";
 
 /**
@@ -66,9 +67,7 @@ export default async function ResourcesPage() {
               {state.data.items.map((server) => (
                 <tr key={server.key}>
                   <th scope="row">
-                    <Link href={`/search?q=${encodeURIComponent(`\\\\${server.name}`)}`}>
-                      {server.name}
-                    </Link>
+                    <Link href={serverHref(server.key)}>{server.name}</Link>
                   </th>
                   <td className="muted">{server.dns_host_name ?? "—"}</td>
                   <td className="muted">{server.operating_system ?? "—"}</td>

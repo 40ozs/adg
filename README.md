@@ -226,7 +226,22 @@ In development mode, sign in at `/login` and pick `viewer`, `auditor`, or `admin
 product as that role sees it. **A development deployment verifies no credential**, and says so
 in an undismissable banner on every page.
 
-Two properties of the shell are worth knowing before reading the code:
+### Detail pages
+
+Four pages carry the everyday work, each reached from search or from a link on another:
+
+| Page | URL | What it answers |
+| --- | --- | --- |
+| Principal | `/identities/principal?key=<SID or host\|SID>` | Who this user or group is, what it belongs to, what belongs to it, which share ACLs name it, and what it can reach |
+| Server | `/resources/server?key=<host>` | What ADG knows about the machine, when a collector last reached it, and the shares it publishes |
+| Share | `/resources/share?key=<server\|share>` | Share metadata, the share ACL, the NTFS ACL of the directory it publishes, and who gets through both |
+| Directory | `/resources/directory?key=<UNC path>` | Where a directory sits, whether permissions changed there, the ACL digest, and who can reach it |
+
+Identifiers travel as query parameters rather than as path segments: a directory is named by
+its UNC path and a local group by `host|SID`, and `\` and `|` inside a URL *path* depend on
+the browser, the Next.js router, and the Node runtime agreeing about normalization.
+
+Five properties of these pages are worth knowing before reading the code:
 
 - **The browser never holds the access token.** It lives in an `httpOnly` cookie that only
   the Next.js server reads; browser requests go to `/api/adg/*` on the same origin and the
@@ -235,6 +250,15 @@ Two properties of the shell are worth knowing before reading the code:
   `GET /api/v1/collection/status` and renders it, so "nothing is there" and "nobody looked"
   are different screens. Placeholder sections say they are placeholders rather than showing
   an empty table.
+- **A raw ACL and an effective-access answer never share a frame.** Each section is labelled
+  with what kind of statement it is — *raw, as collected* or *effective, computed* — carries
+  its own caveat, and is tinted differently. Reading one as the other is the most common
+  wrong conclusion in this domain, and the reason this product exists.
+- **The SID is on screen beside every name**, and when two rows in one list share a name the
+  qualifier — the host, or the domain SID — is promoted next to it. Two
+  `BUILTIN\Administrators` rows are two groups, not a duplicate.
+- **Each section is one query, chosen by the `?tab=` in the URL**, and every list pages
+  server-side with its position in the URL. Nothing computes permissions in the browser.
 
 ## Architecture
 

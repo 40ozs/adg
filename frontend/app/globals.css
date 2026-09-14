@@ -411,3 +411,297 @@ dl.facts dd {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Detail views.
+ *
+ * The rule that matters below is the one separating `.layer-raw` from `.layer-effective`.
+ * A raw ACL entry and an effective-access result are different kinds of statement, and a
+ * reader who takes one for the other reaches the wrong conclusion about who can open a
+ * file. They therefore never share a frame: different tint, different border, and a word
+ * on each — because the tint alone is not a signal everybody receives.
+ */
+
+.title-kind {
+  font-size: 0.8em;
+  font-weight: 400;
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0 0.55rem;
+  vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------- principals */
+
+.principal {
+  display: block;
+  min-width: 0;
+}
+
+.principal-name {
+  font-weight: 600;
+}
+
+.principal-qualifier {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* Always on screen. The name is the part that can be wrong; this is the identity. */
+.principal-sid {
+  display: block;
+  font-size: 0.78rem;
+  background: none;
+  padding: 0;
+  color: var(--muted);
+}
+
+.principal-notes,
+.principal-kind {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* -------------------------------------------------------------------- badges */
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 0 0.4rem;
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.badge-allow {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.badge-deny {
+  border-color: var(--bad);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.badge-explicit {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.badge-inherited {
+  color: var(--muted);
+}
+
+.ace-deny > * {
+  /* A Deny is load-bearing and is never left to the badge alone to convey. */
+  background: color-mix(in srgb, var(--bad-surface) 60%, transparent);
+}
+
+.ace-notes {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+/* ---------------------------------------------------- raw facts vs. answers */
+
+.layer {
+  border: 1px solid var(--border);
+  border-left-width: 5px;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+}
+
+.layer-raw {
+  border-left-color: var(--border-strong);
+}
+
+.layer-effective {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--info-surface) 45%, var(--surface));
+}
+
+.layer-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.layer-header h2 {
+  margin: 0;
+}
+
+.layer-tag {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.05rem 0.6rem;
+}
+
+.layer-raw .layer-tag {
+  color: var(--muted);
+}
+
+.layer-effective .layer-tag {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.layer-caveat {
+  margin: 0.4rem 0 1rem;
+  font-size: 0.85rem;
+  max-width: 68ch;
+}
+
+.acl-group {
+  margin-bottom: 1.5rem;
+}
+
+.acl-table td,
+.acl-table th,
+.access-table td,
+.access-table th {
+  vertical-align: top;
+}
+
+/* ------------------------------------------------------------------ verdicts */
+
+.verdict {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.verdict-ok {
+  color: var(--ok);
+}
+
+.verdict-warn {
+  color: var(--warn);
+}
+
+.verdict-bad {
+  color: var(--bad);
+}
+
+.verdict-info {
+  color: var(--text);
+}
+
+/* The certainty never gets dropped, so it is styled rather than hidden. */
+.verdict-note {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  max-width: 34ch;
+}
+
+.via-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+/* ---------------------------------------------------------- tabs and paging */
+
+.tabs {
+  margin: 1.25rem 0 1rem;
+}
+
+.tabs nav ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs a,
+.filter-strip a {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  text-decoration: none;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tabs-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.filter-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.filter-strip a {
+  border-radius: 999px;
+  border-color: var(--border);
+  font-size: 0.85rem;
+}
+
+.filter-strip a[aria-current] {
+  background: var(--surface-raised);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pager {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+.pager p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.pager-links {
+  display: flex;
+  gap: 1rem;
+}
+
+/* ---------------------------------------------------------------- breadcrumb */
+
+.breadcrumb ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.88rem;
+}
+
+.breadcrumb li + li::before {
+  content: "›";
+  color: var(--muted);
+  margin-right: 0.35rem;
+}
+
+.breadcrumb [aria-current="page"] {
+  color: var(--muted);
+}

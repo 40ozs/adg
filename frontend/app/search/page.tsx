@@ -1,10 +1,14 @@
 import type { JSX } from "react";
+import Link from "next/link";
+
 import { fetchCollectionStatus, search } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import type { SearchResults } from "@/lib/contracts";
+import { principalHrefForKey } from "@/lib/identity";
+import { directoryHref, serverHref, shareHref } from "@/lib/resources";
 import { classify, coverageCaveat } from "@/lib/state";
 
 /**
@@ -93,6 +97,7 @@ export default async function SearchPage({
             limit={state.data.limit_per_category}
             rows={state.data.identities.map((hit) => ({
               key: hit.principal_key,
+              href: principalHrefForKey(hit.principal_key),
               primary: hit.display_name ?? hit.sam_account_name ?? hit.sid,
               secondary: hit.sid,
               note: [
@@ -111,6 +116,7 @@ export default async function SearchPage({
             limit={state.data.limit_per_category}
             rows={state.data.servers.map((hit) => ({
               key: hit.server_key,
+              href: serverHref(hit.server_key),
               primary: hit.name,
               secondary: hit.dns_host_name ?? hit.server_key,
               note: "",
@@ -122,6 +128,7 @@ export default async function SearchPage({
             limit={state.data.limit_per_category}
             rows={state.data.shares.map((hit) => ({
               key: hit.share_key,
+              href: shareHref(hit.share_key),
               primary: hit.name,
               secondary: hit.unc_path,
               note: [hit.share_type, hit.description].filter(Boolean).join(" · "),
@@ -133,6 +140,7 @@ export default async function SearchPage({
             limit={state.data.limit_per_category}
             rows={state.data.directories.map((hit) => ({
               key: hit.resource_key,
+              href: directoryHref(hit.resource_key),
               primary: hit.path,
               secondary: hit.share_key,
               note: hit.is_acl_boundary ? "ACL boundary" : "inherits from its parent",
@@ -146,6 +154,8 @@ export default async function SearchPage({
 
 interface Row {
   key: string;
+  /** Where the hit leads. A search result that does not lead anywhere is half a feature. */
+  href: string;
   primary: string;
   secondary: string;
   note: string;
@@ -185,7 +195,9 @@ function Category({
           <tbody>
             {rows.map((row) => (
               <tr key={row.key}>
-                <th scope="row">{row.primary}</th>
+                <th scope="row">
+                  <Link href={row.href}>{row.primary}</Link>
+                </th>
                 <td>
                   <code>{row.secondary}</code>
                 </td>
