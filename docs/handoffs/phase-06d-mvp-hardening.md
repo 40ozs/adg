@@ -505,10 +505,21 @@ HTML of `/collectors` and `/access/explain`.
 
 ---
 
+## Commit
+
+`2bce2c6` — *Phase 6D: the MVP walked end to end, and the five defects that found*.
+48 files changed, 9,840 insertions, 168 deletions. Not pushed; no remote is configured for
+this repository.
+
 ## `git status --short`
 
 Taken after the commit.
 
 ```
-PENDING
+ M backend/tests/contracts/test_smb_collector.py
 ```
+
+The only entry, and it is the pre-existing unstaged formatting change that predates Phase 4B
+and that the last seven handoffs have also recorded. It was deliberately left unstaged here
+too: it belongs to no phase, and quietly absorbing it into this commit would make it
+somebody's, inaccurately. Nothing else in the tree belongs to this phase.
