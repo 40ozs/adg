@@ -171,6 +171,12 @@ table matches it.
   can — an `ntfs_resource` with its `ntfs_ace` entries, a `smb_share` with its `smb_ace`
   entries — so partial data is interpretable. The server does not require it.
 * **Mixed kinds are allowed** in one batch, and often natural: a resource plus its ACEs.
+* **Keep a directory's observations in one batch.** For `ntfs_resource`, this is stronger
+  than the "where you can" above. The server verifies a reported `acl_hash` against the
+  `ntfs_ace` observations that arrive with it, and *skips* the check when the batch holds
+  fewer than the declared `ace_count` — so a split silently disables the one check that
+  catches ACEs lost in transit. Let a batch run slightly over your target size rather than
+  cut a DACL, and never past the 1000 ceiling: a DACL that large is itself a finding.
 * **No duplicate `source_key` within a batch.** Two observations with the same key are
   indistinguishable; the payload is rejected rather than half-applied.
 * **`is_final`** is advisory. Only the completion envelope ends a run.
@@ -232,6 +238,15 @@ reconciling.
 
 Marking absent is not deletion: history is retained (Phase 7), and the object is recorded as
 no longer observed as of this run.
+
+**A scope must never claim more than the run read**, and the file-system scopes are where
+that bites. `directory_tree` claims the whole tree beneath a path was enumerated. A run that
+reads share *roots* and nothing else has enumerated no tree, so reconciling that scope would
+mark every directory under every root as deleted. Such a run therefore declares its
+`directory_tree` scopes - they state what it set out to look at, and a later full walk
+reconciles them - but marks itself `incremental`, which the server refuses to let reconcile
+at all. The NTFS collector shipped in Phase 3A does exactly this on every run, including a
+clean one.
 
 ---
 
@@ -410,3 +425,31 @@ Availability likewise has no field here. A share the collector could not read is
 as a `collectorError` on the completion envelope and leaves the run `partial`; a server it
 could not reach produces no `server` observation at all. Absence of an observation never
 means the object is gone - only a reconciled scope says that.
+
+### 1.2 (Phase 3A)
+
+`ntfs_resource` gains an optional `acl_hash`: the digest of the normalized DACL the collector
+read, specified in
+[`docs/architecture/ntfs-acl-normalization.md`](../architecture/ntfs-acl-normalization.md)
+and decided in [ADR-0008](../decisions/0008-acl-normal-form-and-hash.md). It is additive, so
+a `1.0` or `1.1` payload that omits it is still valid and every `1.x` server accepts both.
+
+It could not be derived from the ACEs alone, for the reason the field exists at all: the
+digest covers `dacl_present` and `dacl_protected` as well as the entries, and it is the
+collector's statement about the descriptor it held **in one piece**. The server recomputes it
+from the entries it stores and reports both, so a disagreement surfaces as the coverage gap
+it is rather than being settled by whichever number was written last.
+
+Three rules bind a collector that sends one:
+
+* compute it over the **whole** DACL, in the reading you are reporting;
+* **omit it entirely** if any entry could not be reported - an unclassifiable ACE type, a
+  trustee with no usable SID. A digest over part of a DACL is indistinguishable from a digest
+  of all of it, and comparing one to a parent's would answer the boundary question wrong
+  without ever looking wrong;
+* send the resource and its `ntfs_ace` observations in one batch (§5), so the server can
+  check it.
+
+A batch whose reported digest contradicts the entries sent with it is rejected with `422`,
+and nothing in it is stored. The error carries both digests and the normalized document the
+server hashed.

@@ -39,7 +39,11 @@
       "description": "The DACL differs from the parent's. A resource that blocks inheritance is by definition a boundary.",
       "type": "boolean"
     },
-    "depth_from_share_root": { "type": ["integer", "null"], "minimum": 0 }
+    "depth_from_share_root": { "type": ["integer", "null"], "minimum": 0 },
+    "acl_hash": {
+      "description": "Digest of the normalized DACL this resource carried when it was read, computed by the collector from the whole descriptor it had in hand. Optional and additive (contract 1.2). The server stores it as reported and independently recomputes the same digest from the ntfs_ace observations it holds; the two are reported separately so a disagreement is visible rather than resolved by fiat.",
+      "$ref": "common.schema.json#/$defs/aclHash"
+    }
   },
   "if": { "properties": { "dacl_present": { "const": false } }, "required": ["dacl_present"] },
   "then": { "properties": { "ace_count": { "const": 0 } } },
@@ -60,7 +64,8 @@
       "ace_count": 2,
       "inheritance_enabled": false,
       "is_acl_boundary": true,
-      "depth_from_share_root": 1
+      "depth_from_share_root": 1,
+      "acl_hash": "0f8c3a6beab25438144c1407be0c2d04467246a1db1234dbb877ccde449cbd57"
     }
   ]
 }

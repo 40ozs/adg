@@ -63,6 +63,12 @@
       "minimum": 0,
       "maximum": 255
     },
+    "aclHash": {
+      "title": "Normalized DACL digest",
+      "description": "SHA-256, lower-case hexadecimal, taken over the canonical normalized form of the DACL (docs/architecture/ntfs-acl-normalization.md). It covers dacl_present, dacl_protected, and the ACEs' trustee/type/mask/flags in evaluation order; it deliberately excludes the owner, because every folder under a root is legitimately owned by whoever created it while sharing one inherited DACL. Added in contract 1.2.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "aceType": {
       "description": "DACL entry type. Audit (SACL) entries govern logging, not access, and must never be reported here.",
       "type": "string",

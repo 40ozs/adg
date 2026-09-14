@@ -1,4 +1,4 @@
-"""Physical schema for principals, membership edges, SMB resources, and their provenance.
+"""Physical schema for principals, membership edges, SMB and NTFS resources, and provenance.
 
 This module is the single description of the tables; the Alembic revision under
 ``database/migrations/versions`` creates exactly what is declared here, and a smoke test
@@ -19,10 +19,10 @@ enums. A PostgreSQL ``enum`` type would make adding a value a migration with a l
 authoritative list already lives in :mod:`app.domain`.
 
 **Current state and provenance are separate tables.** ``principals``,
-``membership_edges``, ``servers``, ``smb_shares``, and ``smb_share_aces`` hold the latest
-known state of each object; ``observations`` holds one row per ``(run_id, source_key)``,
-which is what makes re-ingesting a batch a no-op and what keeps "which run saw this, and
-when" answerable before Phase 7 adds full history.
+``membership_edges``, ``servers``, ``smb_shares``, ``smb_share_aces``, ``ntfs_resources``,
+and ``ntfs_aces`` hold the latest known state of each object; ``observations`` holds one row
+per ``(run_id, source_key)``, which is what makes re-ingesting a batch a no-op and what
+keeps "which run saw this, and when" answerable before Phase 7 adds full history.
 
 **Resource tables carry no foreign keys to each other.** A share whose server no run has
 described, and an ACE whose share arrived in a later batch, are both real observations, and
@@ -57,6 +57,8 @@ from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 from app.contracts.v1.common import ObservationKind, ScopeKind
 from app.domain import (
+    ACL_HASH_LENGTH,
+    AceSource,
     AceType,
     GroupScope,
     GroupType,
@@ -87,6 +89,8 @@ __all__ = [
     "collector_sources",
     "membership_edges",
     "metadata",
+    "ntfs_aces",
+    "ntfs_resources",
     "observations",
     "principal_aliases",
     "principal_references",
@@ -127,6 +131,7 @@ class ReferenceKind(StrEnum):
     """
 
     SMB_ACE = "smb_ace"
+    NTFS_ACE = "ntfs_ace"
 
 
 def _enum_check(column: str, enum: type[StrEnum], *, nullable: bool = False) -> CheckConstraint:
@@ -549,6 +554,147 @@ smb_share_aces = Table(
     Index("ix_smb_share_aces_trustee_sid", "trustee_sid"),
     Index("ix_smb_share_aces_last_observed_run", "last_observed_run_id"),
     comment="Raw share-level ACEs, exactly as read. No effective access is derived here.",
+)
+
+
+ntfs_resources = Table(
+    "ntfs_resources",
+    metadata,
+    # DirectoryResource.identity_key: the case-folded canonical UNC path. A local path is
+    # not identity -- it names nothing without saying which server -- so it is recorded
+    # beside the key rather than as it.
+    Column("resource_key", String(KEY_LENGTH), primary_key=True),
+    # Case-preserving, for display. Comparison always goes through resource_key.
+    Column("path", Text, nullable=False),
+    Column("server_key", String(KEY_LENGTH), nullable=False),
+    # SmbShare.identity_key for the share this path sits under. This is the link that lets
+    # one share show its raw SMB ACL and the raw NTFS ACL of its root as two separate
+    # answers. No foreign key, for the reason every resource table here lacks one: an NTFS
+    # run can read a root before any SMB run has described the share publishing it, and
+    # that reading is still a fact.
+    Column("share_key", String(KEY_LENGTH), nullable=False),
+    Column("local_path", Text, nullable=True),
+    Column("owner_sid", String(200), nullable=True),
+    Column("group_sid", String(200), nullable=True),
+    # SE_DACL_PRESENT. false is a NULL DACL: everyone has full access, and it is always a
+    # finding. Not nullable and not defaulted, because "the collector did not say" must
+    # never read as "a DACL was present".
+    Column("dacl_present", Boolean, nullable=False),
+    # SE_DACL_PROTECTED: this object blocks inheritance from its parent.
+    Column("dacl_protected", Boolean, nullable=False),
+    Column("inheritance_enabled", Boolean, nullable=False),
+    Column("is_acl_boundary", Boolean, nullable=False),
+    # The descriptor's own count, kept separate from the number of ntfs_aces rows stored.
+    # A disagreement between the two means ACEs were lost in transit or never sent, which
+    # is exactly the silent under-reporting an audit tool has to surface.
+    Column("ace_count", Integer, nullable=False),
+    Column("depth_from_share_root", Integer, nullable=True),
+    # The collector's digest of the normalized DACL it read (contract 1.2). Stored as
+    # reported and never rewritten from the stored ACEs: the point of keeping it is that
+    # it can disagree with them.
+    Column("acl_hash", String(ACL_HASH_LENGTH), nullable=True),
+    Column("source_key", String(KEY_LENGTH), nullable=False),
+    _timestamp("first_observed_at"),
+    Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("last_observed_at"),
+    Column("last_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    CheckConstraint(
+        "dacl_present OR ace_count = 0", name="ck_ntfs_resources_null_dacl_has_no_aces"
+    ),
+    CheckConstraint(
+        "inheritance_enabled OR is_acl_boundary",
+        name="ck_ntfs_resources_blocked_inheritance_is_a_boundary",
+    ),
+    CheckConstraint("ace_count >= 0", name="ck_ntfs_resources_ace_count_non_negative"),
+    CheckConstraint(
+        "depth_from_share_root IS NULL OR depth_from_share_root >= 0",
+        name="ck_ntfs_resources_depth_non_negative",
+    ),
+    CheckConstraint(
+        f"acl_hash IS NULL OR acl_hash ~ '^[0-9a-f]{{{ACL_HASH_LENGTH}}}$'",
+        name="ck_ntfs_resources_acl_hash_shape",
+    ),
+    # Every directory under one share, and every one on one server, are the two ways this
+    # table is walked. The trailing key makes each index cover keyset paging as well.
+    Index("ix_ntfs_resources_share", "share_key", "resource_key"),
+    Index("ix_ntfs_resources_server", "server_key", "resource_key"),
+    # "Which directories carry this exact DACL" is what turns thousands of boundaries into
+    # the few dozen distinct permission decisions behind them.
+    Index("ix_ntfs_resources_acl_hash", "acl_hash"),
+    Index("ix_ntfs_resources_last_observed_run", "last_observed_run_id"),
+    comment="Directories whose NTFS security descriptor ADG has read, keyed by UNC path.",
+)
+
+
+ntfs_aces = Table(
+    "ntfs_aces",
+    metadata,
+    # NtfsAce.identity_key(resource_key): '<resource>|<trustee>|<type>|<mask>|<flags>'.
+    # The flags byte is part of it because it is part of the grant; order_index is not,
+    # for the same reason it is absent from a share ACE key.
+    Column("ace_key", String(KEY_LENGTH), primary_key=True),
+    Column("resource_key", String(KEY_LENGTH), nullable=False),
+    Column("trustee_sid", String(200), nullable=False),
+    # referenced_principal_key(trustee_sid, server): host-scoped for a BUILTIN SID, global
+    # for every other. Whether the principal is known stays a join against principals.
+    Column("trustee_key", String(KEY_LENGTH), nullable=False),
+    Column("ace_type", Text, nullable=False),
+    # bigint: 0xFFFFFFFF overflows PostgreSQL's signed integer to -1.
+    Column("access_mask", BigInteger, nullable=False),
+    # The raw ACE_HEADER.AceFlags byte, unknown bits included. Inheritance and propagation
+    # are deliberately not split into columns: they are one byte in the descriptor, and
+    # splitting them would make a round trip lossy for any bit Windows adds later.
+    Column("ace_flags", Integer, nullable=False),
+    # Redundant with bit 0x10 of ace_flags, and stored anyway: "which entries were set on
+    # this folder" is what an administrator asks when deciding where to make a fix, and it
+    # must not depend on remembering a bit position.
+    Column("source", Text, nullable=False),
+    # The ancestor Windows named as the origin, when it named one. Not a foreign key: the
+    # ancestor may sit above everything this run was permitted to read.
+    Column("inherited_from", Text, nullable=True),
+    # Position in the DACL as read. Recorded because evaluation order is what makes a Deny
+    # meaningful, but not part of identity.
+    Column("order_index", Integer, nullable=True),
+    Column("source_key", String(KEY_LENGTH), nullable=False),
+    _timestamp("first_observed_at"),
+    Column("first_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("last_observed_at"),
+    Column("last_observed_run_id", PgUUID(as_uuid=True), nullable=False),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    _enum_check("ace_type", AceType),
+    _enum_check("source", AceSource),
+    CheckConstraint(
+        f"access_mask >= 0 AND access_mask <= {MAX_ACCESS_MASK_VALUE}",
+        name="ck_ntfs_aces_access_mask_range",
+    ),
+    CheckConstraint("ace_flags >= 0 AND ace_flags <= 255", name="ck_ntfs_aces_ace_flags_range"),
+    # The INHERITED bit and the source column are two spellings of one fact; letting them
+    # disagree would make "where do I fix this" answer differently depending on which one
+    # a query happened to read.
+    CheckConstraint(
+        "((ace_flags & 16) <> 0) = (source = 'inherited')",
+        name="ck_ntfs_aces_source_matches_inherited_bit",
+    ),
+    CheckConstraint(
+        "inherited_from IS NULL OR source = 'inherited'",
+        name="ck_ntfs_aces_origin_only_when_inherited",
+    ),
+    CheckConstraint(
+        "order_index IS NULL OR order_index >= 0", name="ck_ntfs_aces_order_index_non_negative"
+    ),
+    CheckConstraint(
+        "strpos(ace_key, resource_key || '|') = 1", name="ck_ntfs_aces_key_scoped_by_resource"
+    ),
+    # Reading one directory's DACL, and finding every directory that names one trustee,
+    # are the two questions this table exists to answer. Both get a covering index.
+    Index("ix_ntfs_aces_resource", "resource_key", "ace_key"),
+    Index("ix_ntfs_aces_trustee", "trustee_key", "resource_key"),
+    Index("ix_ntfs_aces_trustee_sid", "trustee_sid"),
+    Index("ix_ntfs_aces_last_observed_run", "last_observed_run_id"),
+    comment="Raw NTFS ACEs, exactly as read. No inheritance is resolved and no Deny applied.",
 )
 
 

@@ -21,6 +21,7 @@ restates them for collector authors, and a test pins the two together.
 from __future__ import annotations
 
 from app.domain import (
+    AceFlag,
     AceType,
     MembershipEdge,
     MembershipEdgeKind,
@@ -31,7 +32,11 @@ from app.domain import (
     SmbShare,
     parse_unc_path,
 )
-from app.domain.access import share_ace_identity_key, share_ace_right_token
+from app.domain.access import (
+    ntfs_ace_identity_key,
+    share_ace_identity_key,
+    share_ace_right_token,
+)
 
 
 def principal_key(sid: Sid, kind: PrincipalKind, host_key: str | None = None) -> str:
@@ -129,8 +134,16 @@ def ntfs_ace_key(
     Order index is deliberately absent: two ACEs identical in trustee, type, mask, and
     flags are duplicates of one another, and an ACL edit that reorders entries must not
     look like every ACE being deleted and recreated.
+
+    Formatted by :func:`app.domain.access.ntfs_ace_identity_key`, which is also what
+    :meth:`app.domain.NtfsAce.identity_key` and therefore the stored ``ace_key`` use — so
+    the key a collector sends and the row it identifies cannot drift apart.
     """
-    resource = parse_unc_path(path).comparison_key
-    return (
-        f"ntfs_ace|{resource}|{trustee_sid.value}|{ace_type}|0x{access_mask:08x}|0x{ace_flags:02x}"
+    ace = ntfs_ace_identity_key(
+        resource_key=parse_unc_path(path).comparison_key,
+        trustee_sid=trustee_sid,
+        ace_type=AceType(ace_type),
+        access_mask=access_mask,
+        flags=AceFlag(ace_flags),
     )
+    return f"ntfs_ace|{ace}"

@@ -1,9 +1,12 @@
-r"""Planning the SMB half of a batch: keys, trustee scoping, and what is still refused.
+r"""Planning the SMB half of a batch: keys, trustee scoping, and what the endpoint stores.
 
 No database here, for the same reason as `test_plan.py`: that a stored key equals the key
-the contract derived, that a BUILTIN trustee is scoped to the server whose ACL named it, and
-that an NTFS payload is still rejected rather than dropped, are all properties of the
-translation.
+the contract derived, and that a BUILTIN trustee is scoped to the server whose ACL named it,
+are properties of the translation.
+
+The NTFS half is exercised in `test_plan_ntfs.py`; what is checked here is that adding it
+did not quietly change what the SMB half produces, and that the guard which once refused
+NTFS payloads now accepts them without having stopped guarding.
 """
 
 from __future__ import annotations
@@ -20,8 +23,9 @@ from app.contracts.v1 import (
     SmbShareObservation,
     keys,
 )
+from app.contracts.v1.common import ObservationKind
 from app.domain import AceType, SharePermission, Sid
-from app.ingestion import UnsupportedObservationKind, plan_batch
+from app.ingestion import SUPPORTED_KINDS, UnsupportedObservationKind, plan_batch
 from app.models.schema import ReferenceKind
 from tests.fixtures import load_raw
 
@@ -254,29 +258,36 @@ class TestProvenance:
         assert plan.observation_count == 3
 
 
-class TestWhatIsStillRefused:
-    def test_the_smb_kinds_are_no_longer_rejected(self) -> None:
+class TestWhatTheEndpointStores:
+    def test_the_smb_kinds_are_planned(self) -> None:
         plan = plan_batch(batch(server(), share(), ace()))
         assert (len(plan.servers), len(plan.shares), len(plan.share_aces)) == (1, 1, 1)
 
-    def test_an_ntfs_payload_is_still_refused(self) -> None:
+    def test_an_ntfs_payload_is_no_longer_refused(self) -> None:
+        # Phase 3A. Until it shipped this raised UnsupportedObservationKind, which was the
+        # right answer then: telling a collector "accepted" about an observation that was
+        # dropped would have reported coverage ADG did not have.
         full = ObservationBatch.model_validate(load_raw("10-smb-more-restrictive")["batches"][0])
 
+        plan = plan_batch(full)
+
+        assert plan.ntfs_resources, "an ntfs_resource in the batch must become a row"
+        assert plan.ntfs_aces, "an ntfs_ace in the batch must become a row"
+
+    def test_every_contract_kind_is_supported(self) -> None:
+        # The two sets are compared rather than the list being restated: a kind added to the
+        # contract and forgotten here must fail this test, not be silently discarded.
+        assert {kind.value for kind in ObservationKind} == set(SUPPORTED_KINDS)
+
+    def test_a_kind_outside_the_supported_set_is_still_refused_by_name(self) -> None:
+        # Nothing in contract v1 reaches this path any more, so the guard is exercised
+        # directly: it is the thing that must keep an unstorable kind from being dropped
+        # when contract v2 adds one.
         with pytest.raises(UnsupportedObservationKind) as caught:
-            plan_batch(full)
+            raise UnsupportedObservationKind(["registry_key"])
 
-        assert set(caught.value.kinds) == {"ntfs_resource", "ntfs_ace"}
-        assert "smb_share" not in caught.value.kinds
-        assert "later phase" in str(caught.value)
-
-    def test_the_rejection_lists_what_the_endpoint_does_store(self) -> None:
-        # A collector author reading the 422 needs to know what to send instead.
-        with pytest.raises(UnsupportedObservationKind) as caught:
-            plan_batch(
-                ObservationBatch.model_validate(load_raw("01-direct-user-grant")["batches"][0])
-            )
-
-        for kind in ("server", "smb_share", "smb_ace", "principal", "membership_edge"):
+        assert caught.value.kinds == ("registry_key",)
+        for kind in ("server", "smb_share", "smb_ace", "ntfs_resource", "ntfs_ace"):
             assert kind in str(caught.value)
 
 

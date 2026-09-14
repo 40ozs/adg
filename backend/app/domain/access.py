@@ -248,6 +248,46 @@ class NtfsAce:
     def is_inheritable(self) -> bool:
         return bool(self.flags & (AceFlag.OBJECT_INHERIT | AceFlag.CONTAINER_INHERIT))
 
+    @property
+    def layer(self) -> AclLayer:
+        return AclLayer.NTFS
+
+    def identity_key(self, resource_key: str) -> str:
+        """See :func:`ntfs_ace_identity_key`. ``resource_key`` is the path comparison key."""
+        return ntfs_ace_identity_key(
+            resource_key, self.trustee_sid, self.ace_type, self.access_mask, self.flags
+        )
+
+
+def ntfs_ace_identity_key(
+    resource_key: str,
+    trustee_sid: Sid,
+    ace_type: AceType,
+    access_mask: int,
+    flags: AceFlag | int,
+) -> str:
+    """Uniqueness of an NTFS ACE: one row per (resource, trustee, type, mask, flags).
+
+    The flags byte is part of the identity because it is part of the grant: the same
+    trustee, type, and mask carrying ``ObjectInherit`` and carrying ``ContainerInherit``
+    are two different entries, applying to different children. ``inherited_from`` is not
+    part of it — that is Windows's account of where an entry came from, not what it grants.
+
+    ``order_index`` is deliberately absent, exactly as it is from a share ACE
+    (:func:`share_ace_identity_key`): two entries identical in trustee, type, mask, and
+    flags are duplicates of one another, and an administrator reordering a DACL must not
+    look like every entry being deleted and recreated. The order is still recorded — on the
+    ACE, and in the ACL hash, where a reordering shows up as the change it is.
+
+    This is the only implementation of the format. :meth:`NtfsAce.identity_key` and the
+    contract's ``ntfs_ace`` source key both call it, so a stored ACE and the key its
+    collector sent cannot come to describe different entries.
+    """
+    return (
+        f"{resource_key.casefold()}|{trustee_sid.value}|{ace_type.value}"
+        f"|0x{_validate_access_mask(access_mask):08x}|0x{int(flags):02x}"
+    )
+
 
 def share_ace_right_token(access_mask: int | None, permission: SharePermission | None) -> str:
     """The granted right, rendered in whichever form the source reported it.

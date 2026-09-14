@@ -33,8 +33,13 @@ from app.domain import (
     UnresolvedReason,
 )
 
-SCHEMA_VERSION: Final = "1.0"
-"""Current contract version. Minor bumps are additive; a breaking change means v2."""
+SCHEMA_VERSION: Final = "1.2"
+"""Current contract version. Minor bumps are additive; a breaking change means v2.
+
+Only a default for payloads this codebase constructs. Every ``1.x`` is accepted on the
+wire, which is what makes an additive bump additive: a collector still sending ``1.0`` is
+correct, it simply omits the fields later minors added.
+"""
 
 SCHEMA_VERSION_PATTERN: Final = re.compile(r"^1\.[0-9]+$")
 

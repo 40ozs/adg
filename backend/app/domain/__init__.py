@@ -23,6 +23,19 @@ from app.domain.access import (
     SecurityDescriptorFacts,
     SharePermission,
     SmbShareAce,
+    ntfs_ace_identity_key,
+    share_ace_identity_key,
+    share_ace_right_token,
+)
+from app.domain.acl_hash import (
+    ACL_HASH_ALGORITHM,
+    ACL_HASH_LENGTH,
+    ACL_NORMAL_FORM_VERSION,
+    AclAceFacts,
+    NormalizedAcl,
+    acl_hash,
+    is_acl_hash,
+    normalize_acl,
 )
 from app.domain.errors import DomainError, DomainValidationError
 from app.domain.graph import (
@@ -90,6 +103,9 @@ from app.domain.resources import (
 )
 
 __all__ = [
+    "ACL_HASH_ALGORITHM",
+    "ACL_HASH_LENGTH",
+    "ACL_NORMAL_FORM_VERSION",
     "DEFAULT_LIMITS",
     "FULL_CONTROL_MASK",
     "GENERIC_RIGHT_BITS",
@@ -104,6 +120,7 @@ __all__ = [
     "AceFlag",
     "AceSource",
     "AceType",
+    "AclAceFacts",
     "AclLayer",
     "AdjacencyProvider",
     "CollectorKind",
@@ -125,6 +142,7 @@ __all__ = [
     "MembershipEdge",
     "MembershipEdgeKind",
     "MembershipPath",
+    "NormalizedAcl",
     "NtfsAce",
     "NtfsRight",
     "Observation",
@@ -150,12 +168,18 @@ __all__ = [
     "UnresolvedReason",
     "User",
     "WellKnownPrincipal",
+    "acl_hash",
     "expand",
     "find_cycles",
     "find_paths",
+    "is_acl_hash",
+    "normalize_acl",
+    "ntfs_ace_identity_key",
     "parse_local_path",
     "parse_share_identifier",
     "parse_unc_path",
     "parse_windows_path",
     "referenced_principal_key",
+    "share_ace_identity_key",
+    "share_ace_right_token",
 ]

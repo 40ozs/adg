@@ -84,6 +84,12 @@ if ($AsJson) { $arguments += '--json' }
 if ($Strict) { $arguments += '--strict' }
 if ($Quiet) { $arguments += '--quiet' }
 
+# The report renders arrows and box characters, and a Windows console is usually cp1252,
+# which cannot encode them: without this the tool dies in print() with a UnicodeEncodeError
+# and reports nothing at all about the payloads it was asked to check.
+$previousEncoding = $env:PYTHONIOENCODING
+$env:PYTHONIOENCODING = 'utf-8'
+
 Push-Location $backend
 try {
     & $venvPython @arguments
@@ -91,6 +97,7 @@ try {
 }
 finally {
     Pop-Location
+    $env:PYTHONIOENCODING = $previousEncoding
 }
 
 exit $exitCode

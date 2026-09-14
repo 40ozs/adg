@@ -15,7 +15,8 @@ tool that let a late-arriving old scan resurrect a deleted group would report ac
 no longer exists.
 
 **Nothing is ever marked absent.** There is no delete path in this module — no share, no
-share ACE, no principal is ever removed because a run did not mention it. A failed scan, a
+ACE of either layer, no directory, no principal is ever removed because a run did not
+mention it. A failed scan, a
 server that was rebooted mid-enumeration, and an ACL the collector lacked rights to read all
 produce *fewer observations*, not evidence of removal, and an audit tool that deleted on
 that basis would report access as revoked while it is still in force. Reconciled scopes are
@@ -41,6 +42,8 @@ from app.ingestion.plan import BatchPlan, plan_batch, source_fingerprint
 from app.models.schema import (
     collector_sources,
     membership_edges,
+    ntfs_aces,
+    ntfs_resources,
     observations,
     principal_aliases,
     principal_references,
@@ -151,6 +154,41 @@ _SHARE_ACE_MUTABLE: Final[tuple[str, ...]] = (
     "source_key",
 )
 
+# resource_key is fixed by the path, which is the identity; everything else about a
+# directory's descriptor can change without the directory becoming a different one.
+_NTFS_RESOURCE_MUTABLE: Final[tuple[str, ...]] = (
+    "path",
+    "server_key",
+    "share_key",
+    "local_path",
+    "owner_sid",
+    "group_sid",
+    "dacl_present",
+    "dacl_protected",
+    "inheritance_enabled",
+    "is_acl_boundary",
+    "ace_count",
+    "depth_from_share_root",
+    "acl_hash",
+    "source_key",
+)
+
+# Trustee, type, mask, and flags are all fixed by the identity key. order_index and
+# inherited_from are not: an administrator can reorder a DACL, and the ancestor an entry
+# was inherited from changes when inheritance is re-established higher up.
+_NTFS_ACE_MUTABLE: Final[tuple[str, ...]] = (
+    "resource_key",
+    "trustee_sid",
+    "trustee_key",
+    "ace_type",
+    "access_mask",
+    "ace_flags",
+    "source",
+    "inherited_from",
+    "order_index",
+    "source_key",
+)
+
 _REFERENCE_MUTABLE: Final[tuple[str, ...]] = ("sid", "host_key")
 
 
@@ -180,6 +218,8 @@ class BatchOutcome:
     servers_written: int = 0
     shares_written: int = 0
     share_aces_written: int = 0
+    ntfs_resources_written: int = 0
+    ntfs_aces_written: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -401,6 +441,12 @@ class IngestionService:
         await self._write_servers(plan, now)
         await self._write_shares(plan, now)
         await self._write_share_aces(plan, now)
+        await self._write_ntfs_resources(plan, now)
+        await self._write_ntfs_aces(plan, now)
+        # Called here rather than from one ACL writer: a batch carrying only NTFS entries
+        # produces references too, and hanging this off the share-ACE path would silently
+        # drop them.
+        await self._write_references(plan, now)
         await self._write_observations(plan, now)
 
         await session.execute(
@@ -425,6 +471,8 @@ class IngestionService:
             servers_written=len(plan.servers),
             shares_written=len(plan.shares),
             share_aces_written=len(plan.share_aces),
+            ntfs_resources_written=len(plan.ntfs_resources),
+            ntfs_aces_written=len(plan.ntfs_aces),
         )
 
     async def _write_principals(self, plan: BatchPlan, now: dt.datetime) -> None:
@@ -636,7 +684,79 @@ class IngestionService:
                 set_=_newest_wins(statement, smb_share_aces, _SHARE_ACE_MUTABLE, now),
             )
         )
-        await self._write_references(plan, now)
+
+    async def _write_ntfs_resources(self, plan: BatchPlan, now: dt.datetime) -> None:
+        if not plan.ntfs_resources:
+            return
+        rows = [
+            {
+                "resource_key": row.resource_key,
+                "path": row.path,
+                "server_key": row.server_key,
+                "share_key": row.share_key,
+                "local_path": row.local_path,
+                "owner_sid": row.owner_sid,
+                "group_sid": row.group_sid,
+                "dacl_present": row.dacl_present,
+                "dacl_protected": row.dacl_protected,
+                "inheritance_enabled": row.inheritance_enabled,
+                "is_acl_boundary": row.is_acl_boundary,
+                "ace_count": row.ace_count,
+                "depth_from_share_root": row.depth_from_share_root,
+                "acl_hash": row.acl_hash,
+                "source_key": row.source_key,
+                "first_observed_at": row.observed_at,
+                "first_observed_run_id": row.run_id,
+                "last_observed_at": row.observed_at,
+                "last_observed_run_id": row.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for row in plan.ntfs_resources
+        ]
+        statement = pg_insert(ntfs_resources).values(rows)
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[ntfs_resources.c.resource_key],
+                set_=_newest_wins(statement, ntfs_resources, _NTFS_RESOURCE_MUTABLE, now),
+            )
+        )
+
+    async def _write_ntfs_aces(self, plan: BatchPlan, now: dt.datetime) -> None:
+        if not plan.ntfs_aces:
+            return
+        rows = [
+            {
+                "ace_key": row.ace_key,
+                "resource_key": row.resource_key,
+                "trustee_sid": row.trustee_sid,
+                "trustee_key": row.trustee_key,
+                "ace_type": row.ace_type,
+                "access_mask": row.access_mask,
+                "ace_flags": row.ace_flags,
+                "source": row.source,
+                "inherited_from": row.inherited_from,
+                "order_index": row.order_index,
+                "source_key": row.source_key,
+                "first_observed_at": row.observed_at,
+                "first_observed_run_id": row.run_id,
+                "last_observed_at": row.observed_at,
+                "last_observed_run_id": row.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for row in plan.ntfs_aces
+        ]
+        statement = pg_insert(ntfs_aces).values(rows)
+        # No delete path, exactly as for a share ACE. An entry removed from a DACL between
+        # runs is a change Phase 7 detects from a reconciled scope; deleting on sight would
+        # let a single unreadable directory erase every grant ADG had recorded for it.
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[ntfs_aces.c.ace_key],
+                set_=_newest_wins(statement, ntfs_aces, _NTFS_ACE_MUTABLE, now),
+            )
+        )
 
     async def _write_references(self, plan: BatchPlan, now: dt.datetime) -> None:
         if not plan.references:

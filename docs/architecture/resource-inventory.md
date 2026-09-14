@@ -1,9 +1,17 @@
-# Resource inventory: servers, shares, and raw share ACLs
+# Resource inventory: servers, shares, directories, and their raw ACLs
 
-How ADG stores what a share scan observed, and what the resource APIs will and will not
-claim. The membership half of the picture is in
+How ADG stores what a share scan and a file-system scan observed, and what the resource APIs
+will and will not claim. The membership half of the picture is in
 [membership-graph.md](membership-graph.md); the domain types are in
-[permission-domain-model.md](permission-domain-model.md).
+[permission-domain-model.md](permission-domain-model.md); the DACL digest is specified in
+[ntfs-acl-normalization.md](ntfs-acl-normalization.md).
+
+**The two authorization layers never merge here.** Remote access over SMB is limited by the
+share ACL *and* the NTFS ACL; access at the console, or from a service on the box, is limited
+only by the NTFS one. They are separate observations, separate tables, and separate routes,
+so an auditor can see which layer is doing the restricting. Combining them is effective
+access - a different claim, computed by the Phase 4 engine and reported as its own
+representation.
 
 ## What a resource is
 
@@ -14,6 +22,8 @@ Three things, each identified by the string the domain layer produces for it.
 | Server | `fs01` | `Server.identity_key` — the case-folded name it was collected under |
 | Share | `fs01\|finance` | `SmbShare.identity_key` — server plus share name, case-folded |
 | Share ACE | `fs01\|finance\|S-1-1-0\|allow\|read` | `SmbShareAce.identity_key(share_key)` |
+| Directory | `\\fs01\finance` | `DirectoryResource.identity_key` - the case-folded canonical UNC path |
+| NTFS ACE | `\\fs01\finance\|S-1-1-0\|allow\|0x001301bf\|0x03` | `NtfsAce.identity_key(resource_key)` |
 
 A **share is a publication of a directory, not the directory**. Two shares can point at one
 path with different ACLs, and a share can be re-pointed without the directory changing, so
@@ -31,6 +41,15 @@ observations.** `Get-SmbShareAccess` can only say `change`; a security descripto
 level as a mask would claim precision the level never had. Reconciling the two is the Phase 4
 rights algebra's job ([rights-model.md](rights-model.md)).
 
+A **directory is identified by its canonical UNC path**, case-folded. A local path such as
+`D:\Shares\Finance` names nothing on its own - it does not say which server - so it is
+recorded beside the key rather than used as one. An **NTFS ACE** is keyed by trustee, type,
+mask, and the raw flags byte: the same trustee and mask carrying `ObjectInherit` and carrying
+`ContainerInherit` are two different entries, applying to different children. `order_index`
+is recorded and is not part of the key, exactly as for a share ACE - but a reordered *ACL* is
+reported as changed, because `acl_hash` covers evaluation order
+([ADR-0008](../decisions/0008-acl-normal-form-and-hash.md)).
+
 ## What is derived, never stored
 
 | Value | Derived from |
@@ -39,6 +58,10 @@ rights algebra's job ([rights-model.md](rights-model.md)).
 | `is_hidden` | the share name ending in `$` |
 | `is_administrative` | `ADMIN$`, `IPC$`, or a drive-letter share |
 | `carries_file_permissions` | the share type being `disk` |
+| `is_share_root` | the directory's path having no segments below the share |
+| `grants_everyone_full_access` | `dacl_present` being false - a NULL DACL |
+| `denies_everyone` | a DACL that is present and empty |
+| an NTFS entry's `rights` list | the raw `access_mask`, through `NtfsRight` |
 | a trustee's resolution | a left join against `principals` |
 
 A stored copy of a derived value is a second version of the truth that can disagree with the
@@ -59,6 +82,32 @@ Revision `0003_smb_resources` adds four, declared in `backend/app/models/schema.
 | `smb_share_aces` | `ace_key` | Raw share-level ACEs, exactly as read |
 | `principal_references` | `(principal_key, reference_kind, reference_key)` | Which resources name which principals |
 
+Revision `0004_ntfs_resources` adds two more, and widens `principal_references`'
+`reference_kind` to include `ntfs_ace`.
+
+| Table | Key | Holds |
+| --- | --- | --- |
+| `ntfs_resources` | `resource_key` | Directories whose security descriptor ADG has read |
+| `ntfs_aces` | `ace_key` | Raw NTFS ACEs, exactly as read |
+
+`ntfs_resources.share_key` is the link between the layers: it is the `SmbShare.identity_key`
+of the share the path sits under, derived from the path itself rather than from anything a
+collector says about it. With it, one share reports its raw SMB ACL and the raw NTFS ACL of
+its root as two separate answers.
+
+Three columns on `ntfs_resources` exist because the ACE list alone is ambiguous:
+
+- **`dacl_present`** - `false` is a NULL DACL, which grants *everyone* full access. A
+  present-but-empty DACL grants *nobody* access. Both arrive as zero entries and they are
+  opposite facts, so the column is not nullable and has no default: "the collector did not
+  say" must never be readable as "a DACL was present".
+- **`dacl_protected` / `inheritance_enabled`** - `SE_DACL_PROTECTED`: the directory refuses
+  inherited entries, which is by definition a place where permissions change. A check
+  constraint holds that consistent with `is_acl_boundary`.
+- **`ace_count`** - what the descriptor said, kept separate from how many `ntfs_aces` rows
+  exist. A shortfall means entries were read and never stored, and the API reports both
+  numbers rather than reconciling them away.
+
 **There are no foreign keys between them.** A batch may arrive in any order, and an ACL read
 from a machine no run has described as a server is still a fact. Rejecting it would discard
 evidence at exactly the moment a partial scan most needs to record what it did manage to
@@ -70,8 +119,9 @@ PostgreSQL's signed `integer` — it would land as `-1`, which is a different ma
 
 ## Trustee keys
 
-A share ACL is read **on a machine**, so the trustee it names is interpreted in that
-machine's context. Exactly one class of SID needs that context:
+An ACL - of either layer - is read **on a machine**, so the trustee it names is interpreted
+in that machine's context. For an NTFS ACE the machine is the server in the resource's own
+UNC path. Exactly one class of SID needs that context:
 
 - a **BUILTIN SID** (`S-1-5-32-*`) is byte-identical on every Windows computer, so
   `S-1-5-32-544` on FS01 is stored as `fs01|S-1-5-32-544`;
@@ -109,12 +159,25 @@ All under `/api/v1`, all read-only.
 | `GET /servers/{server}` | One server, with provenance |
 | `GET /servers/{server}/shares` | Shares published by one server |
 | `GET /shares/{share}` | One share, its server, and its ACE count |
-| `GET /shares/{share}/acl` | That share's raw ACL, in DACL order |
+| `GET /shares/{share}/acl` | That share's raw **share-level** ACL, in DACL order |
+| `GET /shares/{share}/root-acl` | The raw **NTFS** ACL of the directory that share publishes |
+| `GET /resources/{path}` | One directory's descriptor facts and inheritance state |
+| `GET /resources/{path}/acl` | That directory's raw NTFS ACL, in evaluation order |
 | `GET /principals/{trustee}/shares` | Shares whose ACL names a SID |
 
-**Raw facts are labelled raw.** The ACL responses carry `kind: "raw_smb_acl"`. Effective
-access needs the NTFS layer and the membership graph together and will arrive as its own
-representation on its own route; a client must not be able to mistake one for the other.
+**Raw facts are labelled raw.** Each ACL response carries a `kind` - `raw_smb_acl` or
+`raw_ntfs_acl` - so a client cannot mistake one layer for the other, or either for an access
+decision. Effective access needs both layers and the membership graph together, and will
+arrive as its own representation on its own route.
+
+`/shares/{share}/acl` and `/shares/{share}/root-acl` are deliberately two routes rather than
+one merged answer. A single response could not express that a share granting Full Control
+sits over a directory granting Read - which is exactly what an auditor needs to see.
+
+A share whose NTFS root no run has read reports `root_resource: null`, and asking for its
+root ACL is a 404 saying so. Null means *nobody has looked*, never *nothing restricts it*:
+the two layers are collected by independent runs, and reporting the second would invent
+access.
 
 ### Naming a share
 
@@ -134,6 +197,13 @@ One spelling a URL cannot carry: `//fs01/finance`. A percent-encoded `/` is deco
 routing, so it can never be a single path segment. The domain parser accepts it; send the
 backslash form or the key.
 
+### Naming a directory
+
+A directory is named by its full UNC path (`\\FS01\Finance`, percent-encoded), in the same
+spellings `parse_unc_path` canonicalizes. A share **key** is refused here rather than
+converted: `fs01|finance` names a share, and a share and the directory it publishes have
+different ACLs. `/shares/{share}/root-acl` is the route that goes from one to the other.
+
 ### Naming a trustee
 
 A bare SID asks about the SID wherever it appears; a host-scoped key (`fs02|S-1-5-32-544`)
@@ -148,7 +218,12 @@ Keyset for servers, shares, and trustee references — all are index-ordered lis
 change while they are paged, and a skipped share is a missed finding. **Offset** for a share
 ACL, because DACL order is the answer's content: keyset paging would need a unique monotonic
 key and would force the entries into alphabetical `ace_key` order, which means nothing.
-An ACL is a handful of entries, so the trade the listings make does not apply.
+An ACL is a handful of entries, so the trade the listings make does not apply. The same holds
+for an NTFS ACL, where evaluation order is what makes a Deny meaningful.
+
+`acl_hash.computed` is taken over the **whole** DACL regardless of paging. A digest over a
+page is not a digest of the ACL, and two clients paging differently must not end up
+disagreeing about one directory.
 
 Cursors are endpoint-specific; a foreign or malformed one is a 422, because silently
 restarting at page one would make a client's second page look like a complete result set.

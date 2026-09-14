@@ -143,7 +143,7 @@ Identity and membership graph (see
 > and what they cost, measured — is in
 > [`docs/architecture/ad-graph-validation.md`](docs/architecture/ad-graph-validation.md).
 
-Resources and raw share ACLs (see
+Resources and raw ACLs, share layer and file-system layer (see
 [`docs/architecture/resource-inventory.md`](docs/architecture/resource-inventory.md)):
 
 | Endpoint | Purpose |
@@ -152,13 +152,21 @@ Resources and raw share ACLs (see
 | `GET /api/v1/servers/{server}` | One server, with provenance. |
 | `GET /api/v1/servers/{server}/shares` | Shares published by one server, keyset-paginated. |
 | `GET /api/v1/shares/{share}` | One share by key (`fs01\|finance`) or UNC path, with its server and ACE count. |
-| `GET /api/v1/shares/{share}/acl` | That share's ACL in DACL order, trustees resolved where known. |
+| `GET /api/v1/shares/{share}/acl` | That share's **share-level** ACL in DACL order, trustees resolved where known. |
+| `GET /api/v1/shares/{share}/root-acl` | The raw **NTFS** ACL of the directory that share publishes. |
+| `GET /api/v1/resources/{path}` | One directory's descriptor facts: owner, NULL-DACL state, inheritance, boundary. |
+| `GET /api/v1/resources/{path}/acl` | That directory's NTFS ACL in evaluation order, with the ACL digest. |
 | `GET /api/v1/principals/{sid}/shares` | Shares whose ACL names a SID. |
 
-> The ACL responses carry `kind: "raw_smb_acl"`. **These are observed share-layer facts, not
-> effective access** — that additionally requires the NTFS layer and group expansion, and
-> arrives as its own representation. A trustee with `resolved: false` is an orphaned SID on
-> a live ACL, which is a finding rather than an error.
+> Each ACL response carries a `kind` — `raw_smb_acl` or `raw_ntfs_acl`. **These are observed
+> facts of one layer, not effective access** — that requires *both* layers plus group
+> expansion, and arrives as its own representation. A trustee with `resolved: false` is an
+> orphaned SID on a live ACL, which is a finding rather than an error.
+>
+> The two layers are separate routes on purpose. Remote access over SMB is limited by the
+> share ACL **and** the NTFS ACL; access at the console is limited only by the second. A
+> share whose NTFS root nothing has read reports `root_resource: null` — *nobody has looked*,
+> never *nothing restricts it*.
 
 The web application's **System status** page (`http://localhost:3000/status`) renders the
 same information from the browser's point of view.

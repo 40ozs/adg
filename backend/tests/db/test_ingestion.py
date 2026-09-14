@@ -267,12 +267,14 @@ class TestBatchIdempotency:
         assert values == ["Finance-Team", "Finance-Team-Renamed"]
 
 
-class TestUnsupportedKinds:
-    async def test_a_batch_with_an_ntfs_observation_is_rejected_not_silently_dropped(
+class TestEveryContractKind:
+    async def test_a_verbatim_transcript_is_accepted_whole(
         self, client: AsyncClient, session: AsyncSession
     ) -> None:
-        # The SMB kinds are stored now; the two NTFS kinds are what is still unstorable, and
-        # the whole batch is refused rather than partly applied.
+        # Until Phase 3A this batch was refused for carrying the two NTFS kinds, which was
+        # right then: telling a collector "accepted" about observations that were dropped
+        # would have reported coverage ADG did not have. Now every kind is stored, so a
+        # published transcript replays exactly as a collector would send it - no subsetting.
         from tests.fixtures import load_raw
         from tests.support.ingest import with_run_id
 
@@ -284,14 +286,9 @@ class TestUnsupportedKinds:
             json=document["batches"][0],
         )
 
-        assert response.status_code == 422
-        detail = response.json()["detail"]
-        assert "later phase" in detail["message"]
-        assert "ntfs_resource" in detail["message"]
-        # Nothing at all was written: a partially applied batch would be worse than a
-        # rejected one, because the collector would believe the whole batch landed.
-        assert await count(session, principals) == 0
-        assert await count(session, scan_run_batches) == 0
+        assert response.status_code == 202, response.text
+        assert response.json()["applied"] == len(document["batches"][0]["observations"])
+        assert await count(session, scan_run_batches) == 1
 
 
 class TestCompletion:

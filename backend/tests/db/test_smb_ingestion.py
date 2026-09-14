@@ -134,9 +134,9 @@ class TestStoringOneScan:
         for name in ("01-direct-user-grant", "06-unresolved-sid", "11-ntfs-more-restrictive"):
             await replay(client, storable_document(name))
 
-    async def test_an_ntfs_payload_is_still_refused_with_a_useful_message(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_a_batch_carrying_both_layers_is_accepted(self, client: AsyncClient) -> None:
+        # Phase 3A. A combined run reads a share and the directory it publishes in one pass,
+        # and the two layers travel together naturally; nothing merges them on arrival.
         document = with_run_id(load_raw("10-smb-more-restrictive"))
         run_id = document["start"]["run_id"]
         assert (await client.post("/api/v1/scan-runs", json=document["start"])).status_code == 201
@@ -145,10 +145,9 @@ class TestStoringOneScan:
             f"/api/v1/scan-runs/{run_id}/batches", json=document["batches"][0]
         )
 
-        assert response.status_code == 422
-        detail = response.text
-        assert "ntfs_resource" in detail and "ntfs_ace" in detail
-        assert "smb_share" in detail, "the message must say what it does accept"
+        assert response.status_code == 202, response.text
+        kinds = {item["kind"] for item in document["batches"][0]["observations"]}
+        assert {"smb_ace", "ntfs_ace"} <= kinds, "the fixture must exercise both layers"
 
 
 class TestReplay:

@@ -21,7 +21,14 @@ import pytest
 
 from app.validation import Severity, validate_documents
 from app.validation.__main__ import EXIT_FINDINGS, EXIT_OK, EXIT_USAGE, main
-from app.validation.collector_output import iter_codes, load_documents, validate_paths
+from app.validation.collector_output import (
+    Report,
+    _check_unsupported_kinds,
+    _Parsed,
+    iter_codes,
+    load_documents,
+    validate_paths,
+)
 from tests.fixtures import (
     AD_GRAPH_DIR,
     SCENARIO_DIR,
@@ -256,10 +263,25 @@ class TestEnvelopeChecks:
 
         assert "run_never_completed" in codes([document])
 
-    def test_an_observation_kind_this_phase_cannot_store_is_an_error(self) -> None:
+    def test_a_transcript_of_storable_kinds_raises_nothing(self) -> None:
+        # Every contract v1 kind is stored as of Phase 3A, so a published scenario - which
+        # carries all seven - must validate clean. Until this phase it did not, and the
+        # finding it raised named the very kinds it had just listed as supported.
         document = json.loads((SCENARIO_DIR / "01-direct-user-grant.json").read_text("utf-8"))
 
-        assert "unstorable_observation_kind" in codes([document])
+        assert "unstorable_observation_kind" not in codes([document])
+
+    def test_an_observation_kind_ingestion_cannot_store_is_an_error(self) -> None:
+        # Raised by hand: nothing in contract v1 reaches this path any more, and the check
+        # has to keep working for whichever kind a later contract adds ahead of its
+        # ingestion support.
+        report = Report()
+        parsed = _Parsed()
+        parsed.other_kinds["registry_key"] = 3
+        _check_unsupported_kinds(parsed, report)
+
+        assert [finding.code for finding in report.findings] == ["unstorable_observation_kind"]
+        assert "registry_key" in report.findings[0].message
 
     def test_a_run_reconciling_an_undeclared_scope_is_an_error(self) -> None:
         document = minimal([principal(corp(1), "user", display_name="A")])

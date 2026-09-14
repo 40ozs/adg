@@ -24,7 +24,7 @@
     "note": "A cyclic graph still yields a complete answer. The cycles are reported as strongly connected components with a concrete loop to break."
   },
   "start": {
-    "schema_version": "1.0",
+    "schema_version": "1.2",
     "run_id": "00000000-0000-4000-8000-000000000a02",
     "source": {
       "collector": "active_directory",
@@ -44,14 +44,14 @@
   },
   "batches": [
     {
-      "schema_version": "1.0",
+      "schema_version": "1.2",
       "run_id": "00000000-0000-4000-8000-000000000a02",
       "batch_id": "00000000-0000-4000-8000-100000000001",
       "sequence": 1,
       "is_final": true,
       "observations": [
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:01Z",
@@ -66,7 +66,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:02Z",
@@ -81,7 +81,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:03Z",
@@ -96,7 +96,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:04Z",
@@ -111,7 +111,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:05Z",
@@ -126,7 +126,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:06Z",
@@ -141,7 +141,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:07Z",
@@ -156,7 +156,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:08Z",
@@ -168,7 +168,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:09Z",
@@ -180,7 +180,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:10Z",
@@ -192,7 +192,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:11Z",
@@ -204,7 +204,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:12Z",
@@ -216,7 +216,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:13Z",
@@ -228,7 +228,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:14Z",
@@ -240,7 +240,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a02",
           "observed_at": "2026-09-14T09:00:15Z",
@@ -255,7 +255,7 @@
     }
   ],
   "completion": {
-    "schema_version": "1.0",
+    "schema_version": "1.2",
     "run_id": "00000000-0000-4000-8000-000000000a02",
     "status": "succeeded",
     "completed_at": "2026-09-14T09:10:00Z",

@@ -23,7 +23,7 @@
     "note": "A disabled account is still a member and must still be returned; whether that matters is the reviewer's judgment, not the traversal's. An account whose enabled state was never reported is null, not false. An empty group expands to nothing and is complete."
   },
   "start": {
-    "schema_version": "1.0",
+    "schema_version": "1.2",
     "run_id": "00000000-0000-4000-8000-000000000a07",
     "source": {
       "collector": "active_directory",
@@ -43,14 +43,14 @@
   },
   "batches": [
     {
-      "schema_version": "1.0",
+      "schema_version": "1.2",
       "run_id": "00000000-0000-4000-8000-000000000a07",
       "batch_id": "00000000-0000-4000-8000-100000000001",
       "sequence": 1,
       "is_final": true,
       "observations": [
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:01Z",
@@ -65,7 +65,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:02Z",
@@ -80,7 +80,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:03Z",
@@ -95,7 +95,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:04Z",
@@ -107,7 +107,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:05Z",
@@ -122,7 +122,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:06Z",
@@ -137,7 +137,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:07Z",
@@ -152,7 +152,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:08Z",
@@ -164,7 +164,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:09Z",
@@ -176,7 +176,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:10Z",
@@ -188,7 +188,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:11Z",
@@ -200,7 +200,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a07",
           "observed_at": "2026-09-14T09:00:12Z",
@@ -215,7 +215,7 @@
     }
   ],
   "completion": {
-    "schema_version": "1.0",
+    "schema_version": "1.2",
     "run_id": "00000000-0000-4000-8000-000000000a07",
     "status": "succeeded",
     "completed_at": "2026-09-14T09:10:00Z",

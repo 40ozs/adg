@@ -11,8 +11,17 @@ never in Docker — because collection requires domain context and Windows APIs.
 Collectors are read-only and report observations. They contain no authorization or business
 logic: effective-access semantics live in the backend (`backend/app/access_engine`).
 
+- `powershell/ad/` — Active Directory principals and membership (Phase 1A).
 - `powershell/smb/` — SMB shares and raw share-level ACLs (Phase 2A). See its
   [README](powershell/smb/README.md) for the privileges, firewall rules, and remote-management
   prerequisites collection needs.
+- `powershell/ntfs/` — the NTFS security descriptors of share roots (Phase 3A). See its
+  [README](powershell/ntfs/README.md) for the privileges it needs and, just as importantly,
+  the ones it refuses to acquire.
+
+The share layer and the file-system layer are collected **separately and never merged**.
+Remote access over SMB is limited by both ACLs; access at the console is limited only by the
+NTFS one. Combining them is the backend's job, and it is a different claim — effective
+access — reported on its own route.
 
 Run the PowerShell collector suites with `.\scripts\collector-test.ps1`.

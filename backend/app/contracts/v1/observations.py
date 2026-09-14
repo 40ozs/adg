@@ -34,6 +34,8 @@ from app.contracts.v1.common import (
     normalize_host,
 )
 from app.domain import (
+    ACL_HASH_ALGORITHM,
+    ACL_HASH_LENGTH,
     AceFlag,
     ComputerIdentity,
     DirectoryResource,
@@ -52,6 +54,7 @@ from app.domain import (
     UnresolvedPrincipal,
     User,
     WellKnownPrincipal,
+    is_acl_hash,
     parse_local_path,
     parse_unc_path,
 )
@@ -411,6 +414,14 @@ class NtfsResourceObservation(ObservationBase):
     inheritance_enabled: bool = True
     is_acl_boundary: bool = False
     depth_from_share_root: int | None = Field(default=None, ge=0)
+    acl_hash: str | None = Field(
+        default=None,
+        description=(
+            "Digest of the normalized DACL as the collector read it. Added in contract "
+            "1.2. None means the collector did not compute one, which is not the same as "
+            "an empty ACL."
+        ),
+    )
 
     @field_validator("path")
     @classmethod
@@ -438,6 +449,20 @@ class NtfsResourceObservation(ObservationBase):
     def _canonical_sids(cls, value: str | None) -> str | None:
         return None if value is None else canonical_sid(value)
 
+    @field_validator("acl_hash")
+    @classmethod
+    def _validate_acl_hash(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        folded = value.strip().lower()
+        if not is_acl_hash(folded):
+            raise ValueError(
+                f"acl_hash must be {ACL_HASH_LENGTH} hexadecimal characters of "
+                f"{ACL_HASH_ALGORITHM} over the normalized DACL; received {value!r}. See "
+                "docs/architecture/ntfs-acl-normalization.md for the normal form."
+            )
+        return folded
+
     @model_validator(mode="after")
     def _check_consistency(self) -> Self:
         if not self.dacl_present and self.ace_count:
@@ -450,6 +475,23 @@ class NtfsResourceObservation(ObservationBase):
             raise ValueError(
                 "A resource that blocks inheritance is by definition an ACL boundary; "
                 "recording otherwise would hide where permissions change."
+            )
+        # server_name and share_name are conveniences; the path is the identity. Letting
+        # them disagree would attach a directory to a share it is not inside, and the link
+        # between the NTFS layer and the share layer is exactly what those names feed.
+        path = parse_unc_path(self.path)
+        if self.server_name and self.server_name.casefold() != path.server.casefold():
+            raise ValueError(
+                f"server_name {self.server_name!r} contradicts the path {path.value!r}, "
+                f"which names {path.server!r}. The path identifies the resource; omit "
+                "server_name rather than restating it differently."
+            )
+        if self.share_name and self.share_name.casefold() != path.share.casefold():
+            raise ValueError(
+                f"share_name {self.share_name!r} contradicts the path {path.value!r}, "
+                f"which names {path.share!r}. A directory belongs to the share in its own "
+                "path; attaching it to another would report one share's NTFS root under "
+                "another share's name."
             )
         self.check_source_key()
         return self
@@ -539,6 +581,12 @@ class NtfsAceObservation(ObservationBase):
     @property
     def resource_key(self) -> str:
         return keys.ntfs_resource_key(self.path)
+
+    @property
+    def unc_path(self) -> UncPath:
+        """The resource this entry was read from. Its server is what host-scopes a BUILTIN
+        trustee: the descriptor lives on that machine."""
+        return parse_unc_path(self.path)
 
     def to_domain(self) -> NtfsAce:
         return NtfsAce(

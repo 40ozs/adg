@@ -12,7 +12,7 @@
     "note": "Replay a04b next; nothing keyed on the SID may change."
   },
   "start": {
-    "schema_version": "1.0",
+    "schema_version": "1.2",
     "run_id": "00000000-0000-4000-8000-00000000a04a",
     "source": {
       "collector": "active_directory",
@@ -32,14 +32,14 @@
   },
   "batches": [
     {
-      "schema_version": "1.0",
+      "schema_version": "1.2",
       "run_id": "00000000-0000-4000-8000-00000000a04a",
       "batch_id": "00000000-0000-4000-8000-100000000001",
       "sequence": 1,
       "is_final": true,
       "observations": [
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-00000000a04a",
           "observed_at": "2026-09-14T09:00:01Z",
@@ -54,7 +54,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-00000000a04a",
           "observed_at": "2026-09-14T09:00:02Z",
@@ -69,7 +69,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.0",
+          "schema_version": "1.2",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-00000000a04a",
           "observed_at": "2026-09-14T09:00:03Z",
@@ -84,7 +84,7 @@
     }
   ],
   "completion": {
-    "schema_version": "1.0",
+    "schema_version": "1.2",
     "run_id": "00000000-0000-4000-8000-00000000a04a",
     "status": "succeeded",
     "completed_at": "2026-09-14T09:10:00Z",

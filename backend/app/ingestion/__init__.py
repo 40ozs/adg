@@ -21,9 +21,13 @@ here and nowhere else:
 from __future__ import annotations
 
 from app.ingestion.plan import (
+    SUPPORTED_KINDS,
+    AclHashMismatch,
     AliasRow,
     BatchPlan,
     EdgeRow,
+    NtfsAceRow,
+    NtfsResourceRow,
     ObservationRow,
     PrincipalRow,
     UnsupportedObservationKind,
@@ -32,9 +36,13 @@ from app.ingestion.plan import (
 )
 
 __all__ = [
+    "SUPPORTED_KINDS",
+    "AclHashMismatch",
     "AliasRow",
     "BatchPlan",
     "EdgeRow",
+    "NtfsAceRow",
+    "NtfsResourceRow",
     "ObservationRow",
     "PrincipalRow",
     "UnsupportedObservationKind",

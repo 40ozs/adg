@@ -1,0 +1,32 @@
+{
+  "$comment": [
+    "ADG NTFS collector targets. Copy to adg-ntfs-targets.json and edit.",
+    "This file holds NO credentials. Collection runs as the identity of the process - a group",
+    "managed service account in production - so that no password exists to store or leak.",
+    "Share roots are explicit: ADG never sweeps an estate it was not pointed at. Generate this",
+    "list from ADG's own share inventory (GET /api/v1/servers/{server}/shares) rather than by",
+    "probing, and keep it under change control alongside the rest of your configuration."
+  ],
+
+  "shareRoots": [
+    "\\\\FS01\\Finance",
+    "\\\\FS01\\Projects",
+    "\\\\FS02\\Departments"
+  ],
+
+  "$comment_roots": [
+    "Share roots only in this phase. A path inside a share - \\\\FS01\\Finance\\Reports - is",
+    "refused, because whether its DACL differs from its parent's cannot be established",
+    "without reading the ancestors, and a guessed boundary would mislead the recursive scan",
+    "that follows."
+  ],
+
+  "retryCount": 1,
+  "retryDelaySeconds": 2,
+
+  "$comment_batchSize": "Observations per batch. The contract's ceiling is 1000. A directory's resource observation and all of its ACEs always travel in one batch, so a batch may exceed this slightly rather than split a DACL - the server can only verify a reported acl_hash against a complete one.",
+  "batchSize": 500,
+
+  "$comment_reportUnresolvedPrincipals": "Emit a principal observation for every trustee SID that did not resolve to a name. Leave it on: an orphaned SID on a folder ACL is one of the findings this tool exists to produce, and the backend cannot infer it from the ACE alone.",
+  "reportUnresolvedPrincipals": true
+}

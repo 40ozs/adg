@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
+from collections import Counter
 
 import pytest
 
@@ -213,26 +214,36 @@ class TestRejection:
     @pytest.mark.parametrize(
         "scenario_name", ["08-inherited-ace", "10-smb-more-restrictive", "11-ntfs-more-restrictive"]
     )
-    def test_a_batch_carrying_an_unstorable_kind_is_refused(self, scenario_name: str) -> None:
+    def test_every_observation_in_a_scenario_is_planned(self, scenario_name: str) -> None:
+        # These three batches used to be refused for carrying NTFS kinds. Phase 3A stores
+        # them, so the property worth pinning is the stronger one: nothing in a published
+        # scenario is dropped, and the row count matches the observation count kind by kind.
         scenario = load_scenario(scenario_name)
         full = ObservationBatch.model_validate(load_raw(scenario_name)["batches"][0])
 
-        with pytest.raises(UnsupportedObservationKind) as caught:
-            plan_batch(full)
+        plan = plan_batch(full)
 
-        assert caught.value.kinds
-        assert set(caught.value.kinds) <= {item.kind for item in scenario.observations}, (
-            "the error must name only kinds that were actually sent"
-        )
-        assert "later phase" in str(caught.value)
+        sent = Counter(item.kind for item in scenario.observations)
+        planned = {
+            "principal": len(plan.principals),
+            "membership_edge": len(plan.edges),
+            "server": len(plan.servers),
+            "smb_share": len(plan.shares),
+            "smb_ace": len(plan.share_aces),
+            "ntfs_resource": len(plan.ntfs_resources),
+            "ntfs_ace": len(plan.ntfs_aces),
+        }
+        for kind, count in sent.items():
+            assert planned[kind] == count, f"{kind} observations were sent but not planned"
+        assert plan.observation_count == len(scenario.observations)
 
     def test_the_rejection_names_every_offending_kind(self) -> None:
-        document = load_raw("10-smb-more-restrictive")
-        full = ObservationBatch.model_validate(document["batches"][0])
-
+        # Raised directly: no contract v1 kind reaches this path any more, and the guard has
+        # to keep working for whichever kind a later contract adds.
         with pytest.raises(UnsupportedObservationKind) as caught:
-            plan_batch(full)
+            raise UnsupportedObservationKind(["registry_key", "scheduled_task"])
 
+        assert caught.value.kinds == ("registry_key", "scheduled_task")
         assert "principal" not in caught.value.kinds
         assert "membership_edge" not in caught.value.kinds
 

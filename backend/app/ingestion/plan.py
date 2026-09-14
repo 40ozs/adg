@@ -7,22 +7,32 @@ string. That is not style: the contract's ``source_key`` derivations in
 keys the same way is what guarantees the two can never drift into describing different
 objects.
 
-Phase 1B stored the two AD observation kinds; Phase 2B adds ``server``, ``smb_share``, and
-``smb_ace``. The two NTFS kinds are valid contract payloads that this endpoint cannot yet
-persist, and they are **rejected with an actionable error** rather than accepted and
-dropped: a collector told "accepted" about an observation that was discarded would report
-coverage ADG does not have.
+Phase 1B stored the two AD observation kinds; Phase 2B added ``server``, ``smb_share``, and
+``smb_ace``; Phase 3A adds ``ntfs_resource`` and ``ntfs_ace``, which completes contract v1 —
+every kind a collector may send is now stored. The rejection path survives anyway, because
+a kind accepted and quietly dropped would tell a collector it has coverage ADG does not
+have, and that must stay impossible as the contract grows.
 
-Two rules govern the SMB rows specifically:
+Three rules govern the ACL rows, share-layer and file-system layer alike:
 
 * **A trustee SID becomes a principal key here, not at query time.** The rule — host-scope
   a BUILTIN SID, leave every other SID global — lives in
   :func:`app.domain.referenced_principal_key`, which is also what a membership edge uses,
-  so an ACE and a local-group edge naming the same trustee land on the same key.
+  so an ACE and a local-group edge naming the same trustee land on the same key. For an
+  NTFS ACE the scoping host is the server in the resource's own UNC path: the descriptor
+  was read there, so ``S-1-5-32-544`` on it means *that* machine's Administrators.
 * **Nothing records whether that principal is known.** Resolution is a join against
   ``principals`` at query time. A stored "resolved" flag would be right only until the next
   AD run described the SID, and an audit tool reporting a resolved account as an orphan is
   as wrong as the reverse.
+* **A reported ``acl_hash`` is checked when — and only when — the evidence to check it is
+  in hand.** A resource's digest covers the whole DACL the collector read. If this batch
+  also carries exactly ``ace_count`` ``ntfs_ace`` observations for that path, the same
+  normalizer is run over them and a disagreement is a 422 naming both digests: the
+  collector's own two statements about one descriptor contradict each other, and accepting
+  them would store an ACL nobody ever saw. If the ACEs are split across batches the check
+  is skipped rather than guessed at — a partial view must not be able to manufacture a
+  mismatch.
 """
 
 from __future__ import annotations
@@ -36,6 +46,8 @@ from uuid import UUID
 
 from app.contracts.v1 import (
     MembershipObservation,
+    NtfsAceObservation,
+    NtfsResourceObservation,
     ObservationBatch,
     PrincipalObservation,
     ServerObservation,
@@ -45,11 +57,14 @@ from app.contracts.v1 import (
 )
 from app.contracts.v1.common import ObservationKind
 from app.domain import (
+    AclAceFacts,
+    DirectoryResource,
     DomainValidationError,
     GroupScope,
     GroupType,
     LocalGroup,
     MembershipEdge,
+    NtfsAce,
     Principal,
     PrincipalKind,
     Server,
@@ -57,6 +72,7 @@ from app.domain import (
     SmbShare,
     SmbShareAce,
     UnresolvedPrincipal,
+    normalize_acl,
     referenced_principal_key,
 )
 from app.models.schema import AliasKind, ReferenceKind
@@ -68,15 +84,25 @@ SUPPORTED_KINDS: Final[frozenset[str]] = frozenset(
         ObservationKind.SERVER.value,
         ObservationKind.SMB_SHARE.value,
         ObservationKind.SMB_ACE.value,
+        ObservationKind.NTFS_RESOURCE.value,
+        ObservationKind.NTFS_ACE.value,
     }
 )
-"""What this phase can persist. The two NTFS kinds arrive with the file-system phase."""
+"""What this endpoint can persist: every kind in contract v1, as of Phase 3A.
+
+The guard that consults this set is deliberately kept even though nothing currently fails
+it. A kind added to the contract and not to this set must be refused loudly rather than
+silently discarded, and that property has to hold by construction, not by remembering.
+"""
 
 __all__ = [
     "SUPPORTED_KINDS",
+    "AclHashMismatch",
     "AliasRow",
     "BatchPlan",
     "EdgeRow",
+    "NtfsAceRow",
+    "NtfsResourceRow",
     "ObservationRow",
     "PrincipalReferenceRow",
     "PrincipalRow",
@@ -90,7 +116,7 @@ __all__ = [
 
 
 class UnsupportedObservationKind(DomainValidationError):
-    """A batch carried an observation kind this phase cannot store.
+    """A batch carried an observation kind this endpoint cannot store.
 
     Carries the offending kinds so the API can name them in a 422 rather than failing with
     "invalid payload", which would tell a collector author nothing.
@@ -108,6 +134,32 @@ class UnsupportedObservationKind(DomainValidationError):
             "observation was stored when it was not.",
             value=listed,
             field="observations",
+        )
+
+
+class AclHashMismatch(DomainValidationError):
+    """A resource's reported ``acl_hash`` disagrees with the ACEs sent alongside it.
+
+    Both statements came from the same collector about the same descriptor, so one of them
+    is wrong and there is no way to tell which. Storing either would record an ACL that was
+    never read, so the batch is refused with both digests and the normalized document, which
+    is the only thing that makes the disagreement diagnosable.
+    """
+
+    def __init__(self, path: str, reported: str, computed: str, normal_form: str) -> None:
+        self.path = path
+        self.reported = reported
+        self.computed = computed
+        self.normal_form = normal_form
+        super().__init__(
+            f"The ntfs_resource for {path} reported acl_hash {reported}, but the "
+            f"ntfs_ace observations sent with it normalize to {computed}. The digest covers "
+            "the whole DACL the collector read, and this batch carries exactly the "
+            "ace_count it claimed, so the two cannot both describe that descriptor. "
+            "Re-read the path and send one consistent view. The normalized form the server "
+            f"hashed was:\n{normal_form}",
+            value=reported,
+            field="acl_hash",
         )
 
 
@@ -224,6 +276,58 @@ class ShareAceRow:
 
 
 @dataclass(frozen=True, slots=True)
+class NtfsResourceRow:
+    """One row of ``ntfs_resources``: a directory and its descriptor-level facts.
+
+    No UNC path field beyond ``path`` and no ``is_share_root``: the second is an exact
+    function of the first (:attr:`app.domain.UncPath.is_share_root`), and a stored copy of a
+    derived value is a second version of the truth that can disagree with it.
+    """
+
+    resource_key: str
+    path: str
+    server_key: str
+    share_key: str
+    local_path: str | None
+    owner_sid: str | None
+    group_sid: str | None
+    dacl_present: bool
+    dacl_protected: bool
+    inheritance_enabled: bool
+    is_acl_boundary: bool
+    ace_count: int
+    depth_from_share_root: int | None
+    acl_hash: str | None
+    source_key: str
+    observed_at: dt.datetime
+    run_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class NtfsAceRow:
+    """One row of ``ntfs_aces``: a file-system ACE exactly as the descriptor stored it.
+
+    ``ace_flags`` is the raw header byte rather than a set of decoded booleans. Windows
+    stores one byte; decoding it into columns would drop any bit a later release defines,
+    and a dropped bit is a grant nobody can see.
+    """
+
+    ace_key: str
+    resource_key: str
+    trustee_sid: str
+    trustee_key: str
+    ace_type: str
+    access_mask: int
+    ace_flags: int
+    source: str
+    inherited_from: str | None
+    order_index: int | None
+    source_key: str
+    observed_at: dt.datetime
+    run_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
 class PrincipalReferenceRow:
     """One row of ``principal_references``: a resource named this principal.
 
@@ -267,6 +371,8 @@ class BatchPlan:
     servers: tuple[ServerRow, ...]
     shares: tuple[ShareRow, ...]
     share_aces: tuple[ShareAceRow, ...]
+    ntfs_resources: tuple[NtfsResourceRow, ...]
+    ntfs_aces: tuple[NtfsAceRow, ...]
     references: tuple[PrincipalReferenceRow, ...]
     observations: tuple[ObservationRow, ...]
 
@@ -300,7 +406,9 @@ def plan_batch(batch: ObservationBatch) -> BatchPlan:
     """Convert a validated batch into the rows it will write.
 
     Raises:
-        UnsupportedObservationKind: if the batch carries a kind this phase cannot store.
+        UnsupportedObservationKind: if the batch carries a kind this endpoint cannot store.
+        AclHashMismatch: if a resource's reported ``acl_hash`` contradicts the ACEs sent
+            with it in the same batch.
         DomainValidationError: if an observation is internally inconsistent in a way the
             domain layer rejects. The contract models catch most of this at parse time;
             this is the backstop.
@@ -322,8 +430,13 @@ def plan_batch(batch: ObservationBatch) -> BatchPlan:
     servers: dict[str, ServerRow] = {}
     shares: dict[str, ShareRow] = {}
     share_aces: dict[str, ShareAceRow] = {}
+    ntfs_resources: dict[str, NtfsResourceRow] = {}
+    ntfs_aces: dict[str, NtfsAceRow] = {}
     references: dict[tuple[str, str, str], PrincipalReferenceRow] = {}
     observations: list[ObservationRow] = []
+    # Kept separately from the deduplicated rows: the hash check has to see the batch as it
+    # was sent, so that two ACEs the identity key would fold into one still count as two.
+    acl_evidence: dict[str, list[AclAceFacts]] = {}
 
     for observation in batch.observations:
         if isinstance(observation, PrincipalObservation):
@@ -380,6 +493,48 @@ def plan_batch(batch: ObservationBatch) -> BatchPlan:
             ):
                 references[reference_id] = reference
             subject_key = ace_row.ace_key
+        elif isinstance(observation, NtfsResourceObservation):
+            resource_row = _ntfs_resource_row(observation, run_id)
+            previous_resource = ntfs_resources.get(resource_row.resource_key)
+            if (
+                previous_resource is None
+                or resource_row.observed_at >= previous_resource.observed_at
+            ):
+                ntfs_resources[resource_row.resource_key] = resource_row
+            subject_key = resource_row.resource_key
+        elif isinstance(observation, NtfsAceObservation):
+            ntfs_ace_row = _ntfs_ace_row(observation, run_id)
+            previous_ntfs_ace = ntfs_aces.get(ntfs_ace_row.ace_key)
+            if (
+                previous_ntfs_ace is None
+                or ntfs_ace_row.observed_at >= previous_ntfs_ace.observed_at
+            ):
+                ntfs_aces[ntfs_ace_row.ace_key] = ntfs_ace_row
+            acl_evidence.setdefault(ntfs_ace_row.resource_key, []).append(
+                AclAceFacts(
+                    trustee_sid=ntfs_ace_row.trustee_sid,
+                    ace_type=observation.ace_type,
+                    access_mask=ntfs_ace_row.access_mask,
+                    ace_flags=ntfs_ace_row.ace_flags,
+                    order_index=ntfs_ace_row.order_index,
+                )
+            )
+            # One reference row per (principal, directory), however many entries on that
+            # directory name the trustee: three ACEs for one group is still one group that
+            # the directory's DACL mentions.
+            ntfs_reference = _ntfs_reference_row(ntfs_ace_row, observation.unc_path.server, run_id)
+            ntfs_reference_id = (
+                ntfs_reference.principal_key,
+                ntfs_reference.reference_kind,
+                ntfs_reference.reference_key,
+            )
+            previous_ntfs_reference = references.get(ntfs_reference_id)
+            if (
+                previous_ntfs_reference is None
+                or ntfs_reference.observed_at >= previous_ntfs_reference.observed_at
+            ):
+                references[ntfs_reference_id] = ntfs_reference
+            subject_key = ntfs_ace_row.ace_key
         else:  # pragma: no cover - SUPPORTED_KINDS already excluded everything else
             raise UnsupportedObservationKind([observation.kind])
 
@@ -393,6 +548,8 @@ def plan_batch(batch: ObservationBatch) -> BatchPlan:
                 subject_key=subject_key,
             )
         )
+
+    _verify_acl_hashes(ntfs_resources.values(), acl_evidence)
 
     return BatchPlan(
         run_id=run_id,
@@ -411,6 +568,8 @@ def plan_batch(batch: ObservationBatch) -> BatchPlan:
         servers=tuple(sorted(servers.values(), key=lambda item: item.server_key)),
         shares=tuple(sorted(shares.values(), key=lambda item: item.share_key)),
         share_aces=tuple(sorted(share_aces.values(), key=lambda item: item.ace_key)),
+        ntfs_resources=tuple(sorted(ntfs_resources.values(), key=lambda item: item.resource_key)),
+        ntfs_aces=tuple(sorted(ntfs_aces.values(), key=lambda item: item.ace_key)),
         references=tuple(
             sorted(
                 references.values(),
@@ -581,3 +740,102 @@ def _reference_row(ace: ShareAceRow, server_name: str, run_id: UUID) -> Principa
         observed_at=ace.observed_at,
         run_id=run_id,
     )
+
+
+def _ntfs_resource_row(observation: NtfsResourceObservation, run_id: UUID) -> NtfsResourceRow:
+    resource: DirectoryResource = observation.to_domain()
+    facts = observation.to_descriptor_facts()
+    path = resource.path
+    return NtfsResourceRow(
+        resource_key=resource.identity_key,
+        # The path as observed, case preserved; comparison always goes through the key.
+        path=path.value,
+        # Both taken from the path rather than from the observation's optional server_name
+        # and share_name. The path is the identity, so deriving the parents from it is what
+        # makes them incapable of disagreeing with the row they describe.
+        server_key=path.server.casefold(),
+        share_key=f"{path.server.casefold()}|{path.share.casefold()}",
+        local_path=resource.local_path.value if resource.local_path else None,
+        owner_sid=facts.owner_sid.value if facts.owner_sid else None,
+        group_sid=facts.group_sid.value if facts.group_sid else None,
+        dacl_present=facts.dacl_present,
+        dacl_protected=facts.dacl_protected,
+        inheritance_enabled=resource.inheritance_enabled,
+        is_acl_boundary=resource.is_acl_boundary,
+        # The descriptor's own count, not len(the ACEs in this batch). They can differ, and
+        # when they do that is the finding: entries were read and never arrived.
+        ace_count=facts.ace_count,
+        depth_from_share_root=resource.depth_from_share_root,
+        acl_hash=observation.acl_hash,
+        source_key=observation.source_key,
+        observed_at=observation.observed_at,
+        run_id=run_id,
+    )
+
+
+def _ntfs_ace_row(observation: NtfsAceObservation, run_id: UUID) -> NtfsAceRow:
+    ace: NtfsAce = observation.to_domain()
+    resource_key = observation.unc_path.comparison_key
+    return NtfsAceRow(
+        ace_key=ace.identity_key(resource_key),
+        resource_key=resource_key,
+        trustee_sid=ace.trustee_sid.value,
+        # The descriptor was read on the server in this path, so a BUILTIN trustee means
+        # *that* machine's local group. Every other SID keeps its global key — the same
+        # rule, and the same function, a share ACE and a local-group edge use.
+        trustee_key=referenced_principal_key(ace.trustee_sid, observation.unc_path.server),
+        ace_type=ace.ace_type.value,
+        access_mask=ace.access_mask,
+        ace_flags=int(ace.flags),
+        source=ace.source.value,
+        inherited_from=ace.inherited_from,
+        order_index=ace.order_index,
+        source_key=observation.source_key,
+        observed_at=observation.observed_at,
+        run_id=run_id,
+    )
+
+
+def _ntfs_reference_row(ace: NtfsAceRow, server_name: str, run_id: UUID) -> PrincipalReferenceRow:
+    return PrincipalReferenceRow(
+        principal_key=ace.trustee_key,
+        sid=ace.trustee_sid,
+        host_key=server_name.casefold() if Sid(ace.trustee_sid).is_builtin else None,
+        reference_kind=ReferenceKind.NTFS_ACE.value,
+        reference_key=ace.resource_key,
+        observed_at=ace.observed_at,
+        run_id=run_id,
+    )
+
+
+def _verify_acl_hashes(
+    resources: Iterable[NtfsResourceRow], evidence: dict[str, list[AclAceFacts]]
+) -> None:
+    """Check each reported ``acl_hash`` against the ACEs that arrived with it.
+
+    Only when this batch carries exactly the ``ace_count`` the resource claimed. Anything
+    less is a partial view of the DACL, and a partial view normalizes to a different
+    document by construction — treating that as a mismatch would reject a collector that
+    did nothing wrong but split its batches.
+
+    Raises:
+        AclHashMismatch: when both statements are complete and they disagree.
+    """
+    for resource in resources:
+        if resource.acl_hash is None:
+            continue
+        aces = evidence.get(resource.resource_key, [])
+        if len(aces) != resource.ace_count:
+            continue
+        normalized = normalize_acl(
+            dacl_present=resource.dacl_present,
+            dacl_protected=resource.dacl_protected,
+            aces=aces,
+        )
+        if normalized.digest != resource.acl_hash:
+            raise AclHashMismatch(
+                path=resource.path,
+                reported=resource.acl_hash,
+                computed=normalized.digest,
+                normal_form=normalized.text,
+            )

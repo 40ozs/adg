@@ -1,15 +1,17 @@
 """Replaying canonical scan-run transcripts through the ingestion API.
 
-Phase 0B's fixtures are complete transcripts covering all seven observation kinds. The
-ingestion endpoint stores five of them — the AD pair plus the three SMB kinds — so replaying
-a fixture verbatim is still rejected, correctly, since the endpoint refuses to acknowledge
-observations it cannot persist.
+Phase 0B's fixtures are complete transcripts covering all seven observation kinds, and
+since Phase 3A the ingestion endpoint stores every one of them — so a fixture can now be
+replayed verbatim.
 
-These helpers therefore send a chosen subset of a transcript and adjust the completion's
-counts to what was actually sent, so a run's reported coverage still matches its
-observations. They deliberately go through HTTP rather than calling the service: the status
-codes are part of the collector contract, and a test that bypassed them would not be testing
-the contract.
+The subsetting helpers remain, because a subset is still what several tests want: a scenario
+reduced to its AD half exercises the membership graph without any resource rows, and one
+reduced to the share layer shows what a share-only estate looks like before the file-system
+scan has run. They adjust the completion's counts to what was actually sent, so a run's
+reported coverage still matches its observations.
+
+They deliberately go through HTTP rather than calling the service: the status codes are part
+of the collector contract, and a test that bypassed them would not be testing the contract.
 """
 
 from __future__ import annotations
@@ -24,7 +26,10 @@ from tests.fixtures import Scenario, load_raw
 
 AD_KINDS = frozenset({"principal", "membership_edge"})
 SMB_KINDS = frozenset({"server", "smb_share", "smb_ace"})
-STORABLE_KINDS = AD_KINDS | SMB_KINDS
+NTFS_KINDS = frozenset({"ntfs_resource", "ntfs_ace"})
+STORABLE_KINDS = AD_KINDS | SMB_KINDS | NTFS_KINDS
+"""Every contract v1 kind, as of Phase 3A. Kept as a union rather than a literal set so
+that dropping a kind from one of the three groups cannot silently shrink it."""
 
 
 def of_kinds(document: dict[str, Any], kinds: frozenset[str]) -> dict[str, Any]:
@@ -52,11 +57,21 @@ def ad_only(document: dict[str, Any]) -> dict[str, Any]:
     return of_kinds(document, AD_KINDS)
 
 
+def smb_only(document: dict[str, Any]) -> dict[str, Any]:
+    """A transcript reduced to the share layer and the principals its ACLs name.
+
+    What a share-only estate looks like: the NTFS side of every resource is simply unknown,
+    which is what an API asked about it must say rather than reporting open access.
+    """
+    return of_kinds(document, AD_KINDS | SMB_KINDS)
+
+
 def storable(document: dict[str, Any]) -> dict[str, Any]:
     """A transcript reduced to everything the ingestion endpoint can persist.
 
-    The two NTFS kinds are dropped, so this is what a Phase 2B collector may legitimately
-    send today; the file-system phase relaxes it to the whole transcript.
+    Since Phase 3A that is the whole transcript. The reduction is kept rather than inlined
+    so that a kind added to the contract and not to the endpoint is dropped here - and the
+    tests that use this helper keep passing - instead of failing every unrelated test.
     """
     return of_kinds(document, STORABLE_KINDS)
 
@@ -108,6 +123,13 @@ async def ingest_storable_scenario(
 ) -> dict[str, Any]:
     """Load a canonical scenario, drop only what cannot yet be stored, and replay it."""
     return await replay(client, with_run_id(storable(load_raw(name)), run_id))
+
+
+async def ingest_smb_scenario(
+    client: AsyncClient, name: str, *, run_id: str | None = None
+) -> dict[str, Any]:
+    """Load a canonical scenario, reduce it to the share layer, and replay it."""
+    return await replay(client, with_run_id(smb_only(load_raw(name)), run_id))
 
 
 def scenario_document(name: str, run_id: str | None = None) -> dict[str, Any]:

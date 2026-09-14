@@ -534,9 +534,18 @@ def _check_unsupported_kinds(parsed: _Parsed, report: Report) -> None:
     The storable set is read from :data:`app.ingestion.plan.SUPPORTED_KINDS` rather than
     restated here, because it grows phase by phase and a hardcoded copy would start telling
     collector authors to split batches that the API had already learned to accept.
+
+    ``parsed.other_kinds`` counts every kind that is not one of the two the identity checks
+    model in their own right, which is not the same thing as "unstorable" - it never was.
+    Filtering by the storable set is what makes the message true; without it this reported
+    an error naming the very kind it had just listed as supported, and a collector author
+    reading that would split batches the API accepts whole.
     """
     storable = ", ".join(sorted(SUPPORTED_KINDS))
-    for kind, count in sorted(parsed.other_kinds.items()):
+    unstorable = {
+        kind: count for kind, count in parsed.other_kinds.items() if kind not in SUPPORTED_KINDS
+    }
+    for kind, count in sorted(unstorable.items()):
         report.add(
             Severity.ERROR,
             "unstorable_observation_kind",

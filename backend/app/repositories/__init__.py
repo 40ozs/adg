@@ -19,6 +19,9 @@ from app.repositories.membership import (
     PrincipalResolution,
 )
 from app.repositories.resources import (
+    NtfsAceRecord,
+    NtfsAclRecomputation,
+    NtfsResourceRecord,
     ResourceRepository,
     ServerRecord,
     ShareAceRecord,
@@ -31,6 +34,9 @@ __all__ = [
     "AliasRecord",
     "DirectEdgeRecord",
     "MembershipRepository",
+    "NtfsAceRecord",
+    "NtfsAclRecomputation",
+    "NtfsResourceRecord",
     "Page",
     "PrincipalRecord",
     "PrincipalResolution",
