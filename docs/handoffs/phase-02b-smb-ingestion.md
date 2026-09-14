@@ -26,7 +26,7 @@ Gave the Phase 2A SMB collector somewhere to land, and made `\\server\share` ans
 5. **A deterministic share identifier** in the domain layer: every spelling
    `parse_unc_path` canonicalizes resolves to one key, and a folder path or an ambiguous key
    is refused rather than guessed at.
-6. **135 new tests** — 78 hermetic, 57 against a real PostgreSQL — covering replay,
+6. **136 new tests** — 55 hermetic, 81 against a real PostgreSQL — covering replay,
    rename and re-point, path normalization, unresolved trustees, partial and failed scans,
    out-of-order batches, and the new check constraints.
 
@@ -70,7 +70,7 @@ Gave the Phase 2A SMB collector somewhere to land, and made `\\server\share` ans
 ### Tests
 
 `backend/tests/domain/test_share_identity.py` (31), `tests/ingestion/test_plan_resources.py`
-(47), `tests/db/test_smb_ingestion.py` (26), `tests/db/test_resource_api.py` (42),
+(24), `tests/db/test_smb_ingestion.py` (26), `tests/db/test_resource_api.py` (41),
 `tests/db/test_schema.py` (+14), `tests/support/ingest.py` (`storable()`,
 `storable_document()`, `ingest_storable_scenario()`; `ad_only()` kept for the AD-only tests).
 `tests/db/test_ingestion.py` updated for the three new response counters and for the fact
@@ -155,21 +155,48 @@ Changed response body: `POST /api/v1/scan-runs/{id}/batches` gains `servers_writ
 
 ## Tests run and exact results
 
+Measured twice: against **this phase's commit alone**, which is what the phase delivers, and
+against the **whole working tree**, which also carried a second session's concurrent Phase 1C
+work. Both were run; neither figure is the other.
+
+At this phase's commit (`bc9630e`, checked out into a clean worktree):
+
+| Command | Result |
+| --- | --- |
+| `pytest -q -m "not smoke"` | **955 passed, 1 skipped, 152 deselected** in 9.10s |
+| `ADG_RUN_SMOKE_TESTS=1 pytest -q` | **1107 passed, 1 skipped** in 113.00s |
+| `pytest tests/db -q` (smoke) | **150 passed** in 50.06s |
+| `pytest tests/domain/test_share_identity.py tests/ingestion/test_plan_resources.py -q` | **55 passed** in 0.09s — this phase's hermetic tests |
+| `pytest tests/db/test_smb_ingestion.py tests/db/test_resource_api.py -q` (smoke) | **67 passed** in 27.56s — plus 14 added to `test_schema.py` |
+| `ruff check .` | **All checks passed** |
+| `mypy app tests` | **Success: no issues found in 94 source files** (strict) |
+| `ruff format --check .` | **94 files already formatted, 1 would be reformatted** — see below |
+
+Against the whole working tree, with the concurrent Phase 1C work present:
+
 | Command | Result |
 | --- | --- |
 | `.\scripts\backend-test.ps1` | **3206 passed, 9 skipped, 192 deselected** in 13.94s |
 | `.\scripts\backend-test.ps1 -Smoke` | **3398 passed, 9 skipped** in 89.46s |
-| `pytest tests/domain/test_share_identity.py tests/ingestion -q` | **78 passed** in 0.06s |
-| `pytest tests/db/test_smb_ingestion.py tests/db/test_resource_api.py tests/db/test_schema.py -q` (smoke) | **93 passed** in 40.63s |
-| `pytest tests/db -q` (smoke) | **190 passed** in 81.88s |
 | `.\scripts\backend-lint.ps1` | **ruff: all checks passed; ruff format: 111 files already formatted; mypy: no issues in 110 source files** (strict) |
+
+Independent of either tree:
+
+| Command | Result |
+| --- | --- |
 | `alembic upgrade head` / `downgrade 0002_ad_graph` / `upgrade head` | Applied and reversed cleanly |
 | `alembic check` | **No new upgrade operations detected** |
 | OpenAPI generation | 15 `/api/v1` paths, six of them new |
-| Relative Markdown link check, whole repository | **83 links checked, 0 broken** |
+| Relative Markdown link check, whole repository | **88 links checked, 0 broken** |
 
-The nine skips are pre-existing. Smoke tests run against a separate `adg_test` database that
-the suite creates and migrates with a real `alembic upgrade head`.
+The skips are pre-existing. Smoke tests run against a separate `adg_test` database that the
+suite creates and migrates with a real `alembic upgrade head`.
+
+**One pre-existing gate failure, not introduced here and not fixed here.**
+`backend/tests/contracts/test_smb_collector.py` has been unformatted in the committed tree
+since Phase 2A; the fix is a `ruff format` artifact sitting unstaged in another session's
+working tree, and Phase 1B left it alone for the same reason. It is formatting only — the
+whole-tree `backend-lint.ps1` run above passes because that session's fix is present on disk.
 
 **Five defects were found by running the tests, not by inspection:**
 
