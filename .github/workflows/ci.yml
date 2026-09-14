@@ -13,6 +13,24 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # The database tests are a real gate, not an optional local nicety: migrations,
+    # idempotent ingestion, and every graph query run only against PostgreSQL.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: adg
+          POSTGRES_PASSWORD: adg_ci_password
+          POSTGRES_DB: adg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adg -d adg"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      ADG_DATABASE_URL: postgresql+psycopg://adg:adg_ci_password@localhost:5432/adg
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,6 +48,10 @@ jobs:
         run: python -m mypy app tests
       - name: Unit tests
         run: python -m pytest -q -m "not smoke"
+      - name: Database tests
+        env:
+          ADG_RUN_SMOKE_TESTS: "1"
+        run: python -m pytest -q -m smoke
 
   frontend:
     name: Frontend (lint, types, tests, build)

@@ -87,6 +87,15 @@ distinguished names are mutable metadata and must never be a primary key or a jo
 An unresolvable SID is still a valid, storable fact — orphaned SIDs on an ACL are a finding,
 not an error. Formalized in [permission-domain-model.md](permission-domain-model.md) and ADR-0001.
 
+## Membership
+
+Group membership is stored as directed edges, never as an expanded closure, so that the
+chain producing an access (`alice → Finance-Team → Finance-RW`) survives — the chain is the
+product. Every "who is effectively in this group?" answer is therefore a bounded, cycle-safe
+traversal performed at query time, and every such answer states whether it is complete.
+Query semantics, cycle reporting, limits, and pagination are in
+[membership-graph.md](membership-graph.md); the reasoning is ADR-0002 and ADR-0006.
+
 ## Security posture
 
 - **Read-only by default.** No ACL writes, no membership changes, no deletions on target

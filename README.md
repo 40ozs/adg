@@ -104,6 +104,32 @@ cd C:\code\adg\backend
 | `GET /version` | Application name, version, and environment. |
 | `GET /docs` | OpenAPI documentation (development). |
 
+Collector ingestion (contract v1; see
+[`docs/contracts/collector-protocol.md`](docs/contracts/collector-protocol.md)):
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/v1/scan-runs` | Begin a scan run. `201` new, `200` replayed, `409` conflicting. |
+| `POST /api/v1/scan-runs/{run_id}/batches` | Send up to 1000 observations. Idempotent on `batch_id`. |
+| `POST /api/v1/scan-runs/{run_id}/completion` | Close a run and record any reconciled scopes. |
+| `GET /api/v1/scan-runs/{run_id}` | Inspect a run: status, coverage, counts, collector errors. |
+
+Identity and membership graph (see
+[`docs/architecture/membership-graph.md`](docs/architecture/membership-graph.md)):
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/v1/principals/{id-or-sid}` | One principal, its provenance, and every name ever observed for it. |
+| `GET /api/v1/groups/{sid}/members` | Direct members, keyset-paginated. |
+| `GET /api/v1/groups/{sid}/effective-members` | Recursive membership with the chain that produces it. |
+| `GET /api/v1/principals/{sid}/groups` | Containing groups, `?scope=direct` or `effective`. |
+| `GET /api/v1/principals/{sid}/membership-paths?group=` | Every simple chain from a principal to a group. |
+
+> Every recursive answer carries a `traversal` block. **`complete: false` means the result
+> is a lower bound, not a membership list.** Limits, cycle reporting, and pagination
+> semantics are documented in
+> [`docs/architecture/membership-graph.md`](docs/architecture/membership-graph.md).
+
 The web application's **System status** page (`http://localhost:3000/status`) renders the
 same information from the browser's point of view.
 

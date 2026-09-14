@@ -8,13 +8,17 @@ import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.api import api_router
+from app.api.pagination import InvalidCursor
 from app.config import Settings, get_settings
 from app.db import Database
+from app.domain import DomainValidationError
+from app.ingestion.service import IngestionConflict, RunNotFound
 from app.logging_config import configure_logging
 
 logger = logging.getLogger("adg.api")
@@ -91,8 +95,53 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
+    _install_exception_handlers(app)
     app.include_router(api_router)
     return app
+
+
+def _install_exception_handlers(app: FastAPI) -> None:
+    """Map the domain and ingestion failures onto the status codes the contract promises.
+
+    Registered centrally rather than caught per route, because a collector's retry logic
+    branches on the status code: a 422 must never be retried unchanged and a 409 must never
+    be retried at all, so a failure that leaked out as a 500 would be retried forever.
+    """
+
+    @app.exception_handler(DomainValidationError)
+    async def _domain_validation(request: Request, exc: DomainValidationError) -> JSONResponse:
+        # Every domain message names the offending value and what was expected, so it is
+        # returned verbatim: it is written for the operator reading the collector log.
+        detail: dict[str, object] = {"message": str(exc)}
+        if exc.field is not None:
+            detail["field"] = exc.field
+        if exc.value is not None:
+            detail["value"] = exc.value
+        logger.info(
+            "api.rejected.invalid_payload",
+            extra={"request_id": getattr(request.state, "request_id", None), "field": exc.field},
+        )
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": detail}
+        )
+
+    @app.exception_handler(IngestionConflict)
+    async def _ingestion_conflict(request: Request, exc: IngestionConflict) -> JSONResponse:
+        logger.warning(
+            "api.rejected.conflict",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
+    @app.exception_handler(RunNotFound)
+    async def _run_not_found(request: Request, exc: RunNotFound) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)})
+
+    @app.exception_handler(InvalidCursor)
+    async def _invalid_cursor(request: Request, exc: InvalidCursor) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": str(exc)}
+        )
 
 
 app = create_app()

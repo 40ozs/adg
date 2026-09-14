@@ -17,3 +17,4 @@ Rules:
 | [0003](0003-raw-observations-vs-derived-state.md) | Raw observations and derived state are stored separately | Accepted |
 | [0004](0004-read-only-collector-posture.md) | Collectors are read-only and least-privileged | Accepted |
 | [0005](0005-internal-rights-representation.md) | Rights are layer-tagged bitmasks; labels are derived and never authoritative | Accepted |
+| [0006](0006-bounded-in-process-traversal.md) | Membership traversal is bounded, in-process, and reports its own limits | Accepted |

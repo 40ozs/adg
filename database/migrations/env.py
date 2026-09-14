@@ -13,14 +13,18 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.config import get_settings
+from app.models.schema import metadata
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Phase 1 onward: point this at the declarative metadata so that autogenerate works.
-target_metadata = None
+# The physical schema is declared once, in app/models/schema.py. Pointing Alembic at it
+# makes `alembic revision --autogenerate` and `alembic check` meaningful, and a smoke test
+# reflects the live database and compares it against the same metadata so a hand-edited
+# migration cannot drift from the declaration.
+target_metadata = metadata
 
 
 def _database_url() -> str:
