@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/common.schema.json",
+  "title": "ADG common contract definitions (v1)",
+  "description": "Shared definitions referenced by every ADG collector contract. Collectors report observations; they never report conclusions. See docs/contracts/collector-protocol.md.",
+  "$defs": {
+    "schemaVersion": {
+      "title": "Contract schema version",
+      "description": "Major version 1. A minor bump is additive and backward compatible; a breaking change requires a new major directory (v2) and a migration note.",
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "sid": {
+      "title": "Security identifier",
+      "description": "String-form SID. The canonical identity of every principal: upper-case S, no leading zeros, decimal identifier authority below 2^32 and 0x-prefixed hexadecimal above. Names are never identity.",
+      "type": "string",
+      "pattern": "^S-1-(0[xX][0-9a-fA-F]{1,12}|[0-9]{1,20})(-[0-9]{1,10}){0,15}$",
+      "examples": [
+        "S-1-5-21-1004336348-1177238915-682003330-1104",
+        "S-1-5-32-544",
+        "S-1-1-0"
+      ]
+    },
+    "domainSid": {
+      "title": "Domain or machine SID",
+      "description": "A SID of the form S-1-5-21-x-y-z with no RID.",
+      "type": "string",
+      "pattern": "^S-1-5-21(-[0-9]{1,10}){3}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "timestamp": {
+      "title": "Timezone-aware timestamp",
+      "description": "RFC 3339 timestamp that MUST carry an offset (Z or +/-HH:MM). A naive timestamp is rejected: observations from hosts in different time zones would otherwise be unorderable.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
+      "examples": [
+        "2026-09-14T08:00:00Z",
+        "2026-09-14T04:00:00-04:00"
+      ]
+    },
+    "sourceKey": {
+      "title": "Stable source key",
+      "description": "Deterministic identity of the observed object, derived only from its identifying fields. Ingestion is idempotent on (run_id, source_key). The derivation for each observation kind is fixed in docs/contracts/collector-protocol.md and is recomputed and verified server-side.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "accessMask": {
+      "title": "Windows access mask",
+      "description": "Raw unsigned 32-bit access mask exactly as read from the descriptor, generic bits included. Collectors must not expand generic rights or otherwise interpret the mask.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "aceFlags": {
+      "title": "Raw ACE header flags",
+      "description": "The ACE_HEADER.AceFlags byte: OBJECT_INHERIT 0x01, CONTAINER_INHERIT 0x02, NO_PROPAGATE_INHERIT 0x04, INHERIT_ONLY 0x08, INHERITED 0x10. Unknown bits are preserved rather than dropped.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "aceType": {
+      "description": "DACL entry type. Audit (SACL) entries govern logging, not access, and must never be reported here.",
+      "type": "string",
+      "enum": [
+        "allow",
+        "deny"
+      ]
+    },
+    "aceSource": {
+      "description": "Whether the ACE was set on this object or inherited from an ancestor. Must agree with bit 0x10 of ace_flags.",
+      "type": "string",
+      "enum": [
+        "explicit",
+        "inherited"
+      ]
+    },
+    "collectorKind": {
+      "type": "string",
+      "enum": [
+        "active_directory",
+        "smb",
+        "ntfs",
+        "local_groups"
+      ]
+    },
+    "principalKind": {
+      "type": "string",
+      "enum": [
+        "user",
+        "domain_group",
+        "local_group",
+        "computer",
+        "managed_service_account",
+        "well_known",
+        "foreign_security_principal",
+        "unresolved"
+      ]
+    },
+    "groupScope": {
+      "type": "string",
+      "enum": [
+        "domain_local",
+        "global",
+        "universal",
+        "builtin_local",
+        "unknown"
+      ]
+    },
+    "groupType": {
+      "description": "Distribution groups never grant access. 'unknown' means the source did not say, which must not be reported as 'harmless'.",
+      "type": "string",
+      "enum": [
+        "security",
+        "distribution",
+        "unknown"
+      ]
+    },
+    "unresolvedReason": {
+      "type": "string",
+      "enum": [
+        "deleted",
+        "untrusted_domain",
+        "lookup_failed",
+        "unknown"
+      ]
+    },
+    "membershipEdgeKind": {
+      "description": "primary_group exists because primaryGroupID membership does not appear in a group's member attribute; omitting it under-reports access for every user in the domain.",
+      "type": "string",
+      "enum": [
+        "directory_group_member",
+        "primary_group",
+        "local_group_member",
+        "well_known_implicit"
+      ]
+    },
+    "shareType": {
+      "type": "string",
+      "enum": [
+        "disk",
+        "print",
+        "ipc",
+        "device",
+        "unknown"
+      ]
+    },
+    "sharePermission": {
+      "description": "The three levels reported by the SMB management cmdlets.",
+      "type": "string",
+      "enum": [
+        "read",
+        "change",
+        "full"
+      ]
+    },
+    "observationKind": {
+      "type": "string",
+      "enum": [
+        "principal",
+        "membership_edge",
+        "server",
+        "smb_share",
+        "smb_ace",
+        "ntfs_resource",
+        "ntfs_ace"
+      ]
+    },
+    "hostName": {
+      "title": "Windows host name",
+      "description": "A host name alone, never a UNC path and never a path fragment.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[^\\\\/\\u0000-\\u001f]+$"
+    },
+    "shareName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\\\/\\u0000-\\u001f]+$"
+    },
+    "uncPath": {
+      "title": "Canonical UNC path",
+      "description": "Absolute UNC path identifying a resource: \\\\server\\share[\\path]. Relative paths, '.' and '..' segments, drive-letter paths, and extended-length prefixes are rejected; a resource identified only by a local path is ambiguous because the server is unknown.",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 32767,
+      "pattern": "^\\\\\\\\(?!\\.{1,2}(?:\\\\|$))[^\\\\/:*?\"<>|\\u0000-\\u001f]+\\\\(?!\\.{1,2}(?:\\\\|$))[^\\\\/:*?\"<>|\\u0000-\\u001f]+(?:\\\\(?!\\.{1,2}(?:\\\\|$))[^\\\\/:*?\"<>|\\u0000-\\u001f]+)*$",
+      "examples": [
+        "\\\\FS01\\Finance",
+        "\\\\FS01\\Finance\\Reports"
+      ]
+    },
+    "localPath": {
+      "title": "Drive-letter path on the server",
+      "description": "Supplementary only. A local path never identifies a resource on its own.",
+      "type": "string",
+      "pattern": "^[A-Za-z]:\\\\(?:(?!\\.{1,2}(?:\\\\|$))[^\\\\/:*?\"<>|\\u0000-\\u001f]+(?:\\\\(?!\\.{1,2}(?:\\\\|$))[^\\\\/:*?\"<>|\\u0000-\\u001f]+)*)?$",
+      "examples": [
+        "D:\\Shares\\Finance"
+      ]
+    },
+    "scopeKind": {
+      "title": "Reconciliation scope kind",
+      "description": "What a run claims to have enumerated completely. Absence of an object may only be inferred inside a scope a successful run reconciled.",
+      "type": "string",
+      "enum": [
+        "domain",
+        "server",
+        "share",
+        "directory_tree",
+        "local_groups_host"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/scopeKind"
+        },
+        "key": {
+          "description": "Identity of the scope: a domain SID, a case-folded host name, a share key, or a canonical UNC path.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "source": {
+      "title": "Observation source",
+      "description": "Who saw the fact and how. The reading method is evidence, not a label: different mechanisms report different detail (share permissions as levels versus masks, for instance).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collector",
+        "collector_host",
+        "method"
+      ],
+      "properties": {
+        "collector": {
+          "$ref": "#/$defs/collectorKind"
+        },
+        "collector_host": {
+          "$ref": "#/$defs/hostName"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "examples": [
+            "Get-SmbShareAccess",
+            "System.IO.DirectoryInfo.GetAccessControl"
+          ]
+        },
+        "collector_version": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "target": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      }
+    },
+    "observationBase": {
+      "title": "Fields present on every observation",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "run_id",
+        "observed_at",
+        "source_key"
+      ],
+      "properties": {
+        "schema_version": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "kind": {
+          "$ref": "#/$defs/observationKind"
+        },
+        "run_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "source_key": {
+          "$ref": "#/$defs/sourceKey"
+        }
+      }
+    },
+    "collectorError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "examples": [
+            "access_denied",
+            "path_too_long",
+            "rpc_unavailable",
+            "lookup_failed"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "target": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    }
+  }
+}

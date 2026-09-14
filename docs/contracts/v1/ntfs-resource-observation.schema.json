@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/ntfs-resource-observation.schema.json",
+  "title": "NTFS resource and security-descriptor observation (v1)",
+  "description": "A directory together with descriptor-level facts. The ACE list alone is ambiguous: a NULL DACL (dacl_present=false) grants everyone full access, while a present-but-empty DACL grants nobody access. Those opposite meanings collapse into the same empty list unless dacl_present is reported. A resource is identified by its canonical UNC path; a local path alone is ambiguous because the server is unknown.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
+  "required": ["path", "dacl_present", "ace_count"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "kind": { "const": "ntfs_resource" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "observed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "source_key": { "$ref": "common.schema.json#/$defs/sourceKey" },
+
+    "path": { "$ref": "common.schema.json#/$defs/uncPath" },
+    "local_path": { "$ref": "common.schema.json#/$defs/localPath" },
+    "server_name": { "$ref": "common.schema.json#/$defs/hostName" },
+    "share_name": { "$ref": "common.schema.json#/$defs/shareName" },
+
+    "owner_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "group_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "dacl_present": {
+      "description": "false means a NULL DACL: everyone has full access. Always a finding.",
+      "type": "boolean"
+    },
+    "dacl_protected": {
+      "description": "SE_DACL_PROTECTED: the object blocks inheritance from its parent.",
+      "type": "boolean"
+    },
+    "ace_count": {
+      "description": "Number of ACEs in the DACL. Must be 0 when dacl_present is false, and must match the number of ntfs_ace observations reported for this path in the same run.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "inheritance_enabled": { "type": "boolean" },
+    "is_acl_boundary": {
+      "description": "The DACL differs from the parent's. A resource that blocks inheritance is by definition a boundary.",
+      "type": "boolean"
+    },
+    "depth_from_share_root": { "type": ["integer", "null"], "minimum": 0 }
+  },
+  "if": { "properties": { "dacl_present": { "const": false } }, "required": ["dacl_present"] },
+  "then": { "properties": { "ace_count": { "const": 0 } } },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "kind": "ntfs_resource",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:02:00Z",
+      "source_key": "resource|\\\\fs01\\finance\\reports",
+      "path": "\\\\FS01\\Finance\\Reports",
+      "local_path": "D:\\Shares\\Finance\\Reports",
+      "server_name": "FS01",
+      "share_name": "Finance",
+      "owner_sid": "S-1-5-32-544",
+      "dacl_present": true,
+      "dacl_protected": true,
+      "ace_count": 2,
+      "inheritance_enabled": false,
+      "is_acl_boundary": true,
+      "depth_from_share_root": 1
+    }
+  ]
+}

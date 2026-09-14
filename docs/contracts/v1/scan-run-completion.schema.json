@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/scan-run-completion.schema.json",
+  "title": "Scan-run completion envelope (v1)",
+  "description": "Closes a scan run and, optionally, reconciles the scopes it enumerated. Reconciliation is the ONLY mechanism by which an object can be marked absent, and it is permitted only for a run that succeeded with no errors and was not incremental. A partial or failed run therefore cannot delete anything: unseen is not the same as gone.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": ["schema_version", "run_id", "status", "completed_at", "batch_count", "observation_count"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "status": {
+      "description": "succeeded: every declared scope was fully enumerated. partial: usable observations, incomplete coverage. failed: coverage unknown. canceled: stopped deliberately.",
+      "type": "string",
+      "enum": ["succeeded", "partial", "failed", "canceled"]
+    },
+    "completed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "batch_count": {
+      "description": "Number of batches the collector sent. The server compares this with what it received and downgrades the run to partial on a mismatch.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "observation_count": { "type": "integer", "minimum": 0 },
+    "error_count": { "type": "integer", "minimum": 0 },
+    "errors": {
+      "description": "Failures encountered during the run. An unreadable object is reported here, never silently omitted: access the collector could not observe is unobserved, not absent.",
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "common.schema.json#/$defs/collectorError" }
+    },
+    "reconciled_scopes": {
+      "description": "Scopes this run enumerated completely. Objects in these scopes that the run did not report may be marked absent. Must be a subset of the scopes declared at start, and must be empty unless status is 'succeeded' with error_count 0.",
+      "type": "array",
+      "maxItems": 1000,
+      "items": { "$ref": "common.schema.json#/$defs/scope" }
+    },
+    "notes": { "type": ["string", "null"], "maxLength": 2000 }
+  },
+  "if": {
+    "anyOf": [
+      { "properties": { "status": { "not": { "const": "succeeded" } } }, "required": ["status"] },
+      { "properties": { "error_count": { "minimum": 1 } }, "required": ["error_count"] }
+    ]
+  },
+  "then": {
+    "properties": { "reconciled_scopes": { "maxItems": 0 } }
+  },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "status": "succeeded",
+      "completed_at": "2026-09-14T08:05:00Z",
+      "batch_count": 3,
+      "observation_count": 2412,
+      "error_count": 0,
+      "errors": [],
+      "reconciled_scopes": [{ "kind": "directory_tree", "key": "\\\\fs01\\finance" }]
+    },
+    {
+      "schema_version": "1.0",
+      "run_id": "7a2d2b63-4051-4b27-a03f-2e7c1f3b8d42",
+      "status": "partial",
+      "completed_at": "2026-09-14T08:41:00Z",
+      "batch_count": 9,
+      "observation_count": 18044,
+      "error_count": 2,
+      "errors": [
+        {
+          "code": "access_denied",
+          "message": "READ_CONTROL denied reading the security descriptor.",
+          "target": "\\\\FS01\\Finance\\Payroll",
+          "occurred_at": "2026-09-14T08:33:12Z"
+        }
+      ],
+      "reconciled_scopes": []
+    }
+  ]
+}

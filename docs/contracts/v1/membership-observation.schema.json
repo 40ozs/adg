@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/membership-observation.schema.json",
+  "title": "Group-membership observation (v1)",
+  "description": "One directed edge: member_sid is a member of group_sid. Membership is reported as edges, never as an expanded set, because the edge chain is the explanation of access. Cycles and unresolvable endpoints are reported as observed; a group may not be a direct member of itself.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
+  "required": ["group_sid", "member_sid", "edge_kind"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "kind": { "const": "membership_edge" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "observed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "source_key": { "$ref": "common.schema.json#/$defs/sourceKey" },
+
+    "group_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "member_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "edge_kind": { "$ref": "common.schema.json#/$defs/membershipEdgeKind" },
+    "host_key": {
+      "description": "Required for local_group_member and forbidden otherwise: BUILTIN\\Administrators on FS01 and on FS02 are different groups.",
+      "$ref": "common.schema.json#/$defs/hostName"
+    },
+    "member_kind": { "$ref": "common.schema.json#/$defs/principalKind" },
+    "is_foreign_security_principal": {
+      "description": "The member comes from another domain or forest and may be observable only as a SID.",
+      "type": "boolean"
+    }
+  },
+  "if": {
+    "properties": { "edge_kind": { "const": "local_group_member" } },
+    "required": ["edge_kind"]
+  },
+  "then": { "required": ["host_key"] },
+  "else": { "not": { "required": ["host_key"] } },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "kind": "membership_edge",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:00:13Z",
+      "source_key": "edge|S-1-5-21-1004336348-1177238915-682003330-1201->S-1-5-21-1004336348-1177238915-682003330-1104|directory_group_member",
+      "group_sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+      "member_sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+      "edge_kind": "directory_group_member",
+      "member_kind": "user"
+    },
+    {
+      "schema_version": "1.0",
+      "kind": "membership_edge",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:00:14Z",
+      "source_key": "edge|fs01|S-1-5-32-544->S-1-5-21-1004336348-1177238915-682003330-1201|local_group_member",
+      "group_sid": "S-1-5-32-544",
+      "member_sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+      "edge_kind": "local_group_member",
+      "host_key": "FS01",
+      "member_kind": "domain_group"
+    }
+  ]
+}

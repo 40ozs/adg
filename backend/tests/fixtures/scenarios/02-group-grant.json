@@ -1,0 +1,165 @@
+{
+  "scenario": "02-group-grant",
+  "title": "Grant through one group",
+  "description": "The ACE names a group the user is a direct member of. Access requires one membership edge to be traversed.",
+  "expectations": {
+    "subject_sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+    "resource": "\\\\FS01\\Finance",
+    "access_expected": true,
+    "expected_ntfs_mask": 1245631,
+    "limiting_layer": "ntfs",
+    "explanation_hops": 1,
+    "expected_path": [
+      "S-1-5-21-1004336348-1177238915-682003330-1104",
+      "S-1-5-21-1004336348-1177238915-682003330-1202"
+    ]
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000002",
+    "source": {
+      "collector": "ntfs",
+      "collector_host": "COLLECTOR01",
+      "method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector_version": "0.1.0",
+      "target": "\\\\FS01\\Finance"
+    },
+    "started_at": "2026-09-14T08:00:00Z",
+    "scopes": [
+      {
+        "kind": "directory_tree",
+        "key": "\\\\fs01\\finance"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000002",
+      "batch_id": "00000000-0000-4000-8000-0000000003ea",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "server",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:01Z",
+          "source_key": "server|fs01",
+          "name": "FS01",
+          "dns_host_name": "fs01.corp.example.com",
+          "is_domain_member": true
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "smb_share",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:02Z",
+          "source_key": "share|fs01|finance",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "local_path": "D:\\Shares\\Finance",
+          "share_type": "disk",
+          "description": "Finance department share"
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "smb_ace",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:03Z",
+          "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|full",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "trustee_sid": "S-1-1-0",
+          "ace_type": "allow",
+          "permission": "full",
+          "order_index": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:04Z",
+          "source_key": "principal|S-1-5-21-1004336348-1177238915-682003330-1104",
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+          "principal_kind": "user",
+          "display_name": "Alice Smith",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:05Z",
+          "source_key": "principal|S-1-5-21-1004336348-1177238915-682003330-1202",
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "principal_kind": "domain_group",
+          "display_name": "Finance-RW",
+          "group_scope": "domain_local",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:06Z",
+          "source_key": "edge|S-1-5-21-1004336348-1177238915-682003330-1202->S-1-5-21-1004336348-1177238915-682003330-1104|directory_group_member",
+          "group_sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "member_sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+          "edge_kind": "directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_resource",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:07Z",
+          "source_key": "resource|\\\\fs01\\finance",
+          "path": "\\\\FS01\\Finance",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "dacl_present": true,
+          "dacl_protected": false,
+          "ace_count": 1,
+          "inheritance_enabled": true,
+          "is_acl_boundary": true,
+          "depth_from_share_root": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_ace",
+          "run_id": "00000000-0000-4000-8000-000000000002",
+          "observed_at": "2026-09-14T08:00:08Z",
+          "source_key": "ntfs_ace|\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+          "path": "\\\\FS01\\Finance",
+          "trustee_sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "ace_type": "allow",
+          "access_mask": 1245631,
+          "ace_flags": 3,
+          "source": "explicit",
+          "order_index": 0
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000002",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T08:10:00Z",
+    "batch_count": 1,
+    "observation_count": 8,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "directory_tree",
+        "key": "\\\\fs01\\finance"
+      }
+    ]
+  }
+}

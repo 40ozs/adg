@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/observation-batch.schema.json",
+  "title": "Observation batch envelope (v1)",
+  "description": "A chunk of observations belonging to one scan run. Batches are the unit of retry: a batch is applied exactly once per (run_id, batch_id), and every observation inside it is applied exactly once per (run_id, source_key), so replaying an identical batch changes nothing. Absence of an object in a batch means nothing at all - only a reconciled, successful run can imply absence.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": ["schema_version", "run_id", "batch_id", "sequence", "observations"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "batch_id": {
+      "description": "Collector-generated UUID, stable across retries of the same batch. A retry with the same batch_id is acknowledged as a duplicate and applied once.",
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "sequence": {
+      "description": "1-based batch number within the run. Gaps are permitted (a failed batch may be abandoned), but a completed run reports how many batches it sent so the server can detect loss.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "is_final": {
+      "description": "Advisory marker that this is the last batch. It does not complete the run: only the completion envelope does.",
+      "type": "boolean"
+    },
+    "continuation_token": {
+      "description": "Opaque collector-side cursor, echoed back for diagnostics. The server never interprets it.",
+      "type": ["string", "null"],
+      "maxLength": 2048
+    },
+    "observations": {
+      "description": "At most 1000 observations per batch. A larger batch is rejected rather than truncated: silent truncation would look like coverage.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000,
+      "items": {
+        "oneOf": [
+          { "$ref": "principal-observation.schema.json" },
+          { "$ref": "membership-observation.schema.json" },
+          { "$ref": "server-observation.schema.json" },
+          { "$ref": "smb-share-observation.schema.json" },
+          { "$ref": "smb-ace-observation.schema.json" },
+          { "$ref": "ntfs-resource-observation.schema.json" },
+          { "$ref": "ntfs-ace-observation.schema.json" }
+        ]
+      }
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "batch_id": "b1a7c0de-1111-4222-8333-444455556666",
+      "sequence": 1,
+      "is_final": false,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "server",
+          "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+          "observed_at": "2026-09-14T08:01:00Z",
+          "source_key": "server|fs01",
+          "name": "FS01"
+        }
+      ]
+    }
+  ]
+}

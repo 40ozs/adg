@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/server-observation.schema.json",
+  "title": "Server observation (v1)",
+  "description": "A Windows computer that hosts shares. Identified by the name the collector addressed it as; aliases are merged later on evidence (a shared computer SID), never by guessing that FS01 and fs01.corp.example.com are the same machine.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
+  "required": ["name"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "kind": { "const": "server" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "observed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "source_key": { "$ref": "common.schema.json#/$defs/sourceKey" },
+
+    "name": { "$ref": "common.schema.json#/$defs/hostName" },
+    "dns_host_name": { "type": ["string", "null"], "maxLength": 255 },
+    "netbios_name": { "type": ["string", "null"], "maxLength": 63 },
+    "computer_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "domain_sid": { "$ref": "common.schema.json#/$defs/domainSid" },
+    "is_domain_member": { "type": ["boolean", "null"] },
+    "operating_system": { "type": ["string", "null"], "maxLength": 256 }
+  },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "kind": "server",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:01:00Z",
+      "source_key": "server|fs01",
+      "name": "FS01",
+      "dns_host_name": "fs01.corp.example.com",
+      "computer_sid": "S-1-5-21-1004336348-1177238915-682003330-1305",
+      "domain_sid": "S-1-5-21-1004336348-1177238915-682003330",
+      "is_domain_member": true
+    }
+  ]
+}

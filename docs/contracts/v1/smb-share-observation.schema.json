@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/smb-share-observation.schema.json",
+  "title": "SMB share observation (v1)",
+  "description": "A share exposed by a server. A share is a publication of a directory, not the directory itself: two shares can expose one path with different share ACLs, and a share can be re-pointed without the directory changing.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
+  "required": ["server_name", "share_name"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "kind": { "const": "smb_share" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "observed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "source_key": { "$ref": "common.schema.json#/$defs/sourceKey" },
+
+    "server_name": { "$ref": "common.schema.json#/$defs/hostName" },
+    "share_name": { "$ref": "common.schema.json#/$defs/shareName" },
+    "local_path": { "$ref": "common.schema.json#/$defs/localPath" },
+    "share_type": { "$ref": "common.schema.json#/$defs/shareType" },
+    "description": { "type": ["string", "null"], "maxLength": 1024 },
+    "concurrent_user_limit": { "type": ["integer", "null"], "minimum": 0 },
+    "caching_mode": { "type": ["string", "null"], "maxLength": 64 }
+  },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "kind": "smb_share",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:01:01Z",
+      "source_key": "share|fs01|finance",
+      "server_name": "FS01",
+      "share_name": "Finance",
+      "local_path": "D:\\Shares\\Finance",
+      "share_type": "disk",
+      "description": "Finance department share"
+    }
+  ]
+}

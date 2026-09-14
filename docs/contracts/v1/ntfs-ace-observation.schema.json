@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/ntfs-ace-observation.schema.json",
+  "title": "NTFS ACE observation (v1)",
+  "description": "One entry of a file-system DACL, reported exactly as read. Collectors must not expand generic rights, apply Deny precedence, resolve inheritance, or drop mask bits they do not recognize: an ACE is evidence, and a simplified ACE is no longer evidence.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
+  "required": ["path", "trustee_sid", "ace_type", "access_mask", "ace_flags", "source"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "kind": { "const": "ntfs_ace" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "observed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "source_key": { "$ref": "common.schema.json#/$defs/sourceKey" },
+
+    "path": {
+      "description": "The resource this ACE was read from. An ntfs_resource observation for the same path must be reported in the same run.",
+      "$ref": "common.schema.json#/$defs/uncPath"
+    },
+    "trustee_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "ace_type": { "$ref": "common.schema.json#/$defs/aceType" },
+    "access_mask": { "$ref": "common.schema.json#/$defs/accessMask" },
+    "ace_flags": { "$ref": "common.schema.json#/$defs/aceFlags" },
+    "source": { "$ref": "common.schema.json#/$defs/aceSource" },
+    "inherited_from": {
+      "description": "The ancestor Windows reported as the origin. Permitted only when source is 'inherited'.",
+      "$ref": "common.schema.json#/$defs/uncPath"
+    },
+    "order_index": {
+      "description": "Position in the DACL, 0-based. Canonical ordering is a property of the ACL, and a non-canonical ACL is itself a finding, so order is reported rather than assumed.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "if": { "properties": { "source": { "const": "explicit" } }, "required": ["source"] },
+  "then": { "not": { "required": ["inherited_from"] } },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "kind": "ntfs_ace",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:02:01Z",
+      "source_key": "ntfs_ace|\\\\fs01\\finance\\reports|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+      "path": "\\\\FS01\\Finance\\Reports",
+      "trustee_sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+      "ace_type": "allow",
+      "access_mask": 1245631,
+      "ace_flags": 3,
+      "source": "explicit",
+      "order_index": 0
+    },
+    {
+      "schema_version": "1.0",
+      "kind": "ntfs_ace",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:02:02Z",
+      "source_key": "ntfs_ace|\\\\fs01\\finance\\reports|S-1-5-32-544|allow|0x001f01ff|0x13",
+      "path": "\\\\FS01\\Finance\\Reports",
+      "trustee_sid": "S-1-5-32-544",
+      "ace_type": "allow",
+      "access_mask": 2032127,
+      "ace_flags": 19,
+      "source": "inherited",
+      "inherited_from": "\\\\FS01\\Finance",
+      "order_index": 1
+    }
+  ]
+}

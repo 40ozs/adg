@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adg.local/contracts/v1/smb-ace-observation.schema.json",
+  "title": "SMB share ACE observation (v1)",
+  "description": "One entry of a share-level ACL. The share layer and the NTFS layer are separate: remote access is limited by both, and local access bypasses the share layer entirely. Exactly one of access_mask and permission must be present - whichever form the collecting API reported. Recording both would fabricate a value the source did not provide.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
+  "required": ["server_name", "share_name", "trustee_sid", "ace_type"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "kind": { "const": "smb_ace" },
+    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "observed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "source_key": { "$ref": "common.schema.json#/$defs/sourceKey" },
+
+    "server_name": { "$ref": "common.schema.json#/$defs/hostName" },
+    "share_name": { "$ref": "common.schema.json#/$defs/shareName" },
+    "trustee_sid": { "$ref": "common.schema.json#/$defs/sid" },
+    "ace_type": { "$ref": "common.schema.json#/$defs/aceType" },
+    "access_mask": { "$ref": "common.schema.json#/$defs/accessMask" },
+    "permission": { "$ref": "common.schema.json#/$defs/sharePermission" },
+    "order_index": { "type": "integer", "minimum": 0 }
+  },
+  "oneOf": [
+    { "required": ["access_mask"], "not": { "required": ["permission"] } },
+    { "required": ["permission"], "not": { "required": ["access_mask"] } }
+  ],
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "kind": "smb_ace",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:01:02Z",
+      "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|full",
+      "server_name": "FS01",
+      "share_name": "Finance",
+      "trustee_sid": "S-1-1-0",
+      "ace_type": "allow",
+      "permission": "full",
+      "order_index": 0
+    },
+    {
+      "schema_version": "1.0",
+      "kind": "smb_ace",
+      "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
+      "observed_at": "2026-09-14T08:01:03Z",
+      "source_key": "smb_ace|fs01|finance-ro|S-1-5-11|allow|0x001200a9",
+      "server_name": "FS01",
+      "share_name": "Finance-RO",
+      "trustee_sid": "S-1-5-11",
+      "ace_type": "allow",
+      "access_mask": 1179817,
+      "order_index": 0
+    }
+  ]
+}

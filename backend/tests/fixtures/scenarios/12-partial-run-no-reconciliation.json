@@ -1,0 +1,141 @@
+{
+  "scenario": "12-partial-run-no-reconciliation",
+  "title": "Partial run reconciles nothing",
+  "description": "The collector could not read one directory. The run reports the error, finishes as 'partial', and reconciles no scope, so nothing it failed to see can be marked absent.",
+  "expectations": {
+    "subject_sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+    "resource": "\\\\FS01\\Finance",
+    "access_expected": true,
+    "expected_ntfs_mask": 1245631,
+    "limiting_layer": "ntfs",
+    "reconciliation_expected": false,
+    "unreadable_path": "\\\\FS01\\Finance\\Payroll",
+    "note": "Unseen is not gone. Absence may only be inferred from a reconciled scope."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-00000000000c",
+    "source": {
+      "collector": "ntfs",
+      "collector_host": "COLLECTOR01",
+      "method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector_version": "0.1.0",
+      "target": "\\\\FS01\\Finance"
+    },
+    "started_at": "2026-09-14T08:00:00Z",
+    "scopes": [
+      {
+        "kind": "directory_tree",
+        "key": "\\\\fs01\\finance"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-00000000000c",
+      "batch_id": "00000000-0000-4000-8000-0000000003f4",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "server",
+          "run_id": "00000000-0000-4000-8000-00000000000c",
+          "observed_at": "2026-09-14T08:00:01Z",
+          "source_key": "server|fs01",
+          "name": "FS01",
+          "dns_host_name": "fs01.corp.example.com",
+          "is_domain_member": true
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "smb_share",
+          "run_id": "00000000-0000-4000-8000-00000000000c",
+          "observed_at": "2026-09-14T08:00:02Z",
+          "source_key": "share|fs01|finance",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "local_path": "D:\\Shares\\Finance",
+          "share_type": "disk",
+          "description": "Finance department share"
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "smb_ace",
+          "run_id": "00000000-0000-4000-8000-00000000000c",
+          "observed_at": "2026-09-14T08:00:03Z",
+          "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|full",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "trustee_sid": "S-1-1-0",
+          "ace_type": "allow",
+          "permission": "full",
+          "order_index": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-00000000000c",
+          "observed_at": "2026-09-14T08:00:04Z",
+          "source_key": "principal|S-1-5-21-1004336348-1177238915-682003330-1104",
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+          "principal_kind": "user",
+          "display_name": "Alice Smith",
+          "sam_account_name": "asmith",
+          "enabled": true,
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_resource",
+          "run_id": "00000000-0000-4000-8000-00000000000c",
+          "observed_at": "2026-09-14T08:00:05Z",
+          "source_key": "resource|\\\\fs01\\finance",
+          "path": "\\\\FS01\\Finance",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "dacl_present": true,
+          "dacl_protected": false,
+          "ace_count": 1,
+          "inheritance_enabled": true,
+          "is_acl_boundary": true,
+          "depth_from_share_root": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_ace",
+          "run_id": "00000000-0000-4000-8000-00000000000c",
+          "observed_at": "2026-09-14T08:00:06Z",
+          "source_key": "ntfs_ace|\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1104|allow|0x001301bf|0x03",
+          "path": "\\\\FS01\\Finance",
+          "trustee_sid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+          "ace_type": "allow",
+          "access_mask": 1245631,
+          "ace_flags": 3,
+          "source": "explicit",
+          "order_index": 0
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-00000000000c",
+    "status": "partial",
+    "completed_at": "2026-09-14T08:10:00Z",
+    "batch_count": 1,
+    "observation_count": 6,
+    "error_count": 1,
+    "errors": [
+      {
+        "code": "access_denied",
+        "message": "READ_CONTROL denied reading the security descriptor.",
+        "target": "\\\\FS01\\Finance\\Payroll",
+        "occurred_at": "2026-09-14T08:05:00Z"
+      }
+    ],
+    "reconciled_scopes": []
+  }
+}

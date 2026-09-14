@@ -1,0 +1,195 @@
+{
+  "scenario": "09-broken-inheritance",
+  "title": "Broken inheritance",
+  "description": "Payroll sets SE_DACL_PROTECTED, so the parent's Finance-RW grant stops at its boundary. Only the local group holding Full Control reaches it \u2014 which is itself an escalation path worth reporting.",
+  "expectations": {
+    "subject_sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+    "resource": "\\\\FS01\\Finance\\Payroll",
+    "access_expected": true,
+    "access_via": "local_group_member",
+    "limiting_layer": "ntfs",
+    "inheritance_blocked": true,
+    "boundary_resource": "\\\\FS01\\Finance\\Payroll",
+    "note": "Finance-RW reaches Payroll only because it was nested into the server's BUILTIN\\Administrators, not through the parent's ACE."
+  },
+  "start": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000009",
+    "source": {
+      "collector": "ntfs",
+      "collector_host": "COLLECTOR01",
+      "method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector_version": "0.1.0",
+      "target": "\\\\FS01\\Finance"
+    },
+    "started_at": "2026-09-14T08:00:00Z",
+    "scopes": [
+      {
+        "kind": "directory_tree",
+        "key": "\\\\fs01\\finance"
+      }
+    ],
+    "incremental": false
+  },
+  "batches": [
+    {
+      "schema_version": "1.0",
+      "run_id": "00000000-0000-4000-8000-000000000009",
+      "batch_id": "00000000-0000-4000-8000-0000000003f1",
+      "sequence": 1,
+      "is_final": true,
+      "observations": [
+        {
+          "schema_version": "1.0",
+          "kind": "server",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:01Z",
+          "source_key": "server|fs01",
+          "name": "FS01",
+          "dns_host_name": "fs01.corp.example.com",
+          "is_domain_member": true
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "smb_share",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:02Z",
+          "source_key": "share|fs01|finance",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "local_path": "D:\\Shares\\Finance",
+          "share_type": "disk",
+          "description": "Finance department share"
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "smb_ace",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:03Z",
+          "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|full",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "trustee_sid": "S-1-1-0",
+          "ace_type": "allow",
+          "permission": "full",
+          "order_index": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:04Z",
+          "source_key": "principal|S-1-5-21-1004336348-1177238915-682003330-1202",
+          "sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "principal_kind": "domain_group",
+          "display_name": "Finance-RW",
+          "group_scope": "domain_local",
+          "group_type": "security",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "principal",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:05Z",
+          "source_key": "principal|fs01|S-1-5-32-544",
+          "sid": "S-1-5-32-544",
+          "principal_kind": "local_group",
+          "host_key": "FS01",
+          "display_name": "BUILTIN\\Administrators",
+          "is_deleted": false
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_resource",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:06Z",
+          "source_key": "resource|\\\\fs01\\finance",
+          "path": "\\\\FS01\\Finance",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "dacl_present": true,
+          "dacl_protected": false,
+          "ace_count": 1,
+          "inheritance_enabled": true,
+          "is_acl_boundary": true,
+          "depth_from_share_root": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_ace",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:07Z",
+          "source_key": "ntfs_ace|\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+          "path": "\\\\FS01\\Finance",
+          "trustee_sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "ace_type": "allow",
+          "access_mask": 1245631,
+          "ace_flags": 3,
+          "source": "explicit",
+          "order_index": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_resource",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:08Z",
+          "source_key": "resource|\\\\fs01\\finance\\payroll",
+          "path": "\\\\FS01\\Finance\\Payroll",
+          "server_name": "FS01",
+          "share_name": "Finance",
+          "owner_sid": "S-1-5-32-544",
+          "dacl_present": true,
+          "dacl_protected": true,
+          "ace_count": 1,
+          "inheritance_enabled": false,
+          "is_acl_boundary": true,
+          "depth_from_share_root": 1
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "ntfs_ace",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:09Z",
+          "source_key": "ntfs_ace|\\\\fs01\\finance\\payroll|S-1-5-32-544|allow|0x001f01ff|0x03",
+          "path": "\\\\FS01\\Finance\\Payroll",
+          "trustee_sid": "S-1-5-32-544",
+          "ace_type": "allow",
+          "access_mask": 2032127,
+          "ace_flags": 3,
+          "source": "explicit",
+          "order_index": 0
+        },
+        {
+          "schema_version": "1.0",
+          "kind": "membership_edge",
+          "run_id": "00000000-0000-4000-8000-000000000009",
+          "observed_at": "2026-09-14T08:00:10Z",
+          "source_key": "edge|fs01|S-1-5-32-544->S-1-5-21-1004336348-1177238915-682003330-1202|local_group_member",
+          "group_sid": "S-1-5-32-544",
+          "member_sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+          "edge_kind": "local_group_member",
+          "host_key": "FS01",
+          "member_kind": "domain_group",
+          "is_foreign_security_principal": false
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "schema_version": "1.0",
+    "run_id": "00000000-0000-4000-8000-000000000009",
+    "status": "succeeded",
+    "completed_at": "2026-09-14T08:10:00Z",
+    "batch_count": 1,
+    "observation_count": 10,
+    "error_count": 0,
+    "errors": [],
+    "reconciled_scopes": [
+      {
+        "kind": "directory_tree",
+        "key": "\\\\fs01\\finance"
+      }
+    ]
+  }
+}
