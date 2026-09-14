@@ -27,7 +27,8 @@ is.
 5. **Versioned response schemas** under `docs/contracts/v1/derived/`, generated from the
    models, with captured example payloads and `docs/contracts/derived-responses.md` as the
    normative document.
-6. **141 new tests** — 103 hermetic, 37 smoke, and one rewritten guard.
+6. **149 new tests** — 112 hermetic (103 in four new files, 9 added to the rewritten bounds
+   guard) and 37 smoke.
 
 ## Three findings
 
@@ -203,8 +204,8 @@ All commands from `C:\code\adg\backend` using `.venv\Scripts\python.exe`.
 | Derived schemas | `pytest tests/contracts/test_derived_schemas.py -q` | **44 passed in 0.18s** |
 | API bounds | `pytest tests/api/test_access_bounds.py -q` | **22 passed in 0.36s** (13 before; +9) |
 | Endpoints | `ADG_RUN_SMOKE_TESTS=1 pytest tests/db/test_explanation_api.py -q` | **37 passed in 19.99s** |
-| Hermetic suite | `pytest tests -q -m "not smoke"` | **4066 passed, 10 skipped, 441 deselected in 20.52s** |
-| Full suite | `ADG_RUN_SMOKE_TESTS=1 pytest tests -q` | **4504 passed, 10 skipped, 1 xfailed in 246.44s** |
+| Hermetic suite | `pytest tests -q -m "not smoke"` | **4066 passed, 10 skipped, 441 deselected in 21.13s** |
+| Full suite | `ADG_RUN_SMOKE_TESTS=1 pytest tests -q` | **4506 passed, 10 skipped, 1 xfailed in 256.59s** |
 | Lint, repo-wide | `ruff check app tests` | **All checks passed** |
 | Format, repo-wide | `ruff format --check app tests` | **183 files already formatted** |
 | Types, repo-wide | `mypy app` | **Success: no issues found in 78 source files** |
@@ -214,8 +215,8 @@ The 1 `xfailed` is the Phase 4C pinned `resource → principals` cost defect, un
 Unlike the last three phases, **repo-wide lint and types are clean**: the concurrent session's
 in-flight work landed as commit `8336ecc` before this phase finished.
 
-**141 tests are attributable to this phase** — 21 + 14 + 24 + 44 hermetic, 37 smoke, and 9
-added to the rewritten bounds guard. The full-suite total also moved by the concurrent
+**149 tests are attributable to this phase** — 21 + 14 + 24 + 44 in four new hermetic files,
+9 added to the rewritten bounds guard, and 37 smoke. The full-suite total also moved by the concurrent
 session's Phase 6A work; the per-file figures are the reliable ones.
 
 ### The acceptance criteria, and where each is checked
