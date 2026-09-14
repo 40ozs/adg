@@ -1,0 +1,40 @@
+{
+  "comment": [
+    "ADG Active Directory collector configuration. Copy to adg-ad-collector.json and edit.",
+    "This file must never contain a secret. The collector token is read at run time from",
+    "the environment variable named by apiTokenEnvironmentVariable.",
+    "Every key here can be overridden on the Invoke-AdgAdCollector.ps1 command line."
+  ],
+
+  "domain": "corp.example.com",
+  "domainController": null,
+  "port": 389,
+  "useTls": false,
+
+  "searchBase": null,
+  "includeOrganizationalUnits": [],
+  "excludeOrganizationalUnits": [],
+
+  "batchSize": 500,
+  "pageSize": 1000,
+  "rangeStep": 1500,
+
+  "apiBaseUrl": "https://adg.corp.example.com",
+  "apiTokenEnvironmentVariable": "ADG_COLLECTOR_TOKEN",
+  "skipCertificateCheck": false,
+
+  "collectorHost": null,
+  "collectorVersion": null,
+
+  "offline": false,
+  "outputDirectory": null,
+
+  "incremental": false,
+  "stateFile": "C:\\ProgramData\\ADG\\ad-collector-state.json",
+
+  "maxAttempts": 5,
+  "timeoutSeconds": 120,
+
+  "principalFilter": null,
+  "groupFilter": null
+}

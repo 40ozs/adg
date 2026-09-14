@@ -1,0 +1,495 @@
+{
+  "$comment": "Synthetic directory for the ADG Active Directory collector tests. No data from any real domain is ever committed. rangeStep is deliberately small so that Big-Group exercises ranged retrieval the way a 1500+ member group does on a real DC.",
+  "server": "dc01.corp.example.com",
+  "dnsDomainName": "corp.example.com",
+  "domainSid": "S-1-5-21-1004336348-1177238915-682003330",
+  "defaultNamingContext": "DC=corp,DC=example,DC=com",
+  "rangeStep": 3,
+  "entries": [
+    {
+      "distinguishedName": "DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "domain",
+          "domainDNS"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330",
+        "distinguishedName": "DC=corp,DC=example,DC=com"
+      }
+    },
+    {
+      "distinguishedName": "CN=Alice Smith,OU=Staff,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1104",
+        "sAMAccountName": "asmith",
+        "userPrincipalName": "asmith@corp.example.com",
+        "displayName": "Alice Smith",
+        "name": "Alice Smith",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41001,
+        "whenChanged": "20260914080000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Bob Jones,OU=Staff,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1105",
+        "sAMAccountName": "bjones",
+        "userPrincipalName": "bjones@corp.example.com",
+        "displayName": "Bob Jones",
+        "name": "Bob Jones",
+        "userAccountControl": 514,
+        "primaryGroupID": 513,
+        "uSNChanged": 41002,
+        "whenChanged": "20260914080100.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=svc-backup,OU=Service,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1301",
+        "sAMAccountName": "svc-backup",
+        "displayName": "Backup Service",
+        "name": "svc-backup",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41003,
+        "whenChanged": "20260914080200.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=FS01,OU=Servers,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user",
+          "computer"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1601",
+        "sAMAccountName": "FS01$",
+        "displayName": "FS01",
+        "name": "FS01",
+        "userAccountControl": 4096,
+        "primaryGroupID": 515,
+        "uSNChanged": 41004,
+        "whenChanged": "20260914080300.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=gmsa-adg,OU=Servers,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user",
+          "computer",
+          "msDS-GroupManagedServiceAccount"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1701",
+        "sAMAccountName": "gmsa-adg$",
+        "displayName": "ADG Collector gMSA",
+        "name": "gmsa-adg",
+        "userAccountControl": 4096,
+        "primaryGroupID": 515,
+        "uSNChanged": 41005,
+        "whenChanged": "20260914080400.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member01,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2001",
+        "sAMAccountName": "member01",
+        "name": "Member01",
+        "displayName": "Bulk Member 01",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41011,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member02,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2002",
+        "sAMAccountName": "member02",
+        "name": "Member02",
+        "displayName": "Bulk Member 02",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41012,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member03,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2003",
+        "sAMAccountName": "member03",
+        "name": "Member03",
+        "displayName": "Bulk Member 03",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41013,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member04,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2004",
+        "sAMAccountName": "member04",
+        "name": "Member04",
+        "displayName": "Bulk Member 04",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41014,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member05,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2005",
+        "sAMAccountName": "member05",
+        "name": "Member05",
+        "displayName": "Bulk Member 05",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41015,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member06,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2006",
+        "sAMAccountName": "member06",
+        "name": "Member06",
+        "displayName": "Bulk Member 06",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41016,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member07,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2007",
+        "sAMAccountName": "member07",
+        "name": "Member07",
+        "displayName": "Bulk Member 07",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41017,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member08,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2008",
+        "sAMAccountName": "member08",
+        "name": "Member08",
+        "displayName": "Bulk Member 08",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41018,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member09,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2009",
+        "sAMAccountName": "member09",
+        "name": "Member09",
+        "displayName": "Bulk Member 09",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41019,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Member10,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "person",
+          "organizationalPerson",
+          "user"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-2010",
+        "sAMAccountName": "member10",
+        "name": "Member10",
+        "displayName": "Bulk Member 10",
+        "userAccountControl": 512,
+        "primaryGroupID": 513,
+        "uSNChanged": 41020,
+        "whenChanged": "20260914081000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Finance-Team,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+        "sAMAccountName": "Finance-Team",
+        "name": "Finance-Team",
+        "displayName": "Finance-Team",
+        "groupType": -2147483646,
+        "uSNChanged": 41101,
+        "whenChanged": "20260914082000.0Z",
+        "member": [
+          "CN=Alice Smith,OU=Staff,OU=Corp,DC=corp,DC=example,DC=com"
+        ]
+      }
+    },
+    {
+      "distinguishedName": "CN=Finance-RW,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+        "sAMAccountName": "Finance-RW",
+        "name": "Finance-RW",
+        "displayName": "Finance-RW",
+        "groupType": -2147483644,
+        "uSNChanged": 41102,
+        "whenChanged": "20260914082100.0Z",
+        "member": [
+          "CN=Finance-Team,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=S-1-5-21-3623811015-3361044348-30300820-1234,CN=ForeignSecurityPrincipals,DC=corp,DC=example,DC=com",
+          "CN=Contractors,CN=Users,DC=corp,DC=example,DC=com"
+        ]
+      }
+    },
+    {
+      "distinguishedName": "CN=All-Staff-Distribution,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1203",
+        "sAMAccountName": "All-Staff-Distribution",
+        "name": "All-Staff-Distribution",
+        "displayName": "All Staff",
+        "groupType": 2,
+        "uSNChanged": 41103,
+        "whenChanged": "20260914082200.0Z",
+        "member": [
+          "CN=Alice Smith,OU=Staff,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Bob Jones,OU=Staff,OU=Corp,DC=corp,DC=example,DC=com"
+        ]
+      }
+    },
+    {
+      "distinguishedName": "CN=Ring-A,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1210",
+        "sAMAccountName": "Ring-A",
+        "name": "Ring-A",
+        "groupType": -2147483644,
+        "uSNChanged": 41104,
+        "whenChanged": "20260914082300.0Z",
+        "member": [
+          "CN=Ring-B,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com"
+        ]
+      }
+    },
+    {
+      "distinguishedName": "CN=Ring-B,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1211",
+        "sAMAccountName": "Ring-B",
+        "name": "Ring-B",
+        "groupType": -2147483644,
+        "uSNChanged": 41105,
+        "whenChanged": "20260914082400.0Z",
+        "member": [
+          "CN=Ring-A,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com"
+        ]
+      }
+    },
+    {
+      "distinguishedName": "CN=Big-Group,OU=Groups,OU=Corp,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1220",
+        "sAMAccountName": "Big-Group",
+        "name": "Big-Group",
+        "groupType": -2147483644,
+        "uSNChanged": 41106,
+        "whenChanged": "20260914082500.0Z",
+        "member": [
+          "CN=Member01,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member02,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member03,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member04,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member05,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member06,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member07,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member08,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member09,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com",
+          "CN=Member10,OU=Bulk,OU=Corp,DC=corp,DC=example,DC=com"
+        ]
+      }
+    },
+    {
+      "distinguishedName": "CN=Contractors,CN=Users,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-1250",
+        "sAMAccountName": "Contractors",
+        "name": "Contractors",
+        "displayName": "Contractors",
+        "groupType": -2147483646,
+        "uSNChanged": 41201,
+        "whenChanged": "20260914083000.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Domain Users,CN=Users,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-513",
+        "sAMAccountName": "Domain Users",
+        "name": "Domain Users",
+        "displayName": "Domain Users",
+        "groupType": -2147483646,
+        "uSNChanged": 41202,
+        "whenChanged": "20260914083100.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=Domain Computers,CN=Users,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "group"
+        ],
+        "objectSid": "S-1-5-21-1004336348-1177238915-682003330-515",
+        "sAMAccountName": "Domain Computers",
+        "name": "Domain Computers",
+        "groupType": -2147483646,
+        "uSNChanged": 41203,
+        "whenChanged": "20260914083200.0Z"
+      }
+    },
+    {
+      "distinguishedName": "CN=S-1-5-21-3623811015-3361044348-30300820-1234,CN=ForeignSecurityPrincipals,DC=corp,DC=example,DC=com",
+      "attributes": {
+        "objectClass": [
+          "top",
+          "foreignSecurityPrincipal"
+        ],
+        "objectSid": "S-1-5-21-3623811015-3361044348-30300820-1234",
+        "name": "S-1-5-21-3623811015-3361044348-30300820-1234",
+        "uSNChanged": 41204,
+        "whenChanged": "20260914083300.0Z"
+      }
+    }
+  ]
+}

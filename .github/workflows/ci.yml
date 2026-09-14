@@ -53,6 +53,20 @@ jobs:
       - name: Build
         run: npm run build
 
+  collector:
+    name: Collector (Pester)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+      # Scoped to the Active Directory collector suite. Widen the path as each further
+      # collector lands its own tests.
+      - name: Collector tests
+        shell: pwsh
+        run: ./scripts/collector-test.ps1 -Path collector/powershell/tests
+
   compose:
     name: Docker Compose configuration
     runs-on: ubuntu-latest
