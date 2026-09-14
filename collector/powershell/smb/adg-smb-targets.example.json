@@ -1,0 +1,44 @@
+{
+  "$comment": [
+    "ADG SMB collector target configuration. Copy to adg-smb-targets.json and edit.",
+    "This file contains no credentials and must never contain any: the collector runs as",
+    "the identity of its own process, so that there is no password to store. Every value",
+    "below is optional except 'servers'."
+  ],
+
+  "servers": [
+    "FS01",
+    "FS02.corp.example.com"
+  ],
+
+  "$comment_servers": "Host names or FQDNs, never UNC paths. There is no domain-wide sweep: ADG scans what you list and nothing else, so that a run's declared scope always means something exact.",
+
+  "protocol": "Wsman",
+  "$comment_protocol": "Wsman (WinRM, TCP 5985/5986) or Dcom (RPC 135 plus the dynamic range). Wsman is usually the easier of the two to allow through a firewall.",
+
+  "timeoutSeconds": 30,
+  "retryCount": 2,
+  "retryDelaySeconds": 2,
+  "$comment_timeouts": "Bounds on how long one unreachable server may cost. The delay grows with each attempt, so retryCount 2 with retryDelaySeconds 2 spends at most about six seconds past the timeouts before giving up on a dead host.",
+
+  "batchSize": 500,
+  "$comment_batchSize": "Observations per batch, at most 1000. Smaller batches make a retry cheaper.",
+
+  "aclMethod": "Auto",
+  "$comment_aclMethod": "Auto reads the share security descriptor (SIDs and raw access masks) and falls back to the permission levels when it cannot. Pin it to Descriptor or Access in a mixed estate: the two forms are legitimately different readings of one ACL, and alternating between them churns the history for no reason.",
+
+  "includeShares": [],
+  "excludeShares": [
+    "Temp*",
+    "Scratch"
+  ],
+  "$comment_patterns": "Wildcard patterns matched against the share name, case-insensitively. An exclude always beats an include. When includeShares is non-empty, only matching shares are recorded.",
+
+  "includeAdminShares": false,
+  "includeHiddenShares": false,
+  "includeNonDiskShares": false,
+  "$comment_defaults": "Administrative shares (C$, ADMIN$, IPC$) are excluded because their ACL is a Windows constant rather than an organizational decision. Ordinary hidden shares (Data$) are excluded by default too, but they ARE an organizational decision - turn includeHiddenShares on if your estate uses them to publish real data.",
+
+  "recordExcludedShares": true,
+  "$comment_recordExcludedShares": "Record that an excluded share exists without reading its ACL. Leave it on: it is what lets a run honestly claim to have enumerated every share on the server, which is in turn what lets ADG notice that a share was deleted. Turning it off hides excluded shares completely, and deletions on that server stop being detectable."
+}

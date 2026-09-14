@@ -387,3 +387,26 @@ function Send-AdgBatch {
   require `docs/contracts/v2/`, a new endpoint prefix, and a migration note in the phase
   handoff that makes the change.
 * An accepted schema file is never edited in place to mean something different.
+
+### 1.1 (Phase 2A)
+
+`smb_share` gains an optional `is_special`: the SMB server's own Special flag, marking an
+administrative or system share. It is additive, so a `1.0` payload that omits it is still
+valid and every `1.x` server accepts both.
+
+It is a *source fact* and could not be derived. Hidden-ness follows from a trailing `$` in
+the share name - and the collector does derive that rather than transmitting it - but an
+ordinary hidden share such as `Data$` is hidden and *not* Special, so a name test cannot
+tell an administrator's hidden share from Windows's own.
+
+Two related values are deliberately still absent from `smb_share`, and neither is an
+oversight:
+
+* the **UNC path**, which is exactly `\\<server_name>\<share_name>`. Carrying it as well
+  would create a second identity for the share that can disagree with the first.
+* **hidden state**, derived from the share name as above.
+
+Availability likewise has no field here. A share the collector could not read is reported
+as a `collectorError` on the completion envelope and leaves the run `partial`; a server it
+could not reach produces no `server` observation at all. Absence of an observation never
+means the object is gone - only a reconciled scope says that.

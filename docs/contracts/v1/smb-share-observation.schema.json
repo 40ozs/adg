@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://adg.local/contracts/v1/smb-share-observation.schema.json",
   "title": "SMB share observation (v1)",
-  "description": "A share exposed by a server. A share is a publication of a directory, not the directory itself: two shares can expose one path with different share ACLs, and a share can be re-pointed without the directory changing.",
+  "description": "A share exposed by a server. A share is a publication of a directory, not the directory itself: two shares can expose one path with different share ACLs, and a share can be re-pointed without the directory changing. The UNC path is deliberately absent: it is exactly \\\\<server_name>\\<share_name>, and carrying it as well would create a second identity that can disagree with the first.",
   "type": "object",
   "unevaluatedProperties": false,
   "allOf": [{ "$ref": "common.schema.json#/$defs/observationBase" }],
@@ -20,11 +20,15 @@
     "share_type": { "$ref": "common.schema.json#/$defs/shareType" },
     "description": { "type": ["string", "null"], "maxLength": 1024 },
     "concurrent_user_limit": { "type": ["integer", "null"], "minimum": 0 },
-    "caching_mode": { "type": ["string", "null"], "maxLength": 64 }
+    "caching_mode": { "type": ["string", "null"], "maxLength": 64 },
+    "is_special": {
+      "description": "The SMB server's own Special flag: this share is administrative or system-created (C$, ADMIN$, IPC$). Added in 1.1. It is a source fact and cannot be derived - hidden-ness follows from a trailing '$' in the name, but an ordinary hidden share such as Data$ is not Special. Null means the source did not say, which is not the same as false.",
+      "type": ["boolean", "null"]
+    }
   },
   "examples": [
     {
-      "schema_version": "1.0",
+      "schema_version": "1.1",
       "kind": "smb_share",
       "run_id": "6f1c1a52-3f4a-4a16-9f2e-1d6b0f2a7c31",
       "observed_at": "2026-09-14T08:01:01Z",
@@ -33,7 +37,8 @@
       "share_name": "Finance",
       "local_path": "D:\\Shares\\Finance",
       "share_type": "disk",
-      "description": "Finance department share"
+      "description": "Finance department share",
+      "is_special": false
     }
   ]
 }

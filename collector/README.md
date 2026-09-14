@@ -11,4 +11,8 @@ never in Docker — because collection requires domain context and Windows APIs.
 Collectors are read-only and report observations. They contain no authorization or business
 logic: effective-access semantics live in the backend (`backend/app/access_engine`).
 
-Implementation begins in Phase 1 (Active Directory identities and membership).
+- `powershell/smb/` — SMB shares and raw share-level ACLs (Phase 2A). See its
+  [README](powershell/smb/README.md) for the privileges, firewall rules, and remote-management
+  prerequisites collection needs.
+
+Run the PowerShell collector suites with `.\scripts\collector-test.ps1`.

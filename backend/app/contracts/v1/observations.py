@@ -292,6 +292,13 @@ class SmbShareObservation(ObservationBase):
     description: str | None = Field(default=None, max_length=1024)
     concurrent_user_limit: int | None = Field(default=None, ge=0)
     caching_mode: str | None = Field(default=None, max_length=64)
+    is_special: bool | None = Field(
+        default=None,
+        description=(
+            "The SMB server's Special flag: an administrative or system share. Added in "
+            "contract 1.1. None means the source did not say, which is not false."
+        ),
+    )
 
     @field_validator("server_name", "share_name")
     @classmethod
