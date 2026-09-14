@@ -1,0 +1,35 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pfx
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Temporary build and scan output (never source of truth)
+.tmp/
+*.log
+
+# Editors and OS
+.vscode/
+.idea/
+Thumbs.db
+ehthumbs.db
+Desktop.ini

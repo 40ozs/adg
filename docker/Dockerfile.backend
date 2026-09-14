@@ -1,0 +1,31 @@
+# ADG backend API image.
+# Build context is the repository root so that both backend/ and database/migrations are
+# available: the API and its migration scripts ship together.
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+COPY backend /app/backend
+COPY database /app/database
+
+# Dependencies come from backend/pyproject.toml only, so the image and a developer
+# workstation can never drift apart.
+RUN python -m pip install --upgrade pip && python -m pip install /app/backend
+
+# Run as an unprivileged user: the API is read-only by default and needs no host rights.
+RUN useradd --create-home --uid 10001 adg && chown -R adg:adg /app
+USER adg
+
+WORKDIR /app/backend
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3).status == 200 else 1)"
+
+# One supported entry point everywhere: it selects an event loop the PostgreSQL
+# driver can use (see app/runtime.py).
+CMD ["python", "-m", "app", "--host", "0.0.0.0", "--port", "8000"]

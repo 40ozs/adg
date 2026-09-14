@@ -1,0 +1,63 @@
+# ADG local development stack: PostgreSQL, the API, and the web frontend.
+#
+# Windows collectors are deliberately NOT part of this stack. They are native Windows
+# processes/services/scheduled tasks that need domain context and Windows APIs, and they
+# submit observations to the API over HTTP.
+#
+# Values come from the repository-root .env file (copy .env.example to .env). No secret is
+# committed; the defaults below are local development values only.
+
+name: adg
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-adg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-adg_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-adg}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - adg_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-adg} -d ${POSTGRES_DB:-adg}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    environment:
+      ADG_ENVIRONMENT: ${ADG_ENVIRONMENT:-development}
+      ADG_LOG_LEVEL: ${ADG_LOG_LEVEL:-INFO}
+      ADG_LOG_FORMAT: ${ADG_LOG_FORMAT:-json}
+      ADG_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-adg}:${POSTGRES_PASSWORD:-adg_dev_password}@db:5432/${POSTGRES_DB:-adg}
+      ADG_CORS_ALLOW_ORIGINS: ${ADG_CORS_ALLOW_ORIGINS:-http://localhost:3000}
+    ports:
+      - "${ADG_API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_ADG_API_URL: ${NEXT_PUBLIC_ADG_API_URL:-http://localhost:8000}
+    environment:
+      # Browser-facing address (baked into the client bundle at build time above).
+      NEXT_PUBLIC_ADG_API_URL: ${NEXT_PUBLIC_ADG_API_URL:-http://localhost:8000}
+      # Server-side rendering runs inside this container, where localhost is the web
+      # container itself; it must call the API by its compose service name.
+      ADG_INTERNAL_API_URL: http://api:8000
+    ports:
+      - "${ADG_WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  adg_pgdata:
