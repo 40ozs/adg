@@ -63,7 +63,7 @@ access with explicit failure), `tests/config.test.ts`.
 `docs/architecture/system-overview.md`, `docs/decisions/adr-template.md`,
 `docs/decisions/README.md`, `docs/contracts/README.md`, `docs/handoffs/README.md`,
 `collector/README.md`, `README.md`, `SECURITY.md`, `.env.example`, `.editorconfig`,
-`.gitignore`.
+`.gitignore`, `.gitattributes`.
 
 ## Important architecture decisions
 
@@ -227,4 +227,5 @@ Captured immediately before the phase commit (every path is new in this phase):
 ?? scripts/
 ```
 
-After the phase commit the working tree is clean.
+Committed as `6b36e5a` (bootstrap) and `a391a15` (line-ending normalization). The
+working tree is clean apart from this handoff's own commit.
