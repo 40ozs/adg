@@ -362,7 +362,7 @@ escalation route no ACL viewer shows, and it is asserted here end to end for the
 
 ## Commit
 
-*Phase 5B: the access explanation API* — hash recorded by the follow-up commit. Not pushed; no remote is configured for
+`58d90d3` — *Phase 5B: the access explanation API*. Not pushed; no remote is configured for
 this repository.
 
 ## `git status --short`
