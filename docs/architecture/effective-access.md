@@ -310,3 +310,36 @@ Every one of them reports rather than silently shortening the answer.
   depends on the calling token, which ADG does not have.
 * **Access-based enumeration.** Whether a principal can *see* a folder they cannot open is
   a share setting ADG records but does not fold into rights.
+
+---
+
+## 11. How this specification was checked (Phase 4C)
+
+Sections 1 to 10 describe what the engine computes. Phase 4C attacked it with a generated case
+matrix and checked the result against Windows itself.
+
+`backend/tests/access_engine/matrix.py` generates **5,631 ACL cases** across the dimensions
+this document is written in — direct, group and nested-group grants; Allow and Deny in both
+orders; explicit and inherited; protected, unprotected, empty and NULL DACLs; the three SMB
+levels and NTFS subsets no label names; owner, non-owner, `OWNER RIGHTS` and `CREATOR OWNER` —
+and renders each to SDDL so that `AuthzAccessCheck`, the API behind the Windows Effective
+Access tab, can be asked the same question.
+
+**5,628 were answerable and 5,626 agree with Windows exactly.** The remaining two are the
+NULL-DACL valid-rights mask, which a real directory settles in the engine's favor.
+
+A further **558 whole-resolver cases** are held to invariants rather than to expected values:
+that no answer contains a right nothing granted, that remote access never exceeds local access
+over the same DACL, that an unread descriptor is never `CERTAIN`. Those catch the defects an
+expected-value test cannot, and one of them found a real one — see the Phase 4C handoff.
+
+Two documents carry the results:
+
+* [`effective-access-limits.md`](effective-access-limits.md) — what the answer does not cover,
+  where the engine deliberately differs from `AuthzAccessCheck` and why, and what a rule author
+  must not read into a result.
+* [`effective-access-performance.md`](effective-access-performance.md) — the measured cost of
+  each of the three questions, and the one listing whose cost still follows the estate.
+
+The harness is `scripts/windows-access-check/`, and it needs no elevation, no domain and no
+share.

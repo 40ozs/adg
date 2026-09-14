@@ -111,6 +111,10 @@ class AccessCondition(StrEnum):
     """The subject is a group. A group holds no token; the rights reported are those of an
     authenticated member of it, which is the useful question but not the literal one."""
 
+    SUBJECT_DISABLED = "subject_disabled"
+    """The subject's account is disabled. Its entries on an ACL are real and stale: the
+    rights are what the ACL grants, and no logon can currently exercise them."""
+
     MEMBERSHIP_TRUNCATED = "membership_truncated"
     """The membership traversal hit a limit. The token is a lower bound, so the rights are
     too."""
@@ -224,6 +228,10 @@ CONDITION_DESCRIPTIONS: Final[dict[AccessCondition, str]] = {
         "The subject is a group. Groups do not hold access tokens; these are the rights an "
         "authenticated member of the group would have."
     ),
+    AccessCondition.SUBJECT_DISABLED: (
+        "This account is disabled. The rights shown are what the ACL grants it; no logon "
+        "can exercise them until the account is re-enabled."
+    ),
     AccessCondition.MEMBERSHIP_TRUNCATED: (
         "The membership traversal stopped at a limit, so the token is a lower bound and the "
         "rights may be wider than reported."
@@ -286,6 +294,7 @@ OVERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
         AccessCondition.ACL_TRUNCATED,
         AccessCondition.SUBJECT_IS_A_GROUP,
         AccessCondition.SUBJECT_UNRESOLVED,
+        AccessCondition.SUBJECT_DISABLED,
     }
 )
 """Conditions under which the reported rights may be **wider** than the truth.
@@ -294,6 +303,12 @@ A restriction ADG could not see would only ever remove rights, so the answer sta
 upper bound. ``ACE_COUNT_MISMATCH``, ``ACL_TRUNCATED`` and ``SUBJECT_UNRESOLVED`` are in
 both sets: the entries that went missing could have been either kind, and a subject nothing
 describes has both unknown memberships and an unknown principal kind.
+
+``SUBJECT_DISABLED`` is here rather than in neither set: a disabled account holds exactly
+the rights its ACLs grant and cannot authenticate to use any of them, so the reported rights
+are an upper bound on what anyone can currently do with the account. They remain worth
+reporting — a disabled account with Full Control over payroll is a finding, not a non-event —
+which is why it is a condition on the answer and not a reason to withhold one.
 
 ``ASSUMED_TOKEN_SIDS`` is deliberately in **neither** set. Windows places ``Everyone``,
 ``Authenticated Users`` and the access path's logon SID in every token of the declared
@@ -311,6 +326,7 @@ UNDERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
         AccessCondition.SUBJECT_UNRESOLVED,
         AccessCondition.ACE_COUNT_MISMATCH,
         AccessCondition.ACL_TRUNCATED,
+        AccessCondition.NTFS_ACL_NOT_OBSERVED,
     }
 )
 """Conditions under which the reported rights may be **narrower** than the truth.
@@ -318,6 +334,16 @@ UNDERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
 A membership ADG has not collected can only add trustees to the token, so a grant may
 exist that this answer does not show. These are the ones that hide a finding, which is why
 they are tracked separately rather than lumped in with the rest.
+
+``NTFS_ACL_NOT_OBSERVED`` is the starkest of them, and it is here because Phase 4C found it
+missing. A path whose descriptor no run has read evaluates against no entries and therefore
+grants nothing — and while the condition was always raised, it belonged to neither set, so
+:func:`~app.access_engine.certainty_of` folded the result to
+:attr:`~app.access_engine.AccessCertainty.CERTAIN`. "Nobody can reach this directory,
+definitely" was the engine's answer for every directory nobody had looked at. It is a lower
+bound, it is the single most dangerous under-statement the resolver can make, and a consumer
+branching on certainty — which ADR-0011 instructs consumers to do — would have stopped
+looking exactly where it needed to look.
 """
 
 

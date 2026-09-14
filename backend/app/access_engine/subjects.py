@@ -191,6 +191,15 @@ class SubjectFacts:
     sid: str
     kind: PrincipalKind | None = None
     display_name: str | None = None
+    enabled: bool | None = None
+    """Whether the account can authenticate, when a run has said so.
+
+    ``None`` is the common case and means nobody recorded it: a group has no such state, and
+    neither does a SID nothing resolved. Only ``False`` changes an answer, and it changes it
+    by qualifying it rather than by emptying it — the rights a disabled account holds are
+    exactly the rights on the ACL, and they are a finding precisely because nothing will
+    revoke them when the account is re-enabled.
+    """
 
     def __post_init__(self) -> None:
         if not self.key:
@@ -353,6 +362,13 @@ def build_token(
             AccessFinding(
                 AccessCondition.SUBJECT_IS_A_GROUP,
                 {"subject_sid": subject.sid, "kind": subject.kind.value if subject.kind else None},
+            )
+        )
+    if subject.enabled is False:
+        notes.append(
+            AccessFinding(
+                AccessCondition.SUBJECT_DISABLED,
+                {"subject_sid": subject.sid, "subject_key": subject.key},
             )
         )
     if not membership_complete:

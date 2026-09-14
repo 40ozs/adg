@@ -341,7 +341,7 @@ def resolve_access(
         layer=RightsLayer.NTFS,
         facts=resource.facts,
     )
-    collected.extend(ntfs.findings)
+    collected.extend(_ntfs_findings(ntfs, resource))
     collected.extend(_provenance_findings(resource))
 
     share_evaluation: AclEvaluation | None = None
@@ -431,6 +431,23 @@ def _limiting_layer(crossed: EffectiveRights) -> LimitingLayer:
     if crossed.limited_by_ntfs:
         return LimitingLayer.NTFS
     return LimitingLayer.NONE
+
+
+def _ntfs_findings(ntfs: AclEvaluation, resource: ResourceDacl) -> tuple[AccessFinding, ...]:
+    """The evaluation's own findings, less any it could not have observed.
+
+    An unread descriptor is evaluated against no entries, and :func:`evaluate_acl` quite
+    correctly reports ``EMPTY_DACL`` for a DACL with nothing in it. But nobody observed this
+    DACL to be empty — nobody observed it at all — and ``EMPTY_DACL`` is a statement about a
+    descriptor that was read and found to grant nobody anything, which is a real and
+    materially different finding. Reporting both leaves a consumer to decide which of two
+    contradictory statements about the same object to believe.
+    """
+    if resource.provenance is not AclProvenance.UNOBSERVED:
+        return ntfs.findings
+    return tuple(
+        finding for finding in ntfs.findings if finding.condition is not AccessCondition.EMPTY_DACL
+    )
 
 
 def _provenance_findings(resource: ResourceDacl) -> tuple[AccessFinding, ...]:

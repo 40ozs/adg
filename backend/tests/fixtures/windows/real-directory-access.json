@@ -1,0 +1,96 @@
+{
+  "schema": "adg.real-access/1",
+  "generated_at": "2026-09-14T20:14:29Z",
+  "method": {
+    "authz_granted": "AuthzAccessCheck(MAXIMUM_ALLOWED) over the descriptor as stored on disk, with the running process token SIDs",
+    "open_granted": "CreateFileW(MAXIMUM_ALLOWED, FILE_FLAG_BACKUP_SEMANTICS) then NtQueryObject(ObjectBasicInformation).GrantedAccess; 0x00000000 means the open was refused"
+  },
+  "host": {
+    "os_caption": "Microsoft Windows 11 Pro",
+    "os_version": "10.0.26200",
+    "powershell": "7.6.6"
+  },
+  "subject": {
+    "user_sid": "S-1-5-21-244598355-2908945568-2798546703-1000",
+    "group_sids": [
+      "S-1-5-21-244598355-2908945568-2798546703-513",
+      "S-1-1-0",
+      "S-1-5-21-244598355-2908945568-2798546703-1002",
+      "S-1-5-32-555",
+      "S-1-5-32-545",
+      "S-1-5-4",
+      "S-1-2-1",
+      "S-1-5-11",
+      "S-1-5-15",
+      "S-1-5-113",
+      "S-1-2-0",
+      "S-1-5-64-10"
+    ],
+    "is_elevated": false
+  },
+  "cases": [
+    {
+      "case": "null-dacl",
+      "description": "A directory with SE_DACL_PRESENT clear. Grants every principal every right. The case the\r\nsynthetic oracle cannot answer, because a bare descriptor carries no object type and Authz\r\ntherefore cannot apply the file system valid-rights mask.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513",
+      "authz_granted": "0x001FFFFF",
+      "open_granted": "0x001F01FF"
+    },
+    {
+      "case": "empty-dacl",
+      "description": "A present but empty DACL. Identical to a NULL DACL in every ACL viewer and its exact\r\nopposite: it grants nobody anything. The owner keeps READ_CONTROL and WRITE_DAC regardless.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI",
+      "authz_granted": "0x00060000",
+      "open_granted": "0x00000000"
+    },
+    {
+      "case": "owner-only-no-ace",
+      "description": "The subject owns the directory and no ACE names them. Windows grants the owner's implicit\r\nREAD_CONTROL and WRITE_DAC before reading a single entry.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(A;;FA;;;SY)",
+      "authz_granted": "0x00060000",
+      "open_granted": "0x00000000"
+    },
+    {
+      "case": "explicit-full",
+      "description": "A direct Full Control grant to the subject.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(A;;FA;;;S-1-5-21-244598355-2908945568-2798546703-1000)",
+      "authz_granted": "0x001F01FF",
+      "open_granted": "0x001F01FF"
+    },
+    {
+      "case": "explicit-modify",
+      "description": "A direct Modify grant to the subject.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(A;;0x1301bf;;;S-1-5-21-244598355-2908945568-2798546703-1000)",
+      "authz_granted": "0x001701BF",
+      "open_granted": "0x001701BF"
+    },
+    {
+      "case": "everyone-read-execute",
+      "description": "Read & Execute for Everyone and no entry naming the subject. Access arrives through a\r\nwell-known SID that no membership edge in any directory records, which is why a token has to\r\nbe constructed rather than read out of the identity graph.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(A;;0x1200a9;;;WD)",
+      "authz_granted": "0x001600A9",
+      "open_granted": "0x001700A9"
+    },
+    {
+      "case": "deny-wins-over-allow",
+      "description": "Deny Modify for Everyone ahead of Allow Full Control for the subject, in canonical order.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(D;;CCDCLCSWRPWPLOCRSDRC;;;WD)(A;;FA;;;S-1-5-21-244598355-2908945568-2798546703-1000)",
+      "authz_granted": "0x001E0040",
+      "open_granted": "0x001F00C0"
+    },
+    {
+      "case": "authenticated-users-modify",
+      "description": "Modify for Authenticated Users. Confirms that SID is in a real interactive token.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(A;;0x1301bf;;;AU)",
+      "authz_granted": "0x001701BF",
+      "open_granted": "0x001701BF"
+    },
+    {
+      "case": "unresolvable-trustee-only",
+      "description": "The only ACE names a SID that resolves to nothing on this host -- the orphaned-SID finding.\r\nIt grants the subject nothing, and the owner's implicit rights are all that remain.",
+      "stored_sddl": "O:S-1-5-21-244598355-2908945568-2798546703-1000G:S-1-5-21-244598355-2908945568-2798546703-513D:PAI(A;;FA;;;S-1-5-21-999888777-666555444-333222111-1234)",
+      "authz_granted": "0x00060000",
+      "open_granted": "0x00000000"
+    }
+  ]
+}

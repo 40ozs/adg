@@ -723,6 +723,7 @@ def _subject_facts(key: str, record: PrincipalRecord | None) -> SubjectFacts:
         sid=record.sid if record is not None else _sid_of(key),
         kind=record.principal_kind if record is not None else None,
         display_name=record.display_name if record is not None else None,
+        enabled=record.enabled if record is not None else None,
     )
 
 
