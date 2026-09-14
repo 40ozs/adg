@@ -323,6 +323,11 @@ rights. Beyond that, per scenario:
 9. Collecting local-group membership on every scanned server closes limitation 3, which is
    currently the most common cause of a lower-bound answer on a real estate.
 
+## Commit
+
+`9f45eda` — *Phase 4B: the effective-access resolver*. Not pushed; no remote is
+configured for this repository.
+
 ## `git status --short`
 
 Taken at the end of this phase, before the commit. Entries marked ✓ belong to this phase and
