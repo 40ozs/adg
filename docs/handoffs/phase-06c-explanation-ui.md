@@ -362,7 +362,7 @@ uvicorn's own loop setup overrides it.
 
 ## Commit
 
-`8ea7ffe` — *Phase 6C: the access explanation screen*. Not pushed; no remote is configured
+`0bf4323` — *Phase 6C: the access explanation screen*. Not pushed; no remote is configured
 for this repository.
 
 ## `git status --short`
