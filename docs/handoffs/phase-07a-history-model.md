@@ -367,7 +367,15 @@ is prerequisite 4 below.
 ## `git status --short`
 
 ```
-GIT_STATUS
+(clean)
 ```
 
-GIT_COMMIT
+Everything above is committed as **`5c9cc6b`** — *Phase 7A: history is a versioned
+observation log*. The working tree is clean.
+
+One file in that commit is **not** this phase's work and is named here so the next
+reader is not puzzled by it: `backend/tests/contracts/test_smb_collector.py` carried an
+uncommitted, formatting-only reflow when this phase started. It is required — the
+committed version of that file is not clean under ruff 0.16.7, verified by running
+`ruff format --check` against `git show HEAD:...` — so the lint gate was failing on a
+dirty tree before this phase and passes on a clean one after it.
