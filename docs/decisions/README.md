@@ -12,4 +12,7 @@ Rules:
 
 | ADR | Title | Status |
 | --- | --- | --- |
-| — | No decisions recorded yet. | — |
+| [0001](0001-sid-as-identity.md) | The SID is the canonical principal identity | Accepted |
+| [0002](0002-graph-preserving-membership.md) | Membership is stored as a graph of edges | Accepted |
+| [0003](0003-raw-observations-vs-derived-state.md) | Raw observations and derived state are stored separately | Accepted |
+| [0004](0004-read-only-collector-posture.md) | Collectors are read-only and least-privileged | Accepted |

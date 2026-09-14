@@ -85,7 +85,7 @@ environments.
 **SID is the canonical identity key.** Display names, UPNs, sAMAccountNames, and
 distinguished names are mutable metadata and must never be a primary key or a join key.
 An unresolvable SID is still a valid, storable fact — orphaned SIDs on an ACL are a finding,
-not an error. (Formalized in Phase 0A.)
+not an error. Formalized in [permission-domain-model.md](permission-domain-model.md) and ADR-0001.
 
 ## Security posture
 
