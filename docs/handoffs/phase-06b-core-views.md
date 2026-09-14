@@ -335,4 +335,4 @@ nothing in this phase touches the backend at all. Worth knowing before the next 
 frontend is no longer a single-session area, so check `git status` before staging, and stage
 paths explicitly rather than with `git add -A`.
 
-**Commit:** recorded in the follow-up.
+**Commit:** `b53d634` — 32 files, +7,219/-5.
