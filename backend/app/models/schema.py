@@ -970,3 +970,9 @@ object_versions = Table(
         "observed to hold; is_present false is a measured absence."
     ),
 )
+    # The change feed's driving predicate: every change is a version opening, so "what
+    # changed between Tuesday and Friday" is a range scan on valid_from. The row id is the
+    # second column because one scan opens thousands of versions at a single instant, and a
+    # cursor carrying only the timestamp would either skip every other version at that
+    # instant or return them all again on the next page.
+    Index("ix_object_versions_opened_at", "valid_from", "id"),

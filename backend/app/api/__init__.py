@@ -30,6 +30,7 @@ from fastapi import APIRouter, Depends
 from app.api import (
     access,
     auth,
+    changes,
     collection,
     graph,
     groups,
@@ -81,6 +82,19 @@ def build_api_router(settings: Settings) -> APIRouter:
         groups.router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
     )
     # Search spans areas, so it requires only the capability to search and then filters
+    # The change feed, the summary, one object's timeline, and the point-in-time
+    # comparison: all of them report what was edited.
+    api_router.include_router(
+        changes.router, dependencies=[Depends(requires(Capability.CHANGES_READ))]
+    )
+    # "Why did access change" is an access answer and requires ACCESS_READ, not the
+    # CHANGES_READ the rest of /api/v1/changes carries. Knowing that an ACE was added and
+    # knowing what a principal could consequently do are different disclosures, and the more
+    # sensitive one does not inherit the weaker requirement -- the same line already drawn
+    # between /api/v1/groups' membership routes and its resource-impact route.
+    api_router.include_router(
+        changes.impact_router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
+    )
     # each category by the caller's own capabilities; see app.services.search.
     api_router.include_router(search.router, dependencies=[Depends(requires(Capability.SEARCH))])
 

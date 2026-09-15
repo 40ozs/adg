@@ -152,6 +152,7 @@ const EXPECTED: Record<string, string[]> = {
     "method",
     "collector_version",
     "target",
+    "mode",
     "batch_count_received",
     "observation_count_applied",
     "error_count",

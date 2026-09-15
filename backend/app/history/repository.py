@@ -70,11 +70,13 @@ from app.repositories.resources import (
 )
 
 __all__ = [
+    "VERSION_COLUMNS",
     "HistoricalMembershipRepository",
     "HistoricalResourceRepository",
     "Presence",
     "VersionAudit",
     "VersionReader",
+    "version_from_row",
 ]
 
 KEY_CHUNK: Final = 5_000
@@ -84,7 +86,7 @@ MAX_TIMELINE_VERSIONS: Final = 500
 whose state changes five hundred times is a finding in its own right, and paging a timeline
 that long in a single answer helps nobody."""
 
-_COLUMNS: Final = (
+VERSION_COLUMNS: Final = (
     object_versions.c.id,
     object_versions.c.object_kind,
     object_versions.c.object_key,
@@ -201,7 +203,7 @@ class VersionReader:
             .mappings()
             .all()
         )
-        return self._seen(_version(rows[0]), at) if rows else None
+        return self._seen(version_from_row(rows[0]), at) if rows else None
 
     async def presence_at(self, kind: ObservationKind, key: str, at: dt.datetime) -> Presence:
         """Whether one object existed at an instant, as one of three answers."""
@@ -238,7 +240,7 @@ class VersionReader:
             if present_only:
                 statement = statement.where(object_versions.c.is_present)
             for row in (await self._session.execute(statement)).mappings():
-                found[row["object_key"]] = self._seen(_version(row), at)
+                found[row["object_key"]] = self._seen(version_from_row(row), at)
         return found
 
     async def contained_at(
@@ -267,7 +269,7 @@ class VersionReader:
         if limit is not None:
             statement = statement.limit(limit)
         return tuple(
-            self._seen(_version(row), at)
+            self._seen(version_from_row(row), at)
             for row in (await self._session.execute(statement)).mappings()
         )
 
@@ -293,7 +295,7 @@ class VersionReader:
         if limit is not None:
             statement = statement.limit(limit)
         return tuple(
-            self._seen(_version(row), at)
+            self._seen(version_from_row(row), at)
             for row in (await self._session.execute(statement)).mappings()
         )
 
@@ -307,7 +309,7 @@ class VersionReader:
         history.
         """
         statement = (
-            select(*_COLUMNS)
+            select(*VERSION_COLUMNS)
             .where(
                 object_versions.c.object_kind == kind.value,
                 object_versions.c.object_key == key,
@@ -320,7 +322,7 @@ class VersionReader:
         return ObjectTimeline(
             kind=kind,
             key=key,
-            versions=tuple(_version(row) for row in rows[:limit]),
+            versions=tuple(version_from_row(row) for row in rows[:limit]),
             truncated=truncated,
         )
 
@@ -333,7 +335,7 @@ class VersionReader:
         deletes a collected fact -- so this is the only way to ask "what has been removed".
         """
         statement = (
-            select(*_COLUMNS)
+            select(*VERSION_COLUMNS)
             .where(
                 object_versions.c.object_kind == kind.value,
                 object_versions.c.valid_to.is_(None),
@@ -342,19 +344,20 @@ class VersionReader:
             .order_by(object_versions.c.valid_from.desc(), object_versions.c.object_key)
             .limit(limit)
         )
-        return tuple(_version(row) for row in (await self._session.execute(statement)).mappings())
+        rows = (await self._session.execute(statement)).mappings()
+        return tuple(version_from_row(row) for row in rows)
 
     @staticmethod
     def _at(kind: ObservationKind, at: dt.datetime) -> Select[Any]:
         """``[valid_from, valid_to)`` — half-open, so exactly one version answers."""
-        return select(*_COLUMNS).where(
+        return select(*VERSION_COLUMNS).where(
             object_versions.c.object_kind == kind.value,
             object_versions.c.valid_from <= at,
             or_(object_versions.c.valid_to.is_(None), object_versions.c.valid_to > at),
         )
 
 
-def _version(row: RowMapping) -> ObjectVersion:
+def version_from_row(row: RowMapping) -> ObjectVersion:
     return ObjectVersion(
         kind=ObservationKind(row["object_kind"]),
         key=row["object_key"],

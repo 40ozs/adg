@@ -12,6 +12,63 @@
         "title": "AccessCertainty",
         "type": "string"
       },
+      "AccessDeltaView": {
+        "description": "What one principal could do to one resource, either side of the change.",
+        "properties": {
+          "access_path": {
+            "title": "Access Path",
+            "type": "string"
+          },
+          "after": {
+            "$ref": "#/components/schemas/AccessSideView"
+          },
+          "before": {
+            "$ref": "#/components/schemas/AccessSideView"
+          },
+          "certainty": {
+            "title": "Certainty",
+            "type": "string"
+          },
+          "conclusive": {
+            "description": "False when either answer was indeterminate. While it is false, 'neutral' is not evidence that nothing changed — only that nothing could be established.",
+            "title": "Conclusive",
+            "type": "boolean"
+          },
+          "direction": {
+            "description": "Which way *effective* access moved. Compare with the change's own direction: an ACL that broadened while this is 'neutral' was overridden by the other layer, by a Deny, or by the principal's own state.",
+            "title": "Direction",
+            "type": "string"
+          },
+          "gained": {
+            "$ref": "#/components/schemas/RightsView"
+          },
+          "lost": {
+            "$ref": "#/components/schemas/RightsView"
+          },
+          "resource_key": {
+            "title": "Resource Key",
+            "type": "string"
+          },
+          "subject_key": {
+            "title": "Subject Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_key",
+          "resource_key",
+          "access_path",
+          "before",
+          "after",
+          "gained",
+          "lost",
+          "direction",
+          "certainty",
+          "conclusive"
+        ],
+        "title": "AccessDeltaView",
+        "type": "object"
+      },
       "AccessExplanationResponse": {
         "description": "Everything needed to render \"why does this principal have this access?\" — once.\n\nThe published shape of this response is\n``docs/contracts/v1/access-explanation.schema.json``; the schema is the contract and\nthis model is the implementation of it, held together by a parity test.\n\nIt is deliberately one round trip. A client that had to fetch the answer, then the\npaths, then the ACL to work out which entry mattered would be reimplementing the access\ncheck to join them — and the whole point of the engine is that nothing outside it ever\nhas to.",
         "properties": {
@@ -301,6 +358,123 @@
         "title": "AccessPathsResponse",
         "type": "object"
       },
+      "AccessSideView": {
+        "description": "One effective-access answer, at one instant.",
+        "properties": {
+          "access": {
+            "title": "Access",
+            "type": "boolean"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "certainty": {
+            "description": "How firmly the historical inputs were grounded.",
+            "title": "Certainty",
+            "type": "string"
+          },
+          "conclusive": {
+            "title": "Conclusive",
+            "type": "boolean"
+          },
+          "outcome": {
+            "description": "granted, denied, no_grant, or indeterminate. Branch on this, never on access.",
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "rights": {
+            "$ref": "#/components/schemas/RightsView"
+          }
+        },
+        "required": [
+          "at",
+          "access",
+          "outcome",
+          "conclusive",
+          "rights",
+          "certainty",
+          "reason"
+        ],
+        "title": "AccessSideView",
+        "type": "object"
+      },
+      "AceEditView": {
+        "description": "A removal and an addition that are one edit of one ACL entry.",
+        "properties": {
+          "ace_type": {
+            "title": "Ace Type",
+            "type": "string"
+          },
+          "container_key": {
+            "description": "The share or directory whose ACL was edited.",
+            "title": "Container Key",
+            "type": "string"
+          },
+          "direction": {
+            "description": "Computed by comparing the two masks, not assigned by a rule. A Deny inverts: a Deny whose mask grew withholds more, so it narrows access.",
+            "title": "Direction",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "rights_after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RightsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rights_before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RightsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "trustee_key": {
+            "title": "Trustee Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "kind",
+          "container_key",
+          "trustee_key",
+          "ace_type",
+          "direction",
+          "severity",
+          "summary"
+        ],
+        "title": "AceEditView",
+        "type": "object"
+      },
       "AceSource": {
         "description": "Where an ACE came from.\n\nExplicit and inherited ACEs are both real grants, but they are managed in different\nplaces: an explicit ACE was set on this object, an inherited ACE comes from an ancestor\nand disappears if the ancestor changes. An audit tool that cannot tell them apart\ncannot tell an administrator where to make a fix.",
         "enum": [
@@ -495,6 +669,44 @@
         "title": "AclProvenance",
         "type": "string"
       },
+      "Affirmation": {
+        "additionalProperties": false,
+        "description": "An object the collector re-read and found unchanged (contract 1.4).\n\nAn affirmation is a full observation's equal in what it *claims* — this object exists,\nin this state, as of ``observed_at`` — and a fraction of its size. It exists because the\nfile system has no change metadata a DACL edit reliably touches: writing an ACL does\nnot move ``LastWriteTime``, so a scan that skipped unchanged directories on a timestamp\nwould skip exactly the changes ADG is for. The collector therefore still reads every\ndescriptor; what it sends for the unchanged ones is this.\n\nTwo rules make it safe, and neither is a matter of trusting the collector:\n\n* **The digest is recomputed, not believed.** The server compares ``digest`` against the\n  value it holds for that object and *refuses* the affirmation when they differ, naming\n  it in the response so the collector re-sends the object in full. A collector that\n  affirms a stale state cannot make the server keep one.\n* **The digest must be computed from this scan's reading**, never copied out of the\n  collector's own cache of what it sent last time. A cached digest would make an\n  affirmation a statement about the collector's memory instead of about the object, and\n  the two diverge precisely when an ACL has changed.\n\nAn affirmed object counts as observed: the run has seen it, so it extends the object's\ntimeline and a run that affirmed everything it did not re-send has still enumerated its\nwhole scope and may reconcile it.",
+        "properties": {
+          "digest": {
+            "description": "The kind's content digest as this scan read it. For 'ntfs_resource' it is exactly the acl_hash of contract 1.2 — over the whole DACL, in the reading being affirmed, including dacl_present and dacl_protected.",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Digest",
+            "type": "string"
+          },
+          "kind": {
+            "const": "ntfs_resource",
+            "description": "Only 'ntfs_resource' may be affirmed in contract 1.4. It is the one kind with a published whole-object digest (acl_hash, contract 1.2) that the server already recomputes from what it stores.",
+            "title": "Kind",
+            "type": "string"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "source_key": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Source Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "source_key",
+          "digest",
+          "observed_at"
+        ],
+        "title": "Affirmation",
+        "type": "object"
+      },
       "AliasView": {
         "properties": {
           "alias_kind": {
@@ -609,6 +821,434 @@
           "via_group"
         ],
         "title": "AppliedAceView",
+        "type": "object"
+      },
+      "AssignOwnerRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "owner_display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Display Name"
+          },
+          "owner_principal_key": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Principal Key"
+          },
+          "owner_subject": {
+            "anyOf": [
+              {
+                "maxLength": 320,
+                "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Subject"
+          },
+          "ownership_role": {
+            "$ref": "#/components/schemas/OwnershipRole",
+            "default": "owner"
+          },
+          "target_key": {
+            "maxLength": 512,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Target Key",
+            "type": "string"
+          },
+          "target_kind": {
+            "$ref": "#/components/schemas/ReviewTargetKind"
+          }
+        },
+        "required": [
+          "target_kind",
+          "target_key"
+        ],
+        "title": "AssignOwnerRequest",
+        "type": "object"
+      },
+      "AssignReviewerRequest": {
+        "properties": {
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "reviewer_display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Display Name"
+          },
+          "reviewer_email": {
+            "anyOf": [
+              {
+                "maxLength": 320,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Email"
+          },
+          "reviewer_subject": {
+            "description": "The reviewer's authentication subject — the 'sub'/'oid' their token carries, or their development account name. Not a Windows SID: the principals in a campaign are what is being reviewed, and the reviewer is a person who signs in to ADG.",
+            "maxLength": 320,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Reviewer Subject",
+            "type": "string"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScopeBody"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Narrow the assignment to part of the campaign. Omit for all of it."
+          }
+        },
+        "required": [
+          "reviewer_subject"
+        ],
+        "title": "AssignReviewerRequest",
+        "type": "object"
+      },
+      "AssignmentCreatedResponse": {
+        "properties": {
+          "assignment": {
+            "$ref": "#/components/schemas/AssignmentView"
+          },
+          "items_attached": {
+            "description": "Items now pointing at this assignment. Includes any that were attached to another assignment before: an assignment answers who is being asked now, and two reviewers each believing an item is theirs is worse than one being replaced.",
+            "title": "Items Attached",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assignment",
+          "items_attached"
+        ],
+        "title": "AssignmentCreatedResponse",
+        "type": "object"
+      },
+      "AssignmentListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AssignmentListResponse",
+        "type": "object"
+      },
+      "AssignmentView": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "assigned_at": {
+            "format": "date-time",
+            "title": "Assigned At",
+            "type": "string"
+          },
+          "assigned_by_subject": {
+            "title": "Assigned By Subject",
+            "type": "string"
+          },
+          "assignment_id": {
+            "format": "uuid",
+            "title": "Assignment Id",
+            "type": "string"
+          },
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "reviewer_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Display Name"
+          },
+          "reviewer_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Email"
+          },
+          "reviewer_subject": {
+            "title": "Reviewer Subject",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoked_by_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked By Subject"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScopeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assignment_id",
+          "campaign_id",
+          "reviewer_subject",
+          "reviewer_display_name",
+          "reviewer_email",
+          "scope",
+          "due_at",
+          "assigned_by_subject",
+          "assigned_at",
+          "revoked_at",
+          "revoked_by_subject",
+          "active"
+        ],
+        "title": "AssignmentView",
+        "type": "object"
+      },
+      "AuditEventView": {
+        "properties": {
+          "actor_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Display Name"
+          },
+          "actor_roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Actor Roles",
+            "type": "array"
+          },
+          "actor_subject": {
+            "title": "Actor Subject",
+            "type": "string"
+          },
+          "campaign_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Id"
+          },
+          "chain_index": {
+            "title": "Chain Index",
+            "type": "integer"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "event_digest": {
+            "title": "Event Digest",
+            "type": "string"
+          },
+          "event_id": {
+            "format": "uuid",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "previous_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Digest"
+          }
+        },
+        "required": [
+          "event_id",
+          "chain_index",
+          "event_type",
+          "occurred_at",
+          "actor_subject",
+          "actor_display_name",
+          "actor_roles",
+          "campaign_id",
+          "item_id",
+          "decision_id",
+          "payload",
+          "previous_digest",
+          "event_digest"
+        ],
+        "title": "AuditEventView",
+        "type": "object"
+      },
+      "AuditResponse": {
+        "properties": {
+          "chain": {
+            "$ref": "#/components/schemas/ChainVerificationView",
+            "description": "Verified over the whole chain, not the page returned. A chain checked over a window would report 'intact' for a trail whose earlier events had been rewritten, which is worse than not checking."
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventView"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "events",
+          "page",
+          "chain"
+        ],
+        "title": "AuditResponse",
         "type": "object"
       },
       "AuthConfigResponse": {
@@ -772,6 +1412,12 @@
       "BatchAcceptedResponse": {
         "description": "Acknowledges a batch, applied or recognized as a replay.",
         "properties": {
+          "affirmed": {
+            "default": 0,
+            "description": "Affirmations accepted: the object was confirmed unchanged.",
+            "title": "Affirmed",
+            "type": "integer"
+          },
           "applied": {
             "description": "Observations stored by this call. Zero for a replay.",
             "title": "Applied",
@@ -781,6 +1427,17 @@
             "format": "uuid",
             "title": "Batch Id",
             "type": "string"
+          },
+          "checkpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckpointAdvanceView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The job cursor this batch moved, when it carried one."
           },
           "duplicate": {
             "description": "True when this batch_id had already been applied.",
@@ -796,6 +1453,14 @@
             "default": 0,
             "title": "Principals Written",
             "type": "integer"
+          },
+          "refused_affirmations": {
+            "description": "Affirmations the server would not accept. Not an error — re-send each named object in full.",
+            "items": {
+              "$ref": "#/components/schemas/RefusedAffirmationView"
+            },
+            "title": "Refused Affirmations",
+            "type": "array"
           },
           "run_id": {
             "format": "uuid",
@@ -966,6 +1631,278 @@
         "title": "BoundaryView",
         "type": "object"
       },
+      "CampaignFocus": {
+        "description": "Which end of the grant a campaign was cut from.\n\nA grant is a relation with two ends, so both focuses produce items describing a\n``(principal, target)`` pair. What differs is which end was *enumerated*, and therefore\nwhat the campaign claims to be complete about: a resource-focused campaign over one\nshare claims every principal named on it; a principal-focused campaign over one group\nclaims every place that group is named. Neither claims the other.",
+        "enum": [
+          "resource",
+          "principal"
+        ],
+        "title": "CampaignFocus",
+        "type": "string"
+      },
+      "CampaignListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "items",
+          "page"
+        ],
+        "title": "CampaignListResponse",
+        "type": "object"
+      },
+      "CampaignStatus": {
+        "description": "Where a campaign is in its life.\n\n``DRAFT`` is the only state in which items may still be built and ``ACTIVE`` the only one\nin which a decision may be recorded. That pairing is what makes a campaign's coverage\nauditable: once reviewers can answer, nothing more can be added for them to answer about.",
+        "enum": [
+          "draft",
+          "active",
+          "closed",
+          "canceled"
+        ],
+        "title": "CampaignStatus",
+        "type": "string"
+      },
+      "CampaignStatusResponse": {
+        "properties": {
+          "audit_head": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Head"
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/CampaignView"
+          },
+          "completion": {
+            "title": "Completion",
+            "type": "number"
+          },
+          "decided_items": {
+            "title": "Decided Items",
+            "type": "integer"
+          },
+          "decisions_by_kind": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Decisions By Kind",
+            "type": "object"
+          },
+          "overdue": {
+            "title": "Overdue",
+            "type": "boolean"
+          },
+          "pending_items": {
+            "title": "Pending Items",
+            "type": "integer"
+          },
+          "reviewers": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewerProgressView"
+            },
+            "title": "Reviewers",
+            "type": "array"
+          },
+          "total_items": {
+            "title": "Total Items",
+            "type": "integer"
+          },
+          "unassigned_items": {
+            "description": "Items attached to no assignment. Reported separately from the pending total because nobody can ever decide them: a campaign with three thousand of these is stuck, not slow.",
+            "title": "Unassigned Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "campaign",
+          "total_items",
+          "pending_items",
+          "decided_items",
+          "unassigned_items",
+          "completion",
+          "decisions_by_kind",
+          "overdue",
+          "reviewers",
+          "audit_head"
+        ],
+        "title": "CampaignStatusResponse",
+        "type": "object"
+      },
+      "CampaignView": {
+        "description": "A campaign, including what it left out.",
+        "properties": {
+          "activated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activated At"
+          },
+          "baseline_at": {
+            "format": "date-time",
+            "title": "Baseline At",
+            "type": "string"
+          },
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "closed_by_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed By Subject"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_subject": {
+            "title": "Created By Subject",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "excluded_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Grants present at the baseline that produced no item, by reason. Reported so that '47 of 47 certified' is never read as coverage of everything: a campaign excluding inherited entries and built-in trustees reviewed less than the estate holds.",
+            "title": "Excluded Counts",
+            "type": "object"
+          },
+          "focus": {
+            "title": "Focus",
+            "type": "string"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          },
+          "item_count": {
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "$ref": "#/components/schemas/GenerationOptionsBody"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeView"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "snapshot_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The digest of the frozen item set. Worth recording outside ADG: it is what a later verification compares against.",
+            "title": "Snapshot Digest"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "campaign_id",
+          "name",
+          "description",
+          "focus",
+          "status",
+          "baseline_at",
+          "due_at",
+          "scopes",
+          "options",
+          "item_count",
+          "excluded_counts",
+          "generated_at",
+          "activated_at",
+          "closed_at",
+          "closed_by_subject",
+          "created_by_subject",
+          "created_at"
+        ],
+        "title": "CampaignView",
+        "type": "object"
+      },
       "CausalPathView": {
         "description": "One route from the subject to one ACE on one object, and what it delivers.",
         "properties": {
@@ -1069,6 +2006,392 @@
         "title": "CausalPathView",
         "type": "object"
       },
+      "ChainVerificationView": {
+        "properties": {
+          "broken_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Broken At"
+          },
+          "head_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Digest"
+          },
+          "intact": {
+            "title": "Intact",
+            "type": "boolean"
+          },
+          "length": {
+            "title": "Length",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "intact",
+          "length",
+          "head_digest",
+          "broken_at",
+          "reason"
+        ],
+        "title": "ChainVerificationView",
+        "type": "object"
+      },
+      "ChangeAction": {
+        "description": "What happened to the object itself.",
+        "enum": [
+          "added",
+          "modified",
+          "removed",
+          "first_observed"
+        ],
+        "title": "ChangeAction",
+        "type": "string"
+      },
+      "ChangeSeverity": {
+        "description": "How much attention a change deserves, from the change alone.\n\nDeliberately **not** a risk score. A risk score is a property of the estate as it now\nstands and is Phase 8's subject; this is a property of one transition, computed from\nwhat moved, in which direction, and about whom. The two will disagree, correctly: an\nEveryone/Full-Control ACE that has been in place for three years is a high risk and no\nchange at all.",
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low",
+          "info"
+        ],
+        "title": "ChangeSeverity",
+        "type": "string"
+      },
+      "ChangeSignificance": {
+        "description": "Whether a change is about access, about description, or about nothing at all.",
+        "enum": [
+          "security",
+          "metadata",
+          "noise",
+          "undetermined"
+        ],
+        "title": "ChangeSignificance",
+        "type": "string"
+      },
+      "ChangeView": {
+        "description": "One classified change.",
+        "properties": {
+          "action": {
+            "description": "added, modified, removed, or first_observed. 'first_observed' is not a creation; render it as 'first seen'.",
+            "title": "Action",
+            "type": "string"
+          },
+          "after": {
+            "$ref": "#/components/schemas/VersionView"
+          },
+          "at": {
+            "description": "The instant the resulting version opened: when somebody looked, not when the change happened. Sort and page on this; render 'window'.",
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deltas": {
+            "description": "Empty for added, removed and first_observed: there is one state, not two.",
+            "items": {
+              "$ref": "#/components/schemas/FieldDeltaView"
+            },
+            "title": "Deltas",
+            "type": "array"
+          },
+          "direction": {
+            "description": "Which way this *edit* moved access. Not whether anybody's effective access moved — ask /changes/impact for that, and expect the two to disagree.",
+            "title": "Direction",
+            "type": "string"
+          },
+          "edit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Index into this response's 'edits' when this change is one half of an ACL entry being rewritten. Two changes sharing an index are one edit.",
+            "title": "Edit"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "reasons": {
+            "description": "Why this severity and direction, in sentences. Render, never parse.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "reconstructed": {
+            "description": "True when either side came from the Phase 7A backfill. Such a version spans everything the old schema knew and conceals any state held inside it.",
+            "title": "Reconstructed",
+            "type": "boolean"
+          },
+          "rule_ids": {
+            "description": "The rule that fired, for support and for grepping the rule table.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Rule Ids",
+            "type": "array"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          },
+          "significance": {
+            "title": "Significance",
+            "type": "string"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/SubjectView"
+          },
+          "window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeWindowView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null only when there is no earlier version to bound the change, which is exactly when the action is first_observed."
+          }
+        },
+        "required": [
+          "kind",
+          "key",
+          "action",
+          "significance",
+          "direction",
+          "severity",
+          "reasons",
+          "rule_ids",
+          "at",
+          "reconstructed",
+          "subject",
+          "after"
+        ],
+        "title": "ChangeView",
+        "type": "object"
+      },
+      "ChangeWindowView": {
+        "description": "When a change happened, as the interval it is known to have happened inside.",
+        "properties": {
+          "after": {
+            "description": "The last instant the previous state was confirmed. The change is later.",
+            "format": "date-time",
+            "title": "After",
+            "type": "string"
+          },
+          "at_or_before": {
+            "description": "The observation that contradicted it. The change had happened by then.",
+            "format": "date-time",
+            "title": "At Or Before",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "description": "How wide the uncertainty is. Zero when is_exact.",
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "is_exact": {
+            "description": "True when two observations bracket the change to a single instant.",
+            "title": "Is Exact",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "after",
+          "at_or_before",
+          "is_exact",
+          "duration_seconds"
+        ],
+        "title": "ChangeWindowView",
+        "type": "object"
+      },
+      "ChangesResponse": {
+        "description": "One page of changes.",
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeView"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "edits": {
+            "description": "ACL entries rewritten, paired from the removal and addition that record them. ADG stores an ACE's rights as part of its identity, so one edit is two rows.",
+            "items": {
+              "$ref": "#/components/schemas/AceEditView"
+            },
+            "title": "Edits",
+            "type": "array"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/FiltersView"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "scan_exhausted": {
+            "description": "True when the page ended because the server's scan budget ran out rather than because the page filled or the window did. More changes exist either way; a short page with this set is not the end of the data.",
+            "title": "Scan Exhausted",
+            "type": "boolean"
+          },
+          "scanned": {
+            "description": "Raw versions examined to build this page, filtered or not.",
+            "title": "Scanned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "filters",
+          "changes",
+          "edits",
+          "page",
+          "scanned",
+          "scan_exhausted"
+        ],
+        "title": "ChangesResponse",
+        "type": "object"
+      },
+      "CheckpointAdvanceView": {
+        "description": "Whether this call moved the job's resume point, and why not if it did not.",
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "checkpoint": {
+            "$ref": "#/components/schemas/CheckpointView"
+          },
+          "job": {
+            "title": "Job",
+            "type": "string"
+          },
+          "rejection_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Code"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Present when the cursor was refused. The stored checkpoint is unchanged, so the next run of this job must read its whole scope rather than resume.",
+            "title": "Rejection Reason"
+          }
+        },
+        "required": [
+          "job",
+          "accepted",
+          "checkpoint"
+        ],
+        "title": "CheckpointAdvanceView",
+        "type": "object"
+      },
+      "CheckpointKind": {
+        "description": "What kind of cursor a checkpoint carries, and therefore how it may be compared.",
+        "enum": [
+          "usn",
+          "timestamp",
+          "opaque"
+        ],
+        "title": "CheckpointKind",
+        "type": "string"
+      },
+      "CheckpointView": {
+        "description": "A collector checkpoint as it went over the wire (contract 1.4).",
+        "properties": {
+          "issued_at": {
+            "format": "date-time",
+            "title": "Issued At",
+            "type": "string"
+          },
+          "issuer": {
+            "title": "Issuer",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "token",
+          "issuer",
+          "issued_at"
+        ],
+        "title": "CheckpointView",
+        "type": "object"
+      },
+      "CollectionMode": {
+        "description": "What a run set out to read.\n\nThe three values are not three degrees of thoroughness; they are three different\n*claims about coverage*, and only the last two make one.",
+        "enum": [
+          "full",
+          "delta",
+          "reconcile"
+        ],
+        "title": "CollectionMode",
+        "type": "string"
+      },
       "CollectionOperationsResponse": {
         "properties": {
           "counts": {
@@ -1164,6 +2487,42 @@
           "summary"
         ],
         "title": "CollectionStatusResponse",
+        "type": "object"
+      },
+      "CollectorCheckpoint": {
+        "additionalProperties": false,
+        "description": "How far a delta run got, and who issued the cursor (contract 1.4).\n\nThe issuer is not optional decoration. ``uSNChanged`` is a counter local to one domain\ncontroller, so DC1's watermark replayed against DC2 skips every object whose USN on DC2\nhappens to fall below it, and a DC restored from backup reissues numbers it has already\nhanded out. The server compares a new checkpoint against the stored one only when both\nname the same issuer, and refuses it otherwise rather than storing a number it cannot\nshow to be ahead.",
+        "properties": {
+          "issued_at": {
+            "format": "date-time",
+            "title": "Issued At",
+            "type": "string"
+          },
+          "issuer": {
+            "description": "Whatever the cursor is local to. For a domain controller, its dsServiceName and invocationId joined: the first changes when the collector binds a different DC, the second when the same DC is restored from backup.",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Issuer",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CheckpointKind"
+          },
+          "token": {
+            "description": "The cursor. A decimal integer for 'usn', an RFC 3339 timestamp with an offset for 'timestamp', anything the collector likes for 'opaque'.",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "token",
+          "issuer",
+          "issued_at"
+        ],
+        "title": "CollectorCheckpoint",
         "type": "object"
       },
       "CollectorCoverageView": {
@@ -1351,6 +2710,156 @@
         "title": "CollectorKind",
         "type": "string"
       },
+      "ComparisonResponse": {
+        "description": "What is different between two instants.",
+        "properties": {
+          "at_from": {
+            "format": "date-time",
+            "title": "At From",
+            "type": "string"
+          },
+          "at_to": {
+            "format": "date-time",
+            "title": "At To",
+            "type": "string"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeView"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "edits": {
+            "items": {
+              "$ref": "#/components/schemas/AceEditView"
+            },
+            "title": "Edits",
+            "type": "array"
+          },
+          "scope_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Key"
+          },
+          "scope_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Target"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SummaryResponse"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "unchanged": {
+            "description": "Objects present and identical at both instants.",
+            "title": "Unchanged",
+            "type": "integer"
+          },
+          "unobserved_at_from": {
+            "description": "Objects covered at the later instant and by no version at all at the earlier one. Counted, never reported as additions: nothing had looked yet.",
+            "title": "Unobserved At From",
+            "type": "integer"
+          },
+          "unobserved_at_to": {
+            "description": "Objects covered at the earlier instant and by no version at the later one. Counted, never reported as removals: reporting these would revoke access on the strength of nobody having looked.",
+            "title": "Unobserved At To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at_from",
+          "at_to",
+          "changes",
+          "edits",
+          "unchanged",
+          "unobserved_at_from",
+          "unobserved_at_to",
+          "truncated",
+          "summary"
+        ],
+        "title": "ComparisonResponse",
+        "type": "object"
+      },
+      "CreateCampaignRequest": {
+        "properties": {
+          "baseline_at": {
+            "description": "The instant the campaign is frozen against. Items are generated from the state observed at this moment, so the campaign stays reproducible however the estate changes afterwards. Must be in the past and must carry a time zone.",
+            "format": "date-time",
+            "title": "Baseline At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "focus": {
+            "$ref": "#/components/schemas/CampaignFocus",
+            "description": "Which end of the grant the campaign enumerates, and therefore what it claims to be complete about. 'resource' scopes select shares and directories; 'principal' scopes select one principal wherever it is named."
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "$ref": "#/components/schemas/GenerationOptionsBody"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeBody"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "focus",
+          "scopes",
+          "baseline_at"
+        ],
+        "title": "CreateCampaignRequest",
+        "type": "object"
+      },
       "CycleView": {
         "description": "A membership cycle, reported as a finding rather than silently skipped.",
         "properties": {
@@ -1375,6 +2884,132 @@
           "representative_path"
         ],
         "title": "CycleView",
+        "type": "object"
+      },
+      "DecisionKind": {
+        "description": "What a reviewer concluded about one grant.\n\n``ABSTAIN`` is a first-class answer rather than a way of leaving an item pending. A\nreviewer who cannot judge a grant has said something real — usually that the wrong\nperson was asked — and recording it beats an item that sits unanswered and is\nindistinguishable from one nobody opened.",
+        "enum": [
+          "certify",
+          "revoke",
+          "modify",
+          "abstain"
+        ],
+        "title": "DecisionKind",
+        "type": "string"
+      },
+      "DecisionView": {
+        "properties": {
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Display Name"
+          },
+          "decided_by_subject": {
+            "title": "Decided By Subject",
+            "type": "string"
+          },
+          "decided_late": {
+            "title": "Decided Late",
+            "type": "boolean"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "decision_id": {
+            "format": "uuid",
+            "title": "Decision Id",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "superseded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superseded At"
+          },
+          "superseded_by_decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superseded By Decision Id"
+          },
+          "supersedes_decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Decision Id"
+          }
+        },
+        "required": [
+          "decision_id",
+          "item_id",
+          "campaign_id",
+          "decision",
+          "rationale",
+          "decided_by_subject",
+          "decided_by_display_name",
+          "decided_at",
+          "decided_late",
+          "supersedes_decision_id",
+          "superseded_at",
+          "superseded_by_decision_id",
+          "current"
+        ],
+        "title": "DecisionView",
         "type": "object"
       },
       "DependencyStatus": {
@@ -2098,6 +3733,110 @@
         "title": "ExplanationNodeView",
         "type": "object"
       },
+      "FieldDeltaView": {
+        "description": "One field that moved.",
+        "properties": {
+          "after": {
+            "title": "After"
+          },
+          "before": {
+            "title": "Before"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "significance": {
+            "description": "identity, security, metadata, noise, order, derived, or unclassified. 'order' is resolved per change rather than per field: see the change's own significance.",
+            "title": "Significance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "significance"
+        ],
+        "title": "FieldDeltaView",
+        "type": "object"
+      },
+      "FiltersView": {
+        "description": "The filter that produced this list, echoed back.",
+        "properties": {
+          "actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kinds"
+          },
+          "min_severity": {
+            "title": "Min Severity",
+            "type": "string"
+          },
+          "scope_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Key"
+          },
+          "scope_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Target"
+          },
+          "significance": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Significance",
+            "type": "array"
+          },
+          "window_from": {
+            "format": "date-time",
+            "title": "Window From",
+            "type": "string"
+          },
+          "window_to": {
+            "format": "date-time",
+            "title": "Window To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "window_from",
+          "window_to",
+          "actions",
+          "significance",
+          "min_severity"
+        ],
+        "title": "FiltersView",
+        "type": "object"
+      },
       "FindingView": {
         "description": "One thing the resolver assumed or could not settle.",
         "properties": {
@@ -2132,6 +3871,202 @@
           "may_understate"
         ],
         "title": "FindingView",
+        "type": "object"
+      },
+      "GenerationOptionsBody": {
+        "description": "What the campaign will deliberately not ask about. All three are reported back.",
+        "properties": {
+          "include_builtin": {
+            "default": false,
+            "description": "Include well-known trustees such as SYSTEM and BUILTIN\\Administrators. Off by default: they appear on nearly every descriptor and reviewing them thousands of times buries the grants that matter.",
+            "title": "Include Builtin",
+            "type": "boolean"
+          },
+          "include_deny": {
+            "default": true,
+            "description": "Include Deny entries. On by default: a deny is part of the grant, and an item showing only the allow would ask somebody to certify access that does not exist.",
+            "title": "Include Deny",
+            "type": "boolean"
+          },
+          "include_inherited": {
+            "default": false,
+            "description": "Include entries inherited from an ancestor. Off by default: an inherited entry cannot be removed where it sits, so the items would not be actionable there, and the count multiplies by roughly the depth of the tree.",
+            "title": "Include Inherited",
+            "type": "boolean"
+          }
+        },
+        "title": "GenerationOptionsBody",
+        "type": "object"
+      },
+      "GenerationResponse": {
+        "properties": {
+          "campaign": {
+            "$ref": "#/components/schemas/CampaignView"
+          },
+          "excluded_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Excluded Counts",
+            "type": "object"
+          },
+          "item_count": {
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "regenerated": {
+            "description": "True when this replaced an earlier draft generation rather than the first.",
+            "title": "Regenerated",
+            "type": "boolean"
+          },
+          "snapshot_digest": {
+            "title": "Snapshot Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "campaign",
+          "item_count",
+          "excluded_counts",
+          "snapshot_digest",
+          "regenerated"
+        ],
+        "title": "GenerationResponse",
+        "type": "object"
+      },
+      "GrantView": {
+        "description": "One access-control entry, exactly as it stood at the baseline.",
+        "properties": {
+          "access_mask": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Mask"
+          },
+          "ace_flags": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ace Flags"
+          },
+          "ace_key": {
+            "title": "Ace Key",
+            "type": "string"
+          },
+          "ace_type": {
+            "title": "Ace Type",
+            "type": "string"
+          },
+          "certainty": {
+            "description": "How firmly this entry is known to have held at the baseline: observed, inferred, backfilled, or unobserved. Never omitted — certifying reconstructed state as though it had been watched is the one way a review can make an audit worse rather than better.",
+            "title": "Certainty",
+            "type": "string"
+          },
+          "deny": {
+            "title": "Deny",
+            "type": "boolean"
+          },
+          "inherited": {
+            "title": "Inherited",
+            "type": "boolean"
+          },
+          "inherited_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inherited From"
+          },
+          "last_confirmed_at": {
+            "format": "date-time",
+            "title": "Last Confirmed At",
+            "type": "string"
+          },
+          "observed_from": {
+            "format": "date-time",
+            "title": "Observed From",
+            "type": "string"
+          },
+          "order_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Index"
+          },
+          "permission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permission"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "trustee_key": {
+            "title": "Trustee Key",
+            "type": "string"
+          },
+          "trustee_sid": {
+            "title": "Trustee Sid",
+            "type": "string"
+          },
+          "version_id": {
+            "description": "The object_versions row this entry was copied from. Re-reading it reproduces this evidence exactly, which is what makes a campaign checkable after the fact.",
+            "title": "Version Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ace_key",
+          "trustee_sid",
+          "trustee_key",
+          "ace_type",
+          "access_mask",
+          "permission",
+          "ace_flags",
+          "source",
+          "inherited_from",
+          "order_index",
+          "inherited",
+          "deny",
+          "version_id",
+          "observed_from",
+          "last_confirmed_at",
+          "certainty"
+        ],
+        "title": "GrantView",
         "type": "object"
       },
       "GroupScope": {
@@ -2257,6 +4192,240 @@
         "title": "IdentityHitView",
         "type": "object"
       },
+      "ImpactResponse": {
+        "description": "Why access changed, resolved by the live engine over historical inputs.",
+        "properties": {
+          "access": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccessDeltaView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "at_after": {
+            "format": "date-time",
+            "title": "At After",
+            "type": "string"
+          },
+          "at_before": {
+            "format": "date-time",
+            "title": "At Before",
+            "type": "string"
+          },
+          "change": {
+            "$ref": "#/components/schemas/ChangeView"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "membership": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MembershipDeltaView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verdict": {
+            "description": "resolved, needs_a_subject, needs_a_resource, unbounded, or not_applicable. Anything but 'resolved' means the engine was not given a pair to resolve, not that nothing happened.",
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "change",
+          "at_before",
+          "at_after",
+          "verdict",
+          "explanation"
+        ],
+        "title": "ImpactResponse",
+        "type": "object"
+      },
+      "ItemDetailResponse": {
+        "properties": {
+          "decisions": {
+            "description": "Every decision ever recorded on this item, oldest first. A superseded decision stays: 'certified on the 3rd, revoked on the 9th' and 'revoked on the 9th' are different histories and only the first lets an auditor ask what changed.",
+            "items": {
+              "$ref": "#/components/schemas/DecisionView"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "item": {
+            "$ref": "#/components/schemas/ItemView"
+          }
+        },
+        "required": [
+          "item",
+          "decisions"
+        ],
+        "title": "ItemDetailResponse",
+        "type": "object"
+      },
+      "ItemListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "items",
+          "page"
+        ],
+        "title": "ItemListResponse",
+        "type": "object"
+      },
+      "ItemView": {
+        "properties": {
+          "assignment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "certainty": {
+            "title": "Certainty",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Decision Id"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "evidence_digest": {
+            "title": "Evidence Digest",
+            "type": "string"
+          },
+          "focus": {
+            "title": "Focus",
+            "type": "string"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/GrantView"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "principal_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The name this principal had at the baseline, where one was known. Null means the SID was named on an access-control list and nothing had described it then — an orphaned-SID finding, not a rendering gap.",
+            "title": "Principal Display Name"
+          },
+          "principal_key": {
+            "title": "Principal Key",
+            "type": "string"
+          },
+          "principal_sid": {
+            "title": "Principal Sid",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target_key": {
+            "title": "Target Key",
+            "type": "string"
+          },
+          "target_kind": {
+            "title": "Target Kind",
+            "type": "string"
+          },
+          "target_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Path"
+          }
+        },
+        "required": [
+          "item_id",
+          "campaign_id",
+          "focus",
+          "target_kind",
+          "target_key",
+          "target_path",
+          "principal_key",
+          "principal_sid",
+          "grants",
+          "evidence_digest",
+          "certainty",
+          "status",
+          "assignment_id",
+          "current_decision_id",
+          "decided_at",
+          "created_at"
+        ],
+        "title": "ItemView",
+        "type": "object"
+      },
       "LimitingLayer": {
         "description": "Which authorization layer removed rights the other would have granted.\n\nThe single most actionable field in a result: it sends an administrator to the ACL that\nis actually in the way. \"The user has Read\" is a fact; \"NTFS grants Modify and the share\ngrants Read\" is a fix.",
         "enum": [
@@ -2326,6 +4495,51 @@
         ],
         "title": "MemberInclusion",
         "type": "string"
+      },
+      "MembershipDeltaView": {
+        "description": "Which groups a principal reached either side of the change.",
+        "properties": {
+          "after_count": {
+            "title": "After Count",
+            "type": "integer"
+          },
+          "before_count": {
+            "title": "Before Count",
+            "type": "integer"
+          },
+          "certainty": {
+            "title": "Certainty",
+            "type": "string"
+          },
+          "gained": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Gained",
+            "type": "array"
+          },
+          "lost": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lost",
+            "type": "array"
+          },
+          "subject_key": {
+            "title": "Subject Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_key",
+          "gained",
+          "lost",
+          "before_count",
+          "after_count",
+          "certainty"
+        ],
+        "title": "MembershipDeltaView",
+        "type": "object"
       },
       "MembershipEdgeKind": {
         "description": "How a membership relationship was established.",
@@ -2438,7 +4652,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -2614,7 +4828,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -3077,7 +5291,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -3337,9 +5551,29 @@
         "additionalProperties": false,
         "description": "A chunk of observations belonging to one run.\n\nThe batch is the unit of retry. A server that has already applied ``batch_id`` for this\nrun acknowledges it again without re-applying, and every observation is keyed by\n``(run_id, source_key)`` so even an un-deduplicated replay converges on the same state.",
         "properties": {
+          "affirmations": {
+            "description": "Contract 1.4. Objects this scan re-read and found unchanged, sent as a key and a digest instead of the whole object. The server verifies each digest against what it holds and refuses the ones that disagree.",
+            "items": {
+              "$ref": "#/components/schemas/Affirmation"
+            },
+            "maxItems": 5000,
+            "title": "Affirmations",
+            "type": "array"
+          },
           "batch_id": {
             "title": "Batch Id",
             "type": "string"
+          },
+          "checkpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectorCheckpoint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contract 1.4. The cursor covering everything in and before this batch. The server advances the job's stored checkpoint to it only once the batch has been applied, so a batch that never arrived cannot move the resume point past it."
           },
           "continuation_token": {
             "anyOf": [
@@ -3397,7 +5631,6 @@
               ]
             },
             "maxItems": 1000,
-            "minItems": 1,
             "title": "Observations",
             "type": "array"
           },
@@ -3406,7 +5639,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -3419,11 +5652,177 @@
         "required": [
           "run_id",
           "batch_id",
-          "sequence",
-          "observations"
+          "sequence"
         ],
         "title": "ObservationBatch",
         "type": "object"
+      },
+      "ObservationKind": {
+        "description": "Discriminator identifying which fact an observation carries.",
+        "enum": [
+          "principal",
+          "membership_edge",
+          "server",
+          "smb_share",
+          "smb_ace",
+          "ntfs_resource",
+          "ntfs_ace"
+        ],
+        "title": "ObservationKind",
+        "type": "string"
+      },
+      "OwnerListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OwnerView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "items",
+          "page"
+        ],
+        "title": "OwnerListResponse",
+        "type": "object"
+      },
+      "OwnerView": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "assigned_at": {
+            "format": "date-time",
+            "title": "Assigned At",
+            "type": "string"
+          },
+          "assigned_by_subject": {
+            "title": "Assigned By Subject",
+            "type": "string"
+          },
+          "is_adg_metadata": {
+            "default": true,
+            "description": "Always true, and present to say so on every record: this is ADG's statement of accountability, not the owner field of the Windows security descriptor. The collected owner SID is reported by the resource endpoints and the two are never merged.",
+            "title": "Is Adg Metadata",
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "owner_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Display Name"
+          },
+          "owner_id": {
+            "format": "uuid",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "owner_principal_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Principal Key"
+          },
+          "owner_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Subject"
+          },
+          "ownership_role": {
+            "title": "Ownership Role",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "revoked_by_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked By Subject"
+          },
+          "target_key": {
+            "title": "Target Key",
+            "type": "string"
+          },
+          "target_kind": {
+            "title": "Target Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "owner_id",
+          "target_kind",
+          "target_key",
+          "ownership_role",
+          "owner_subject",
+          "owner_principal_key",
+          "owner_display_name",
+          "note",
+          "assigned_by_subject",
+          "assigned_at",
+          "revoked_at",
+          "revoked_by_subject",
+          "active"
+        ],
+        "title": "OwnerView",
+        "type": "object"
+      },
+      "OwnershipRole": {
+        "description": "Why ADG holds this party accountable for a resource.\n\nBoth values are ADG metadata. Neither says anything about the owner field of the Windows\nsecurity descriptor, which is collected separately and never written.",
+        "enum": [
+          "owner",
+          "delegate"
+        ],
+        "title": "OwnershipRole",
+        "type": "string"
       },
       "PageInfo": {
         "description": "Where a caller is in a list, and how to continue.",
@@ -3922,7 +6321,7 @@
             "title": "Sam Account Name"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -4265,6 +6664,119 @@
         "title": "PrincipalView",
         "type": "object"
       },
+      "ProposalView": {
+        "properties": {
+          "ace_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ace Keys",
+            "type": "array"
+          },
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "note": {
+            "default": "ADG records this proposal and does not perform it. The application is read-only toward the estate; applying a change is somebody's decision, made elsewhere.",
+            "description": "Constant. Present so a client cannot render a proposal as an action taken.",
+            "title": "Note",
+            "type": "string"
+          },
+          "principal_key": {
+            "title": "Principal Key",
+            "type": "string"
+          },
+          "proposal_id": {
+            "format": "uuid",
+            "title": "Proposal Id",
+            "type": "string"
+          },
+          "proposed_at": {
+            "format": "date-time",
+            "title": "Proposed At",
+            "type": "string"
+          },
+          "proposed_by_subject": {
+            "title": "Proposed By Subject",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target_key": {
+            "title": "Target Key",
+            "type": "string"
+          },
+          "target_kind": {
+            "title": "Target Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "proposal_id",
+          "item_id",
+          "campaign_id",
+          "decision_id",
+          "action",
+          "status",
+          "target_kind",
+          "target_key",
+          "principal_key",
+          "ace_keys",
+          "details",
+          "proposed_by_subject",
+          "proposed_at"
+        ],
+        "title": "ProposalView",
+        "type": "object"
+      },
+      "ProposeRemediationRequest": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RemediationAction"
+          },
+          "details": {
+            "additionalProperties": true,
+            "description": "Free-form context.",
+            "title": "Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "ProposeRemediationRequest",
+        "type": "object"
+      },
       "ProvenanceView": {
         "description": "Which runs saw an object, and when.",
         "properties": {
@@ -4431,6 +6943,83 @@
         ],
         "title": "ReadinessResponse",
         "type": "object"
+      },
+      "ReconciliationDriftView": {
+        "description": "What a reconciliation corrected that the incremental runs could not.",
+        "properties": {
+          "delta_runs_since": {
+            "title": "Delta Runs Since",
+            "type": "integer"
+          },
+          "marked_absent": {
+            "title": "Marked Absent",
+            "type": "integer"
+          },
+          "revived": {
+            "title": "Revived",
+            "type": "integer"
+          },
+          "scope_key": {
+            "title": "Scope Key",
+            "type": "string"
+          },
+          "scope_kind": {
+            "title": "Scope Kind",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope_kind",
+          "scope_key",
+          "marked_absent",
+          "revived",
+          "delta_runs_since",
+          "summary"
+        ],
+        "title": "ReconciliationDriftView",
+        "type": "object"
+      },
+      "RefusedAffirmationView": {
+        "description": "One affirmation the server would not accept (contract 1.4).\n\nReturned rather than logged because the collector is the only party that can act on it:\nevery entry means *send this object in full next time*, and a collector that is not told\nkeeps affirming a state ADG does not hold.",
+        "properties": {
+          "detail": {
+            "description": "One sentence saying what to do about it.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "reason": {
+            "description": "unknown_object, no_stored_digest, digest_mismatch, absent, or untracked. digest_mismatch is the ordinary one: the ACL changed.",
+            "title": "Reason",
+            "type": "string"
+          },
+          "source_key": {
+            "title": "Source Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_key",
+          "reason",
+          "detail"
+        ],
+        "title": "RefusedAffirmationView",
+        "type": "object"
+      },
+      "RemediationAction": {
+        "description": "A change somebody might make in Windows as a result of a decision.\n\nEvery member is a **proposal**. ADG performs none of them: the application is read-only\ntoward the estate (SECURITY.md), ``Capability.REMEDIATION_EXECUTE`` is held by no role,\nand nothing in the governance package can reach a Windows API.",
+        "enum": [
+          "remove_ace",
+          "reduce_rights",
+          "remove_group_member",
+          "replace_with_group",
+          "manual_review"
+        ],
+        "title": "RemediationAction",
+        "type": "string"
       },
       "RemovalTargetView": {
         "description": "What removing one edge would do, measured by re-running the access check.",
@@ -4814,6 +7403,105 @@
         "title": "ResourceRef",
         "type": "object"
       },
+      "ReviewItemStatus": {
+        "description": "Whether one item has been answered.",
+        "enum": [
+          "pending",
+          "decided"
+        ],
+        "title": "ReviewItemStatus",
+        "type": "string"
+      },
+      "ReviewScopeKind": {
+        "description": "What a campaign scope selects.\n\nDeliberately not :class:`app.contracts.v1.common.ScopeKind`, which a collector uses to\ndeclare what it was authoritative for. These select review targets out of state ADG\nalready holds, and sharing one enum would eventually let a collector's claim of coverage\nbe read as a review's claim of coverage.",
+        "enum": [
+          "server",
+          "share",
+          "directory_tree",
+          "principal"
+        ],
+        "title": "ReviewScopeKind",
+        "type": "string"
+      },
+      "ReviewTargetKind": {
+        "description": "Which access-control list an item's grant sits on.\n\nDeliberately not :class:`app.domain.ResourceKind`, which distinguishes a directory from\na file. This distinguishes the *share's* permissions from the *file system's*, and the\ntwo are removed in different places, often by different people.",
+        "enum": [
+          "share",
+          "resource"
+        ],
+        "title": "ReviewTargetKind",
+        "type": "string"
+      },
+      "ReviewerProgressView": {
+        "properties": {
+          "assigned": {
+            "title": "Assigned",
+            "type": "integer"
+          },
+          "assignment_id": {
+            "format": "uuid",
+            "title": "Assignment Id",
+            "type": "string"
+          },
+          "decided": {
+            "title": "Decided",
+            "type": "integer"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "reviewer_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Display Name"
+          },
+          "reviewer_subject": {
+            "title": "Reviewer Subject",
+            "type": "string"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScopeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assignment_id",
+          "reviewer_subject",
+          "reviewer_display_name",
+          "scope",
+          "due_at",
+          "assigned",
+          "decided",
+          "pending"
+        ],
+        "title": "ReviewerProgressView",
+        "type": "object"
+      },
       "RightsView": {
         "description": "A rights mask, with its rendering alongside it. The mask is the answer.",
         "properties": {
@@ -5085,6 +7773,17 @@
             "title": "Already Completed",
             "type": "boolean"
           },
+          "checkpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckpointAdvanceView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The job cursor this completion moved. Absent when the run carried no checkpoint, and refused when the server downgraded the run."
+          },
           "downgrade_reason": {
             "anyOf": [
               {
@@ -5095,6 +7794,14 @@
               }
             ],
             "title": "Downgrade Reason"
+          },
+          "drift": {
+            "description": "One entry per reconciled scope, counting only what this run corrected about objects' presence. Empty for a run that reconciled nothing.",
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationDriftView"
+            },
+            "title": "Drift",
+            "type": "array"
           },
           "reconciled_scopes": {
             "title": "Reconciled Scopes",
@@ -5124,10 +7831,28 @@
         "additionalProperties": false,
         "description": "Closes a run and optionally reconciles the scopes it fully enumerated.",
         "properties": {
+          "affirmation_count": {
+            "default": 0,
+            "description": "Contract 1.4. How many affirmations the collector sent, counted the way `observation_count` counts observations.",
+            "minimum": 0.0,
+            "title": "Affirmation Count",
+            "type": "integer"
+          },
           "batch_count": {
             "minimum": 0.0,
             "title": "Batch Count",
             "type": "integer"
+          },
+          "checkpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectorCheckpoint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contract 1.4. The cursor the next delta may resume from. Permitted only on a run that succeeded: see the validator."
           },
           "completed_at": {
             "format": "date-time",
@@ -5178,7 +7903,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -5227,10 +7952,45 @@
         "additionalProperties": false,
         "description": "Opens a scan run.\n\nRe-posting an identical start is a no-op that returns the existing run: the collector\nowns ``run_id``, so a retry after a timeout cannot create a second run.",
         "properties": {
+          "baseline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectorCheckpoint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contract 1.4. The checkpoint this delta resumed from. Recorded so that a later gap can be attributed: without it, a run that resumed from a watermark nobody kept is indistinguishable from one that read everything."
+          },
           "incremental": {
             "default": false,
             "title": "Incremental",
             "type": "boolean"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contract 1.4. The scheduled job this run belongs to, as named in the orchestrator configuration. Free-form: the server groups and reports by it and never interprets it.",
+            "title": "Job"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectionMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contract 1.4. Why this run is or is not incremental: 'full', 'delta', or 'reconcile'. Omitted by collectors predating 1.4, in which case it is derived from `incremental` and means the same thing less precisely."
           },
           "notes": {
             "anyOf": [
@@ -5249,7 +8009,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -5309,6 +8069,11 @@
       "ScanRunSummaryView": {
         "description": "One row of the run list.",
         "properties": {
+          "affirmation_count_applied": {
+            "default": 0,
+            "title": "Affirmation Count Applied",
+            "type": "integer"
+          },
           "batch_count_received": {
             "title": "Batch Count Received",
             "type": "integer"
@@ -5363,8 +8128,23 @@
             "title": "Incremental",
             "type": "boolean"
           },
+          "job": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job"
+          },
           "method": {
             "title": "Method",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
             "type": "string"
           },
           "observation_count_applied": {
@@ -5408,6 +8188,7 @@
           "method",
           "collector_version",
           "target",
+          "mode",
           "batch_count_received",
           "observation_count_applied",
           "error_count",
@@ -5419,6 +8200,38 @@
       "ScanRunView": {
         "description": "Everything known about one run.",
         "properties": {
+          "affirmation_count_applied": {
+            "default": 0,
+            "title": "Affirmation Count Applied",
+            "type": "integer"
+          },
+          "affirmation_count_reported": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affirmation Count Reported"
+          },
+          "affirmations_refused": {
+            "default": 0,
+            "title": "Affirmations Refused",
+            "type": "integer"
+          },
+          "baseline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckpointView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The checkpoint this delta resumed from."
+          },
           "batch_count_received": {
             "title": "Batch Count Received",
             "type": "integer"
@@ -5483,6 +8296,13 @@
             ],
             "title": "Downgrade Reason"
           },
+          "drift": {
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationDriftView"
+            },
+            "title": "Drift",
+            "type": "array"
+          },
           "error_count": {
             "title": "Error Count",
             "type": "integer"
@@ -5498,8 +8318,25 @@
             "title": "Incremental",
             "type": "boolean"
           },
+          "job": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The scheduled job this run belongs to.",
+            "title": "Job"
+          },
           "method": {
             "title": "Method",
+            "type": "string"
+          },
+          "mode": {
+            "description": "full, delta, or reconcile (contract 1.4).",
+            "title": "Mode",
             "type": "string"
           },
           "notes": {
@@ -5535,6 +8372,17 @@
             "title": "Reconciled Scopes",
             "type": "array"
           },
+          "result_checkpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckpointView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The cursor this run left behind."
+          },
           "run_id": {
             "format": "uuid",
             "title": "Run Id",
@@ -5565,6 +8413,7 @@
           "run_id",
           "status",
           "incremental",
+          "mode",
           "started_at",
           "completed_at",
           "collector",
@@ -5618,6 +8467,26 @@
           "key"
         ],
         "title": "Scope",
+        "type": "object"
+      },
+      "ScopeBody": {
+        "properties": {
+          "key": {
+            "maxLength": 512,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReviewScopeKind"
+          }
+        },
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "ScopeBody",
         "type": "object"
       },
       "ScopeKind": {
@@ -6044,7 +8913,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -6719,7 +9588,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -6837,7 +9706,7 @@
             "type": "string"
           },
           "schema_version": {
-            "default": "1.3",
+            "default": "1.4",
             "title": "Schema Version",
             "type": "string"
           },
@@ -6924,6 +9793,217 @@
           "method"
         ],
         "title": "SourceDescriptor",
+        "type": "object"
+      },
+      "SubjectView": {
+        "description": "What the change is about, for a reader who thinks in resources and people.",
+        "properties": {
+          "container_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The share of an ACE, the group of a membership edge.",
+            "title": "Container Key"
+          },
+          "container_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Container Kind"
+          },
+          "related_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The trustee of an ACE, the member of a membership edge.",
+            "title": "Related Key"
+          },
+          "related_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Kind"
+          }
+        },
+        "title": "SubjectView",
+        "type": "object"
+      },
+      "SubmitDecisionRequest": {
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/DecisionKind"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for every decision but 'certify'. An unexplained removal cannot be defended to the person who loses access.",
+            "title": "Rationale"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "SubmitDecisionRequest",
+        "type": "object"
+      },
+      "SummaryResponse": {
+        "description": "Counts over the whole window, taken before any filter.",
+        "properties": {
+          "by_action": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Action",
+            "type": "object"
+          },
+          "by_kind": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Kind",
+            "type": "object"
+          },
+          "by_severity": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Severity",
+            "type": "object"
+          },
+          "by_significance": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Significance",
+            "type": "object"
+          },
+          "excluded": {
+            "description": "total - returned. What a filtered page is not showing.",
+            "title": "Excluded",
+            "type": "integer"
+          },
+          "highest_severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highest Severity"
+          },
+          "reconstructed": {
+            "title": "Reconstructed",
+            "type": "integer"
+          },
+          "returned": {
+            "description": "How many the given filter would let through.",
+            "title": "Returned",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "truncated": {
+            "description": "True when the window holds more changes than the summary is allowed to classify, so the counts are a floor rather than a total.",
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "window_from": {
+            "format": "date-time",
+            "title": "Window From",
+            "type": "string"
+          },
+          "window_to": {
+            "format": "date-time",
+            "title": "Window To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "window_from",
+          "window_to",
+          "total",
+          "returned",
+          "excluded",
+          "reconstructed",
+          "truncated",
+          "by_action",
+          "by_significance",
+          "by_severity",
+          "by_kind"
+        ],
+        "title": "SummaryResponse",
+        "type": "object"
+      },
+      "TimelineResponse": {
+        "description": "Every transition of one object, newest first.",
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeView"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "edits": {
+            "items": {
+              "$ref": "#/components/schemas/AceEditView"
+            },
+            "title": "Edits",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "truncated": {
+            "description": "True when older versions exist beyond the page that was read.",
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "key",
+          "changes",
+          "edits",
+          "truncated"
+        ],
+        "title": "TimelineResponse",
         "type": "object"
       },
       "TokenAssumption": {
@@ -7222,6 +10302,90 @@
         "title": "VerdictView",
         "type": "object"
       },
+      "VerificationResponse": {
+        "properties": {
+          "campaign_id": {
+            "format": "uuid",
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "evidence_changed": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Evidence Changed",
+            "type": "array"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "missing": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "recomputed_digest": {
+            "title": "Recomputed Digest",
+            "type": "string"
+          },
+          "recomputed_item_count": {
+            "title": "Recomputed Item Count",
+            "type": "integer"
+          },
+          "reproducible": {
+            "title": "Reproducible",
+            "type": "boolean"
+          },
+          "stored_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stored Digest"
+          },
+          "stored_item_count": {
+            "title": "Stored Item Count",
+            "type": "integer"
+          },
+          "unexpected": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Unexpected",
+            "type": "array"
+          }
+        },
+        "required": [
+          "campaign_id",
+          "reproducible",
+          "stored_digest",
+          "recomputed_digest",
+          "stored_item_count",
+          "recomputed_item_count",
+          "missing",
+          "unexpected",
+          "evidence_changed",
+          "explanation"
+        ],
+        "title": "VerificationResponse",
+        "type": "object"
+      },
       "VersionResponse": {
         "properties": {
           "environment": {
@@ -7243,6 +10407,76 @@
           "environment"
         ],
         "title": "VersionResponse",
+        "type": "object"
+      },
+      "VersionView": {
+        "description": "One side of a change: a state, and the interval it was observed over.",
+        "properties": {
+          "last_seen_at": {
+            "description": "The newest observation that confirmed this state.",
+            "format": "date-time",
+            "title": "Last Seen At",
+            "type": "string"
+          },
+          "last_seen_run_id": {
+            "title": "Last Seen Run Id",
+            "type": "string"
+          },
+          "opened_by_run_id": {
+            "title": "Opened By Run Id",
+            "type": "string"
+          },
+          "origin": {
+            "description": "'observed', or 'backfilled' when the Phase 7A migration reconstructed this version from a pre-history row that kept no evidence of intermediate states.",
+            "title": "Origin",
+            "type": "string"
+          },
+          "present": {
+            "description": "False is a tombstone: a scan that reconciled a scope containing this object looked and did not find it. It is never the same as having no version at all.",
+            "title": "Present",
+            "type": "boolean"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The stored state, or null for a tombstone. This is the before/after.",
+            "title": "State"
+          },
+          "valid_from": {
+            "format": "date-time",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null while this is the state currently believed to hold.",
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "present",
+          "valid_from",
+          "last_seen_at",
+          "origin",
+          "opened_by_run_id",
+          "last_seen_run_id"
+        ],
+        "title": "VersionView",
         "type": "object"
       }
     }
@@ -8908,6 +12142,1070 @@
         ]
       }
     },
+    "/api/v1/changes": {
+      "get": {
+        "description": "Classified transitions, newest first. Defaults to security-relevant and unclassifiable changes and excludes first sightings; call /summary for the counts the filter is hiding.",
+        "operationId": "list_changes_api_v1_changes_get",
+        "parameters": [
+          {
+            "description": "Start of the window, inclusive. Must carry a UTC offset: a naive instant cannot be ordered against observations from a host in another time zone, and a window an hour out reports a different day's changes.",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "Start of the window, inclusive. Must carry a UTC offset: a naive instant cannot be ordered against observations from a host in another time zone, and a window an hour out reports a different day's changes.",
+              "format": "date-time",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End of the window, exclusive, so that two adjacent windows partition the timeline and a change on the boundary is reported in exactly one of them.",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "End of the window, exclusive, so that two adjacent windows partition the timeline and a change on the boundary is reported in exactly one of them.",
+              "format": "date-time",
+              "title": "To",
+              "type": "string"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "server",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Server"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "share",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Share"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "directory",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Directory"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "principal",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Principal"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Group"
+            }
+          },
+          {
+            "description": "Repeatable. Omit for every kind.",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ObservationKind"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Omit for every kind.",
+              "title": "Kind"
+            }
+          },
+          {
+            "description": "Repeatable. Defaults to added, modified and removed. 'first_observed' is excluded unless asked for: it records that ADG started looking, not that anything was created, and an estate's first scan produces one per object.",
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeAction"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Defaults to added, modified and removed. 'first_observed' is excluded unless asked for: it records that ADG started looking, not that anything was created, and an estate's first scan produces one per object.",
+              "title": "Action"
+            }
+          },
+          {
+            "description": "Repeatable. Defaults to security and undetermined. Pass 'metadata' and 'noise' as well to see everything; /summary always counts everything either way.",
+            "in": "query",
+            "name": "significance",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeSignificance"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Defaults to security and undetermined. Pass 'metadata' and 'noise' as well to see everything; /summary always counts everything either way.",
+              "title": "Significance"
+            }
+          },
+          {
+            "description": "Minimum severity, by the severity ordering and not alphabetically.",
+            "in": "query",
+            "name": "min_severity",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ChangeSeverity",
+              "default": "info",
+              "description": "Minimum severity, by the severity ordering and not alphabetically."
+            }
+          },
+          {
+            "description": "Changes per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Changes per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "What changed in a window",
+        "tags": [
+          "changes"
+        ]
+      }
+    },
+    "/api/v1/changes/compare": {
+      "get": {
+        "description": "A different question from the feed, with a different answer: an entry added and removed inside the interval appears in the feed twice and here not at all. Objects not covered by a version at one of the instants are counted, never reported as additions or removals.",
+        "operationId": "compare_instants_api_v1_changes_compare_get",
+        "parameters": [
+          {
+            "description": "The earlier instant.",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "The earlier instant.",
+              "format": "date-time",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The later instant.",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "The later instant.",
+              "format": "date-time",
+              "title": "To",
+              "type": "string"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "server",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Server"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "share",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Share"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "directory",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Directory"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "principal",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Principal"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Group"
+            }
+          },
+          {
+            "description": "Repeatable. Omit for every kind.",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ObservationKind"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Omit for every kind.",
+              "title": "Kind"
+            }
+          },
+          {
+            "description": "Repeatable. Defaults to security and undetermined. Pass 'metadata' and 'noise' as well to see everything; /summary always counts everything either way.",
+            "in": "query",
+            "name": "significance",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeSignificance"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Defaults to security and undetermined. Pass 'metadata' and 'noise' as well to see everything; /summary always counts everything either way.",
+              "title": "Significance"
+            }
+          },
+          {
+            "description": "Minimum severity, by the severity ordering and not alphabetically.",
+            "in": "query",
+            "name": "min_severity",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ChangeSeverity",
+              "default": "info",
+              "description": "Minimum severity, by the severity ordering and not alphabetically."
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "What is different between two instants",
+        "tags": [
+          "changes"
+        ]
+      }
+    },
+    "/api/v1/changes/impact": {
+      "get": {
+        "description": "Effective access resolved either side of one change by the ordinary engine over as-of inputs. Requires access:read rather than changes:read: this discloses what a principal could do, which is a more sensitive answer than what was edited.",
+        "operationId": "change_impact_api_v1_changes_impact_get",
+        "parameters": [
+          {
+            "description": "The changed object's kind.",
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ObservationKind",
+              "description": "The changed object's kind."
+            }
+          },
+          {
+            "in": "query",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Key",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The change's own 'at' value: the instant its resulting version opened. Hand back what the feed gave you.",
+            "in": "query",
+            "name": "at",
+            "required": true,
+            "schema": {
+              "description": "The change's own 'at' value: the instant its resulting version opened. Hand back what the feed gave you.",
+              "format": "date-time",
+              "title": "At",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Override the principal, or supply one the change does not name.",
+            "in": "query",
+            "name": "subject",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Override the principal, or supply one the change does not name.",
+              "title": "Subject"
+            }
+          },
+          {
+            "description": "Override the resource, or supply one the change does not name.",
+            "in": "query",
+            "name": "resource",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Override the resource, or supply one the change does not name.",
+              "title": "Resource"
+            }
+          },
+          {
+            "description": "remote_smb applies both layers; local applies only NTFS.",
+            "in": "query",
+            "name": "access_path",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AccessPath",
+              "default": "remote_smb",
+              "description": "remote_smb applies both layers; local applies only NTFS."
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpactResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Why access changed",
+        "tags": [
+          "changes"
+        ]
+      }
+    },
+    "/api/v1/changes/summary": {
+      "get": {
+        "description": "Counts over the whole window, taken before the filter is applied. The one thing a client cannot compute from a page: whether the page it is showing is the whole story.",
+        "operationId": "summarize_changes_api_v1_changes_summary_get",
+        "parameters": [
+          {
+            "description": "Start of the window, inclusive. Must carry a UTC offset: a naive instant cannot be ordered against observations from a host in another time zone, and a window an hour out reports a different day's changes.",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "Start of the window, inclusive. Must carry a UTC offset: a naive instant cannot be ordered against observations from a host in another time zone, and a window an hour out reports a different day's changes.",
+              "format": "date-time",
+              "title": "From",
+              "type": "string"
+            }
+          },
+          {
+            "description": "End of the window, exclusive, so that two adjacent windows partition the timeline and a change on the boundary is reported in exactly one of them.",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "End of the window, exclusive, so that two adjacent windows partition the timeline and a change on the boundary is reported in exactly one of them.",
+              "format": "date-time",
+              "title": "To",
+              "type": "string"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "server",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Server"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "share",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Share"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "directory",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Directory"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "principal",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Principal"
+            }
+          },
+          {
+            "description": "At most one scope may be given across server/share/directory/principal/group.",
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1024,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "At most one scope may be given across server/share/directory/principal/group.",
+              "title": "Group"
+            }
+          },
+          {
+            "description": "Repeatable. Omit for every kind.",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ObservationKind"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Omit for every kind.",
+              "title": "Kind"
+            }
+          },
+          {
+            "description": "Repeatable. Defaults to added, modified and removed. 'first_observed' is excluded unless asked for: it records that ADG started looking, not that anything was created, and an estate's first scan produces one per object.",
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeAction"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Defaults to added, modified and removed. 'first_observed' is excluded unless asked for: it records that ADG started looking, not that anything was created, and an estate's first scan produces one per object.",
+              "title": "Action"
+            }
+          },
+          {
+            "description": "Repeatable. Defaults to security and undetermined. Pass 'metadata' and 'noise' as well to see everything; /summary always counts everything either way.",
+            "in": "query",
+            "name": "significance",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeSignificance"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Defaults to security and undetermined. Pass 'metadata' and 'noise' as well to see everything; /summary always counts everything either way.",
+              "title": "Significance"
+            }
+          },
+          {
+            "description": "Minimum severity, by the severity ordering and not alphabetically.",
+            "in": "query",
+            "name": "min_severity",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ChangeSeverity",
+              "default": "info",
+              "description": "Minimum severity, by the severity ordering and not alphabetically."
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "How much changed, and how much a filter is hiding",
+        "tags": [
+          "changes"
+        ]
+      }
+    },
+    "/api/v1/changes/timeline": {
+      "get": {
+        "description": "The object's own history, as changes rather than as versions. Its first version is reported only when it follows a tombstone; otherwise it is where the record begins.",
+        "operationId": "object_timeline_api_v1_changes_timeline_get",
+        "parameters": [
+          {
+            "description": "The object's kind.",
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ObservationKind",
+              "description": "The object's kind."
+            }
+          },
+          {
+            "description": "The object's storage key, exactly as a change reports it. Given as a query parameter rather than a path segment because a directory's key is a UNC path, which several proxies normalize or reject inside a path.",
+            "in": "query",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "description": "The object's storage key, exactly as a change reports it. Given as a query parameter rather than a path segment because a directory's key is a UNC path, which several proxies normalize or reject inside a path.",
+              "maxLength": 1024,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Every transition of one object",
+        "tags": [
+          "changes"
+        ]
+      }
+    },
     "/api/v1/collection/operations": {
       "get": {
         "description": "Everything the collector status page renders, in five statements.\n\nThe health verdict is the *same* one ``/status`` returns, folded from the same latest\nruns — so an operator told the estate is incomplete and a viewer reading the coverage\nbanner are never looking at two different answers.",
@@ -9004,6 +13302,1485 @@
         "summary": "Whether an empty result means 'nothing is there' or 'nobody looked'",
         "tags": [
           "collection"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns": {
+      "get": {
+        "operationId": "list_campaigns_api_v1_governance_campaigns_get",
+        "parameters": [
+          {
+            "description": "Restrict to one status.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CampaignStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict to one status.",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Only campaigns this caller has an active assignment on.",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only campaigns this caller has an active assignment on.",
+              "title": "Mine",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous page.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review campaigns, newest first",
+        "tags": [
+          "governance"
+        ]
+      },
+      "post": {
+        "operationId": "create_campaign_api_v1_governance_campaigns_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCampaignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "The scopes do not match the focus, or the baseline is not a past, timezone-aware instant."
+          }
+        },
+        "summary": "Create a review campaign",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}": {
+      "get": {
+        "operationId": "get_campaign_api_v1_governance_campaigns__campaign_id__get",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect a campaign",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/activation": {
+      "post": {
+        "operationId": "activate_campaign_api_v1_governance_campaigns__campaign_id__activation_post",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "409": {
+            "description": "The campaign is not a draft, or has no items."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open a generated campaign for decisions",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/assignments": {
+      "get": {
+        "operationId": "list_assignments_api_v1_governance_campaigns__campaign_id__assignments_get",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include assignments that have been withdrawn.",
+            "in": "query",
+            "name": "include_revoked",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include assignments that have been withdrawn.",
+              "title": "Include Revoked",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Who was asked what",
+        "tags": [
+          "governance"
+        ]
+      },
+      "post": {
+        "operationId": "assign_reviewer_api_v1_governance_campaigns__campaign_id__assignments_post",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignReviewerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentCreatedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "409": {
+            "description": "The campaign is closed, or the scope does not fit its focus."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask a reviewer for part of a campaign",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/audit": {
+      "get": {
+        "operationId": "campaign_audit_api_v1_governance_campaigns__campaign_id__audit_get",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous page.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The campaign's audit trail, and whether its chain is intact",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/closure": {
+      "post": {
+        "description": "Closing with items still undecided is permitted, and the count is in the audit event.\n\nA campaign that could not close until every item was answered would either never close or\nbe closed by somebody rubber-stamping the remainder; \"closed with 12 undecided\" recorded\nhonestly is worth more than either.",
+        "operationId": "close_campaign_api_v1_governance_campaigns__campaign_id__closure_post",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "409": {
+            "description": "The campaign is not active."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Close a campaign",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/generation": {
+      "post": {
+        "operationId": "generate_campaign_api_v1_governance_campaigns__campaign_id__generation_post",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "409": {
+            "description": "The campaign is not a draft, or its scopes select more than one review may hold. Generation is refused rather than truncated."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Freeze the campaign's items against its baseline",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/items": {
+      "get": {
+        "operationId": "list_items_api_v1_governance_campaigns__campaign_id__items_get",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Restrict to one status.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReviewItemStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict to one status.",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Only items assigned to this caller — the reviewer's queue.",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only items assigned to this caller — the reviewer's queue.",
+              "title": "Mine",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only items no reviewer was asked about.",
+            "in": "query",
+            "name": "unassigned",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only items no reviewer was asked about.",
+              "title": "Unassigned",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "principal_key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Principal Key"
+            }
+          },
+          {
+            "in": "query",
+            "name": "target_key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Key"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous page.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A campaign's review items",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/status": {
+      "get": {
+        "operationId": "campaign_status_api_v1_governance_campaigns__campaign_id__status_get",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "How far a campaign has got",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/campaigns/{campaign_id}/verification": {
+      "get": {
+        "description": "Regenerate the campaign from its own row and compare with what it holds.\n\n``object_versions`` is append-only and a version's interval is fixed once written, so a\nbaseline that produces a different answer today means the timeline itself changed —\nhistory edited, restored from a partial backup, or pruned by retention past the baseline.\nDivergence here is a finding, not noise, and the explanation says so.",
+        "operationId": "verify_campaign_api_v1_governance_campaigns__campaign_id__verification_get",
+        "parameters": [
+          {
+            "description": "The campaign's identifier.",
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "description": "The campaign's identifier.",
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such campaign."
+          },
+          "409": {
+            "description": "The campaign has not been generated, or can no longer be regenerated within the current limits."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Is this campaign still reproducible from its baseline?",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/items/{item_id}": {
+      "get": {
+        "operationId": "get_item_api_v1_governance_items__item_id__get",
+        "parameters": [
+          {
+            "description": "The review item's identifier.",
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "description": "The review item's identifier.",
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such item."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One review item and every decision on it",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/items/{item_id}/decisions": {
+      "post": {
+        "operationId": "submit_decision_api_v1_governance_items__item_id__decisions_post",
+        "parameters": [
+          {
+            "description": "The review item's identifier.",
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "description": "The review item's identifier.",
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The item is assigned to somebody else, to nobody, or this caller's assignment has been revoked. Holding 'governance:review' admits the request; the assignment is what grants authority over this item."
+          },
+          "404": {
+            "description": "No such item."
+          },
+          "409": {
+            "description": "The campaign is not active."
+          },
+          "422": {
+            "description": "A 'revoke', 'modify' or 'abstain' decision carries no rationale."
+          }
+        },
+        "summary": "Record an attestation",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/items/{item_id}/remediation": {
+      "post": {
+        "description": "ADG records the proposal and performs none of it. See SECURITY.md.",
+        "operationId": "propose_remediation_api_v1_governance_items__item_id__remediation_post",
+        "parameters": [
+          {
+            "description": "The review item's identifier.",
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "description": "The review item's identifier.",
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeRemediationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "The item is not assigned to this caller."
+          },
+          "404": {
+            "description": "No such item."
+          },
+          "409": {
+            "description": "The item has no decision yet, or was certified — there is nothing to remediate — or the campaign is not active."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Propose the change that should follow a decision",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/owners": {
+      "get": {
+        "operationId": "list_owners_api_v1_governance_owners_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "target_kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReviewTargetKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "target_key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Key"
+            }
+          },
+          {
+            "in": "query",
+            "name": "owner_subject",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 320,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner Subject"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_revoked",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Revoked",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous page.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recorded resource ownership",
+        "tags": [
+          "governance"
+        ]
+      },
+      "post": {
+        "description": "ADG metadata. This neither reads nor writes the Windows security descriptor's owner.",
+        "operationId": "assign_owner_api_v1_governance_owners_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignOwnerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "That party is already recorded in that role on that target."
+          },
+          "422": {
+            "description": "The record names both an ADG user and a Windows principal, or neither."
+          }
+        },
+        "summary": "Record who is accountable for a resource",
+        "tags": [
+          "governance"
+        ]
+      }
+    },
+    "/api/v1/governance/owners/{owner_id}": {
+      "delete": {
+        "description": "Marked withdrawn, never deleted: \"who was accountable last quarter\" is exactly the\nquestion an audit of last quarter's campaign asks.",
+        "operationId": "revoke_owner_api_v1_governance_owners__owner_id__delete",
+        "parameters": [
+          {
+            "description": "The ownership record's identifier.",
+            "in": "path",
+            "name": "owner_id",
+            "required": true,
+            "schema": {
+              "description": "The ownership record's identifier.",
+              "format": "uuid",
+              "title": "Owner Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such ownership record."
+          },
+          "409": {
+            "description": "It was already withdrawn."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw an ownership record",
+        "tags": [
+          "governance"
         ]
       }
     },

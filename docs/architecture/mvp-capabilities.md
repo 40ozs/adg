@@ -141,15 +141,21 @@ capabilities that every real role holds together.
 
 1. **Changes nothing.** The application is read-only and the collectors are read-only. There
    is no remediation, no ACL edit, no group membership change. The `remediator` role grants
-   nothing, provably.
+   nothing, provably. Since Phase 9A ADG can *evaluate* a proposed change — who would gain,
+   who would lose, and which alternate route keeps the access anyway — and it does so by
+   overlaying the proposal on the rows as they are read, so not one collected row and not one
+   object in Windows is touched. There is no surface for it yet; see
+   [`simulation.md`](simulation.md).
 2. **Does not compute risk.** There are no findings, no scores, no rules. `/risks` is a
    placeholder. Everything on screen is a fact or a derivation from facts.
-3. **Does not compare scans *on screen*.** `/changes` is still a placeholder and no API
-   route answers a point-in-time question. Since Phase 7A the *evidence* is no longer merely
-   being recorded: every collected object has a full timeline in `object_versions`, and
-   `HistoryService` answers what was true at a past instant — membership, raw ACLs, existence
-   and effective access — from the backend. See
-   [`history-model.md`](history-model.md). What is missing is the surface, not the data.
+3. **Compares scans, and says what it cannot compare.** No longer a limitation: Phase 7A
+   recorded the evidence and Phase 7C surfaced it. `/changes` answers what moved in a window,
+   classified along four axes, with the two halves of an ACL edit read as one edit and a
+   "why access changed" answer resolved by the live engine either side of it. Two things it
+   still refuses to say, by design: a scan that reconciled nothing produces no removals, and
+   an object with no version at one end of a comparison is counted as unobserved rather than
+   reported as created or deleted. See [`change-detection.md`](change-detection.md) and
+   [`history-model.md`](history-model.md).
 4. **Does not scan files, only directories.** The contract can carry a file resource; no
    collector emits one.
 5. **Covers Windows file shares.** Not SharePoint, OneDrive, Exchange, NFS, or content

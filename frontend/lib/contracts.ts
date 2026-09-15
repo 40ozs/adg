@@ -180,6 +180,14 @@ export interface ScanRunSummary {
   method: string;
   collector_version: string | null;
   target: string | null;
+  /**
+   * Why this run is or is not incremental. Added alongside `incremental`, which stays the
+   * flag the reconciliation guard reads; this is the finer statement layered over it.
+   *
+   * Carried here because the published contract marks it required, and a response field the
+   * frontend does not carry is exactly the drift `tests/contracts.test.ts` exists to catch.
+   */
+  mode: string;
   batch_count_received: number;
   observation_count_applied: number;
   error_count: number;
@@ -659,4 +667,218 @@ export interface ResourcePrincipalsResponse {
   findings: FindingView[];
   items: PrincipalAccessView[];
   page: PageInfo;
+}
+
+/* ------------------------------------------------------------------------ changes */
+
+/**
+ * What happened to an object.
+ *
+ * `first_observed` is **not** a creation. It means ADG had no prior view of the thing that
+ * contains the object, so its appearance in the record is the beginning of observation.
+ * `lib/changes.ts` renders it as "first seen" and never as "added"; an estate's first scan
+ * produces one per object, and calling them additions would report a whole estate as having
+ * been built on a Tuesday.
+ */
+export type ChangeAction = "added" | "modified" | "removed" | "first_observed";
+
+/** Whether a change is about access, about description, or about nothing at all. */
+export type ChangeSignificance = "security" | "metadata" | "noise" | "undetermined";
+
+/** Which way an edit moved access. Not whether anybody's effective access moved. */
+export type ChangeDirection =
+  | "broadened"
+  | "narrowed"
+  | "mixed"
+  | "neutral"
+  | "undetermined";
+
+export type ChangeSeverity = "critical" | "high" | "medium" | "low" | "info";
+
+/**
+ * When a change happened, as the interval it is known to have happened inside.
+ *
+ * Both ends, always (ADR-0019). A collector samples rather than watches, so the instant in
+ * `ChangeView.at` is the moment somebody looked — render *this*, not that.
+ */
+export interface ChangeWindowView {
+  after: string;
+  at_or_before: string;
+  is_exact: boolean;
+  duration_seconds: number;
+}
+
+export interface ChangeVersionView {
+  present: boolean;
+  valid_from: string;
+  last_seen_at: string;
+  valid_to: string | null;
+  origin: string;
+  opened_by_run_id: string;
+  last_seen_run_id: string;
+  state: Record<string, unknown> | null;
+}
+
+export interface FieldDeltaView {
+  field: string;
+  before: unknown;
+  after: unknown;
+  significance: string;
+}
+
+export interface ChangeSubjectView {
+  container_kind: string | null;
+  container_key: string | null;
+  related_kind: string | null;
+  related_key: string | null;
+}
+
+export interface ChangeView {
+  kind: string;
+  key: string;
+  action: ChangeAction;
+  significance: ChangeSignificance;
+  direction: ChangeDirection;
+  severity: ChangeSeverity;
+  reasons: string[];
+  rule_ids: string[];
+  at: string;
+  window: ChangeWindowView | null;
+  reconstructed: boolean;
+  subject: ChangeSubjectView;
+  before: ChangeVersionView | null;
+  after: ChangeVersionView;
+  deltas: FieldDeltaView[];
+  edit: number | null;
+}
+
+/** A removal and an addition that are one edit of one ACL entry. */
+export interface AceEditView {
+  index: number;
+  kind: string;
+  container_key: string;
+  trustee_key: string;
+  ace_type: string;
+  direction: ChangeDirection;
+  severity: ChangeSeverity;
+  summary: string;
+  rights_before: RightsView | null;
+  rights_after: RightsView | null;
+}
+
+export interface ChangeFiltersView {
+  window_from: string;
+  window_to: string;
+  scope_target: string | null;
+  scope_key: string | null;
+  kinds: string[] | null;
+  actions: string[];
+  significance: string[];
+  min_severity: string;
+}
+
+export interface ChangesResponse {
+  filters: ChangeFiltersView;
+  changes: ChangeView[];
+  edits: AceEditView[];
+  page: PageInfo;
+  scanned: number;
+  scan_exhausted: boolean;
+}
+
+export interface ChangeSummaryResponse {
+  window_from: string;
+  window_to: string;
+  total: number;
+  returned: number;
+  excluded: number;
+  highest_severity: ChangeSeverity | null;
+  reconstructed: number;
+  truncated: boolean;
+  by_action: Record<string, number>;
+  by_significance: Record<string, number>;
+  by_severity: Record<string, number>;
+  by_kind: Record<string, number>;
+}
+
+export interface ChangeTimelineResponse {
+  kind: string;
+  key: string;
+  changes: ChangeView[];
+  edits: AceEditView[];
+  truncated: boolean;
+}
+
+export interface ChangeComparisonResponse {
+  at_from: string;
+  at_to: string;
+  scope_target: string | null;
+  scope_key: string | null;
+  changes: ChangeView[];
+  edits: AceEditView[];
+  unchanged: number;
+  unobserved_at_from: number;
+  unobserved_at_to: number;
+  truncated: boolean;
+  summary: ChangeSummaryResponse;
+}
+
+export interface AccessSideView {
+  at: string;
+  access: boolean;
+  /**
+   * Branch on this, never on `access`. `false` means three different things, and
+   * `indeterminate` is the one that must never be rendered as "no access".
+   *
+   * Spelled out here rather than imported from `lib/derived.ts`: this module is the
+   * hand-written mirror of the wire shapes and deliberately depends on nothing.
+   */
+  outcome: "granted" | "denied" | "no_grant" | "indeterminate";
+  conclusive: boolean;
+  rights: RightsView;
+  certainty: string;
+  reason: string;
+}
+
+export interface AccessDeltaView {
+  subject_key: string;
+  resource_key: string;
+  access_path: string;
+  before: AccessSideView;
+  after: AccessSideView;
+  gained: RightsView;
+  lost: RightsView;
+  direction: ChangeDirection;
+  certainty: string;
+  conclusive: boolean;
+}
+
+export interface MembershipDeltaView {
+  subject_key: string;
+  gained: string[];
+  lost: string[];
+  before_count: number;
+  after_count: number;
+  certainty: string;
+}
+
+/**
+ * Anything but `resolved` means the engine was not given a pair to resolve — not that
+ * nothing happened.
+ */
+export type ImpactVerdict =
+  | "resolved"
+  | "needs_a_subject"
+  | "needs_a_resource"
+  | "unbounded"
+  | "not_applicable";
+
+export interface ChangeImpactResponse {
+  change: ChangeView;
+  at_before: string;
+  at_after: string;
+  verdict: ImpactVerdict;
+  explanation: string;
+  access: AccessDeltaView | null;
+  membership: MembershipDeltaView | null;
 }

@@ -38,7 +38,7 @@ describe("the navigation", () => {
   it("marks the sections that have no data behind them yet", () => {
     const placeholders = NAV_ITEMS.filter((item) => item.placeholder).map((item) => item.id);
 
-    expect(placeholders).toEqual(["risks", "changes"]);
+    expect(placeholders).toEqual(["risks"]);
   });
 
   it("shows a viewer everything except settings", () => {

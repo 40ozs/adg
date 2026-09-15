@@ -12,6 +12,11 @@ import type { ApiResult, RequestOptions } from "@/lib/api/client";
 import { apiRequest } from "@/lib/api/client";
 import type {
   AuthConfig,
+  ChangeComparisonResponse,
+  ChangeImpactResponse,
+  ChangeSummaryResponse,
+  ChangeTimelineResponse,
+  ChangesResponse,
   CollectionOperations,
   CollectionStatus,
   DevelopmentLogin,
@@ -61,6 +66,11 @@ export const USED_PATHS = [
   "/api/v1/access/principals/{identifier}/shares",
   "/api/v1/access/principals/{identifier}/resources",
   "/api/v1/access/resources/{resource}/principals",
+  "/api/v1/changes",
+  "/api/v1/changes/summary",
+  "/api/v1/changes/timeline",
+  "/api/v1/changes/compare",
+  "/api/v1/changes/impact",
 ] as const;
 
 /**
@@ -303,4 +313,94 @@ export function fetchResourcePrincipals(
     `/api/v1/access/resources/${segment(resource)}/principals`,
     { token, query },
   );
+}
+
+/* ----------------------------------------------------------------------- changes */
+
+/**
+ * The filters `/api/v1/changes` and `/api/v1/changes/summary` share.
+ *
+ * `from` and `to` are required and must carry a UTC offset; the API refuses a naive
+ * instant rather than assuming one, because a window an hour out reports a different day's
+ * changes. At most one scope may be given — two at once could mean their intersection or
+ * their union, and the API refuses rather than picking.
+ */
+export type ChangeQuery = {
+  from: string;
+  to: string;
+  server?: string;
+  share?: string;
+  directory?: string;
+  principal?: string;
+  group?: string;
+  kind?: string[];
+  action?: string[];
+  significance?: string[];
+  min_severity?: string;
+};
+
+export function fetchChanges(
+  token: string,
+  query: ChangeQuery & PageQuery,
+): Promise<ApiResult<ChangesResponse>> {
+  return apiRequest<ChangesResponse>("/api/v1/changes", { token, query });
+}
+
+/**
+ * Counts over the whole window, taken **before** the filter.
+ *
+ * The one thing a client cannot compute from a page: whether the page it is showing is the
+ * whole story. Without it, a page that is clean because of a default is indistinguishable
+ * from a quiet week.
+ */
+export function fetchChangeSummary(
+  token: string,
+  query: ChangeQuery,
+): Promise<ApiResult<ChangeSummaryResponse>> {
+  return apiRequest<ChangeSummaryResponse>("/api/v1/changes/summary", { token, query });
+}
+
+export function fetchChangeTimeline(
+  token: string,
+  query: { kind: string; key: string; limit?: number },
+): Promise<ApiResult<ChangeTimelineResponse>> {
+  return apiRequest<ChangeTimelineResponse>("/api/v1/changes/timeline", { token, query });
+}
+
+export function compareInstants(
+  token: string,
+  query: {
+    from: string;
+    to: string;
+    server?: string;
+    share?: string;
+    directory?: string;
+    principal?: string;
+    group?: string;
+    kind?: string[];
+    significance?: string[];
+    min_severity?: string;
+  },
+): Promise<ApiResult<ChangeComparisonResponse>> {
+  return apiRequest<ChangeComparisonResponse>("/api/v1/changes/compare", { token, query });
+}
+
+/**
+ * Why access changed: the live engine, resolved either side of one edit.
+ *
+ * `at` is the change's own `at` value, handed straight back. Requires `access:read` rather
+ * than `changes:read`, so a viewer who may read the feed can still be refused here.
+ */
+export function fetchChangeImpact(
+  token: string,
+  query: {
+    kind: string;
+    key: string;
+    at: string;
+    subject?: string;
+    resource?: string;
+    access_path?: string;
+  },
+): Promise<ApiResult<ChangeImpactResponse>> {
+  return apiRequest<ChangeImpactResponse>("/api/v1/changes/impact", { token, query });
 }

@@ -11,6 +11,8 @@ Normative. A client may rely on everything stated here.
 | Access explanation | [`access-explanation.schema.json`](v1/derived/access-explanation.schema.json) | `GET /api/v1/access/explain` |
 | Causal path page | [`access-paths.schema.json`](v1/derived/access-paths.schema.json) | `GET /api/v1/access/paths` |
 | Group resource impact | [`resource-impact.schema.json`](v1/derived/resource-impact.schema.json) | `GET /api/v1/groups/{identifier}/resource-impact` |
+| Change feed, summary, timeline, comparison | `openapi.json` | `GET /api/v1/changes`, `/summary`, `/timeline`, `/compare` |
+| Change impact | `openapi.json` | `GET /api/v1/changes/impact` |
 
 Captured examples — real responses, not illustrations written by hand — are in
 [`v1/derived/examples/`](v1/derived/examples/).
@@ -29,6 +31,45 @@ comparing ACE positions, or deciding whether a Deny applies, the API is missing 
 that is a bug to report, not a gap to fill locally. SMB `Change` and NTFS `Modify` are the
 same bits under two names, and the rights model exists to stop anyone discovering that the
 hard way.
+
+## Changes: four axes, and three fields a client must not misread
+
+A change is derived in exactly the sense this document means: collectors report states, and a
+change is a relation between two of them that ADG computed. The rules above apply unchanged —
+the conclusion is carried, never recomputed — and three fields need saying explicitly because
+the obvious reading of each is wrong.
+
+**`at` is not when the change happened.** It is the instant the resulting version opened:
+when a collector looked. `window` carries both ends of the interval the change is known to
+have happened inside (ADR-0019), and that is what a client renders. Showing `at` as the change
+time dates every incident to a scan schedule. `window` is null only for `first_observed`,
+which has nothing earlier to bound it.
+
+**`action: "first_observed"` is not a creation.** It means ADG had no prior view of the thing
+that contains the object. An estate's first scan produces one per object. It is excluded from
+the default feed, counted in every summary, and must be rendered as "first seen".
+
+**`severity` is not risk.** It is a property of a transition; risk is a property of the estate
+as it stands (ADR-0023). They disagree correctly: an `Everyone / Full Control` ACE in place for
+three years is a high risk and no change at all.
+
+Two more, about lists rather than fields:
+
+* **`edits` is how an ACL rewrite reads.** An ACE's rights are part of its identity, so
+  tightening one removes a row and adds another. Two changes carrying the same `edit` index
+  are one edit; render them together, and use the edit's `direction`, which is computed by
+  comparing the two masks rather than assigned by a rule.
+* **`GET /changes/summary` is what makes a filtered page honest.** It counts the whole window
+  *before* the filter. `excluded` is the number a client must show; without it, a page that is
+  clean because of a default is indistinguishable from a quiet week.
+
+On `/changes/impact`, `verdict` is about whether the engine was given a pair to resolve.
+Anything but `resolved` means it was not — never that nothing happened. And `access.direction`
+is the direction of **effective access**, which routinely disagrees with the change's own
+`direction`: an Allow added below a Deny, or beneath a share ACL that still caps it, broadens
+an ACL and moves nobody's access. Showing both is the answer.
+
+ADR-0027 sets out why there are four axes rather than one score.
 
 ## `verdict`: four answers, not a boolean
 

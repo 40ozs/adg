@@ -65,8 +65,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Changes",
     href: "/changes",
     requires: "changes:read",
-    placeholder: true,
-    description: "What changed between scans. Arrives in a later phase.",
+    description: "What moved in the estate, whether it matters, and what it did to access.",
   },
   {
     id: "collectors",

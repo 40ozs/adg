@@ -21,7 +21,7 @@ collector/        Native Windows collectors (PowerShell 7 + .NET). Not container
   powershell/     Collection scripts/modules.
   service/        Long-running collector host (service/scheduled task).
 backend/          Python + FastAPI API. Owns all authorization semantics.
-  app/            Application package (api, models, access_engine, history, ...).
+  app/            Application package (api, models, access_engine, history, simulation, ...).
   tests/          Backend test suite.
 frontend/         Next.js + TypeScript web application.
 database/         PostgreSQL schema migrations.
@@ -207,6 +207,11 @@ Resources and raw ACLs, share layer and file-system layer (see
 | `GET /api/v1/resources/{path}/acl` | That resource's NTFS ACL in evaluation order, with the ACL digest. |
 | `GET /api/v1/principals/{sid}/shares` | Shares whose ACL names a SID. |
 | `GET /api/v1/search?q=` | One box for four lookups: a SID, a UNC path, a share name, or the start of a display name. |
+| `GET /api/v1/changes?from=&to=` | What moved in a window, classified and keyset-paginated. Scope with one of `server`, `share`, `directory`, `principal`, `group`. |
+| `GET /api/v1/changes/summary` | Counts over the same window taken **before** the filter, so a page can say what it is not showing. |
+| `GET /api/v1/changes/timeline?kind=&key=` | One object's whole history, as transitions rather than versions. |
+| `GET /api/v1/changes/compare?from=&to=` | What is *different* between two instants — a different question from the feed, with objects nothing covers counted rather than reported as created or deleted. |
+| `GET /api/v1/changes/impact?kind=&key=&at=` | Why access changed: effective access either side of one edit, by the live engine. Requires `access:read`. |
 
 > Search reports how it read the term, which categories it truncated, and which the account
 > was not permitted to search. An empty result is always attributable.
@@ -235,7 +240,8 @@ same information from the browser's point of view.
 Changes (placeholder), Collectors, Settings — each shown only when the signed-in account holds
 the capability behind it.
 
-In development mode, sign in at `/login` and pick `viewer`, `auditor`, or `admin` to see the
+In development mode, sign in at `/login` and pick `viewer`, `auditor`, `admin`, `reviewer`
+or `governance` to see the
 product as that role sees it. **A development deployment verifies no credential**, and says so
 in an undismissable banner on every page.
 
@@ -304,6 +310,10 @@ Key invariants:
   watches, so a change is known to have happened between the last confirmation and the
   contradicting reading, and that interval is what is reported
   ([ADR-0019](docs/decisions/0019-a-change-is-a-window-not-an-instant.md)).
+- **A what-if is the production engine reading a proposal, never a second calculator.** A
+  simulation substitutes the engine's inputs and changes nothing about the engine — or about
+  the estate
+  ([ADR-0020](docs/decisions/0020-simulation-is-the-engine-reading-an-overlay.md)).
 
 ### History
 
@@ -318,9 +328,160 @@ Current-state tables are unchanged, so every existing query behaves exactly as b
 so a live answer can still count a grant a reconciled scan has proved is gone. See
 [`docs/architecture/history-model.md`](docs/architecture/history-model.md) §9.
 
+### Changes
+
+`/api/v1/changes` turns those timelines into findings: what moved in a window, classified
+along four independent axes — what happened, whether it is about access, which way access
+moved, and how much attention it deserves ([ADR-0027](docs/decisions/0027-a-change-is-classified-not-scored.md)).
+
+Four things it refuses to say, and each is a failure mode of an ordinary scan diff:
+
+- **A gap is never a removal.** A removal exists only where a scan that reconciled a scope
+  looked and did not find the object.
+- **The start of observation is never a creation.** An estate's first scan produces one
+  `first_observed` per object. They are excluded from the default view and counted in the
+  summary.
+- **A change is never dated to the scan that found it.** Every change carries both ends of
+  the window it happened inside.
+- **A filtered page always says how much it is hiding.** `GET /changes/summary` counts the
+  whole window before the filter.
+
+An ACL edit is read as one edit rather than as an unrelated removal and addition, and a
+renumbered ACE is compared through the same normalized DACL the collector uses, so a
+reordering that changes nothing produces no diff. `GET /changes/impact` answers *why access
+changed* by resolving effective access either side of one edit through the live engine — and
+routinely disagrees with the edit's own direction, which is the point.
+
+See [`docs/architecture/change-detection.md`](docs/architecture/change-detection.md).
+
 History is never deleted by default. `ADG_HISTORY_RETENTION_DAYS` and
 `ADG_HISTORY_RETENTION_ENABLED` must both be set for a prune to be possible at all, and it
 never removes an object's open version or its newest closed one.
+
+### Collection cadence
+
+Collection runs as six independent jobs — AD principals, AD memberships, SMB inventory, NTFS
+important roots, NTFS deep scan, and a full reconciliation — each with its own schedule, its
+own resume point, and its own failure. One Windows scheduled task drives all six; the cadence
+lives in the orchestrator configuration rather than in the scheduler, so it cannot drift
+between the two.
+
+Active Directory is read incrementally, filtered on `uSNChanged`. The watermark is tied to
+the *incarnation* of the domain controller that issued it — `dsServiceName` and
+`invocationId` together — because binding a different DC, or the same DC after a restore from
+backup, makes the number mean something else, and resuming anyway would skip whatever fell
+below it. Either event costs one full read, which is the error worth having.
+
+The file system offers nothing equivalent: **writing an ACL does not move a directory's
+`LastWriteTime`**, so a scan that skipped unchanged-looking directories would skip exactly
+the changes ADG is for. An NTFS scan therefore reads every descriptor every time and sends
+only the ones whose digest changed, *affirming* the rest with a key and a digest the server
+verifies against what it holds. It remains a complete enumeration, so it keeps the right to
+reconcile.
+
+**No incremental run may mark anything absent.** Nothing announces a deletion to a query that
+filters on change metadata — a deleted principal simply fails to appear, which is what an
+unchanged one does — so absence is discovered only by the full reconciliation, on its own
+schedule, which is therefore the upper bound on how long ADG can believe in access that no
+longer exists. What each reconciliation had to correct is counted and reported as drift
+([ADR-0025](docs/decisions/0025-incremental-collection-is-bounded-by-its-source.md),
+[ADR-0026](docs/decisions/0026-an-affirmation-is-verified-and-a-checkpoint-trails-its-data.md)).
+
+See [`docs/architecture/incremental-collection.md`](docs/architecture/incremental-collection.md)
+and [`collector/powershell/orchestrator/README.md`](collector/powershell/orchestrator/README.md).
+
+### Risk findings
+
+Eleven deterministic rules read the collected permission facts and report what should not be
+like this: `Everyone` on a share, a user named directly on an access control list, an
+orphaned SID, a disabled account that still holds rights, a group that grants access and has
+no members, inheritance broken below a share root, and so on.
+
+There is no score and no model. A finding names the exact rule that produced it and **carries
+the complete records it was computed from**, so the engine can rebuild the facts from that
+evidence alone and re-derive the finding months later — which is how you answer *"was this
+actually true, on the evidence you kept?"* about a finding from last quarter
+([ADR-0023](docs/decisions/0023-risk-findings-are-reproducible-from-their-evidence.md)).
+
+Severity is configuration and confidence is derived. A rule reports which *shape* it saw and
+your configuration decides what that is worth, so quieting a noisy rule never makes it stop
+looking. Confidence is computed from the facts — a DACL projected from an ancestor, a
+truncated group expansion — and cannot be set.
+
+Findings resolve and reopen as the estate changes, and nothing is deleted: *"Everyone had
+Modify on the payroll share between March and June"* stays true after the entry is removed. An
+evaluation may only resolve findings it actually covered, so an incremental pass after a
+collector run cannot empty the report.
+
+**ADG never guesses which data matters.** The sensitive-resource rule reports nothing until an
+operator declares which resources are sensitive in `ADG_RISK_CONFIGURATION_PATH`
+([ADR-0024](docs/decisions/0024-sensitivity-is-declared-not-inferred.md)). See
+[`docs/operations/risk-rules.md`](docs/operations/risk-rules.md) for the configuration
+reference and [`docs/architecture/risk-model.md`](docs/architecture/risk-model.md) for the
+model.
+
+### What-if simulation
+
+*"If I take this group off the ACL, who loses access?"* is answered by running the **real**
+effective-access engine twice — once over the collected state, once over the same state with a
+proposed change overlaid — and comparing the two answers. There is no simplified simulation
+arithmetic, because a second implementation of the access check would eventually disagree with
+the first and nobody would know which to believe
+([ADR-0020](docs/decisions/0020-simulation-is-the-engine-reading-an-overlay.md)).
+
+Nothing is changed by a simulation: not Active Directory, not a share, not an NTFS descriptor,
+and not one collected row. A proposal is data, the overlay is applied in memory as rows are
+read, and the only rows written anywhere are in `simulations` and `simulation_evaluations`,
+which no collector, ingestion path or access query reads.
+
+The answer a what-if most often has to give is *"this change does nothing"*: an alternate group
+membership keeps the access, a Deny earlier in the DACL meant the entry never granted anything,
+or the share ACL was the real limit all along. Surviving routes are enumerated by re-running the
+access check rather than reasoned about, and a claim of loss that rests on facts ADG has not
+collected is reported as a bound rather than as a number. Every result names the collection
+state it was computed against, so *"this was computed before the last scan"* is a fact rather
+than a guess.
+
+See [`docs/architecture/simulation.md`](docs/architecture/simulation.md). There is no HTTP
+surface yet; the engine is reachable from the backend only.
+
+### Access reviews
+
+A **review campaign** is an access review frozen against an instant. Its items are generated
+from the state `object_versions` held at that instant, so a reviewer certifies *what was true
+when the campaign was cut* and the statement stays true however the estate moves on — and the
+campaign stays **reproducible**: regenerating it from its own row months later yields the same
+items with the same digests, which `GET /api/v1/governance/campaigns/{id}/verification`
+recomputes and compares
+([ADR-0030](docs/decisions/0030-a-campaign-is-a-function-of-a-baseline-instant.md)).
+
+An item is one `(principal, target)` grant and carries every access-control entry that creates
+it, frozen as evidence with the `object_versions` row each came from and the certainty it had
+at the baseline. Entries a campaign deliberately skipped — inherited ones, well-known trustees
+— are counted and reported with its status, so *"47 of 47 certified"* is never readable as
+coverage of everything.
+
+**A decision never changes what a collector reported.** A `revoke` produces a *proposed
+remediation*: ADG's record of a change somebody might make in Windows. ADG performs none of
+them, and nothing in the governance package can write a collected table
+([ADR-0028](docs/decisions/0028-governance-is-metadata-about-observations.md)). Recorded
+resource ownership is ADG metadata and is kept beside, never merged with, the owner SID
+Windows reports — the gap between the two is itself a finding.
+
+Authorization splits three ways, and `governance:manage` deliberately does **not** include
+`governance:review`: whoever chooses the questions does not also give the answers
+([ADR-0029](docs/decisions/0029-running-a-review-and-answering-one-are-separate.md)). Holding
+the capability is not authority over an item either — the item must also be *assigned* to the
+caller, checked against the database on every decision. Two roles join the existing three:
+`reviewer` and `governance_admin`; a plain `viewer` holds no governance capability at all,
+because a decision rationale can name a person and say something about them that no
+access-control list ever would.
+
+Attestations are append-only. A changed mind writes a new decision and supersedes the old one,
+and every governance act is recorded in a hash-chained audit trail; database triggers refuse
+every other update and every delete. See
+[`docs/architecture/governance-model.md`](docs/architecture/governance-model.md). There is no
+web UI yet; the API is complete.
 
 ## Security
 

@@ -225,6 +225,18 @@ ROUTE_CAPABILITIES: dict[tuple[str, str], str | None] = {
     # inherit the weaker requirement. See the note at the include site in app/api/__init__.
     ("GET", "/api/v1/groups/{identifier}/resource-impact"): Capability.ACCESS_READ.value,
     ("GET", "/api/v1/search"): Capability.SEARCH.value,
+    # Changes. The feed, the summary, one object's timeline and the point-in-time comparison
+    # all report what was *edited*.
+    ("GET", "/api/v1/changes"): Capability.CHANGES_READ.value,
+    ("GET", "/api/v1/changes/summary"): Capability.CHANGES_READ.value,
+    ("GET", "/api/v1/changes/timeline"): Capability.CHANGES_READ.value,
+    ("GET", "/api/v1/changes/compare"): Capability.CHANGES_READ.value,
+    # Deliberately access:read, for the same reason /groups/{id}/resource-impact is.
+    # "Why did access change" resolves effective access either side of an edit: it discloses
+    # what a principal could do, which is a different and more sensitive answer than the
+    # list of what was edited, and the more sensitive one does not inherit the weaker
+    # requirement. See the note at the include site in app/api/__init__.
+    ("GET", "/api/v1/changes/impact"): Capability.ACCESS_READ.value,
 }
 
 

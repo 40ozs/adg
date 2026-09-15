@@ -42,7 +42,13 @@ export interface RequestOptions {
   token?: string | null;
   method?: string;
   body?: unknown;
-  query?: Record<string, string | number | undefined | null>;
+  /**
+   * Query parameters. An array value is sent as a **repeated** parameter, which is how the
+   * API spells a filter that may be given more than once (`?kind=smb_ace&kind=ntfs_ace`).
+   * Joining them with commas would send one value the API would reject as an unknown enum
+   * member, and the failure would look like a filter that simply matched nothing.
+   */
+  query?: Record<string, string | number | undefined | null | readonly string[]>;
   /** Milliseconds. A hung API must not hang the page. */
   timeoutMs?: number;
   signal?: AbortSignal;
@@ -54,6 +60,14 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const base = resolveServerApiUrl();
   const url = new URL(`${base}${path}`);
   for (const [key, value] of Object.entries(options.query ?? {})) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== "") {
+          url.searchParams.append(key, item);
+        }
+      }
+      continue;
+    }
     if (value !== undefined && value !== null && value !== "") {
       url.searchParams.set(key, String(value));
     }
