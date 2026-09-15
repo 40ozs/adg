@@ -198,6 +198,18 @@ class MembershipRepository:
         self._edges_fetched = 0
 
     @property
+    def session(self) -> AsyncSession:
+        """The session every read runs against.
+
+        Exposed so that a repository which *wraps* this one -- the as-of forms in
+        :mod:`app.history.repository`, the overlay forms in
+        :mod:`app.simulation.repositories` -- can construct itself over the same connection
+        instead of reaching for a private attribute. Read-only: a repository does not hand
+        out the ability to replace its own session.
+        """
+        return self._session
+
+    @property
     def edge_fetch_limit(self) -> int:
         """Rows this repository will read before it stops. Exposed so the pairing is testable."""
         return self._edge_fetch_limit

@@ -13,19 +13,29 @@ from app.auth.dev_users import (
     DevelopmentUserError,
     parse_development_users,
 )
-from app.auth.roles import Role
+from app.auth.roles import ACTIVE_ROLES, Role
 
 
 class TestTheDefaultList:
     def test_it_provides_one_account_per_active_role(self) -> None:
         users = parse_development_users(DEFAULT_DEV_AUTH_USERS)
 
-        assert {user.username for user in users} == {"viewer", "auditor", "admin"}
-        assert {next(iter(user.roles)) for user in users} == {
-            Role.VIEWER,
-            Role.AUDITOR,
-            Role.ADMIN,
+        assert {user.username for user in users} == {
+            "viewer",
+            "auditor",
+            "admin",
+            "reviewer",
+            "governance",
+            "planner",
+            "approver",
         }
+        assert {next(iter(user.roles)) for user in users} == ACTIVE_ROLES
+
+    def test_no_default_account_holds_two_roles(self) -> None:
+        """One role per account, so a developer sees the separation of duties rather than a
+        superuser that hides it. See ADR-0029."""
+        for user in parse_development_users(DEFAULT_DEV_AUTH_USERS):
+            assert len(user.roles) == 1
 
     def test_the_reserved_role_gets_no_default_account(self) -> None:
         """Nothing should make it convenient to sign in as a role that grants nothing."""

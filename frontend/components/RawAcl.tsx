@@ -4,6 +4,7 @@ import { aceNotes, aceOrigin, formatMask } from "@/lib/acl";
 import type { NtfsAceView, ShareAceView } from "@/lib/contracts";
 import { ambiguousLabels } from "@/lib/identity";
 import { PrincipalName } from "@/components/Identity";
+import { SimulateAction } from "@/components/SimulateLink";
 
 /**
  * A share-level ACL, entry by entry.
@@ -17,7 +18,19 @@ import { PrincipalName } from "@/components/Identity";
  * the source reported no position, the column says so rather than implying the list order
  * is the DACL order.
  */
-export function ShareAceTable({ entries }: { entries: readonly ShareAceView[] }): JSX.Element {
+export function ShareAceTable({
+  entries,
+  shareKey,
+}: {
+  entries: readonly ShareAceView[];
+  /**
+   * The share these entries belong to. Given, each row offers a `Simulate` action that opens
+   * the proposal editor with a removal of that entry already written; omitted, the column is
+   * not rendered at all. Optional because two callers list entries from several shares at
+   * once, and a row that could not say which share it came from must not offer to change one.
+   */
+  shareKey?: string;
+}): JSX.Element {
   const ambiguous = ambiguousLabels(entries.map((entry) => entry.trustee));
   return (
     <div className="table-scroll">
@@ -29,6 +42,7 @@ export function ShareAceTable({ entries }: { entries: readonly ShareAceView[] })
             <th scope="col">Trustee</th>
             <th scope="col">Right</th>
             <th scope="col">Last observed</th>
+            {shareKey && <th scope="col">What if</th>}
           </tr>
         </thead>
         <tbody>
@@ -54,6 +68,18 @@ export function ShareAceTable({ entries }: { entries: readonly ShareAceView[] })
                   {entry.provenance.last_observed_at}
                 </time>
               </td>
+              {shareKey && (
+                <td>
+                  <SimulateAction
+                    seed={{
+                      kind: "remove_share_ace",
+                      share_key: shareKey,
+                      ace_key: entry.ace_key,
+                    }}
+                    title={`Measure what removing this entry would do. Nothing is applied.`}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -75,7 +101,14 @@ export function ShareAceTable({ entries }: { entries: readonly ShareAceView[] })
  *   shown. `unrecognized_bits` is surfaced rather than dropped: a bit ADG cannot name is
  *   still a bit Windows will honour.
  */
-export function NtfsAceTable({ entries }: { entries: readonly NtfsAceView[] }): JSX.Element {
+export function NtfsAceTable({
+  entries,
+  resourceKey,
+}: {
+  entries: readonly NtfsAceView[];
+  /** The directory these entries belong to; see the note on {@link ShareAceTable}. */
+  resourceKey?: string;
+}): JSX.Element {
   const ambiguous = ambiguousLabels(entries.map((entry) => entry.trustee));
   return (
     <div className="table-scroll">
@@ -89,6 +122,7 @@ export function NtfsAceTable({ entries }: { entries: readonly NtfsAceView[] }): 
             <th scope="col">Mask</th>
             <th scope="col">Source</th>
             <th scope="col">Applies here</th>
+            {resourceKey && <th scope="col">What if</th>}
           </tr>
         </thead>
         <tbody>
@@ -134,6 +168,18 @@ export function NtfsAceTable({ entries }: { entries: readonly NtfsAceView[] }): 
                     <span className="status-warn">no — inherit-only</span>
                   )}
                 </td>
+                {resourceKey && (
+                  <td>
+                    <SimulateAction
+                      seed={{
+                        kind: "remove_ntfs_ace",
+                        resource_key: resourceKey,
+                        ace_key: entry.ace_key,
+                      }}
+                      title="Measure what removing this entry would do. Nothing is applied."
+                    />
+                  </td>
+                )}
               </tr>
             );
           })}

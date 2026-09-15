@@ -17,7 +17,7 @@
     "note": "All five are effective members under the default include=non_groups filter. The undescribed SID is returned with kind null, resolved false, and is_group null — never a guessed false, and never filtered away for want of a label."
   },
   "start": {
-    "schema_version": "1.3",
+    "schema_version": "1.4",
     "run_id": "00000000-0000-4000-8000-000000000a05",
     "source": {
       "collector": "active_directory",
@@ -33,18 +33,19 @@
         "key": "s-1-5-21-2000000001-2000000002-2000000003"
       }
     ],
-    "incremental": false
+    "incremental": false,
+    "mode": "full"
   },
   "batches": [
     {
-      "schema_version": "1.3",
+      "schema_version": "1.4",
       "run_id": "00000000-0000-4000-8000-000000000a05",
       "batch_id": "00000000-0000-4000-8000-100000000001",
       "sequence": 1,
       "is_final": true,
       "observations": [
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:01Z",
@@ -59,7 +60,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:02Z",
@@ -71,7 +72,7 @@
           "last_known_name": "svc-oldbackup"
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:03Z",
@@ -82,7 +83,7 @@
           "unresolved_reason": "untrusted_domain"
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:04Z",
@@ -94,7 +95,7 @@
           "last_known_name": "CORP\\jdoe"
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:05Z",
@@ -109,7 +110,7 @@
           "is_deleted": true
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:06Z",
@@ -121,7 +122,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:07Z",
@@ -133,7 +134,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:08Z",
@@ -145,7 +146,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:09Z",
@@ -157,7 +158,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a05",
           "observed_at": "2026-09-14T09:00:10Z",
@@ -167,11 +168,12 @@
           "edge_kind": "directory_group_member",
           "is_foreign_security_principal": false
         }
-      ]
+      ],
+      "affirmations": []
     }
   ],
   "completion": {
-    "schema_version": "1.3",
+    "schema_version": "1.4",
     "run_id": "00000000-0000-4000-8000-000000000a05",
     "status": "succeeded",
     "completed_at": "2026-09-14T09:10:00Z",
@@ -184,6 +186,7 @@
         "kind": "domain",
         "key": "s-1-5-21-2000000001-2000000002-2000000003"
       }
-    ]
+    ],
+    "affirmation_count": 0
   }
 }

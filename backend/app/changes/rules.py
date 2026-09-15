@@ -51,7 +51,6 @@ from app.access_engine.rights import (
     ESCALATION_RIGHTS,
     FILE_ALL_ACCESS,
     SHARE_LEVEL_MASKS,
-    NtfsRight,
     RightsMask,
 )
 from app.changes.model import (
@@ -63,7 +62,7 @@ from app.changes.model import (
 )
 from app.changes.principals import is_broad_trustee, is_privileged_group, trustee_display
 from app.contracts.v1.common import ObservationKind
-from app.domain.access import AceType, SharePermission
+from app.domain.access import AceType, NtfsRight, SharePermission
 
 __all__ = ["RULES", "ChangeFacts", "Rule", "RuleOutcome", "evaluate"]
 

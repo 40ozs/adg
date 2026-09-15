@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import type { AppliedAceView, AccessExplanationResponse } from "@/lib/derived";
+import type { AppliedAceView, AccessExplanationResponse, RemovalTargetView } from "@/lib/derived";
 import {
   certaintyNote,
   describeRemoval,
@@ -12,6 +12,7 @@ import {
 import { limitingLayerLabel } from "@/lib/access";
 import { Rights } from "@/components/EffectiveAccess";
 import { PrincipalName } from "@/components/Identity";
+import { SimulateAction } from "@/components/SimulateLink";
 import styles from "@/components/explanation.module.css";
 
 /**
@@ -273,6 +274,7 @@ export function RemovalPanel({
                   <th scope="col">Effect</th>
                   <th scope="col">Rights afterwards</th>
                   <th scope="col">Routes that survive</th>
+                  <th scope="col">What if</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,6 +299,9 @@ export function RemovalPanel({
                         ) : (
                           note.alternates.map((path) => path.id).join(", ")
                         )}
+                      </td>
+                      <td>
+                        <RemovalSimulateAction explanation={explanation} target={target} />
                       </td>
                     </tr>
                   );
@@ -391,4 +396,82 @@ export function ExplanationHeader({
       <BasisNote explanation={explanation} />
     </div>
   );
+}
+
+/**
+ * The `Simulate` action beside one removable relationship.
+ *
+ * This table already measured what removing the relationship would do *for this one pair*,
+ * by re-running the access check. The simulation answers the wider question the operator asks
+ * next: who **else** does that removal touch, across every directory the group reaches. So the
+ * action opens the proposal editor with the removal written and the affected scope selected.
+ *
+ * Rendered only where the seed can be built exactly. A membership edge needs both principals'
+ * storage keys and an ACE edge needs the entry's own key; where the graph does not carry one —
+ * an assumed membership has no row to delete — the cell says so rather than offering an action
+ * that would propose the wrong change.
+ */
+function RemovalSimulateAction({
+  explanation,
+  target,
+}: {
+  explanation: AccessExplanationResponse;
+  target: RemovalTargetView;
+}): JSX.Element {
+  const nodes = new Map(explanation.graph.nodes.map((node) => [node.id, node]));
+  const edge = explanation.graph.edges.find((item) => item.id === target.edge_id);
+
+  if (target.kind === "membership") {
+    const member = nodes.get(target.source);
+    const group = nodes.get(target.target);
+    if (member && group) {
+      return (
+        <SimulateAction
+          seed={{
+            kind: "remove_member",
+            group_key: group.key,
+            member_key: member.key,
+            subject_key: explanation.subject.key,
+          }}
+          label="Simulate across the estate"
+          title="Measure what removing this membership would do everywhere, not only here. Nothing is applied."
+        />
+      );
+    }
+  }
+
+  if (target.kind === "trustee" && edge?.ace_key) {
+    const ace = nodes.get(target.source);
+    const isShare = ace?.layer === "smb_share";
+    if (isShare && explanation.share?.key) {
+      return (
+        <SimulateAction
+          seed={{
+            kind: "remove_share_ace",
+            share_key: explanation.share.key,
+            ace_key: edge.ace_key,
+            subject_key: explanation.subject.key,
+          }}
+          label="Simulate across the estate"
+          title="Measure what removing this share entry would do everywhere. Nothing is applied."
+        />
+      );
+    }
+    if (!isShare) {
+      return (
+        <SimulateAction
+          seed={{
+            kind: "remove_ntfs_ace",
+            resource_key: explanation.resource.path ?? explanation.resource.key,
+            ace_key: edge.ace_key,
+            subject_key: explanation.subject.key,
+          }}
+          label="Simulate across the estate"
+          title="Measure what removing this entry would do everywhere. Nothing is applied."
+        />
+      );
+    }
+  }
+
+  return <span className="muted">no row to remove</span>;
 }

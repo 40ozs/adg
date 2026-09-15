@@ -21,11 +21,15 @@ from typing import Annotated, Literal, Self
 from pydantic import AwareDatetime, Field, model_validator
 
 from app.contracts.v1.common import (
+    MAX_BATCH_AFFIRMATIONS,
     MAX_BATCH_OBSERVATIONS,
     SCHEMA_VERSION,
+    Affirmation,
+    CollectorCheckpoint,
     ContractModel,
     Scope,
     SourceDescriptor,
+    schema_minor,
     to_utc,
 )
 from app.contracts.v1.observations import (
@@ -37,7 +41,7 @@ from app.contracts.v1.observations import (
     SmbAceObservation,
     SmbShareObservation,
 )
-from app.domain import ScanRun, ScanStatus
+from app.domain import CollectionMode, ScanRun, ScanStatus
 
 ObservationUnion = Annotated[
     PrincipalObservation
@@ -65,6 +69,31 @@ class ScanRunStart(ContractModel):
     scopes: list[Scope] = Field(min_length=1, max_length=1000)
     incremental: bool = False
     notes: str | None = Field(default=None, max_length=2000)
+    mode: CollectionMode | None = Field(
+        default=None,
+        description=(
+            "Contract 1.4. Why this run is or is not incremental: 'full', 'delta', or "
+            "'reconcile'. Omitted by collectors predating 1.4, in which case it is derived "
+            "from `incremental` and means the same thing less precisely."
+        ),
+    )
+    job: str | None = Field(
+        default=None,
+        max_length=128,
+        description=(
+            "Contract 1.4. The scheduled job this run belongs to, as named in the "
+            "orchestrator configuration. Free-form: the server groups and reports by it and "
+            "never interprets it."
+        ),
+    )
+    baseline: CollectorCheckpoint | None = Field(
+        default=None,
+        description=(
+            "Contract 1.4. The checkpoint this delta resumed from. Recorded so that a "
+            "later gap can be attributed: without it, a run that resumed from a watermark "
+            "nobody kept is indistinguishable from one that read everything."
+        ),
+    )
 
     @model_validator(mode="after")
     def _normalize(self) -> Self:
@@ -75,6 +104,33 @@ class ScanRunStart(ContractModel):
         if len(set(keys)) != len(keys):
             raise ValueError(
                 "A run must declare each scope once; duplicates make coverage ambiguous."
+            )
+        _require_minor(self.schema_version, 4, mode=self.mode, job=self.job, baseline=self.baseline)
+
+        if self.mode is None:
+            # Derived rather than defaulted to `full`: a 1.3 collector setting
+            # `incremental: true` is making the delta claim in the only vocabulary it has,
+            # and recording that run as `full` would file it beside runs that read
+            # everything.
+            mode = CollectionMode.DELTA if self.incremental else CollectionMode.FULL
+            object.__setattr__(self, "mode", mode)
+        elif self.mode.is_incremental != self.incremental:
+            raise ValueError(
+                f"mode {self.mode.value!r} and incremental={self.incremental} contradict "
+                "each other. `incremental` is the flag that decides whether this run may "
+                "ever mark an object absent, and `mode` says why; a payload where they "
+                "disagree does not state which one the server should act on."
+            )
+
+        resolved = self.mode
+        # Set just above when it was absent, so it is never None here; the assertion is
+        # what tells the type checker so.
+        assert resolved is not None
+        if self.baseline is not None and not resolved.is_incremental:
+            raise ValueError(
+                f"A {resolved.value} run resumes from nothing: it reads its whole scope, "
+                "so a baseline checkpoint would record a starting point it did not start "
+                "from. Send the baseline only on a delta run."
             )
         return self
 
@@ -104,13 +160,48 @@ class ObservationBatch(ContractModel):
     sequence: int = Field(ge=1)
     is_final: bool = False
     continuation_token: str | None = Field(default=None, max_length=2048)
-    observations: list[ObservationUnion] = Field(min_length=1, max_length=MAX_BATCH_OBSERVATIONS)
+    # `min_length` is 0 only so that a batch may carry affirmations alone; a batch with
+    # neither is still rejected below, so a 1.0-1.3 payload is held to exactly the rule it
+    # was written against.
+    observations: list[ObservationUnion] = Field(
+        default_factory=list, max_length=MAX_BATCH_OBSERVATIONS
+    )
+    affirmations: list[Affirmation] = Field(
+        default_factory=list,
+        max_length=MAX_BATCH_AFFIRMATIONS,
+        description=(
+            "Contract 1.4. Objects this scan re-read and found unchanged, sent as a key and "
+            "a digest instead of the whole object. The server verifies each digest against "
+            "what it holds and refuses the ones that disagree."
+        ),
+    )
+    checkpoint: CollectorCheckpoint | None = Field(
+        default=None,
+        description=(
+            "Contract 1.4. The cursor covering everything in and before this batch. The "
+            "server advances the job's stored checkpoint to it only once the batch has been "
+            "applied, so a batch that never arrived cannot move the resume point past it."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check_consistency(self) -> Self:
         _require_uuid(self.run_id, "run_id")
         _require_uuid(self.batch_id, "batch_id")
         _require_version(self.schema_version)
+        _require_minor(
+            self.schema_version,
+            4,
+            affirmations=self.affirmations or None,
+            checkpoint=self.checkpoint,
+        )
+
+        if not self.observations and not self.affirmations:
+            raise ValueError(
+                "A batch must carry at least one observation or affirmation. An empty batch "
+                "consumes a batch_id and a sequence number and tells the server nothing, so "
+                "it would count towards coverage without contributing any."
+            )
 
         mismatched = {observation.run_id for observation in self.observations} - {self.run_id}
         if mismatched:
@@ -131,11 +222,35 @@ class ObservationBatch(ContractModel):
                 "Two observations with one key are indistinguishable, so the second would "
                 "silently overwrite the first."
             )
+
+        affirmed = Counter(affirmation.source_key for affirmation in self.affirmations)
+        repeated = sorted(key for key, count in affirmed.items() if count > 1)
+        if repeated:
+            raise ValueError(
+                f"A batch must not affirm the same source_key twice; found {repeated}."
+            )
+        contradicted = sorted(set(affirmed) & set(seen))
+        if contradicted:
+            raise ValueError(
+                f"A batch both observes and affirms {contradicted}. One says the object's "
+                "state is what this payload carries and the other says it is whatever the "
+                "server already holds, and nothing in the batch says which reading the "
+                "collector actually took. Send the object once, either way."
+            )
         return self
 
     @property
     def source_keys(self) -> list[str]:
         return [observation.source_key for observation in self.observations]
+
+    @property
+    def affirmed_keys(self) -> list[str]:
+        return [affirmation.source_key for affirmation in self.affirmations]
+
+    @property
+    def item_count(self) -> int:
+        """Everything in this batch that names an object, affirmed or observed."""
+        return len(self.observations) + len(self.affirmations)
 
 
 class CollectorError(ContractModel):
@@ -160,12 +275,42 @@ class ScanRunCompletion(ContractModel):
     errors: list[CollectorError] = Field(default_factory=list, max_length=1000)
     reconciled_scopes: list[Scope] = Field(default_factory=list, max_length=1000)
     notes: str | None = Field(default=None, max_length=2000)
+    affirmation_count: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Contract 1.4. How many affirmations the collector sent, counted the way "
+            "`observation_count` counts observations."
+        ),
+    )
+    checkpoint: CollectorCheckpoint | None = Field(
+        default=None,
+        description=(
+            "Contract 1.4. The cursor the next delta may resume from. Permitted only on a "
+            "run that succeeded: see the validator."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check_consistency(self) -> Self:
         _require_uuid(self.run_id, "run_id")
         _require_version(self.schema_version)
         object.__setattr__(self, "completed_at", to_utc(self.completed_at))
+        _require_minor(
+            self.schema_version,
+            4,
+            affirmation_count=self.affirmation_count or None,
+            checkpoint=self.checkpoint,
+        )
+
+        if self.checkpoint is not None and (self.status != "succeeded" or self.error_count):
+            raise ValueError(
+                f"A {self.status} run with {self.error_count} error(s) must not record a "
+                "checkpoint. The cursor would claim everything below it had been read, and "
+                "the next delta would start above exactly the objects this run failed on — "
+                "a gap that closes only by accident, because nothing afterwards looks "
+                "missing."
+            )
 
         if self.errors and self.error_count < len(self.errors):
             raise ValueError(
@@ -227,6 +372,33 @@ def _require_uuid(value: str, field_name: str) -> None:
     from app.contracts.v1.common import _validate_uuid
 
     _validate_uuid(value, field_name=field_name)
+
+
+def _require_minor(version: str, minor: int, **fields: object) -> None:
+    """Refuse a field that a payload's declared minor version predates.
+
+    A rule a later minor introduces applies only to payloads claiming that minor — that is
+    what makes the bump additive. This is the mirror image: a payload claiming an *earlier*
+    minor may not use a field that minor had never heard of. Without the check, a collector
+    that declares ``1.0`` and sends a checkpoint would have it stored, and the version
+    string would stop meaning anything about what the payload can contain.
+
+    Pass ``None`` for a field that is absent; an empty list counts as absent, because
+    sending none of something is what every earlier minor does.
+    """
+    if schema_minor(version) >= minor:
+        return
+    used = sorted(name for name, value in fields.items() if value is not None)
+    if not used:
+        return
+    plural = "s" if len(used) > 1 else ""
+    raise ValueError(
+        f"Field{plural} {', '.join(used)} {'were' if len(used) > 1 else 'was'} introduced "
+        f"in contract 1.{minor}, and this payload declares schema_version {version!r}. "
+        f"Either declare 1.{minor} or omit {'them' if len(used) > 1 else 'it'}; a payload "
+        "whose version does not cover its own fields cannot be validated against the "
+        "contract it names."
+    )
 
 
 def _require_version(value: str) -> None:

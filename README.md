@@ -34,6 +34,7 @@ docs/
   decisions/      Architecture decision records.
   handoffs/       Per-phase implementation handoffs.
   operations/     Runbook: install, verify, point at a domain, operate.
+  release/        Readiness, security review, measured performance, known limits.
 scripts/          Windows developer commands (PowerShell 7).
   windows-test-tree/  Builds real NTFS trees to validate and benchmark the collector against.
 ```
@@ -42,6 +43,13 @@ Two documents are the place to start:
 [`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) to get it running, and
 [`docs/architecture/mvp-capabilities.md`](docs/architecture/mvp-capabilities.md) for what it
 answers and — just as deliberately — what it does not.
+
+Before deploying it anywhere that matters, read
+[`docs/release/known-limitations.md`](docs/release/known-limitations.md), and in particular
+§1: the NTFS collector has been validated against real volumes and against Windows' own
+access check, and **the Active Directory and SMB collectors have never met a real domain.**
+[`docs/release/release-readiness.md`](docs/release/release-readiness.md) says what that means
+for a first installation.
 
 ## Prerequisites
 
@@ -213,6 +221,24 @@ Resources and raw ACLs, share layer and file-system layer (see
 | `GET /api/v1/changes/compare?from=&to=` | What is *different* between two instants — a different question from the feed, with objects nothing covers counted rather than reported as created or deleted. |
 | `GET /api/v1/changes/impact?kind=&key=&at=` | Why access changed: effective access either side of one edit, by the live engine. Requires `access:read`. |
 
+### Risks and alerts
+
+| Route | What it answers |
+| --- | --- |
+| `GET /api/v1/risks/summary` | Severity counts, **what the last evaluation covered**, and what the rule configuration is hiding. Read the coverage before reading the counts. |
+| `GET /api/v1/risks/findings` | Findings, filtered by severity, rule, confidence, place, principal and when they were first or last seen. An unknown filter value is refused, never ignored. |
+| `GET /api/v1/risks/findings/{key}` | One finding with **the records it was matched on**, its timeline, the remediation, and whether it still re-derives from its own evidence. |
+| `GET /api/v1/risks/rules` | The rule catalog as configured — **including the rules that are off**, whose silence is a decision rather than a result. |
+| `GET /api/v1/risks/evaluations` | Recent passes: what ran, what it covered, what it decided. |
+| `GET /api/v1/alerts` | The alert feed, with counts per trigger including the empty ones. |
+| `GET /api/v1/alerts/{key}` | One alert and **every occurrence of it, suppressed ones included**, with the reason each was held. |
+| `GET|POST /api/v1/alerts/watches` | Standing subscriptions, and the table of what each kind of watch can be told about. Writing needs `alerts:manage`. |
+| `GET /api/v1/alerts/deliveries` | Queue depth, staleness, abandonment, and the policy in force — the four numbers that separate a quiet estate from a stopped pipeline. |
+
+> **No route starts an evaluation.** Reading a report must not be able to trigger the most
+> expensive thing in the product. An evaluation is `python -m app.operations evaluate-risks`,
+> or a consequence of a scan run closing when `ADG_ALERTS_ON_RUN_COMPLETION` is set.
+
 > Search reports how it read the term, which categories it truncated, and which the account
 > was not permitted to search. An empty result is always attributable.
 
@@ -236,8 +262,8 @@ same information from the browser's point of view.
 
 ## The web application
 
-`http://localhost:3000`. Sections: Overview, Resources, Identities, Access, Risks (placeholder),
-Changes (placeholder), Collectors, Settings — each shown only when the signed-in account holds
+`http://localhost:3000`. Sections: Overview, Resources, Identities, Access, Risks, Changes,
+Collectors, Settings — each shown only when the signed-in account holds
 the capability behind it.
 
 In development mode, sign in at `/login` and pick `viewer`, `auditor`, `admin`, `reviewer`
@@ -420,6 +446,41 @@ operator declares which resources are sensitive in `ADG_RISK_CONFIGURATION_PATH`
 reference and [`docs/architecture/risk-model.md`](docs/architecture/risk-model.md) for the
 model.
 
+The **Risks** page shows all of it, with the caveat that makes it readable: above the counts,
+what the last evaluation actually covered. An empty table under *"the rules have never been
+evaluated"* means nothing has looked — which is the single most dangerous sentence this
+product could accidentally say, and the one it therefore says out loud. Each row opens an
+evidence drawer holding the stored records themselves rather than a rendering of them, plus
+whether the finding still re-derives from them.
+
+Nothing runs by itself. Evaluate the rules with `python -m app.operations evaluate-risks`, or
+set `ADG_ALERTS_ON_RUN_COMPLETION=true` to do it when a scan run closes.
+
+### Alerts
+
+Put a **watch** on a directory, a share or a group and ADG tells you when its permissions
+change, when its membership changes, or when somebody's effective access to it grows — three
+separate questions, because an entry can be added that grants nothing and access can widen
+with no entry touched. A critical risk finding opening alerts on its own, with no watch:
+requiring a subscription would make the feature's coverage equal to somebody's foresight.
+
+Two properties are what make the feed believable when it is quiet.
+
+**A suppressed alert is recorded, never dropped.** A cooldown decides what is *delivered* and
+nothing decides what is *written down*, so "we were not told" and "it did not happen" stay
+separable afterwards — and the next notification says how many occurrences it stands for
+([ADR-0032](docs/decisions/0032-a-suppressed-alert-is-recorded-never-dropped.md)).
+
+**Delivery cannot cost you an observation.** Alerts are enqueued in the same transaction that
+raises them and delivered in a separate pass, so a webhook that is down can never roll back
+the ingestion that produced the alert
+([ADR-0033](docs/decisions/0033-raising-an-alert-and-delivering-one-are-separate-transactions.md)).
+An alert that is never delivered is visible and permanent rather than silent.
+
+Deliver `python -m app.operations drain-alerts --loop`. See
+[`docs/operations/alerting.md`](docs/operations/alerting.md) for the policy file and
+[`docs/architecture/alerting.md`](docs/architecture/alerting.md) for the design.
+
 ### What-if simulation
 
 *"If I take this group off the ACL, who loses access?"* is answered by running the **real**
@@ -442,8 +503,27 @@ collected is reported as a bound rather than as a number. Every result names the
 state it was computed against, so *"this was computed before the last scan"* is a fact rather
 than a guess.
 
-See [`docs/architecture/simulation.md`](docs/architecture/simulation.md). There is no HTTP
-surface yet; the engine is reachable from the backend only.
+A proposal is offered from wherever somebody is already looking — a membership row, an SMB
+or NTFS entry, a route on the access explanation — as a plain link that opens the proposal
+editor with the change already written. Every screen and every response leads with the same
+sentence: **no changes will be applied**, served by the API so that three surfaces cannot word
+it three ways, beside an `applied: false` field a test can assert on. Reading a stored proposal
+needs `simulations:read` and computing one needs `simulations:run`; a plain viewer holds
+neither, because a what-if composes two answers a viewer already has into a route map for
+privilege escalation
+([ADR-0034](docs/decisions/0034-a-simulation-is-offered-not-applied.md)).
+
+**The prediction is validated against the estate, not only against the engine.**
+`tests/db/test_simulation_equivalence.py` builds a known permission state, collects it,
+simulates a change, applies the equivalent change fixture-side, recollects as three
+reconciling collector runs, and compares predicted with observed for every supported change
+type. The one exception it finds is measured with exact masks rather than described: a
+current-state reading does not consult presence, so after a reconciled scan has proved a grant
+gone the live engine still counts it — and a point-in-time baseline answers correctly.
+
+See [`docs/architecture/simulation.md`](docs/architecture/simulation.md) for the engine and
+[`docs/architecture/simulation-surface.md`](docs/architecture/simulation-surface.md) for the
+API, the screens and the equivalence proof.
 
 ### Access reviews
 
@@ -480,8 +560,75 @@ access-control list ever would.
 Attestations are append-only. A changed mind writes a new decision and supersedes the old one,
 and every governance act is recorded in a hash-chained audit trail; database triggers refuse
 every other update and every delete. See
-[`docs/architecture/governance-model.md`](docs/architecture/governance-model.md). There is no
-web UI yet; the API is complete.
+[`docs/architecture/governance-model.md`](docs/architecture/governance-model.md).
+
+**The reviewer's screens** live under `/governance`: a queue of what was asked of *you*, a
+campaign's progress and coverage, and one page per item carrying everything a decision needs —
+the frozen entries, what they were worth then and are worth now, why the principal has the
+access, any open risk finding about it, and when it last moved. A reviewer answers `approve`,
+`propose revoke`, `propose narrower rights`, `needs investigation` or `not mine to judge`, with
+a comment the campaign may require on every decision.
+
+Two things that screen refuses to let a reviewer assume. **It says when the grant has changed
+since the campaign was frozen** — and keeps "we looked and it is gone" apart from "nobody has
+looked", because those send a reviewer to opposite conclusions. The item is never rewritten:
+drift is shown beside the frozen evidence, which stays the subject of the decision
+([ADR-0031](docs/decisions/0031-drift-is-reported-beside-an-item-never-applied-to-it.md)). And
+**it says when revoking an entry would not actually end the access**, because a principal who
+also reaches the target through a group keeps it either way — the case where a revoke decision
+records something untrue.
+
+Several items can be answered at once only when they are genuinely one question: one principal
+across many targets, or one target across many principals, none already decided and none
+drifted. Each still gets its own decision, evidence digest and audit event. See
+[`docs/architecture/access-review-workflow.md`](docs/architecture/access-review-workflow.md).
+
+## Remediation: proposing a change, and not making one
+
+A review that concludes *"this group should come off the payroll share"* and stops there has
+produced a finding nobody can act on. ADG turns it into a **change plan** — and then hands the
+plan to a person, because ADG does not change Windows and cannot.
+
+A plan is a title, a reason, and an ordered list of precise steps. Each step names one object
+exactly (one ACE key, or one group-and-member pair) and carries the state ADG observed it in.
+Four things then have to happen before anything leaves the building:
+
+1. **It is measured.** The plan is translated into a what-if and evaluated by the production
+   access engine — the same code `/api/v1/access` answers with, run twice. The report is stored
+   as an ordinary simulation you can open and re-run. A plan cannot be submitted without one
+   measured against the same collected state the plan was written against.
+2. **Somebody else approves it.** The approval records *which version of the plan* and *which
+   collected state* it answered about. Editing the plan afterwards invalidates the approval by
+   arithmetic rather than by anybody remembering to clear it.
+3. **The estate is re-checked.** Every step's frozen before-state is compared with what ADG
+   holds now. `changed`, `missing` and `unobserved` each block the export and each say something
+   different — *somebody edited this*, *it is gone*, and *nobody has looked*, which lead to three
+   different places.
+4. **A third person exports it.** The result is a signed JSON document and a PowerShell runbook
+   that does nothing without `-Execute` and re-checks every precondition on the machine before
+   it touches anything.
+
+```
+POST /api/v1/remediation                      write a plan          (remediation:plan)
+POST /api/v1/remediation/{id}/simulation      measure it            (remediation:plan)
+POST /api/v1/remediation/{id}/submission      put it to an approver (remediation:plan)
+POST /api/v1/remediation/{id}/approval        answer it             (remediation:approve)
+POST /api/v1/remediation/{id}/exports         sign it               (remediation:export)
+GET  /api/v1/remediation/candidates           decisions with no plan yet
+GET  /api/v1/remediation/execution-policy     can this deployment change my domain?
+```
+
+The last one is worth calling out. The answer is no, and it comes from the executor the running
+process actually holds rather than from documentation — because a guarantee you can only check
+by reading source code is one most people will not check.
+
+Development accounts: `planner` and `approver`, one role each, so the separation of duties is
+visible on your own screen. Set `ADG_REMEDIATION_SIGNING_KEY` before exporting; without it the
+export is refused, deliberately.
+
+Full treatment: [`docs/architecture/remediation.md`](docs/architecture/remediation.md). For the
+administrator carrying a plan out:
+[`docs/operations/remediation-runbook.md`](docs/operations/remediation-runbook.md).
 
 ## Security
 

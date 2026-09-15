@@ -329,7 +329,7 @@ class ChangeImpactService:
         completion falls back to the version's instant, which is the best available answer
         and is what an incomplete run leaves behind.
         """
-        completed = (
+        completed: dt.datetime | None = (
             await self._session.execute(
                 select(scan_runs.c.completed_at).where(scan_runs.c.run_id == after.opened_by_run_id)
             )
@@ -357,7 +357,7 @@ class ChangeImpactService:
         if before is not None:
             return before.last_seen_at
         if after.container_key:
-            newest = (
+            newest: dt.datetime | None = (
                 await self._session.execute(
                     select(sa_func.max(object_versions.c.last_seen_at)).where(
                         object_versions.c.object_kind == after.kind.value,

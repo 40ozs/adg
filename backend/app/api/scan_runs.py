@@ -23,7 +23,7 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import Session
@@ -37,8 +37,10 @@ from app.api.pagination import (
 from app.auth.dependencies import IngestPrincipal, ingest_principal, requires
 from app.auth.roles import Capability
 from app.contracts.v1 import ObservationBatch, ScanRunCompletion, ScanRunStart
-from app.domain import CollectorKind, ScanStatus
+from app.domain import Checkpoint, CollectorKind, ReconciliationDrift, ScanStatus
+from app.ingestion.checkpoints import CheckpointAdvance
 from app.ingestion.service import IngestionService, RunSummary
+from app.services.alerts import PostRunOutcome, evaluate_run_after_commit
 
 logger = logging.getLogger("adg.api.ingestion")
 
@@ -74,6 +76,60 @@ class ScanRunStartedResponse(BaseModel):
     )
 
 
+class RefusedAffirmationView(BaseModel):
+    """One affirmation the server would not accept (contract 1.4).
+
+    Returned rather than logged because the collector is the only party that can act on it:
+    every entry means *send this object in full next time*, and a collector that is not told
+    keeps affirming a state ADG does not hold.
+    """
+
+    source_key: str
+    reason: str = Field(
+        description=(
+            "unknown_object, no_stored_digest, digest_mismatch, absent, or untracked. "
+            "digest_mismatch is the ordinary one: the ACL changed."
+        )
+    )
+    detail: str = Field(description="One sentence saying what to do about it.")
+
+
+class CheckpointView(BaseModel):
+    """A collector checkpoint as it went over the wire (contract 1.4)."""
+
+    kind: str
+    token: str
+    issuer: str
+    issued_at: dt.datetime
+
+
+class CheckpointAdvanceView(BaseModel):
+    """Whether this call moved the job's resume point, and why not if it did not."""
+
+    job: str
+    accepted: bool
+    checkpoint: CheckpointView
+    rejection_code: str | None = None
+    rejection_reason: str | None = Field(
+        default=None,
+        description=(
+            "Present when the cursor was refused. The stored checkpoint is unchanged, so "
+            "the next run of this job must read its whole scope rather than resume."
+        ),
+    )
+
+
+class ReconciliationDriftView(BaseModel):
+    """What a reconciliation corrected that the incremental runs could not."""
+
+    scope_kind: str
+    scope_key: str
+    marked_absent: int
+    revived: int
+    delta_runs_since: int
+    summary: str
+
+
 class BatchAcceptedResponse(BaseModel):
     """Acknowledges a batch, applied or recognized as a replay."""
 
@@ -86,6 +142,19 @@ class BatchAcceptedResponse(BaseModel):
     servers_written: int = 0
     shares_written: int = 0
     share_aces_written: int = 0
+    affirmed: int = Field(
+        default=0, description="Affirmations accepted: the object was confirmed unchanged."
+    )
+    refused_affirmations: list[RefusedAffirmationView] = Field(
+        default_factory=list,
+        description=(
+            "Affirmations the server would not accept. Not an error — re-send each named "
+            "object in full."
+        ),
+    )
+    checkpoint: CheckpointAdvanceView | None = Field(
+        default=None, description="The job cursor this batch moved, when it carried one."
+    )
 
 
 class ScanRunCompletedResponse(BaseModel):
@@ -101,6 +170,20 @@ class ScanRunCompletedResponse(BaseModel):
     already_completed: bool
     reconciled_scopes: int
     downgrade_reason: str | None = None
+    drift: list[ReconciliationDriftView] = Field(
+        default_factory=list,
+        description=(
+            "One entry per reconciled scope, counting only what this run corrected about "
+            "objects' presence. Empty for a run that reconciled nothing."
+        ),
+    )
+    checkpoint: CheckpointAdvanceView | None = Field(
+        default=None,
+        description=(
+            "The job cursor this completion moved. Absent when the run carried no "
+            "checkpoint, and refused when the server downgraded the run."
+        ),
+    )
 
 
 class ScopeView(BaseModel):
@@ -121,6 +204,8 @@ class ScanRunView(BaseModel):
     run_id: UUID
     status: str
     incremental: bool
+    mode: str = Field(description="full, delta, or reconcile (contract 1.4).")
+    job: str | None = Field(default=None, description="The scheduled job this run belongs to.")
     started_at: dt.datetime
     completed_at: dt.datetime | None
     collector: str
@@ -132,12 +217,22 @@ class ScanRunView(BaseModel):
     batch_count_received: int
     observation_count_reported: int | None
     observation_count_applied: int
+    affirmation_count_reported: int | None = None
+    affirmation_count_applied: int = 0
+    affirmations_refused: int = 0
     error_count: int
     notes: str | None
     downgrade_reason: str | None
     declared_scopes: list[ScopeView]
     reconciled_scopes: list[ScopeView]
     errors: list[CollectorErrorView]
+    baseline: CheckpointView | None = Field(
+        default=None, description="The checkpoint this delta resumed from."
+    )
+    result_checkpoint: CheckpointView | None = Field(
+        default=None, description="The cursor this run left behind."
+    )
+    drift: list[ReconciliationDriftView] = Field(default_factory=list)
 
 
 @router.post(
@@ -211,6 +306,8 @@ async def submit_batch(
             "batch_id": str(outcome.batch_id),
             "applied": outcome.applied,
             "duplicate": outcome.duplicate,
+            "affirmed": outcome.affirmations.applied,
+            "affirmations_refused": outcome.affirmations.refused_count,
             "subject": principal.subject,
         },
     )
@@ -224,6 +321,14 @@ async def submit_batch(
         servers_written=outcome.servers_written,
         shares_written=outcome.shares_written,
         share_aces_written=outcome.share_aces_written,
+        affirmed=outcome.affirmations.applied,
+        refused_affirmations=[
+            RefusedAffirmationView(
+                source_key=item.source_key, reason=item.reason, detail=item.detail
+            )
+            for item in outcome.affirmations.refused
+        ],
+        checkpoint=_advance_view(outcome.checkpoint),
     )
 
 
@@ -247,6 +352,7 @@ async def complete_scan_run(
     completion: ScanRunCompletion,
     session: Session,
     principal: IngestPrincipal,
+    request: Request,
 ) -> ScanRunCompletedResponse:
     if UUID(completion.run_id) != run_id:
         raise HTTPException(
@@ -257,13 +363,24 @@ async def complete_scan_run(
             ),
         )
     outcome = await IngestionService(session).complete_run(completion)
+    # The run is committed by the line above. Everything after it is downstream work that
+    # must not be able to undo it -- see evaluate_run_after_commit, which opens its own
+    # session and never raises. This is the whole of "alert delivery failure does not roll
+    # back source ingestion": by the time a webhook is contacted, the observations are
+    # durable and nothing in this handler can take them away.
+    post_run = await _post_run(request, session, run_id, completion)
     logger.info(
         "ingestion.run.complete",
         extra={
             "run_id": str(outcome.run_id),
             "status": outcome.status.value,
             "downgraded": outcome.downgrade_reason is not None,
+            "drift": sum(item.drift for item in outcome.drift),
+            "checkpoint_advanced": (
+                outcome.checkpoint.accepted if outcome.checkpoint is not None else None
+            ),
             "subject": principal.subject,
+            "post_run": post_run.summary,
         },
     )
     return ScanRunCompletedResponse(
@@ -272,7 +389,39 @@ async def complete_scan_run(
         already_completed=outcome.already_completed,
         reconciled_scopes=outcome.reconciled_scopes,
         downgrade_reason=outcome.downgrade_reason,
+        drift=[_drift_view(item) for item in outcome.drift],
+        checkpoint=_advance_view(outcome.checkpoint),
     )
+
+
+async def _post_run(
+    request: Request,
+    session: Session,
+    run_id: UUID,
+    completion: ScanRunCompletion,
+) -> PostRunOutcome:
+    """Re-evaluate the rules and the watches, and let nothing that happens there fail this.
+
+    ``evaluate_run_after_commit`` already catches its own failures; this catches the ones it
+    cannot -- a defect in the call itself, an exhausted connection pool, a settings property
+    that raises because somebody edited the alert policy badly. Without it, a broken
+    downstream would turn a successful completion into a 500 **after** the ingestion
+    committed, and the collector would retry a run that had already been recorded.
+
+    That is the whole acceptance criterion made structural rather than dependent on one
+    function's internal discipline.
+    """
+    try:
+        snapshot = await IngestionService(session).get_run(run_id)
+        return await evaluate_run_after_commit(
+            request.app.state.database,
+            request.app.state.settings,
+            run_id=run_id,
+            window_from=(snapshot.started_at if snapshot is not None else completion.completed_at),
+        )
+    except Exception as error:
+        logger.exception("ingestion.run.post_run_failed", extra={"run_id": str(run_id)})
+        return PostRunOutcome(ran=True, failed=str(error))
 
 
 @router.get(
@@ -290,6 +439,8 @@ async def get_scan_run(run_id: RunIdPath, session: Session) -> ScanRunView:
         run_id=snapshot.run_id,
         status=snapshot.status.value,
         incremental=snapshot.incremental,
+        mode=snapshot.mode.value,
+        job=snapshot.job,
         started_at=snapshot.started_at,
         completed_at=snapshot.completed_at,
         collector=snapshot.collector,
@@ -301,6 +452,9 @@ async def get_scan_run(run_id: RunIdPath, session: Session) -> ScanRunView:
         batch_count_received=snapshot.batch_count_received,
         observation_count_reported=snapshot.observation_count_reported,
         observation_count_applied=snapshot.observation_count_applied,
+        affirmation_count_reported=snapshot.affirmation_count_reported,
+        affirmation_count_applied=snapshot.affirmation_count_applied,
+        affirmations_refused=snapshot.affirmations_refused,
         error_count=snapshot.error_count,
         notes=snapshot.notes,
         downgrade_reason=snapshot.downgrade_reason,
@@ -309,6 +463,9 @@ async def get_scan_run(run_id: RunIdPath, session: Session) -> ScanRunView:
             ScopeView(kind=kind, key=key) for kind, key in snapshot.reconciled_scopes
         ],
         errors=[CollectorErrorView(**error) for error in snapshot.errors],
+        baseline=_checkpoint_view(snapshot.baseline),
+        result_checkpoint=_checkpoint_view(snapshot.result_checkpoint),
+        drift=[_drift_view(item) for item in snapshot.drift],
     )
 
 
@@ -325,8 +482,11 @@ class ScanRunSummaryView(BaseModel):
     method: str
     collector_version: str | None
     target: str | None
+    mode: str
+    job: str | None = None
     batch_count_received: int
     observation_count_applied: int
+    affirmation_count_applied: int = 0
     error_count: int
     downgrade_reason: str | None
 
@@ -390,10 +550,49 @@ def _summary_view(item: RunSummary) -> ScanRunSummaryView:
         method=item.method,
         collector_version=item.collector_version,
         target=item.target,
+        mode=item.mode.value,
+        job=item.job,
         batch_count_received=item.batch_count_received,
         observation_count_applied=item.observation_count_applied,
+        affirmation_count_applied=item.affirmation_count_applied,
         error_count=item.error_count,
         downgrade_reason=item.downgrade_reason,
+    )
+
+
+def _checkpoint_view(checkpoint: Checkpoint | None) -> CheckpointView | None:
+    if checkpoint is None:
+        return None
+    return CheckpointView(
+        kind=checkpoint.kind.value,
+        token=checkpoint.token,
+        issuer=checkpoint.issuer,
+        issued_at=checkpoint.issued_at,
+    )
+
+
+def _advance_view(advance: CheckpointAdvance | None) -> CheckpointAdvanceView | None:
+    if advance is None:
+        return None
+    view = _checkpoint_view(advance.checkpoint)
+    assert view is not None
+    return CheckpointAdvanceView(
+        job=advance.job,
+        accepted=advance.accepted,
+        checkpoint=view,
+        rejection_code=advance.code,
+        rejection_reason=advance.rejection.message if advance.rejection else None,
+    )
+
+
+def _drift_view(drift: ReconciliationDrift) -> ReconciliationDriftView:
+    return ReconciliationDriftView(
+        scope_kind=drift.scope_kind,
+        scope_key=drift.scope_key,
+        marked_absent=drift.marked_absent,
+        revived=drift.revived,
+        delta_runs_since=drift.delta_runs_since,
+        summary=drift.summary(),
     )
 
 

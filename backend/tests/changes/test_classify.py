@@ -148,7 +148,7 @@ class TestTheWindowCarriesBothEnds:
         exactly like a measured one."""
         assert window_between(None, f.ntfs_ace()) is None
 
-    def test_a_first_sighting_is_refused_a_window_even_if_one_is_offered(self) -> None:
+    def test_a_first_sighting_with_nothing_to_bound_it_has_no_window(self) -> None:
         """A first observation is precisely the case where the container was not being
         watched, so a bound from it would be a contradiction rather than a refinement."""
         change = classify(
@@ -157,6 +157,45 @@ class TestTheWindowCarriesBothEnds:
             None,
             f.ntfs_ace(valid_from=f.FRIDAY),
             container_observed_before=False,
+        )
+        assert change.action is ChangeAction.FIRST_OBSERVED
+        assert change.window is None
+
+    def test_a_first_sighting_is_refused_a_window_even_when_one_is_offered(self) -> None:
+        """The case the release audit found, and the one the test above only appeared to cover.
+
+        The two container facts answer different questions and can disagree: nothing was
+        watching the container *object*, yet a *sibling* inside it was confirmed earlier. The
+        classifier built a change that its own invariant rejects, which surfaced as a 422
+        from ``GET /api/v1/changes/compare`` on an ordinary estate.
+
+        Offering the confirmation is the whole point of this test. Without it the call is
+        indistinguishable from the one above, which is why this went unnoticed.
+        """
+        change = classify(
+            ObservationKind.NTFS_ACE,
+            "k",
+            None,
+            f.ntfs_ace(valid_from=f.FRIDAY),
+            container_observed_before=False,
+            container_confirmed_at=f.WEDNESDAY,
+        )
+        assert change.action is ChangeAction.FIRST_OBSERVED
+        assert change.window is None
+
+    def test_an_unanswerable_container_is_refused_a_window_too(self) -> None:
+        """Same disagreement, reached the other way.
+
+        ``None`` means unanswerable, and ``action_for`` reads it as "not observed before" —
+        but a container nothing has ever described still has siblings that were read.
+        """
+        change = classify(
+            ObservationKind.NTFS_ACE,
+            "k",
+            None,
+            f.ntfs_ace(valid_from=f.FRIDAY),
+            container_observed_before=None,
+            container_confirmed_at=f.WEDNESDAY,
         )
         assert change.action is ChangeAction.FIRST_OBSERVED
         assert change.window is None

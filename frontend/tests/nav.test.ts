@@ -30,15 +30,44 @@ describe("the navigation", () => {
       "Access",
       "Risks",
       "Changes",
+      "What-if",
+      "Reviews",
       "Collectors",
       "Settings",
     ]);
   });
 
-  it("marks the sections that have no data behind them yet", () => {
+  it("puts What-if behind simulations:read, which a plain viewer does not hold", () => {
+    // A simulation composes answers a viewer can already get into "put this account in that
+    // group and it reaches the payroll share", which is a route map for privilege escalation
+    // rather than a further fact about the estate. Hiding the section is a courtesy; the API
+    // refuses the calls regardless.
+    const simulations = NAV_ITEMS.find((item) => item.id === "simulations");
+
+    expect(simulations?.requires).toBe("simulations:read");
+    expect(visibleNavItems(["resources:read", "access:read"]).map((item) => item.id)).not.toContain(
+      "simulations",
+    );
+  });
+
+  it("puts Reviews behind governance:read, which a plain viewer does not hold", () => {
+    // A decision rationale is free text written about a named person, so the section is not
+    // offered to an account that may only read the estate. Hiding it is a courtesy; the API
+    // refuses the calls regardless.
+    const reviews = NAV_ITEMS.find((item) => item.id === "governance");
+
+    expect(reviews?.requires).toBe("governance:read");
+    expect(visibleNavItems(VIEWER).map((item) => item.id)).not.toContain("governance");
+  });
+
+  it("marks no section as a placeholder, now that risks is real", () => {
+    // The badge exists and nothing wears it. Kept rather than removed: the next section
+    // that lands ahead of its data needs it, and a reader has to be able to tell "this page
+    // shows nothing because nothing is computed" from "this page shows nothing because
+    // nothing is there" -- which is the distinction the whole product turns on.
     const placeholders = NAV_ITEMS.filter((item) => item.placeholder).map((item) => item.id);
 
-    expect(placeholders).toEqual(["risks"]);
+    expect(placeholders).toEqual([]);
   });
 
   it("shows a viewer everything except settings", () => {

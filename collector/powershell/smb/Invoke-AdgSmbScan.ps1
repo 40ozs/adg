@@ -69,6 +69,11 @@ param(
     [string] $OutputDirectory,
 
     [string] $ConfigPath,
+    # Emit one normalized run summary to the pipeline. The orchestrator needs it: a
+    # scheduled invocation has to record the cursor a run reached and whether it was clean
+    # enough to keep it, and an exit code carries neither. Without the switch the script
+    # behaves exactly as it did before.
+    [switch] $PassThru,
     [string[]] $Server = @(),
     [pscredential] $Credential,
     [switch] $RunPerServer,
@@ -146,8 +151,41 @@ if ($headers.Count -eq 0) {
     Write-Warning "No credential found in `$env:$CollectorKeyEnvironmentVariable or `$env:$ApiTokenEnvironmentVariable. The ADG API rejects anonymous ingestion and will answer 401."
 }
 
+$submitted = [System.Collections.Generic.List[object]]::new()
 foreach ($run in $runs) {
     $result = Send-AdgSmbScanRun -ApiBaseUrl $ApiBaseUrl -Run $run -Headers $headers
     Write-Host ("Submitted run {0}: {1}, {2} batch(es) sent, {3} rejected." -f `
             $result.RunId, $result.Status, $result.BatchesSent, $result.BatchesRejected)
+    $submitted.Add($result)
+}
+
+if ($PassThru) {
+    # One summary for what may have been several runs -- a server each, when -RunPerServer
+    # is set. The *worst* status wins, because a sweep in which one file server failed has
+    # not inventoried the estate, and reporting the best of its parts would be reporting
+    # coverage that was not achieved.
+    $ranked = @{ succeeded = 0; partial = 1; canceled = 2; failed = 3 }
+    $worst = 'succeeded'
+    $observations = 0
+    foreach ($result in $submitted) {
+        $status = [string] $result.Status
+        if (-not $ranked.ContainsKey($status)) { $status = 'failed' }
+        if ($ranked[$status] -gt $ranked[$worst]) { $worst = $status }
+        $observations += [int] $result.ObservationCount
+    }
+    if ($submitted.Count -eq 0) { $worst = 'failed' }
+
+    [pscustomobject]@{
+        Status           = $worst
+        RunId            = if ($submitted.Count -gt 0) { [string] $submitted[0].RunId } else { '' }
+        Mode             = 'full'
+        ObservationCount = $observations
+        AffirmationCount = 0
+        ErrorCount       = @($submitted | Where-Object { $_.Status -ne 'succeeded' }).Count
+        Reconciled       = ($worst -eq 'succeeded')
+        # None, and not an omission: the SMB server publishes no change metadata, so there
+        # is no cursor a later run could resume from. Every SMB run reads everything.
+        Checkpoint       = $null
+        Message          = "$($submitted.Count) server run(s); worst status '$worst'"
+    }
 }

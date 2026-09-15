@@ -62,14 +62,21 @@ function New-AdgNtfsBatchWriter {
     param(
         [Parameter(Mandatory)][string] $RunId,
         [ValidateRange(1, 1000)][int] $BatchSize = 500,
-        [Parameter(Mandatory)][scriptblock] $OnBatch
+        [Parameter(Mandatory)][scriptblock] $OnBatch,
+        [AllowNull()][pscustomobject] $DigestIndex
     )
 
     return [pscustomobject]@{
         RunId             = $RunId
         BatchSize         = $BatchSize
         OnBatch           = $OnBatch
+        # When present, a group whose freshly read digest matches what this collector last
+        # reported for that path is affirmed instead of re-sent. Null means every group is
+        # sent in full, which is what every scan did before contract 1.4.
+        DigestIndex       = $DigestIndex
         Pending           = [System.Collections.Generic.List[object]]::new()
+        PendingAffirmations = [System.Collections.Generic.List[object]]::new()
+        AffirmationCount  = 0
         # The source keys already in the pending batch. A batch may not carry one key twice:
         # two observations with one key are indistinguishable, so the second would silently
         # overwrite the first, and the API rejects such a batch with a 422. See
@@ -81,6 +88,104 @@ function New-AdgNtfsBatchWriter {
         DuplicatesDropped = 0
     }
 }
+
+function Add-AdgNtfsResourceGroup {
+    <#
+        .SYNOPSIS
+            Send one resource's observations, or affirm it if this scan re-read it unchanged.
+        .DESCRIPTION
+            The decision is made on the digest the walk *just computed* from the descriptor
+            it just read, compared against the digest this collector last reported for that
+            path. Nothing here decides anything from a cached ACL, and nothing here skips a
+            read: the walk has already done the expensive part before this function is
+            called. What an affirmation saves is the payload, the parse, the upsert and the
+            history write - which on a quiet estate is most of the cost of a scan and all of
+            the cost on the server.
+
+            Three things are deliberately *not* affirmed away:
+
+            * a resource whose acl_hash the collector omitted. The digest is omitted when an
+              entry could not be reported, so there is no summary of this DACL to affirm;
+            * the principal observations that travel with a group. They describe trustees,
+              not the descriptor, and the resource's digest says nothing about them. They
+              are few - only unresolved SIDs produce one - and sending them keeps an
+              orphaned trustee's provenance advancing;
+            * anything at all when no digest index is configured.
+    #>
+    param(
+        [Parameter(Mandatory)][pscustomobject] $Writer,
+        [AllowNull()][object[]] $Group
+    )
+
+    $observations = @($Group ?? @())
+    if ($observations.Count -eq 0) { return }
+
+    $index = $Writer.DigestIndex
+    if ($null -eq $index) {
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group $observations
+        return
+    }
+
+    $resources = @($observations | Where-Object { [string] $_['kind'] -eq 'ntfs_resource' })
+    if ($resources.Count -ne 1) {
+        # Zero resources is a group of loose principal observations; more than one is a
+        # shape this collector does not produce. Either way there is no single descriptor
+        # whose digest could stand for the group, so it goes in full.
+        Add-AdgNtfsObservationGroup -Writer $Writer -Group $observations
+        return
+    }
+
+    $resource = $resources[0]
+    $key = [string] $resource['source_key']
+    $digest = if ($resource.Contains('acl_hash')) { [string] $resource['acl_hash'] } else { '' }
+
+    if (Get-AdgNtfsAffirmableDigest -Index $index -Path $key -Digest $digest) {
+        Add-AdgNtfsAffirmation -Writer $Writer -SourceKey $key -Digest $digest `
+            -ObservedAt ([string] $resource['observed_at'])
+        $index.Affirmed++
+        Set-AdgNtfsDigest -Index $index -Path $key -Digest $digest
+
+        $others = @($observations | Where-Object { [string] $_['kind'] -notin @('ntfs_resource', 'ntfs_ace') })
+        if ($others.Count -gt 0) { Add-AdgNtfsObservationGroup -Writer $Writer -Group $others }
+        return
+    }
+
+    Add-AdgNtfsObservationGroup -Writer $Writer -Group $observations
+    $index.Sent++
+    Set-AdgNtfsDigest -Index $index -Path $key -Digest $digest
+}
+
+
+function Add-AdgNtfsAffirmation {
+    <#
+        .SYNOPSIS
+            Queue one affirmation, flushing the pending batch if it is full.
+        .DESCRIPTION
+            Affirmations have their own ceiling because they are a fraction of an
+            observation's size, and their own fit test because a batch that is full of
+            observations may still have room for them. What they share is the batch: an
+            affirmation and the observations around it describe one pass over one tree, and
+            splitting them into separate batches would make a run's coverage harder to read
+            for no gain.
+    #>
+    param(
+        [Parameter(Mandatory)][pscustomobject] $Writer,
+        [Parameter(Mandatory)][string] $SourceKey,
+        [Parameter(Mandatory)][string] $Digest,
+        [Parameter(Mandatory)][string] $ObservedAt
+    )
+
+    if ($Writer.PendingAffirmations.Count -ge $script:AdgMaxBatchAffirmations) {
+        Send-AdgNtfsPendingBatch -Writer $Writer
+    }
+    $Writer.PendingAffirmations.Add([ordered]@{
+            kind        = 'ntfs_resource'
+            source_key  = $SourceKey
+            digest      = $Digest
+            observed_at = $ObservedAt
+        })
+}
+
 
 function Add-AdgNtfsObservationGroup {
     <#
@@ -168,21 +273,28 @@ function Send-AdgNtfsPendingBatch {
         [switch] $Final
     )
 
-    if ($Writer.Pending.Count -eq 0) { return }
+    if ($Writer.Pending.Count -eq 0 -and $Writer.PendingAffirmations.Count -eq 0) { return }
 
+    $affirmations = @($Writer.PendingAffirmations.ToArray())
     $Writer.Sequence++
     $batch = [ordered]@{
-        schema_version = $script:AdgSchemaVersion
+        # 1.4 only when the batch actually carries a 1.4 field. A scan with no digest index
+        # keeps sending the payload it sent before, declared as the version it was written
+        # against - which is what makes the minor additive rather than a flag day.
+        schema_version = if ($affirmations.Count -gt 0) { $script:AdgIncrementalSchemaVersion } else { $script:AdgSchemaVersion }
         run_id         = $Writer.RunId
         batch_id       = [guid]::NewGuid().ToString()
         sequence       = $Writer.Sequence
         is_final       = [bool] $Final
         observations   = @($Writer.Pending.ToArray())
     }
+    if ($affirmations.Count -gt 0) { $batch['affirmations'] = $affirmations }
 
     $Writer.ObservationCount += $Writer.Pending.Count
+    $Writer.AffirmationCount += $affirmations.Count
     $Writer.BatchCount++
     $Writer.Pending.Clear()
+    $Writer.PendingAffirmations.Clear()
     # Cleared with the batch, not carried across it. A source key that appears in two
     # different batches is not a duplicate: the server keys observations by
     # (run_id, source_key) and ignores the second arrival, and holding the set for the whole
@@ -304,14 +416,21 @@ function Invoke-AdgNtfsScanRun {
     }
     & $OnStart $start
 
-    $writer = New-AdgNtfsBatchWriter -RunId $runId -BatchSize $Settings.BatchSize -OnBatch $OnBatch
+    $digestIndex = $null
+    if (-not [string]::IsNullOrWhiteSpace($Settings.DigestIndexPath)) {
+        $digestIndex = Import-AdgNtfsDigestIndex -Path $Settings.DigestIndexPath `
+            -Fingerprint (Get-AdgScanFingerprint -Settings $Settings) `
+            -MaxEntries $Settings.DigestIndexMaxEntries
+    }
+
+    $writer = New-AdgNtfsBatchWriter -RunId $runId -BatchSize $Settings.BatchSize -OnBatch $OnBatch -DigestIndex $digestIndex
     $deadline = if ($Settings.TimeoutSeconds -gt 0) { [datetime]::UtcNow.AddSeconds($Settings.TimeoutSeconds) } else { $null }
 
     # Two thin script blocks. They close over $writer, but every use mutates the object
     # they hold a reference to rather than assigning through the captured name - which is
     # the difference between a batch writer that advances and one whose counters stay at
     # their starting values.
-    $onGroup = { param($group) Add-AdgNtfsObservationGroup -Writer $writer -Group $group }.GetNewClosure()
+    $onGroup = { param($group) Add-AdgNtfsResourceGroup -Writer $writer -Group $group }.GetNewClosure()
     $onFlush = { Send-AdgNtfsPendingBatch -Writer $writer }.GetNewClosure()
 
     $walk = Invoke-AdgNtfsDirectoryWalk -Settings $Settings -RunId $runId -ScanRoot $ScanRoot `
@@ -339,7 +458,7 @@ function Invoke-AdgNtfsScanRun {
     }
 
     $completion = [ordered]@{
-        schema_version    = $script:AdgSchemaVersion
+        schema_version    = if ($writer.AffirmationCount -gt 0) { $script:AdgIncrementalSchemaVersion } else { $script:AdgSchemaVersion }
         run_id            = $runId
         status            = $status
         completed_at      = Get-AdgTimestamp
@@ -349,7 +468,19 @@ function Invoke-AdgNtfsScanRun {
         errors            = @($errors)
         reconciled_scopes = @($reconciled.ToArray())
     }
+    if ($writer.AffirmationCount -gt 0) {
+        $completion['affirmation_count'] = $writer.AffirmationCount
+    }
     & $OnCompletion $completion
+
+    # After the completion, and only for a walk that finished. A partial walk's index holds
+    # the paths it reached and not the ones it did not; writing it would discard what the
+    # previous index knew about everything beyond the point it stopped, and the next scan
+    # would pay for that a second time.
+    if ($null -ne $digestIndex) {
+        [void] (Export-AdgNtfsDigestIndex -Index $digestIndex -Path $Settings.DigestIndexPath `
+                -Partial:(-not $walk.Completed))
+    }
 
     # A checkpoint outlives only an unfinished walk. Deleting it after a completed one is
     # not tidiness: a stale checkpoint makes the next run resume an empty frontier, read
@@ -390,6 +521,10 @@ function Invoke-AdgNtfsScanRun {
             UniqueAclHashes    = $walk.Metrics.UniqueAclHashes
             BoundariesFound    = $walk.Metrics.BoundariesFound
             ObservationCount   = $writer.ObservationCount
+            AffirmationCount   = $writer.AffirmationCount
+            DigestsAffirmed    = if ($null -ne $digestIndex) { $digestIndex.Affirmed } else { 0 }
+            DigestsSent        = if ($null -ne $digestIndex) { $digestIndex.Sent } else { 0 }
+            DigestIndexTruncated = if ($null -ne $digestIndex) { $digestIndex.Truncated } else { $false }
             BatchCount         = $writer.BatchCount
             ErrorCount         = $errors.Count
             ReconciledScopes   = $reconciled.Count

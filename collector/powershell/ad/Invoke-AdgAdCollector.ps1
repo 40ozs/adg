@@ -56,6 +56,28 @@
     Where to record the change watermark (uSNChanged and whenChanged) this run reached.
     Only a clean, complete run writes one.
 
+.PARAMETER Job
+    The scheduled job this run belongs to. The server keys this collector's checkpoint by
+    it, so a run that sends a checkpoint must name one.
+
+.PARAMETER Passes
+    'all' (the default), 'principals', or 'memberships'. A run that reads one half of the
+    domain has not enumerated the domain: it declares the domain scope, because that is what
+    it set out to look at, and marks itself incremental, which is what stops it reconciling.
+    A principals pass that reconciled the domain would mark every membership edge absent.
+
+.PARAMETER SinceUsn
+    Read only objects whose uSNChanged is at or above this watermark. Requires
+    -CheckpointIssuer: a USN is a counter on one domain controller, and one replayed against
+    a different server -- or the same one after a restore from backup -- silently skips every
+    object whose USN falls below it. A delta can never report a deletion, so it never
+    reconciles; run the reconciliation job for that.
+
+.PARAMETER CheckpointIssuer
+    The directory-server incarnation the watermark came from: dsServiceName and invocationId
+    joined. The run compares it against the server it binds and reads everything on a
+    mismatch.
+
 .EXAMPLE
     .\Invoke-AdgAdCollector.ps1 -ConfigPath .\config\adg-ad-collector.json
 
@@ -87,6 +109,15 @@ param(
     [string] $DirectoryFixture,
     [switch] $Incremental,
     [string] $StateFile,
+    [string] $Job,
+    [ValidateSet('all', 'principals', 'memberships')][string] $Passes,
+    [Nullable[long]] $SinceUsn,
+    [string] $CheckpointIssuer,
+    # Emit one normalized run summary to the pipeline. The orchestrator needs it: a
+    # scheduled invocation has to record the cursor a run reached and whether it was clean
+    # enough to keep it, and an exit code carries neither. Without the switch the script
+    # behaves exactly as it did before.
+    [switch] $PassThru,
     [string] $CollectorHost,
     [switch] $SkipCertificateCheck
 )
@@ -125,6 +156,10 @@ $overrideMap = @{
     StateFile                 = 'StateFile'
     CollectorHost             = 'CollectorHost'
     SkipCertificateCheck      = 'SkipCertificateCheck'
+    Job                       = 'Job'
+    Passes                    = 'Passes'
+    SinceUsn                  = 'SinceUsn'
+    CheckpointIssuer          = 'CheckpointIssuer'
 }
 foreach ($parameter in $overrideMap.Keys) {
     if ($PSBoundParameters.ContainsKey($parameter)) {
@@ -152,7 +187,8 @@ else {
         -OutputDirectory $config.OutputDirectory -Incremental $config.Incremental `
         -StateFile $config.StateFile -MaxAttempts $config.MaxAttempts `
         -TimeoutSeconds $config.TimeoutSeconds -PrincipalFilter $config.PrincipalFilter `
-        -GroupFilter $config.GroupFilter
+        -GroupFilter $config.GroupFilter -Job $config.Job -Passes $config.Passes `
+        -SinceUsn $config.SinceUsn -CheckpointIssuer $config.CheckpointIssuer
 }
 
 $provider = if ($DirectoryFixture) {
@@ -206,17 +242,40 @@ $summary = Invoke-AdgAdCollection -Config $config -Provider $provider -Publisher
 
 Write-Host ''
 Write-Host "Run $($summary.RunId) finished as '$($summary.Status)'."
+Write-Host "  mode       : $($summary.Mode) ($($summary.Passes) pass)"
 Write-Host "  principals : $($summary.PrincipalCount)"
 Write-Host "  edges      : $($summary.EdgeCount)"
 Write-Host "  batches    : $($summary.BatchCount) ($($summary.ObservationCount) observations)"
 Write-Host "  errors     : $($summary.ErrorCount)"
 Write-Host "  reconciled : $($summary.Reconciled)"
+if ($summary.Checkpoint) {
+    Write-Host "  checkpoint : uSNChanged $($summary.Checkpoint.Token) from $($summary.Checkpoint.Issuer)"
+}
+else {
+    Write-Host '  checkpoint : none recorded; the next run reads everything'
+}
 
 if ($summary.ErrorCount -gt 0) {
     Write-Host ''
     Write-Host 'The run did not achieve complete coverage and reconciled nothing:' -ForegroundColor Yellow
     foreach ($item in $summary.Errors) {
         Write-Host "  [$($item['code'])] $($item['message'])" -ForegroundColor Yellow
+    }
+}
+
+if ($PassThru) {
+    [pscustomobject]@{
+        Status           = $summary.Status
+        RunId            = $summary.RunId
+        Mode             = $summary.Mode
+        StartedAt        = $summary.StartedAt
+        EndedAt          = $summary.EndedAt
+        ObservationCount = $summary.ObservationCount
+        AffirmationCount = 0
+        ErrorCount       = $summary.ErrorCount
+        Reconciled       = $summary.Reconciled
+        Checkpoint       = $summary.Checkpoint
+        Message          = "$($summary.PrincipalCount) principal(s), $($summary.EdgeCount) edge(s)"
     }
 }
 

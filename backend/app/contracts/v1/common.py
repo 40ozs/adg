@@ -13,14 +13,26 @@ from __future__ import annotations
 import datetime as dt
 import re
 from enum import StrEnum
-from typing import Annotated, Final
+from typing import Annotated, Final, Literal, Self
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.domain import (
+    ACL_HASH_ALGORITHM,
+    ACL_HASH_LENGTH,
+    MAX_CHECKPOINT_TOKEN_LENGTH,
     AceSource,
     AceType,
     AclBoundaryReason,
+    Checkpoint,
+    CheckpointKind,
     CollectorKind,
     DomainValidationError,
     GroupScope,
@@ -35,7 +47,7 @@ from app.domain import (
     UnresolvedReason,
 )
 
-SCHEMA_VERSION: Final = "1.3"
+SCHEMA_VERSION: Final = "1.4"
 """Current contract version. Minor bumps are additive; a breaking change means v2.
 
 Only a default for payloads this codebase constructs. Every ``1.x`` is accepted on the
@@ -62,18 +74,35 @@ def schema_minor(value: str) -> int:
 MAX_BATCH_OBSERVATIONS: Final = 1000
 """An oversized batch is rejected, never truncated: silent truncation looks like coverage."""
 
+MAX_BATCH_AFFIRMATIONS: Final = 5000
+"""Affirmations get their own, higher ceiling (contract 1.4).
+
+An affirmation is a key and a digest, not an object: a thousand of them cost less to parse
+and to apply than a hundred full NTFS resources with their entries. Capping them at the
+observation ceiling would force a collector re-reading a large, quiet tree to open batches
+for no reason other than an accounting rule, and every extra batch is another round trip
+that can fail. The ceiling still exists, because a batch has to remain something a server
+can reject whole.
+"""
+
 MAX_ACCESS_MASK: Final = 0xFFFFFFFF
 MAX_ACE_FLAGS: Final = 0xFF
 
 __all__ = [
+    "ACL_HASH_ALGORITHM",
+    "ACL_HASH_LENGTH",
     "MAX_ACCESS_MASK",
     "MAX_ACE_FLAGS",
+    "MAX_BATCH_AFFIRMATIONS",
     "MAX_BATCH_OBSERVATIONS",
     "MAX_HOST_NAME_LENGTH",
     "SCHEMA_VERSION",
     "AceSource",
     "AceType",
     "AclBoundaryReason",
+    "Affirmation",
+    "CheckpointKind",
+    "CollectorCheckpoint",
     "CollectorKind",
     "ContractModel",
     "GroupScope",
@@ -224,6 +253,119 @@ class SourceDescriptor(ContractModel):
             collector_version=self.collector_version,
             target=self.target,
         )
+
+
+class CollectorCheckpoint(ContractModel):
+    """How far a delta run got, and who issued the cursor (contract 1.4).
+
+    The issuer is not optional decoration. ``uSNChanged`` is a counter local to one domain
+    controller, so DC1's watermark replayed against DC2 skips every object whose USN on DC2
+    happens to fall below it, and a DC restored from backup reissues numbers it has already
+    handed out. The server compares a new checkpoint against the stored one only when both
+    name the same issuer, and refuses it otherwise rather than storing a number it cannot
+    show to be ahead.
+    """
+
+    kind: CheckpointKind
+    token: str = Field(
+        min_length=1,
+        max_length=MAX_CHECKPOINT_TOKEN_LENGTH,
+        description=(
+            "The cursor. A decimal integer for 'usn', an RFC 3339 timestamp with an offset "
+            "for 'timestamp', anything the collector likes for 'opaque'."
+        ),
+    )
+    issuer: str = Field(
+        min_length=1,
+        max_length=512,
+        description=(
+            "Whatever the cursor is local to. For a domain controller, its dsServiceName "
+            "and invocationId joined: the first changes when the collector binds a "
+            "different DC, the second when the same DC is restored from backup."
+        ),
+    )
+    issued_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def _validate(self) -> Self:
+        object.__setattr__(self, "issued_at", to_utc(self.issued_at))
+        # Constructing the domain value is the validation: its rules are the ones the
+        # server enforces later, so a token this endpoint accepts is one the checkpoint
+        # store can compare. Duplicating them here would let the two drift.
+        try:
+            self.to_domain()
+        except DomainValidationError as exc:
+            raise ValueError(str(exc)) from exc
+        return self
+
+    def to_domain(self) -> Checkpoint:
+        return Checkpoint(
+            kind=self.kind,
+            token=self.token,
+            issuer=self.issuer,
+            issued_at=to_utc(self.issued_at),
+        )
+
+
+class Affirmation(ContractModel):
+    """An object the collector re-read and found unchanged (contract 1.4).
+
+    An affirmation is a full observation's equal in what it *claims* — this object exists,
+    in this state, as of ``observed_at`` — and a fraction of its size. It exists because the
+    file system has no change metadata a DACL edit reliably touches: writing an ACL does
+    not move ``LastWriteTime``, so a scan that skipped unchanged directories on a timestamp
+    would skip exactly the changes ADG is for. The collector therefore still reads every
+    descriptor; what it sends for the unchanged ones is this.
+
+    Two rules make it safe, and neither is a matter of trusting the collector:
+
+    * **The digest is recomputed, not believed.** The server compares ``digest`` against the
+      value it holds for that object and *refuses* the affirmation when they differ, naming
+      it in the response so the collector re-sends the object in full. A collector that
+      affirms a stale state cannot make the server keep one.
+    * **The digest must be computed from this scan's reading**, never copied out of the
+      collector's own cache of what it sent last time. A cached digest would make an
+      affirmation a statement about the collector's memory instead of about the object, and
+      the two diverge precisely when an ACL has changed.
+
+    An affirmed object counts as observed: the run has seen it, so it extends the object's
+    timeline and a run that affirmed everything it did not re-send has still enumerated its
+    whole scope and may reconcile it.
+    """
+
+    kind: Literal[ObservationKind.NTFS_RESOURCE] = Field(
+        description=(
+            "Only 'ntfs_resource' may be affirmed in contract 1.4. It is the one kind with "
+            "a published whole-object digest (acl_hash, contract 1.2) that the server "
+            "already recomputes from what it stores."
+        )
+    )
+    source_key: str = Field(min_length=1, max_length=512)
+    digest: str = Field(
+        min_length=1,
+        max_length=ACL_HASH_LENGTH,
+        description=(
+            "The kind's content digest as this scan read it. For 'ntfs_resource' it is "
+            "exactly the acl_hash of contract 1.2 — over the whole DACL, in the reading "
+            "being affirmed, including dacl_present and dacl_protected."
+        ),
+    )
+    observed_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def _validate(self) -> Self:
+        object.__setattr__(self, "observed_at", to_utc(self.observed_at))
+        digest = self.digest.strip().lower()
+        if len(digest) != ACL_HASH_LENGTH or any(c not in "0123456789abcdef" for c in digest):
+            raise ValueError(
+                f"An affirmation's digest must be {ACL_HASH_LENGTH} lower-case hexadecimal "
+                f"characters ({ACL_HASH_ALGORITHM}); received {self.digest!r}. The server "
+                "compares it against the digest it holds, and a value that cannot be one "
+                "would be refused as a mismatch with no way to tell a wrong digest from a "
+                "changed object."
+            )
+        object.__setattr__(self, "digest", digest)
+        return self
 
 
 class ObservationBase(ContractModel):

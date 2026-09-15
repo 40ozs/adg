@@ -4,7 +4,7 @@ import type { JSX } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { activeNavItem, visibleNavItems, type NavItem } from "@/lib/nav";
+import { NAV_ITEMS, activeNavItem, visibleNavItems, type NavItem } from "@/lib/nav";
 
 /**
  * The primary navigation.
@@ -18,9 +18,20 @@ import { activeNavItem, visibleNavItems, type NavItem } from "@/lib/nav";
  * `capabilities` comes from `/auth/me`. Hiding a section the account cannot use is a
  * courtesy; the backend refuses the data either way.
  */
-export function PrimaryNav({ capabilities }: { capabilities: readonly string[] }): JSX.Element {
+export function PrimaryNav({
+  capabilities,
+  // Injectable so the "soon" badge stays testable when nothing in the real navigation wears
+  // it. The badge is the difference between "this page shows nothing because nothing is
+  // computed" and "this page shows nothing because nothing is there", which is the
+  // distinction the whole product turns on -- so it must keep working for the next section
+  // that lands ahead of its data, not only for whichever one happens to be unfinished today.
+  items: source = NAV_ITEMS,
+}: {
+  capabilities: readonly string[];
+  items?: readonly NavItem[];
+}): JSX.Element {
   const pathname = usePathname() ?? "/";
-  const items = visibleNavItems(capabilities);
+  const items = visibleNavItems(capabilities, source);
   const current = activeNavItem(pathname, items);
 
   return (

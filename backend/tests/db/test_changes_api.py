@@ -16,7 +16,7 @@ Three things are checked here that the service tests cannot see:
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager
 
 import pytest
@@ -42,7 +42,12 @@ def iso(moment: dt.datetime) -> str:
     return moment.isoformat().replace("+00:00", "Z")
 
 
-async def _day(client: AsyncClient, moment: dt.datetime, aces, shares) -> None:
+async def _day(
+    client: AsyncClient,
+    moment: dt.datetime,
+    aces: Sequence[tuple[str, int]],
+    shares: Sequence[str],
+) -> None:
     await replay(
         client,
         h.ad_scan(
@@ -285,7 +290,7 @@ class TestTheImpactEndpoint:
     async def _instant(self, client: AsyncClient) -> str:
         body = (await client.get("/api/v1/changes", params={**WINDOW, "kind": "ntfs_ace"})).json()
         added = [c for c in body["changes"] if c["action"] == "added"]
-        return added[0]["at"]
+        return str(added[0]["at"])
 
     async def test_a_client_hands_back_the_at_it_was_given(
         self, client: AsyncClient, estate: None

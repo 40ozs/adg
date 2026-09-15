@@ -214,7 +214,7 @@ async function shareAclPanel(options: PanelOptions): Promise<JSX.Element> {
       <StateMessage state={state} />
       {state.kind === "ready" && (
         <>
-          <ShareAceTable entries={state.data.entries} />
+          <ShareAceTable entries={state.data.entries} shareKey={share.key} />
           <Pager
             navigation={pageNavigation({
               basePath: PATH,
@@ -255,7 +255,7 @@ async function rootAclPanel(options: PanelOptions): Promise<JSX.Element> {
               Directory: <Link href={directoryHref(state.data.resource.key)}>{state.data.resource.path}</Link>
             </p>
           )}
-          <NtfsAceTable entries={state.data.entries} />
+          <NtfsAceTable entries={state.data.entries} resourceKey={state.data.resource?.path} />
           <Pager
             navigation={pageNavigation({
               basePath: PATH,

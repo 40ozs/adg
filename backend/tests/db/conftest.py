@@ -98,7 +98,11 @@ def migrated_database() -> str:
 
     environment = {**os.environ, "ADG_DATABASE_URL": TEST_DATABASE_URL}
     completed = subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        # "heads", not "head": while two phases are in flight the revision graph can have
+        # more than one branch off the last released revision, and "head" refuses to choose.
+        # "heads" applies every branch and is identical to "head" once they are linearized,
+        # so this stays correct after the merge rather than needing to be changed back.
+        [sys.executable, "-m", "alembic", "upgrade", "heads"],
         cwd=BACKEND_ROOT,
         env=environment,
         capture_output=True,

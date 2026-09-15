@@ -24,11 +24,21 @@ from app.auth.roles import Role, parse_roles
 __all__ = ["DEFAULT_DEV_AUTH_USERS", "DevelopmentUser", "parse_development_users"]
 
 #: One account per active role, so a developer can see each role's view of the product
-#: without editing configuration first.
+#: without editing configuration first -- and **one role per account**, deliberately. The
+#: governance roles do not nest with the others (ADR-0029): an account holding both
+#: 'reviewer' and 'governance_admin' would hide the separation of duties behind a
+#: convenience, and the first place that separation should be visible is a developer's
+#: own screen. The same argument applies twice over to remediation (ADR-0038), where the
+#: three roles are the difference between a change plan two people looked at and one
+#: somebody wrote, approved and signed alone.
 DEFAULT_DEV_AUTH_USERS = (
     "viewer:viewer:Development Viewer,"
     "auditor:auditor:Development Auditor,"
-    "admin:admin:Development Administrator"
+    "admin:admin:Development Administrator,"
+    "reviewer:reviewer:Development Reviewer,"
+    "governance:governance_admin:Development Governance Administrator,"
+    "planner:remediation_planner:Development Remediation Planner,"
+    "approver:remediation_approver:Development Remediation Approver"
 )
 
 

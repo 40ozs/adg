@@ -10,8 +10,37 @@ afterthought.
   reads, and directory-service reads.
 - The application never writes an ACL, never modifies group membership, and never deletes
   data on a target system.
-- Later governance phases may *propose* remediation. Any change execution must be an
-  explicit, separately authorized, audited capability — never a side effect of a scan.
+- Governance *proposes* remediation and executes none of it. A review decision records a
+  judgment about an observation and never alters the observation; a `revoke` produces a
+  `RemediationProposal`, which is ADG's record of a change somebody might make in Windows. No
+  code path in `app/governance` can write a table holding collected state, and two tests
+  enforce that — one over the syntax tree, one by digesting every collected table across a
+  whole campaign. See
+  [ADR-0028](docs/decisions/0028-governance-is-metadata-about-observations.md).
+- **A change plan is an instruction and ADG carries out none of it.** Phase 10C turns a
+  decision into a precise, simulated, approved plan and exports it as a signed document plus a
+  PowerShell runbook for a human administrator. There is no write adapter in this codebase and
+  no dependency that could provide one; no route reaches an executor; `remediation:execute` is
+  granted by no role; and the executor every deployment gets refuses unconditionally.
+  `backend/tests/remediation/test_no_write_path.py` checks all five, and each guard is fed the
+  mistake it exists to catch. What enabling a write path would require is
+  [`docs/architecture/remediation.md`](docs/architecture/remediation.md) §8; the decision is
+  [ADR-0035](docs/decisions/0035-a-change-plan-is-an-instruction-never-an-act.md).
+- **A plan cannot be exported against facts that have moved.** Every step carries a content
+  digest of the entry it was written against, re-checked against the timeline before anything
+  is signed; a plan whose estate has moved is invalidated rather than exported
+  ([ADR-0036](docs/decisions/0036-an-approval-binds-to-a-plan-digest-and-a-collection-basis.md)).
+- **A plan may only narrow.** A modification that widens a mask, raises a share permission
+  level, or narrows a *Deny* — which grants access — is refused before the plan is stored.
+  Remediation that can grant access is not remediation.
+- A review decision does not rewrite the review item either. Baseline drift — what the estate
+  has done to a reviewed grant since the campaign was frozen — is computed on read and stored
+  nowhere, so the evidence digest recorded in the audit trail keeps meaning what it meant when
+  the decision was made
+  ([ADR-0031](docs/decisions/0031-drift-is-reported-beside-an-item-never-applied-to-it.md)).
+- Change execution remains out of scope. `Capability.REMEDIATION_EXECUTE` is reserved and
+  granted by no role; when it arrives it must be an explicit, separately authorized, audited
+  capability — never a side effect of a scan.
 
 ## Least privilege
 
@@ -48,9 +77,25 @@ hides sections an account cannot use, but that is a courtesy and not a control.
   `ADG_AUTH_MODE=development` and `ADG_ENVIRONMENT=production`, and the development sign-in
   route is not registered at all outside development mode, so a production deployment's
   OpenAPI document does not describe one.
-- **Roles are `viewer`, `auditor`, and `admin`.** `remediator` is reserved for the future
-  remediation capability and grants nothing; holding it is indistinguishable from holding no
-  role. No role grants `remediation:execute`.
+- **Roles are `viewer`, `auditor`, `admin`, `reviewer`, `governance_admin`,
+  `remediation_planner` and `remediation_approver`.** `remediator` is reserved for the future
+  ability to *carry out* a change and grants nothing; holding it is indistinguishable from
+  holding no role. **No role grants `remediation:execute`**, and nothing implements it.
+- **Proposing a change, approving it and producing the signed instruction are three pairs of
+  hands.** `remediation:plan`, `remediation:approve` and `remediation:export` are held by
+  disjoint roles, and the rule is checked against the *person* as well: the requestor cannot
+  approve, and neither the requestor nor the approver can export — so somebody legitimately
+  holding two roles is still refused the second act. A database constraint refuses a
+  self-approved row whatever code writes it. See
+  [ADR-0038](docs/decisions/0038-proposing-approving-and-carrying-out-are-three-pairs-of-hands.md).
+- **A change plan is signed, and never unsigned.** With no `ADG_REMEDIATION_SIGNING_KEY`
+  configured the export is refused rather than emitted unsigned: an unsigned change plan is
+  indistinguishable from one somebody typed, and the administrator executing it has no way to
+  tell. The signature proves the document came from this deployment unmodified — not that a
+  named approver pressed a button, which is recorded inside the document and in the audit
+  chain. A configured key must be **at least 32 characters**, refused at startup otherwise:
+  refusing an unsigned export and then accepting a guessable key would be a control in name
+  only.
 - **A role ADG does not recognize grants nothing.** Unrecognized values are reported on
   `/auth/me` and logged, so a misassigned app role is diagnosable rather than mysterious.
 - **Ingestion is never anonymous.** Collectors authenticate with a key from
@@ -75,6 +120,29 @@ the tenant takes effect on the next page load.
 - ADG stores permission metadata: SIDs, names, group edges, share and directory paths, and
   ACEs. It does **not** read, index, or classify file contents.
 - Treat the ADG database and its backups as sensitive infrastructure data.
+- **Decision rationales are a wider category of disclosure than the rest of the estate.**
+  They are free text written about named people — "Alice moved teams in February" — and they
+  are now reachable in a browser, not only over the API. `governance:read` is therefore not
+  granted to `viewer`, the rationale column is personal data in the database and in every
+  backup of it, and the retention question `docs/operations/mvp-runbook.md` §6 raises for the
+  log stream applies to it too.
+- **An alert payload is the one thing in ADG that leaves the deployment.** Everything else
+  here is read over an authenticated API by somebody inside the boundary. A webhook sink
+  posts ADG's own alert document — SIDs, account names, UNC paths, what changed and what a
+  risk finding matched — to whatever URL the alert policy names, over whatever network the
+  API can reach. Three things bound it, and they are the whole of the control:
+
+  - the destination is **operator configuration** in `ADG_ALERT_POLICY_PATH`, never something
+    a request can set;
+  - `alerts:manage` — which decides what is watched and therefore what is sent — is granted
+    to `admin` alone, and deliberately not to a governance administrator;
+  - the sink **does not follow redirects**: a 3xx is treated as a permanent failure, because
+    following one would deliver an estate's exposure report to a host nobody configured.
+
+  The policy file may also carry a bearer token for that endpoint, so it is configuration and
+  never source control. Ship it outside the repository, readable only by the API's service
+  account.
+
 - Access to the ADG application must be restricted to authorized auditors and
   administrators. Production authentication is OIDC / Microsoft Entra ID; see
   "Authentication and authorization" above.

@@ -127,6 +127,11 @@ param(
     [string] $OutputDirectory,
 
     [string] $ConfigPath,
+    # Emit one normalized run summary to the pipeline. The orchestrator needs it: a
+    # scheduled invocation has to record the cursor a run reached and whether it was clean
+    # enough to keep it, and an exit code carries neither. Without the switch the script
+    # behaves exactly as it did before.
+    [switch] $PassThru,
     [switch] $SafeDefaults,
     [string[]] $ScanRoot = @(),
     [string[]] $ShareRoot = @(),
@@ -270,4 +275,43 @@ foreach ($run in $runs) {
 
 if ($DryRun) {
     Write-Host "Dry run complete. Payloads written to $OutputDirectory"
+}
+
+if ($PassThru) {
+    # The worst status across the scan roots, for the reason the SMB sweep uses: a walk in
+    # which one tree could not be entered has not covered the estate.
+    $ranked = @{ succeeded = 0; partial = 1; canceled = 2; failed = 3 }
+    $worst = 'succeeded'
+    $observations = 0
+    $affirmations = 0
+    $errors = 0
+    $reconciled = 0
+    $completed = $true
+    foreach ($run in $runs) {
+        $summary = $run.Summary
+        $status = [string] $summary.Status
+        if (-not $ranked.ContainsKey($status)) { $status = 'failed' }
+        if ($ranked[$status] -gt $ranked[$worst]) { $worst = $status }
+        $observations += [int] $summary.ObservationCount
+        $affirmations += [int] $summary.AffirmationCount
+        $errors += [int] $summary.ErrorCount
+        $reconciled += [int] $summary.ReconciledScopes
+        if (-not $summary.Completed) { $completed = $false }
+    }
+    if (@($runs).Count -eq 0) { $worst = 'failed' }
+
+    [pscustomobject]@{
+        Status           = $worst
+        RunId            = if (@($runs).Count -gt 0) { [string] $runs[0].RunId } else { '' }
+        Mode             = 'full'
+        ObservationCount = $observations
+        AffirmationCount = $affirmations
+        ErrorCount       = $errors
+        Reconciled       = ($reconciled -gt 0)
+        # None. A file-system walk has no source cursor to resume from -- its resume point
+        # is the frontier in its own checkpoint file, which describes a half-finished walk
+        # rather than a point in a change stream, and the server has no use for it.
+        Checkpoint       = $null
+        Message          = "$(@($runs).Count) scan root run(s); worst status '$worst'; walk completed: $completed"
+    }
 }

@@ -5,10 +5,19 @@
   "description": "A chunk of observations belonging to one scan run. Batches are the unit of retry: a batch is applied exactly once per (run_id, batch_id), and every observation inside it is applied exactly once per (run_id, source_key), so replaying an identical batch changes nothing. Absence of an object in a batch means nothing at all - only a reconciled, successful run can imply absence.",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": ["schema_version", "run_id", "batch_id", "sequence", "observations"],
+  "required": [
+    "schema_version",
+    "run_id",
+    "batch_id",
+    "sequence"
+  ],
   "properties": {
-    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
-    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schemaVersion"
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
     "batch_id": {
       "description": "Collector-generated UUID, stable across retries of the same batch. A retry with the same batch_id is acknowledged as a duplicate and applied once.",
       "$ref": "common.schema.json#/$defs/uuid"
@@ -24,25 +33,62 @@
     },
     "continuation_token": {
       "description": "Opaque collector-side cursor, echoed back for diagnostics. The server never interprets it.",
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "maxLength": 2048
     },
     "observations": {
-      "description": "At most 1000 observations per batch. A larger batch is rejected rather than truncated: silent truncation would look like coverage.",
+      "description": "At most 1000 observations per batch. A larger batch is rejected rather than truncated: silent truncation would look like coverage. May be empty only when the batch carries affirmations instead (contract 1.4); a batch with neither is rejected.",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 1000,
       "items": {
         "oneOf": [
-          { "$ref": "principal-observation.schema.json" },
-          { "$ref": "membership-observation.schema.json" },
-          { "$ref": "server-observation.schema.json" },
-          { "$ref": "smb-share-observation.schema.json" },
-          { "$ref": "smb-ace-observation.schema.json" },
-          { "$ref": "ntfs-resource-observation.schema.json" },
-          { "$ref": "ntfs-ace-observation.schema.json" }
+          {
+            "$ref": "principal-observation.schema.json"
+          },
+          {
+            "$ref": "membership-observation.schema.json"
+          },
+          {
+            "$ref": "server-observation.schema.json"
+          },
+          {
+            "$ref": "smb-share-observation.schema.json"
+          },
+          {
+            "$ref": "smb-ace-observation.schema.json"
+          },
+          {
+            "$ref": "ntfs-resource-observation.schema.json"
+          },
+          {
+            "$ref": "ntfs-ace-observation.schema.json"
+          }
         ]
       }
+    },
+    "affirmations": {
+      "description": "Contract 1.4. Objects this scan re-read and found unchanged. Cheaper than an observation and so capped higher: an affirmation is a key and a digest, not an object. A source_key may not appear both here and in `observations` - one says the object's state is what this payload carries and the other says it is whatever the server already holds.",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5000,
+      "items": {
+        "$ref": "common.schema.json#/$defs/affirmation"
+      }
+    },
+    "checkpoint": {
+      "description": "Contract 1.4. The cursor covering everything in and before this batch. The server advances the job's stored checkpoint to it only once the batch has been applied, so a batch that never arrived cannot move the resume point past it.",
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/collectorCheckpoint"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "examples": [
@@ -62,6 +108,28 @@
           "name": "FS01"
         }
       ]
+    }
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "observations"
+      ],
+      "properties": {
+        "observations": {
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "required": [
+        "affirmations"
+      ],
+      "properties": {
+        "affirmations": {
+          "minItems": 1
+        }
+      }
     }
   ]
 }

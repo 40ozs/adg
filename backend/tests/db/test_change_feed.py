@@ -18,6 +18,7 @@ reconciled a scope, and that guard is the whole reason the feed can be trusted.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Sequence
 from typing import Any
 
 import pytest
@@ -59,7 +60,14 @@ def ace_key(mask: int, trustee: str = GROUP, ace_type: str = "allow") -> str:
     return f"{FINANCE_PATH}|{trustee}|{ace_type}|0x{mask:08x}|0x03"
 
 
-async def _scan_day(client: AsyncClient, moment: dt.datetime, *, aces, members, shares) -> None:
+async def _scan_day(
+    client: AsyncClient,
+    moment: dt.datetime,
+    *,
+    aces: Sequence[tuple[str, int]],
+    members: Sequence[str],
+    shares: Sequence[str],
+) -> None:
     await replay(
         client,
         h.ad_scan(
@@ -393,7 +401,7 @@ class TestFilteringAndPaging:
         self, session: AsyncSession, three_scans: None
     ) -> None:
         service = ChangeService(session)
-        seen: list[tuple] = []
+        seen: list[tuple[ObservationKind, str, dt.datetime]] = []
         cursor = None
         for _ in range(20):
             page = await service.feed(

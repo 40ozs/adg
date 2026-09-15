@@ -381,6 +381,17 @@ function Import-AdgNtfsTarget {
         $checkpointPath = $null
     }
 
+    $digestIndexPath = [string] (Get-Field $document 'digestIndexPath' '')
+    if (-not [string]::IsNullOrWhiteSpace($digestIndexPath)) {
+        $parent = Split-Path -Parent $digestIndexPath
+        if (-not [string]::IsNullOrWhiteSpace($parent) -and -not (Test-Path -LiteralPath $parent -PathType Container)) {
+            throw "digestIndexPath '$digestIndexPath' is in a directory that does not exist. The index cannot be written there, so every scan would send every descriptor and nothing would say why."
+        }
+    }
+    else {
+        $digestIndexPath = $null
+    }
+
     return [pscustomobject]@{
         ScanRoots                 = $roots.ToArray()
         RetryCount                = Get-Bounded $document 'retryCount' $fallback.retryCount 0 10
@@ -416,5 +427,16 @@ function Import-AdgNtfsTarget {
         # name. On by default: an orphaned SID on a folder ACL is one of the findings this
         # tool exists to produce, and the backend cannot infer it from the ACE alone.
         ReportUnresolved          = [bool] (Get-Field $document 'reportUnresolvedPrincipals' $fallback.reportUnresolvedPrincipals)
+
+        # Contract 1.4. Where this collector keeps what it last reported for each path, so
+        # that a re-read descriptor that has not changed can be affirmed - a key and a
+        # digest - instead of being re-sent with all its entries. Absent means every
+        # descriptor is sent in full, which is what every scan did before 1.4.
+        #
+        # It is not a cache of ACLs and never lets a scan skip a read: writing an ACL moves
+        # no timestamp a walk could test, so a scan that trusted an index would skip exactly
+        # the changes this tool exists to find. See functions/AdgNtfsDigestIndex.ps1.
+        DigestIndexPath           = $digestIndexPath
+        DigestIndexMaxEntries     = Get-Bounded $document 'digestIndexMaxEntries' 2000000 1000 50000000
     }
 }
