@@ -650,6 +650,8 @@ function New-AdgFixtureDirectoryProvider {
         DomainSid            = if ($Document.Contains('domainSid')) { [string] $Document['domainSid'] } else { $null }
         DefaultNamingContext = [string] $Document['defaultNamingContext']
         DnsDomainName        = if ($Document.Contains('dnsDomainName')) { [string] $Document['dnsDomainName'] } else { 'fixture.local' }
+        DsServiceName        = if ($Document.Contains('dsServiceName')) { [string] $Document['dsServiceName'] } else { 'CN=NTDS Settings,CN=FIXTURE' }
+        InvocationId         = if ($Document.Contains('invocationId')) { [string] $Document['invocationId'] } else { '00000000-0000-4000-8000-000000000000' }
         SearchCommand        = $search
         State                = $state
     }
@@ -681,6 +683,20 @@ function Test-AdgFixtureFilterMatch {
         $results = @($clauses | ForEach-Object { Test-AdgFixtureFilterMatch -Entry $Entry -Filter $_ })
         if ($operator -eq '&') { return (-not ($results -contains $false)) }
         return ($results -contains $true)
+    }
+
+    # Greater-or-equal, which is how a uSNChanged delta is expressed. Numeric, because
+    # every attribute this collector filters on that way is a counter -- comparing USNs as
+    # strings would place 9 after 10 and silently drop a whole range from a delta.
+    if ($text -match '^\((?<name>[A-Za-z0-9\-]+)>=(?<value>[0-9]+)\)$') {
+        $threshold = [long] $Matches['value']
+        foreach ($candidate in @(Get-AdgEntryValues -Entry $Entry -Name $Matches['name'])) {
+            [long] $number = 0
+            if ([long]::TryParse([string] $candidate, [ref] $number) -and $number -ge $threshold) {
+                return $true
+            }
+        }
+        return $false
     }
 
     if ($text -match '^\((?<name>[A-Za-z0-9\-]+)=(?<value>.*)\)$') {
@@ -868,9 +884,68 @@ function New-AdgLdapDirectoryProvider {
         DomainSid            = $null
         DefaultNamingContext = $SearchBase
         DnsDomainName        = $rootDse.DnsHostName
+        DsServiceName        = $rootDse.DsServiceName
         RootDse              = $rootDse
         SearchCommand        = $search
     }
+}
+
+
+function Get-AdgDirectoryIssuer {
+    <#
+        .SYNOPSIS
+            The identity a uSNChanged watermark from this provider belongs to.
+        .DESCRIPTION
+            Two facts joined, and both are needed.
+
+            dsServiceName names the domain controller that answered. USNs are per-server
+            counters, so DC1's watermark replayed against DC2 skips every object whose USN
+            on DC2 happens to fall below it -- silently, permanently, and with nothing
+            afterwards looking wrong.
+
+            invocationId names this *incarnation* of that controller's database. A DC
+            restored from backup keeps its name and rolls its USN counter backwards, so it
+            reissues numbers it has already handed out. A watermark compared on the server
+            name alone survives that restore and skips every reused number. The invocation
+            id changes, which is what makes the restore visible.
+
+            Returns $null when the invocation id cannot be read, and the caller must then
+            refuse to run a delta. That is the safe direction: one expensive full scan
+            against a gap nobody would ever detect.
+
+            Every failure here is reported at Verbose level, not as a warning. The caller
+            knows which of the two things it was about to do -- resume from a watermark, or
+            leave one behind -- and only it can say which consequence matters; a warning
+            from in here would fire on every full run that was never going to resume.
+    #>
+    [OutputType([string])]
+    param([Parameter(Mandatory)][hashtable] $Provider)
+
+    $service = if ($Provider.ContainsKey('DsServiceName')) { [string] $Provider['DsServiceName'] } else { '' }
+    if ([string]::IsNullOrWhiteSpace($service)) {
+        Write-Verbose 'The directory did not report dsServiceName, so a uSNChanged watermark cannot be tied to the server that issued it.'
+        return $null
+    }
+
+    $invocation = if ($Provider.ContainsKey('InvocationId')) { [string] $Provider['InvocationId'] } else { '' }
+    if ([string]::IsNullOrWhiteSpace($invocation)) {
+        $invocation = try {
+            $results = @(Invoke-AdgDirectorySearch -Provider $Provider -SearchBase $service `
+                    -Filter '(objectClass=*)' -Attributes @('invocationId') -Scope 'Base')
+            if ($results.Count -ge 1) { [string] (Get-AdgEntryValue -Entry $results[0] -Name 'invocationId') } else { '' }
+        }
+        catch {
+            Write-Verbose "The invocationId of '$service' could not be read: $($_.Exception.Message)"
+            return $null
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($invocation)) {
+        Write-Verbose "The directory server '$service' reported no invocationId, so a restore from backup -- which reissues USNs already handed out -- would be invisible to a watermark."
+        return $null
+    }
+
+    return "$service|$invocation"
 }
 
 
@@ -899,6 +974,7 @@ function Get-AdgLdapRootDse {
         DnsHostName          = [string] (Get-AdgEntryValue -Entry $entry -Name 'dnsHostName')
         DsServiceName        = [string] (Get-AdgEntryValue -Entry $entry -Name 'dsServiceName')
         HighestCommittedUsn  = Get-AdgEntryInteger -Entry $entry -Name 'highestCommittedUSN'
+        InvocationId         = [string] (Get-AdgEntryValue -Entry $entry -Name 'invocationId')
     }
 }
 
@@ -1064,7 +1140,11 @@ function New-AdgAdCollectorConfig {
         [int] $MaxAttempts = 5,
         [int] $TimeoutSeconds = 120,
         [string] $PrincipalFilter,
-        [string] $GroupFilter
+        [string] $GroupFilter,
+        [string] $Job,
+        [string] $Passes = 'all',
+        [Nullable[long]] $SinceUsn,
+        [string] $CheckpointIssuer
     )
 
     $maxBatch = Get-AdgMaxBatchSize
@@ -1091,6 +1171,19 @@ function New-AdgAdCollectorConfig {
     if (-not $CollectorHost) { $CollectorHost = [System.Net.Dns]::GetHostName() }
     if (-not $CollectorVersion) { $CollectorVersion = $script:CollectorVersion }
 
+    if ($Passes -notin @('all', 'principals', 'memberships')) {
+        throw "Passes must be 'all', 'principals' or 'memberships'; received '$Passes'. A run that reads one half of the domain has not enumerated the domain, so it is marked incremental and may never reconcile."
+    }
+    if ($null -ne $SinceUsn -and $SinceUsn -lt 0) {
+        throw "SinceUsn must not be negative; received $SinceUsn."
+    }
+    if ($null -ne $SinceUsn -and [string]::IsNullOrWhiteSpace($CheckpointIssuer)) {
+        throw 'A uSNChanged watermark needs the issuer that produced it. USNs are per-server counters, and one replayed against a different directory server -- or the same one after a restore from backup -- skips every object whose USN falls below it. Pass CheckpointIssuer with SinceUsn.'
+    }
+    if ($Job -and $Job -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$') {
+        throw "Job name '$Job' is not usable: it is the key the server stores this collector's checkpoint under."
+    }
+
     return @{
         Domain                      = $Domain
         DomainController            = $DomainController
@@ -1116,6 +1209,10 @@ function New-AdgAdCollectorConfig {
         TimeoutSeconds              = $TimeoutSeconds
         PrincipalFilter             = if ($PrincipalFilter) { $PrincipalFilter } else { $script:DefaultPrincipalFilter }
         GroupFilter                 = if ($GroupFilter) { $GroupFilter } else { $script:DefaultGroupFilter }
+        Job                         = $Job
+        Passes                      = $Passes
+        SinceUsn                    = $SinceUsn
+        CheckpointIssuer            = $CheckpointIssuer
     }
 }
 
@@ -1162,6 +1259,10 @@ function Import-AdgAdCollectorConfig {
         timeoutSeconds              = 'TimeoutSeconds'
         principalFilter             = 'PrincipalFilter'
         groupFilter                 = 'GroupFilter'
+        job                         = 'Job'
+        passes                      = 'Passes'
+        sinceUsn                    = 'SinceUsn'
+        checkpointIssuer            = 'CheckpointIssuer'
     }
 
     $arguments = @{}
@@ -1208,6 +1309,12 @@ function New-AdgCollectionState {
         Cursor           = $null
         HighestUsn       = $null
         HighestWhen      = $null
+        # The filters this run issues, which are the configured ones narrowed by the
+        # watermark when it is running as a delta. Held on the state rather than recomputed
+        # in each pass, so the two passes cannot end up filtering differently and producing
+        # one run that read its scope under two rules.
+        PrincipalFilter  = $Config.PrincipalFilter
+        GroupFilter      = $Config.GroupFilter
     }
 }
 
@@ -1308,6 +1415,33 @@ function Update-AdgChangeWatermark {
 
 # --- Collection --------------------------------------------------------------------------
 
+function Add-AdgUsnFilter {
+    <#
+        .SYNOPSIS
+            Narrow a filter to objects whose uSNChanged is at or above a watermark.
+        .DESCRIPTION
+            Greater-or-*equal*, not greater-than, and the watermark the collector saves is
+            the highest USN it actually saw. The overlap of one object is deliberate: the
+            alternative is an off-by-one that drops exactly the object that sat on the
+            boundary, and re-reading one object costs nothing while losing one is
+            undetectable.
+
+            What this filter cannot do is report a *deletion*. A deleted object is moved to
+            the Deleted Objects container and produces no entry this search can return, so
+            nothing arrives -- which is also what an unchanged object does. Only a full
+            reconciliation tells those apart; see
+            docs/architecture/incremental-collection.md.
+    #>
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string] $Filter,
+        [Parameter(Mandatory)][long] $SinceUsn
+    )
+
+    return "(&(uSNChanged>=$SinceUsn)$Filter)"
+}
+
+
 function Get-AdgSearchBase {
     <#
         .SYNOPSIS
@@ -1365,7 +1499,8 @@ function Invoke-AdgAdPrincipalPass {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)][hashtable] $State,
-        [Parameter(Mandatory)][hashtable] $Provider
+        [Parameter(Mandatory)][hashtable] $Provider,
+        [bool] $Emit = $true
     )
 
     $config = $State.Config
@@ -1375,7 +1510,7 @@ function Invoke-AdgAdPrincipalPass {
         $entries = $null
         try {
             $entries = @(Invoke-AdgDirectoryOperation -MaxAttempts $config.MaxAttempts -Description "principal search under '$base'" -Operation {
-                    Invoke-AdgDirectorySearch -Provider $Provider -SearchBase $base -Filter $config.PrincipalFilter `
+                    Invoke-AdgDirectorySearch -Provider $Provider -SearchBase $base -Filter $State.PrincipalFilter `
                         -Attributes $script:PrincipalAttributes -Scope 'Subtree'
                 })
         }
@@ -1401,7 +1536,11 @@ function Invoke-AdgAdPrincipalPass {
                 continue
             }
 
-            Add-AdgCollectedObservation -State $State -Observation $observation
+            if ($Emit) { Add-AdgCollectedObservation -State $State -Observation $observation }
+            # The watermark advances over every entry this run *read*, emitted or not. A
+            # memberships job that read a principal and chose not to send it has still
+            # covered that principal's uSNChanged, and a watermark that lagged what was read
+            # would make the next delta re-read a range for no reason.
             Update-AdgChangeWatermark -State $State -Entry $entry
 
             $sid = [string] $observation['sid']
@@ -1537,7 +1676,7 @@ function Invoke-AdgAdMembershipPass {
         $groups = $null
         try {
             $groups = @(Invoke-AdgDirectoryOperation -MaxAttempts $config.MaxAttempts -Description "group search under '$base'" -Operation {
-                    Invoke-AdgDirectorySearch -Provider $Provider -SearchBase $base -Filter $config.GroupFilter `
+                    Invoke-AdgDirectorySearch -Provider $Provider -SearchBase $base -Filter $State.GroupFilter `
                         -Attributes ($script:PrincipalAttributes + 'member') -Scope 'Subtree'
                 })
         }
@@ -1768,30 +1907,90 @@ function Invoke-AdgAdCollection {
         throw 'The collector could not determine the domain SID, so it cannot declare the scope this run enumerates. Name the domain controller explicitly, or set searchBase.'
     }
 
+    # --- what this run is, before a single entry is read ---------------------------------
+    #
+    # Three statements, and the protocol requires all of them to be made *up front*:
+    # `incremental` because the server refuses to let it change mid-run, `mode` because it
+    # must agree with `incremental`, and the scope because a run may only reconcile what it
+    # declared. Deciding any of them from what the run turned out to read would be deciding
+    # coverage after the fact.
+    $passes = if ($Config.ContainsKey('Passes') -and $Config.Passes) { [string] $Config.Passes } else { 'all' }
     $narrowed = ($Config.IncludeOrganizationalUnits.Count -gt 0) -or ($Config.ExcludeOrganizationalUnits.Count -gt 0)
-    $incremental = [bool] ($Config.Incremental -or $narrowed)
+
+    $issuer = if ($Config.ContainsKey('CheckpointIssuer') -and $Config.CheckpointIssuer) {
+        [string] $Config.CheckpointIssuer
+    }
+    else {
+        Get-AdgDirectoryIssuer -Provider $Provider
+    }
+
+    $sinceUsn = if ($Config.ContainsKey('SinceUsn')) { $Config.SinceUsn } else { $null }
+    $delta = $false
+    if ($null -ne $sinceUsn) {
+        if ([string]::IsNullOrWhiteSpace($issuer)) {
+            # The watermark cannot be tied to the incarnation of the directory that issued
+            # it, so it cannot be shown to still mean what it meant. Reading everything
+            # costs one scan; resuming on a watermark whose provenance is unknown costs an
+            # audit that is silently missing whatever fell below it.
+            Write-Warning "Job '$($Config.Job)' was given a uSNChanged watermark but this run could not establish the directory server's identity, so it reads everything instead of resuming."
+        }
+        elseif ($Config.CheckpointIssuer -and $Config.CheckpointIssuer -ine $issuer) {
+            Write-Warning "The watermark was issued by '$($Config.CheckpointIssuer)' and this run bound '$issuer'. A uSNChanged cursor is local to one directory-server incarnation, so this run reads everything."
+        }
+        else {
+            $delta = $true
+        }
+    }
+
+    # A pass that reads one half of the domain has not enumerated the domain. It declares
+    # the scope -- that is what it set out to look at -- and marks itself incremental, which
+    # is what structurally prevents it from reconciling. A principals pass that reconciled
+    # the domain would mark every membership edge absent, because it observed none.
+    $partial = ($passes -ne 'all')
+    $incremental = [bool] ($Config.Incremental -or $narrowed -or $delta -or $partial)
+    $mode = if ($delta) { 'delta' } elseif ($incremental) { 'delta' } else { 'full' }
     $scope = New-AdgScope -Kind 'domain' -Key $domainSid
 
     $searchBases = @(Get-AdgSearchBase -Config $Config -Provider $Provider)
-    $notes = if ($narrowed) {
-        "Narrowed to $($searchBases.Count) search base(s); marked incremental so it cannot reconcile the domain scope."
+    $reasons = [System.Collections.Generic.List[string]]::new()
+    if ($narrowed) { $reasons.Add("narrowed to $($searchBases.Count) search base(s)") }
+    if ($partial) { $reasons.Add("reads only the $passes of the domain") }
+    if ($delta) { $reasons.Add("resumed from uSNChanged $sinceUsn issued by '$issuer'") }
+    $notes = if ($reasons.Count -gt 0) {
+        "$($reasons -join '; '); marked incremental so it cannot reconcile the domain scope."
     }
     else {
         $null
     }
 
+    $baseline = if ($delta) {
+        @{ kind = 'usn'; token = [string] $sinceUsn; issuer = $issuer; issued_at = $startedAt }
+    }
+    else { $null }
+
     $start = New-AdgScanRunStart -RunId $RunId -Collector 'active_directory' `
         -CollectorHost $Config.CollectorHost -Method 'System.DirectoryServices.Protocols.LdapConnection' `
         -CollectorVersion $Config.CollectorVersion -Target ($searchBases -join ';') `
-        -StartedAt $startedAt -Scopes @($scope) -Incremental $incremental -Notes $notes
+        -StartedAt $startedAt -Scopes @($scope) -Incremental $incremental -Notes $notes `
+        -Mode $mode -Job ([string] $Config.Job) -Baseline $baseline
     Publish-AdgPayload -Publisher $Publisher -PayloadKind 'start' -Payload $start | Out-Null
 
     $state = New-AdgCollectionState -RunId $RunId -Publisher $Publisher -Config $Config
+    if ($delta) {
+        $state.PrincipalFilter = Add-AdgUsnFilter -Filter $Config.PrincipalFilter -SinceUsn ([long] $sinceUsn)
+        $state.GroupFilter = Add-AdgUsnFilter -Filter $Config.GroupFilter -SinceUsn ([long] $sinceUsn)
+    }
     $status = 'succeeded'
 
     try {
-        $pass = Invoke-AdgAdPrincipalPass -State $state -Provider $Provider
-        Invoke-AdgAdMembershipPass -State $state -Provider $Provider -Index $pass.Index
+        # The principal pass always runs, even for a memberships-only job: the membership
+        # pass resolves member references against the index it builds, and without it every
+        # edge would cost an extra directory round trip. What a memberships job suppresses
+        # is the *emission* of principals, not the reading of them.
+        $pass = Invoke-AdgAdPrincipalPass -State $state -Provider $Provider -Emit:($passes -ne 'memberships')
+        if ($passes -ne 'principals') {
+            Invoke-AdgAdMembershipPass -State $state -Provider $Provider -Index $pass.Index
+        }
         Publish-AdgBufferedBatch -State $state -IsFinal $true
     }
     catch {
@@ -1814,9 +2013,29 @@ function Invoke-AdgAdCollection {
     if ($status -ne 'failed' -and $state.Errors.Count -gt 0) { $status = 'partial' }
 
     $reconciled = @(if ($status -eq 'succeeded' -and -not $incremental) { $scope })
-    $completion = New-AdgScanRunCompletion -RunId $RunId -Status $status -CompletedAt (Get-AdgTimestamp) `
+    $completedAt = Get-AdgTimestamp
+
+    # The cursor this run may hand to the next one. Only a clean run leaves one: a partial
+    # run did not read everything below its highest uSNChanged, so a later run starting
+    # there would skip exactly the objects this one failed on -- and nothing afterwards
+    # would look missing. The server enforces the same rule, and refuses one from a run it
+    # downgraded; both are needed, because the collector knows about its own errors and
+    # only the server knows what actually arrived.
+    $checkpoint = if ($status -eq 'succeeded' -and $issuer -and $null -ne $state.HighestUsn) {
+        @{ kind = 'usn'; token = [string] $state.HighestUsn; issuer = $issuer; issued_at = $completedAt }
+    }
+    else { $null }
+
+    if ($status -eq 'succeeded' -and -not $issuer -and $Config.Job) {
+        # Said once, where it is actionable, and only for a run that belongs to a scheduled
+        # job -- because that is the only case where the absence has a lasting cost: the job
+        # will read the whole directory on every run, for ever, and look healthy doing it.
+        Write-Warning "Job '$($Config.Job)' left no checkpoint: the directory server's identity (dsServiceName and invocationId) could not be established, so a uSNChanged watermark could not be tied to the incarnation that issued it. Every run of this job will read the whole directory. Run with -Verbose to see which read failed."
+    }
+
+    $completion = New-AdgScanRunCompletion -RunId $RunId -Status $status -CompletedAt $completedAt `
         -BatchCount $state.BatchCount -ObservationCount $state.ObservationCount `
-        -Errors $state.Errors.ToArray() -ReconciledScopes $reconciled
+        -Errors $state.Errors.ToArray() -ReconciledScopes $reconciled -Checkpoint $checkpoint
     Publish-AdgPayload -Publisher $Publisher -PayloadKind 'completion' -Payload $completion | Out-Null
 
     $summary = @{
@@ -1835,6 +2054,19 @@ function Invoke-AdgAdCollection {
         HighestUsn       = $state.HighestUsn
         HighestWhen      = $state.HighestWhen
         Server           = $Provider.Server
+        Mode             = $mode
+        Passes           = $passes
+        Issuer           = $issuer
+        Checkpoint       = if ($null -eq $checkpoint) { $null } else {
+            [pscustomobject]@{
+                Kind     = $checkpoint.kind
+                Token    = $checkpoint.token
+                Issuer   = $checkpoint.issuer
+                IssuedAt = $checkpoint.issued_at
+            }
+        }
+        StartedAt        = $startedAt
+        EndedAt          = $completedAt
     }
 
     if ($Config.StateFile) {
@@ -1989,6 +2221,8 @@ Export-ModuleMember -Function @(
     'Select-AdgFixtureAttributes'
     'ConvertFrom-AdgLdapEntry'
     'Get-AdgLdapRootDse'
+    'Get-AdgDirectoryIssuer'
+    'Add-AdgUsnFilter'
     'Get-AdgRangedAttributeState'
     'Get-AdgGroupMemberReference'
     'New-AdgAdCollectorConfig'

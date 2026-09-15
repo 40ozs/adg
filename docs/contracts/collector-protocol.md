@@ -91,6 +91,10 @@ may later be inferred:
 Set `incremental: true` when the run deliberately re-reads only part of its scopes (see
 §7). An incremental run may never reconcile.
 
+From **1.4** a start envelope may also carry `mode` (why the run is or is not incremental),
+`job` (the scheduled job it belongs to), and `baseline` (the checkpoint a delta resumed
+from). See §11.
+
 **Responses:** `201 Created` for a new run; `200 OK` with the existing run for a replayed
 start; `409 Conflict` if `run_id` exists with a different source or scopes — a collector
 must not reuse a run id for a different run; `422 Unprocessable Entity` with field-level
@@ -180,6 +184,9 @@ table matches it.
 * **No duplicate `source_key` within a batch.** Two observations with the same key are
   indistinguishable; the payload is rejected rather than half-applied.
 * **`is_final`** is advisory. Only the completion envelope ends a run.
+* **`affirmations`** (1.4) may accompany the observations, or replace them entirely. A batch
+  must carry at least one observation *or* one affirmation; a batch with neither is rejected.
+  A `source_key` may not appear in both lists. See §11.
 * **`continuation_token`** is an opaque collector-side cursor echoed back for diagnostics.
   The server never interprets it. Use it to resume enumeration after a crash.
 
@@ -215,6 +222,10 @@ never retried unchanged — the payload is wrong, and retrying it will fail iden
 
 `batch_count` lets the server detect loss: if it received fewer batches than the collector
 says it sent, the run is downgraded to `partial` regardless of the status claimed.
+
+From **1.4** a completion may also carry `affirmation_count` and `checkpoint`. A checkpoint
+is permitted **only** on a run reporting `succeeded` with no errors, and the server refuses
+one on a run it downgraded for short delivery — see §11.
 
 A run that reports any error **cannot** be `succeeded` — the contract rejects that
 combination. Reporting complete coverage that was not achieved understates access, which is
@@ -528,3 +539,123 @@ The server stores the claim as sent and reports its own derivation beside it on
 `GET /resources/{path}`. Neither overrides the other: they disagree when the parent changed
 between the two readings, when the collector's projection is wrong, or when entries were lost
 in transit, and picking a winner would bury all three.
+
+### 1.4 (Phase 7B)
+
+Three additions, all optional and all additive: a `1.0` through `1.3` payload that omits them
+is still valid, and every `1.x` server accepts all five minors.
+
+| Envelope | Field | Carries |
+| --- | --- | --- |
+| start | `mode` | `full`, `delta`, or `reconcile` |
+| start | `job` | The scheduled job this run belongs to |
+| start | `baseline` | The checkpoint a delta resumed from |
+| batch | `affirmations` | Objects re-read and found unchanged |
+| batch | `checkpoint` | The cursor covering everything in and before this batch |
+| completion | `affirmation_count` | How many affirmations the run sent |
+| completion | `checkpoint` | The cursor the next delta may resume from |
+
+Full treatment: [`docs/architecture/incremental-collection.md`](../architecture/incremental-collection.md),
+decided in [ADR-0025](../decisions/0025-incremental-collection-is-bounded-by-its-source.md)
+and [ADR-0026](../decisions/0026-an-affirmation-is-verified-and-a-checkpoint-trails-its-data.md).
+
+#### `mode` says why a run is or is not incremental
+
+`incremental` remains the flag that decides whether a run may ever mark an object absent, and
+nothing about it changes. `mode` is the finer statement layered over it, and the server
+**rejects a payload where they disagree**: `mode` is `delta` if and only if `incremental` is
+true. A collector that omits `mode` has it derived from `incremental`, so a `1.3` payload
+setting `incremental: true` is recorded as a delta rather than as a full run.
+
+`job` is free-form and the server never interprets it. It is the key the checkpoint store is
+keyed by, so **a run that sends a checkpoint must name a job**; one that does not is rejected
+with `409`.
+
+#### A checkpoint is a cursor *and* the identity it belongs to
+
+```json
+{
+  "kind": "usn",
+  "token": "184987",
+  "issuer": "CN=NTDS Settings,CN=DC01,...,DC=corp,DC=example,DC=com|2f0f9a3c-7c4e-4c0e-9a02-6b5f0a1f9d11",
+  "issued_at": "2026-09-14T08:05:00Z"
+}
+```
+
+| `kind` | `token` | Ordered? |
+| --- | --- | --- |
+| `usn` | a decimal integer | yes, against the same issuer only |
+| `timestamp` | RFC 3339 with an offset | yes, to the second, and only as well as the clocks involved |
+| `opaque` | anything the collector likes | no — the server can tell it changed, not that it moved forward |
+
+**`issuer` is required and it is compared.** A `uSNChanged` cursor is a counter on one domain
+controller, so DC1's number replayed against DC2 silently skips every object whose USN on
+DC2 falls below it. For a domain controller the issuer is `dsServiceName` and `invocationId`
+joined, and both halves are necessary: the first changes when the collector binds a different
+DC, and the second changes when the *same* DC is restored from backup — which rolls its USN
+counter backwards and makes it reissue numbers it has already handed out.
+
+The server refuses a checkpoint it cannot show to be ahead of the one it holds — a different
+issuer, a different kind, or a lower token — keeps the stored cursor, and **records the
+refusal**, so the operator can see a job that is running successfully and making no progress.
+
+Three rules bind a collector that sends one:
+
+* **advance it only behind data that landed.** The server moves the job's cursor inside the
+  transaction that applied the batch; a collector should write its own only after the server
+  has accepted the batch;
+* **never record one on a run that did not finish cleanly.** A partial run did not read
+  everything below its watermark, so the next delta would start above exactly the objects
+  this run failed on — a gap that closes only by accident, because nothing afterwards looks
+  missing. The contract rejects a checkpoint on any completion that is not `succeeded` with
+  zero errors, and the server additionally refuses one on a run it downgraded;
+* **a delta run may still never reconcile.** A cursor-filtered query cannot report a
+  deletion: a deleted object produces no entry, which is exactly what an unchanged object
+  produces.
+
+#### An affirmation is an object re-read and found unchanged
+
+```json
+{
+  "kind": "ntfs_resource",
+  "source_key": "resource|\\\\fs01\\finance\\reports",
+  "digest": "3b1f0c9d5e2a47b8c6d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6",
+  "observed_at": "2026-09-14T08:02:00Z"
+}
+```
+
+It exists because the file system has **no change metadata a DACL edit reliably touches**:
+writing an ACL does not move `LastWriteTime`, so a scan that skipped unchanged-looking
+directories on a timestamp would skip exactly the changes ADG is for. The collector therefore
+still reads every descriptor; what it sends for the unchanged ones is this.
+
+Only `ntfs_resource` may be affirmed in 1.4 — it is the one kind with a published
+whole-object digest (`acl_hash`, 1.2) that the server already recomputes from what it stores.
+`digest` is exactly that value, over the whole DACL in the reading being affirmed, including
+`dacl_present` and `dacl_protected`.
+
+**The server verifies it and refuses what it cannot confirm.** Each refusal is returned in
+the batch response naming the key, and the collector re-sends that object in full:
+
+| `reason` | What it means |
+| --- | --- |
+| `digest_mismatch` | The ACL changed between the reading ADG holds and the one just taken. **This is the ordinary case, not an error.** |
+| `unknown_object` | ADG holds no resource at that path; there is nothing to confirm |
+| `no_stored_digest` | The stored reading predates 1.2 and carries no `acl_hash`, so the two cannot be compared — and *cannot compare* never resolves to *equal* |
+| `absent` | ADG has recorded the object as gone. Reviving it is a claim about state, which an affirmation does not carry |
+
+A refusal never fails the batch or the run.
+
+Two rules bind a collector that sends one:
+
+* **compute the digest from this scan's reading**, never from a record of what was sent last
+  time. A cached digest makes the affirmation a statement about the collector's memory rather
+  than about the object, and the two diverge precisely when an ACL has changed;
+* **affirm only what you actually re-read.** An affirmation counts as an observation: it
+  extends the object's timeline and marks it seen by this run, for the resource *and for the
+  entries its digest covers*.
+
+That last point is what makes affirmations worth having: **a run that affirmed everything it
+did not re-send has still enumerated its whole scope**, so it remains a `full` run and may
+reconcile. A scan of a quiet tree costs a key and a digest per directory instead of a
+resource and all its entries, and gives up nothing.

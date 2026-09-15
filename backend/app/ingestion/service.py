@@ -34,17 +34,45 @@ from __future__ import annotations
 import datetime as dt
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Final
+from typing import Any, Final, cast
 from uuid import UUID
 
-from sqlalchemy import Table, case, delete, func, insert, select, tuple_, update
+from sqlalchemy import (
+    CursorResult,
+    Table,
+    Text,
+    any_,
+    bindparam,
+    case,
+    delete,
+    func,
+    insert,
+    literal,
+    select,
+    tuple_,
+    update,
+)
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contracts.v1 import ObservationBatch, ScanRunCompletion, ScanRunStart
 from app.contracts.v1.common import ObservationKind, ScopeKind
-from app.domain import CollectorKind, ScanStatus
-from app.history.writer import ClosureOutcome, HistoryOutcome, HistoryWriter
+from app.domain import (
+    Checkpoint,
+    CheckpointKind,
+    CollectionMode,
+    CollectorKind,
+    ReconciliationDrift,
+    ScanStatus,
+)
+from app.history.writer import (
+    AffirmationOutcome,
+    ClosureOutcome,
+    HistoryOutcome,
+    HistoryWriter,
+)
+from app.ingestion.checkpoints import CheckpointAdvance, CheckpointStore
 from app.ingestion.plan import BatchPlan, plan_batch, source_fingerprint
 from app.models.schema import (
     collector_sources,
@@ -56,6 +84,7 @@ from app.models.schema import (
     principal_references,
     principals,
     scan_run_batches,
+    scan_run_checkpoints,
     scan_run_errors,
     scan_run_scopes,
     scan_runs,
@@ -65,10 +94,12 @@ from app.models.schema import (
 )
 
 __all__ = [
+    "AffirmationResult",
     "BatchOutcome",
     "CompletionOutcome",
     "IngestionConflict",
     "IngestionService",
+    "RefusedAffirmation",
     "RunListPage",
     "RunNotFound",
     "RunSnapshot",
@@ -205,6 +236,37 @@ _REFERENCE_MUTABLE: Final[tuple[str, ...]] = ("sid", "host_key")
 
 
 @dataclass(frozen=True, slots=True)
+class RefusedAffirmation:
+    """One affirmation the server would not accept, and why.
+
+    Refusals are returned to the collector rather than logged, because the collector is the
+    only party that can do anything about them: every one of these means *send this object
+    in full next time*, and a collector that is not told will keep affirming a state ADG
+    does not hold until something else notices.
+    """
+
+    source_key: str
+    reason: str
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class AffirmationResult:
+    """What one batch's affirmations did."""
+
+    applied: int = 0
+    refused: tuple[RefusedAffirmation, ...] = ()
+    entries_confirmed: int = 0
+    """Contained objects -- an affirmed resource's ACEs -- confirmed along with it."""
+
+    history: AffirmationOutcome = field(default_factory=AffirmationOutcome)
+
+    @property
+    def refused_count(self) -> int:
+        return len(self.refused)
+
+
+@dataclass(frozen=True, slots=True)
 class StartOutcome:
     """Result of opening a run. ``created`` distinguishes 201 from a replayed 200."""
 
@@ -232,6 +294,13 @@ class BatchOutcome:
     share_aces_written: int = 0
     ntfs_resources_written: int = 0
     ntfs_aces_written: int = 0
+    affirmations: AffirmationResult = field(default_factory=AffirmationResult)
+    """Contract 1.4. What the batch's affirmations confirmed, and which it refused."""
+
+    checkpoint: CheckpointAdvance | None = None
+    """The job cursor this batch moved, when it carried one. ``accepted`` false means the
+    cursor stayed where it was and the reason is on the stored row."""
+
     history: HistoryOutcome = field(default_factory=HistoryOutcome)
     """What this batch did to the version history. Reported beside the row counts because
     they answer different questions: a replayed observation writes a row and opens no
@@ -251,6 +320,14 @@ class CompletionOutcome:
     """One entry per reconciled scope, saying what it marked absent — or why it marked
     nothing. Empty for every run that did not reconcile, which is most of them."""
 
+    drift: tuple[ReconciliationDrift, ...] = ()
+    """What the reconciliation found that the incremental cadence could not: one entry per
+    reconciled scope, counting only the presence corrections. See
+    :class:`app.domain.ReconciliationDrift` for why changes are deliberately excluded."""
+
+    checkpoint: CheckpointAdvance | None = None
+    """The job cursor this completion moved, when it carried one."""
+
 
 @dataclass(frozen=True, slots=True)
 class RunSummary:
@@ -263,6 +340,8 @@ class RunSummary:
     run_id: UUID
     status: ScanStatus
     incremental: bool
+    mode: CollectionMode
+    job: str | None
     started_at: dt.datetime
     completed_at: dt.datetime | None
     collector: str
@@ -272,6 +351,7 @@ class RunSummary:
     target: str | None
     batch_count_received: int
     observation_count_applied: int
+    affirmation_count_applied: int
     error_count: int
     downgrade_reason: str | None
 
@@ -292,6 +372,8 @@ class RunSnapshot:
     run_id: UUID
     status: ScanStatus
     incremental: bool
+    mode: CollectionMode
+    job: str | None
     started_at: dt.datetime
     completed_at: dt.datetime | None
     collector: str
@@ -303,12 +385,18 @@ class RunSnapshot:
     batch_count_received: int
     observation_count_reported: int | None
     observation_count_applied: int
+    affirmation_count_reported: int | None
+    affirmation_count_applied: int
+    affirmations_refused: int
     error_count: int
     notes: str | None
     downgrade_reason: str | None
     declared_scopes: tuple[tuple[str, str], ...]
     reconciled_scopes: tuple[tuple[str, str], ...]
     errors: tuple[dict[str, Any], ...]
+    baseline: Checkpoint | None = None
+    result_checkpoint: Checkpoint | None = None
+    drift: tuple[ReconciliationDrift, ...] = ()
 
 
 class IngestionService:
@@ -317,6 +405,7 @@ class IngestionService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._history = HistoryWriter(session)
+        self._checkpoints = CheckpointStore(session)
 
     # ------------------------------------------------------------------ start
 
@@ -350,12 +439,21 @@ class IngestionService:
                 source_id=source_id,
                 status=ScanStatus.RUNNING.value,
                 incremental=start.incremental,
+                # `mode` is never None here: the start envelope derives it from
+                # `incremental` when the payload predates 1.4, so every stored run carries
+                # the finer statement even when the collector could not make it.
+                mode=(start.mode or CollectionMode.FULL).value,
+                job=start.job,
                 started_at=start.started_at,
                 notes=start.notes,
                 created_at=now,
                 updated_at=now,
             )
         )
+        if start.baseline is not None:
+            await self._checkpoints.record_for_run(
+                run_id, "baseline", start.baseline.to_domain(), now
+            )
         await session.execute(
             insert(scan_run_scopes).values(
                 [
@@ -416,6 +514,19 @@ class IngestionService:
                 f"start declares incremental={start.incremental}. Whether a run may "
                 "reconcile depends on that flag, so it cannot be changed mid-run."
             )
+        declared_mode = (start.mode or CollectionMode.FULL).value
+        if existing["mode"] != declared_mode:
+            raise IngestionConflict(
+                f"Run {run_id} was started in {existing['mode']} mode; this start declares "
+                f"{declared_mode}. A run's mode decides how its coverage is read and which "
+                "checkpoint it may advance, so it is fixed when the run opens."
+            )
+        if existing["job"] != start.job:
+            raise IngestionConflict(
+                f"Run {run_id} belongs to job {existing['job']!r}; this start declares "
+                f"{start.job!r}. The job owns the checkpoint this run may advance, so "
+                "reattributing a run to another job would move the wrong cursor."
+            )
         rows = (
             await self._session.execute(
                 select(scan_run_scopes.c.scope_kind, scan_run_scopes.c.scope_key).where(
@@ -445,16 +556,34 @@ class IngestionService:
         session = self._session
         now = dt.datetime.now(tz=dt.UTC)
 
-        status = (
-            await session.execute(
-                select(scan_runs.c.status).where(scan_runs.c.run_id == plan.run_id)
+        # The job and the collector come along with the status because a batch may carry a
+        # checkpoint, and a checkpoint belongs to a job rather than to a run.
+        run = (
+            (
+                await session.execute(
+                    select(
+                        scan_runs.c.status,
+                        scan_runs.c.job,
+                        collector_sources.c.collector,
+                        collector_sources.c.collector_host,
+                    )
+                    .select_from(
+                        scan_runs.join(
+                            collector_sources, scan_runs.c.source_id == collector_sources.c.id
+                        )
+                    )
+                    .where(scan_runs.c.run_id == plan.run_id)
+                )
             )
-        ).scalar_one_or_none()
-        if status is None:
+            .mappings()
+            .one_or_none()
+        )
+        if run is None:
             raise RunNotFound(
                 f"No scan run {plan.run_id}. POST the start envelope to "
                 "/api/v1/scan-runs before sending batches."
             )
+        status = run["status"]
         if ScanStatus(status).is_terminal:
             raise IngestionConflict(
                 f"Run {plan.run_id} is already {status}; a completed run cannot accept more "
@@ -506,6 +635,13 @@ class IngestionService:
         # drop them.
         await self._write_references(plan, now)
         await self._write_observations(plan, now)
+        # After the observations, not before: an affirmation's whole content is a claim
+        # about the state ADG already holds, so it is verified against a database this
+        # batch has finished writing to. A resource observed and affirmed in one batch is
+        # refused by the envelope, so the order cannot change an outcome — it keeps the
+        # rule "an affirmation is checked against stored state" true without exception.
+        affirmations = await self._apply_affirmations(plan, now)
+        history += affirmations.history.as_history_outcome()
 
         await session.execute(
             update(scan_runs)
@@ -515,8 +651,24 @@ class IngestionService:
                 observation_count_applied=(
                     scan_runs.c.observation_count_applied + plan.observation_count
                 ),
+                affirmation_count_applied=(
+                    scan_runs.c.affirmation_count_applied + affirmations.applied
+                ),
+                affirmations_refused=(
+                    scan_runs.c.affirmations_refused + affirmations.refused_count
+                ),
                 updated_at=now,
             )
+        )
+
+        advance = await self._advance_checkpoint(
+            plan.checkpoint,
+            run_id=plan.run_id,
+            batch_id=plan.batch_id,
+            job=run["job"],
+            collector=CollectorKind(run["collector"]),
+            collector_host=run["collector_host"],
+            now=now,
         )
         await session.commit()
         return BatchOutcome(
@@ -531,7 +683,272 @@ class IngestionService:
             share_aces_written=len(plan.share_aces),
             ntfs_resources_written=len(plan.ntfs_resources),
             ntfs_aces_written=len(plan.ntfs_aces),
+            affirmations=affirmations,
+            checkpoint=advance,
             history=history,
+        )
+
+    async def _apply_affirmations(self, plan: BatchPlan, now: dt.datetime) -> AffirmationResult:
+        """Confirm the objects this batch re-read and found unchanged (contract 1.4).
+
+        The verification is the whole of it. An affirmation says *your copy of this object
+        is still correct*, and the server answers that question from its own copy: it reads
+        the ``acl_hash`` it stored and compares. Four ways that can fail, and each is
+        refused and named rather than being absorbed:
+
+        * ADG has never stored the object, so there is nothing for the digest to match;
+        * ADG stored it before ``acl_hash`` existed (contract 1.2) and holds no digest, so
+          the comparison cannot be made — unknown is refused, never assumed equal;
+        * the digests differ, which means the ACL changed between the reading ADG holds and
+          the one the collector just took. This is the case the mechanism exists for and it
+          is not an error: the collector re-sends the resource in full;
+        * the collector affirmed something ADG has recorded as gone. Bringing an object back
+          is a statement about its state, and an affirmation carries none.
+
+        What an accepted affirmation then does is exactly what a re-observation of the same
+        state would do — extend the object's interval, mark it observed by this run — for
+        the resource *and for the entries its digest covers*. The entries matter more than
+        they look: reconciliation reads the ``observations`` table to decide what a run did
+        not see, so a resource affirmed without its ACEs would be a resource whose whole
+        DACL the next reconciliation marked absent.
+        """
+        if not plan.affirmations:
+            return AffirmationResult()
+
+        session = self._session
+        by_key = {row.object_key: row for row in plan.affirmations}
+        stored = {
+            row.resource_key: row.acl_hash
+            for row in (
+                await session.execute(
+                    select(ntfs_resources.c.resource_key, ntfs_resources.c.acl_hash).where(
+                        ntfs_resources.c.resource_key
+                        == any_(bindparam("keys", sorted(by_key), type_=ARRAY(Text)))
+                    )
+                )
+            ).all()
+        }
+
+        refused: list[RefusedAffirmation] = []
+        accepted: dict[dt.datetime, list[str]] = {}
+        for key, row in by_key.items():
+            if key not in stored:
+                refused.append(
+                    RefusedAffirmation(
+                        source_key=row.source_key,
+                        reason="unknown_object",
+                        detail=(
+                            "ADG holds no resource at this path, so there is no stored "
+                            "state for the digest to confirm. Send the resource and its "
+                            "entries in full."
+                        ),
+                    )
+                )
+                continue
+            held = stored[key]
+            if held is None:
+                refused.append(
+                    RefusedAffirmation(
+                        source_key=row.source_key,
+                        reason="no_stored_digest",
+                        detail=(
+                            "The stored reading of this resource carries no acl_hash — it "
+                            "was collected before contract 1.2 — so the digests cannot be "
+                            "compared. Send the resource in full once; the reading that "
+                            "replaces it will carry a digest."
+                        ),
+                    )
+                )
+                continue
+            if held != row.digest:
+                refused.append(
+                    RefusedAffirmation(
+                        source_key=row.source_key,
+                        reason="digest_mismatch",
+                        detail=(
+                            f"The affirmed digest {row.digest} is not the one ADG holds "
+                            f"({held}). The DACL changed between the two readings. Send "
+                            "the resource and its entries in full."
+                        ),
+                    )
+                )
+                continue
+            accepted.setdefault(row.observed_at, []).append(key)
+
+        applied = 0
+        entries = 0
+        history = AffirmationOutcome()
+        for observed_at, keys in sorted(accepted.items()):
+            outcome = await self._history.affirm(
+                ObservationKind.NTFS_RESOURCE,
+                keys,
+                observed_at=observed_at,
+                run_id=plan.run_id,
+                now=now,
+            )
+            history += outcome
+            # A key the timeline would not confirm is not applied anywhere else either:
+            # current state, provenance and history have to agree about what this run saw.
+            blocked = set(outcome.refused_keys)
+            for key in sorted(blocked):
+                row = by_key[key]
+                is_absent = key in outcome.absent
+                refused.append(
+                    RefusedAffirmation(
+                        source_key=row.source_key,
+                        reason="absent" if is_absent else "untracked",
+                        detail=(
+                            "ADG has recorded this object as no longer present; bringing "
+                            "it back is a statement about its state, which an affirmation "
+                            "does not carry. Send it in full."
+                            if is_absent
+                            else (
+                                "ADG holds a current-state row for this object but no open "
+                                "version of it, so there is nothing to confirm. Send it in "
+                                "full."
+                            )
+                        ),
+                    )
+                )
+            confirmed = sorted(set(keys) - blocked)
+            if not confirmed:
+                continue
+            history += await self._history.affirm_contained(
+                ObservationKind.NTFS_ACE,
+                confirmed,
+                observed_at=observed_at,
+                run_id=plan.run_id,
+                now=now,
+            )
+            entries += await self._confirm_current_state(plan, confirmed, observed_at, now)
+            applied += len(confirmed)
+
+        return AffirmationResult(
+            applied=applied,
+            refused=tuple(sorted(refused, key=lambda item: item.source_key)),
+            entries_confirmed=entries,
+            history=history,
+        )
+
+    async def _confirm_current_state(
+        self,
+        plan: BatchPlan,
+        resource_keys: Sequence[str],
+        observed_at: dt.datetime,
+        now: dt.datetime,
+    ) -> int:
+        """Record an affirmed resource and its entries as observed by this run.
+
+        Every statement here is set-based and driven from keys already in the database,
+        which is the point of the whole feature: confirming a thousand unchanged directories
+        does not cost more because they have forty entries each, and no ACE key ever has to
+        cross into Python to be re-sent.
+
+        ``last_observed_at <= :observed_at`` on each update is the same newest-wins guard
+        every upsert in this module uses. A batch that arrives late must not drag an
+        object's provenance backwards to a reading that has already been superseded.
+        """
+        session = self._session
+        keys = any_(bindparam("resource_keys", list(resource_keys), type_=ARRAY(Text)))
+
+        await session.execute(
+            update(ntfs_resources)
+            .where(
+                ntfs_resources.c.resource_key == keys,
+                ntfs_resources.c.last_observed_at <= observed_at,
+            )
+            .values(
+                last_observed_at=observed_at,
+                last_observed_run_id=plan.run_id,
+                updated_at=now,
+            )
+        )
+        entries = await session.execute(
+            update(ntfs_aces)
+            .where(
+                ntfs_aces.c.resource_key == keys,
+                ntfs_aces.c.last_observed_at <= observed_at,
+            )
+            .values(
+                last_observed_at=observed_at,
+                last_observed_run_id=plan.run_id,
+                updated_at=now,
+            )
+        )
+
+        # INSERT ... SELECT, so the provenance rows for an affirmed DACL are written without
+        # its entries being listed anywhere. DO NOTHING for the same reason
+        # `_write_observations` uses it: within one run a source_key names one object seen
+        # once, and the first arrival keeps the attribution.
+        for table, kind, subject in (
+            (ntfs_resources, ObservationKind.NTFS_RESOURCE, ntfs_resources.c.resource_key),
+            (ntfs_aces, ObservationKind.NTFS_ACE, ntfs_aces.c.ace_key),
+        ):
+            source = select(
+                literal(plan.run_id),
+                table.c.source_key,
+                literal(kind.value),
+                literal(plan.batch_id),
+                literal(observed_at),
+                subject,
+                literal(now),
+            ).where(table.c.resource_key == keys)
+            await session.execute(
+                pg_insert(observations)
+                .from_select(
+                    [
+                        "run_id",
+                        "source_key",
+                        "kind",
+                        "batch_id",
+                        "observed_at",
+                        "subject_key",
+                        "recorded_at",
+                    ],
+                    source,
+                )
+                .on_conflict_do_nothing(
+                    index_elements=[observations.c.run_id, observations.c.source_key]
+                )
+            )
+        # `rowcount` lives on CursorResult, which is what a DML statement returns;
+        # `Session.execute` is typed as returning the base Result.
+        return int(cast("CursorResult[Any]", entries).rowcount)
+
+    async def _advance_checkpoint(
+        self,
+        checkpoint: Checkpoint | None,
+        *,
+        run_id: UUID,
+        batch_id: UUID | None,
+        job: str | None,
+        collector: CollectorKind,
+        collector_host: str | None,
+        now: dt.datetime,
+    ) -> CheckpointAdvance | None:
+        """Move the job's cursor to a checkpoint whose data has just been written.
+
+        Called from inside the batch transaction and again from inside the completion
+        transaction, never on its own. That is what makes the cursor trail the data rather
+        than lead it: if the transaction rolls back, so does the advance, and the next delta
+        re-reads a range instead of skipping one.
+        """
+        if checkpoint is None:
+            return None
+        if not job:
+            raise IngestionConflict(
+                f"Run {run_id} carries a checkpoint but belongs to no job. A checkpoint is "
+                "the resume point of a scheduled job, so there is nothing for this one to "
+                "advance. Declare `job` in the start envelope."
+            )
+        return await self._checkpoints.advance(
+            collector=collector,
+            job=job,
+            checkpoint=checkpoint,
+            run_id=run_id,
+            batch_id=batch_id,
+            collector_host=collector_host,
+            now=now,
         )
 
     async def _write_principals(self, plan: BatchPlan, now: dt.datetime) -> HistoryOutcome:
@@ -957,6 +1374,7 @@ class IngestionService:
                 batch_count_reported=completion.batch_count,
                 observation_count_reported=completion.observation_count,
                 error_count=completion.error_count,
+                affirmation_count_reported=completion.affirmation_count,
                 notes=completion.notes or run["notes"],
                 downgrade_reason=downgrade_reason,
                 updated_at=now,
@@ -982,7 +1400,28 @@ class IngestionService:
                 )
             )
 
+        # The completion model has already refused a checkpoint on a run the *collector*
+        # called anything but succeeded. This is the other half: a run the **server**
+        # downgraded may not record one either. A short-delivered run is missing observations
+        # it believes it sent, and a cursor placed past them would make the next delta skip
+        # exactly the objects that went missing — the one gap nothing downstream can notice.
+        advance: CheckpointAdvance | None = None
+        if completion.checkpoint is not None:
+            result = completion.checkpoint.to_domain()
+            await self._checkpoints.record_for_run(run_id, "result", result, now)
+            if downgrade_reason is None:
+                advance = await self._advance_checkpoint(
+                    result,
+                    run_id=run_id,
+                    batch_id=None,
+                    job=run["job"],
+                    collector=await self._collector_of(int(run["source_id"])),
+                    collector_host=None,
+                    now=now,
+                )
+
         closures: tuple[ClosureOutcome, ...] = ()
+        drift: tuple[ReconciliationDrift, ...] = ()
         if requested:
             # A row-value IN, not two independent IN lists: separate lists would match the
             # cross product and reconcile a (kind, key) pair the collector never sent.
@@ -1003,6 +1442,7 @@ class IngestionService:
                 completed_at=completion.completed_at,
                 now=now,
             )
+            drift = await self._record_drift(run_id, closures, completion.completed_at)
 
         await session.commit()
         return CompletionOutcome(
@@ -1012,6 +1452,105 @@ class IngestionService:
             reconciled_scopes=len(requested),
             downgrade_reason=downgrade_reason,
             closures=closures,
+            drift=drift,
+            checkpoint=advance,
+        )
+
+    async def _collector_of(self, source_id: int) -> CollectorKind:
+        collector = (
+            await self._session.execute(
+                select(collector_sources.c.collector).where(collector_sources.c.id == source_id)
+            )
+        ).scalar_one()
+        return CollectorKind(collector)
+
+    async def _record_drift(
+        self,
+        run_id: UUID,
+        closures: Sequence[ClosureOutcome],
+        completed_at: dt.datetime,
+    ) -> tuple[ReconciliationDrift, ...]:
+        """Count what this reconciliation corrected that the deltas could not, per scope.
+
+        Only presence corrections are counted, and the reason is in
+        :class:`app.domain.ReconciliationDrift`: a delta run reads what its source says has
+        changed, and nothing announces a deletion to a query that filters on change
+        metadata. An object that is gone simply fails to appear — which is also what an
+        unchanged object does — so every tombstone here is a fact no cadence of delta runs
+        would have produced.
+
+        ``delta_runs_since`` is counted over the runs that *declared this scope*, not over
+        the job, because the scope is what a reconciliation repairs. A tree scanned by two
+        jobs is behind by whatever either of them missed.
+        """
+        results: list[ReconciliationDrift] = []
+        for closure in closures:
+            scope_kind, scope_key = closure.scope_kind.value, closure.scope_key
+            absent = closure.total_closed
+            revived = sum(closure.reaffirmed.values())
+            deltas = await self._delta_runs_since(run_id, scope_kind, scope_key, completed_at)
+            await self._session.execute(
+                update(scan_run_scopes)
+                .where(
+                    scan_run_scopes.c.run_id == run_id,
+                    scan_run_scopes.c.scope_kind == scope_kind,
+                    scan_run_scopes.c.scope_key == scope_key,
+                )
+                .values(closed_absent=absent, revived=revived, delta_runs_since=deltas)
+            )
+            results.append(
+                ReconciliationDrift(
+                    scope_kind=scope_kind,
+                    scope_key=scope_key,
+                    marked_absent=absent,
+                    revived=revived,
+                    delta_runs_since=deltas,
+                )
+            )
+        return tuple(results)
+
+    async def _delta_runs_since(
+        self, run_id: UUID, scope_kind: str, scope_key: str, completed_at: dt.datetime
+    ) -> int:
+        """Delta runs over this scope since the last time anything reconciled it."""
+        same_scope = (
+            scan_run_scopes.c.scope_kind == scope_kind,
+            scan_run_scopes.c.scope_key == scope_key,
+        )
+        previous = (
+            await self._session.execute(
+                select(func.max(scan_runs.c.completed_at))
+                .select_from(
+                    scan_run_scopes.join(scan_runs, scan_run_scopes.c.run_id == scan_runs.c.run_id)
+                )
+                .where(
+                    *same_scope,
+                    scan_run_scopes.c.reconciled.is_(True),
+                    scan_run_scopes.c.run_id != run_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+        conditions = [
+            *same_scope,
+            scan_runs.c.mode == CollectionMode.DELTA.value,
+            scan_runs.c.completed_at.is_not(None),
+            scan_runs.c.completed_at <= completed_at,
+        ]
+        if previous is not None:
+            conditions.append(scan_runs.c.completed_at > previous)
+        return int(
+            (
+                await self._session.execute(
+                    select(func.count())
+                    .select_from(
+                        scan_run_scopes.join(
+                            scan_runs, scan_run_scopes.c.run_id == scan_runs.c.run_id
+                        )
+                    )
+                    .where(*conditions)
+                )
+            ).scalar_one()
         )
 
     async def _close_reconciled(
@@ -1037,17 +1576,13 @@ class IngestionService:
         an SMB run reconciling a server has no business closing the file-system rows it is
         structurally incapable of having looked at.
         """
-        collector = (
-            await self._session.execute(
-                select(collector_sources.c.collector).where(collector_sources.c.id == source_id)
-            )
-        ).scalar_one()
+        collector = await self._collector_of(source_id)
         outcomes = []
         for scope_kind, scope_key in scopes:
             outcomes.append(
                 await self._history.close_absent(
                     run_id=run_id,
-                    collector=CollectorKind(collector),
+                    collector=collector,
                     scope_kind=ScopeKind(scope_kind),
                     scope_key=scope_key,
                     completed_at=completed_at,
@@ -1114,10 +1649,28 @@ class IngestionService:
             .all()
         )
 
+        checkpoints = {
+            item["role"]: Checkpoint(
+                kind=CheckpointKind(item["checkpoint_kind"]),
+                token=item["token"],
+                issuer=item["issuer"],
+                issued_at=item["issued_at"],
+            )
+            for item in (
+                await self._session.execute(
+                    select(scan_run_checkpoints).where(scan_run_checkpoints.c.run_id == run_id)
+                )
+            )
+            .mappings()
+            .all()
+        }
+
         return RunSnapshot(
             run_id=run_id,
             status=ScanStatus(row["status"]),
             incremental=bool(row["incremental"]),
+            mode=CollectionMode(row["mode"]),
+            job=row["job"],
             started_at=row["started_at"],
             completed_at=row["completed_at"],
             collector=row["collector"],
@@ -1129,6 +1682,9 @@ class IngestionService:
             batch_count_received=int(row["batch_count_received"]),
             observation_count_reported=row["observation_count_reported"],
             observation_count_applied=int(row["observation_count_applied"]),
+            affirmation_count_reported=row["affirmation_count_reported"],
+            affirmation_count_applied=int(row["affirmation_count_applied"]),
+            affirmations_refused=int(row["affirmations_refused"]),
             error_count=int(row["error_count"]),
             notes=row["notes"],
             downgrade_reason=row["downgrade_reason"],
@@ -1146,6 +1702,21 @@ class IngestionService:
                     "occurred_at": error["occurred_at"],
                 }
                 for error in error_rows
+            ),
+            baseline=checkpoints.get("baseline"),
+            result_checkpoint=checkpoints.get("result"),
+            drift=tuple(
+                ReconciliationDrift(
+                    scope_kind=item.scope_kind,
+                    scope_key=item.scope_key,
+                    marked_absent=int(item.closed_absent),
+                    revived=int(item.revived),
+                    delta_runs_since=int(item.delta_runs_since),
+                )
+                for item in sorted(
+                    (item for item in scope_rows if item.reconciled),
+                    key=lambda item: (item.scope_kind, item.scope_key),
+                )
             ),
         )
 
@@ -1236,6 +1807,8 @@ def _run_summary(row: Any) -> RunSummary:
         run_id=row["run_id"],
         status=ScanStatus(row["status"]),
         incremental=bool(row["incremental"]),
+        mode=CollectionMode(row["mode"]),
+        job=row["job"],
         started_at=row["started_at"],
         completed_at=row["completed_at"],
         collector=row["collector"],
@@ -1245,6 +1818,7 @@ def _run_summary(row: Any) -> RunSummary:
         target=row["target"],
         batch_count_received=int(row["batch_count_received"]),
         observation_count_applied=int(row["observation_count_applied"]),
+        affirmation_count_applied=int(row["affirmation_count_applied"]),
         error_count=int(row["error_count"]),
         downgrade_reason=row["downgrade_reason"],
     )

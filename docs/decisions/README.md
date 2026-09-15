@@ -31,3 +31,5 @@ Rules:
 | [0017](0017-derived-answers-are-validated-against-collected-state.md) | A derived answer is cached against collected state, never against a clock | Accepted |
 | [0018](0018-history-is-a-versioned-observation-log.md) | History is a versioned observation log; current state stays a projection | Accepted |
 | [0019](0019-a-change-is-a-window-not-an-instant.md) | A change is recorded as a window, not an instant | Accepted |
+| [0025](0025-incremental-collection-is-bounded-by-its-source.md) | Incremental collection is bounded by what its source can prove, and absence is never one of those things | Accepted |
+| [0026](0026-an-affirmation-is-verified-and-a-checkpoint-trails-its-data.md) | An affirmation is verified against stored state, and a checkpoint never leads the data it describes | Accepted |

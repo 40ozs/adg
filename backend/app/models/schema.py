@@ -63,9 +63,12 @@ from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from app.contracts.v1.common import ObservationKind, ScopeKind
 from app.domain import (
     ACL_HASH_LENGTH,
+    MAX_CHECKPOINT_TOKEN_LENGTH,
     AceSource,
     AceType,
     AclBoundaryReason,
+    CheckpointKind,
+    CollectionMode,
     GroupScope,
     GroupType,
     MembershipEdgeKind,
@@ -241,15 +244,38 @@ scan_runs = Table(
     Column("observation_count_applied", Integer, nullable=False, server_default="0"),
     Column("error_count", Integer, nullable=False, server_default="0"),
     Column("notes", Text, nullable=True),
+    # Phase 7B. Why this run is or is not incremental. `incremental` stays the flag the
+    # reconciliation guard reads; `mode` is the finer statement layered over it, and the
+    # check constraint below keeps the pair from ever disagreeing.
+    Column("mode", Text, nullable=False, server_default=CollectionMode.FULL.value),
+    # The scheduled job this run belongs to, as named in the orchestrator configuration.
+    # Free-form and never interpreted: it is what the checkpoint store keys on and what the
+    # operator groups by.
+    Column("job", Text, nullable=True),
+    Column("affirmation_count_reported", Integer, nullable=True),
+    Column("affirmation_count_applied", Integer, nullable=False, server_default="0"),
+    # Affirmations the server refused because the digest disagreed with what it holds. A
+    # non-zero count is not an error — the collector re-sends those objects in full — but it
+    # is the number that says how much of a "nothing changed" scan was actually a change.
+    Column("affirmations_refused", Integer, nullable=False, server_default="0"),
     # Set when a completion claimed a status the server could not corroborate — fewer
     # batches received than sent, for instance. Downgrading is recorded, never silent.
     Column("downgrade_reason", Text, nullable=True),
     _timestamp("created_at"),
     _timestamp("updated_at"),
     _enum_check("status", ScanStatus),
+    _enum_check("mode", CollectionMode),
     CheckConstraint(
         "completed_at IS NULL OR completed_at >= started_at",
         name="ck_scan_runs_completed_after_started",
+    ),
+    # The one pairing that would be a lie: a run recorded as a delta that is nonetheless
+    # allowed to mark objects absent. Enforced here as well as in the contract model,
+    # because this is the flag `_close_reconciled` reads and the database is the last place
+    # it can be wrong.
+    CheckConstraint(
+        "(mode = 'delta') = incremental",
+        name="ck_scan_runs_mode_matches_incremental",
     ),
     CheckConstraint(
         "status <> 'succeeded' OR error_count = 0",
@@ -277,6 +303,17 @@ scan_run_scopes = Table(
     # Absence may be inferred only inside a reconciled scope. Since Phase 7A this flag is
     # what a completion's closure pass acts on (see app/history/closure.py).
     Column("reconciled", Boolean, nullable=False, server_default="false"),
+    # Phase 7B: reconciliation drift, recorded where the reconciliation itself is recorded.
+    # Only the two presence corrections count — an incremental run cannot observe an
+    # absence, so these are exactly the facts no amount of extra delta runs would have
+    # produced. Ordinary state changes are deliberately not counted here; see
+    # app/domain/incremental.py.
+    Column("closed_absent", Integer, nullable=False, server_default="0"),
+    Column("revived", Integer, nullable=False, server_default="0"),
+    # How many delta runs of the same job ran since this scope was last reconciled. It is
+    # the denominator the drift count is read against: 3 absences after 50 deltas and 3
+    # after one are different stories about the cadence.
+    Column("delta_runs_since", Integer, nullable=False, server_default="0"),
     UniqueConstraint("run_id", "scope_kind", "scope_key", name="uq_scan_run_scopes_identity"),
     _enum_check("scope_kind", ScopeKind),
     comment="What a run claimed to enumerate, and what it ultimately reconciled.",
@@ -965,14 +1002,82 @@ object_versions = Table(
         postgresql_where=text("valid_to IS NOT NULL"),
     ),
     Index("ix_object_versions_last_seen_run", "last_seen_run_id"),
-    comment=(
-        "Validity intervals for every collected object. One row per state an object was "
-        "observed to hold; is_present false is a measured absence."
-    ),
-)
     # The change feed's driving predicate: every change is a version opening, so "what
     # changed between Tuesday and Friday" is a range scan on valid_from. The row id is the
     # second column because one scan opens thousands of versions at a single instant, and a
     # cursor carrying only the timestamp would either skip every other version at that
     # instant or return them all again on the next page.
     Index("ix_object_versions_opened_at", "valid_from", "id"),
+    comment=(
+        "Validity intervals for every collected object. One row per state an object was "
+        "observed to hold; is_present false is a measured absence."
+    ),
+)
+
+
+# --- Incremental collection (Phase 7B) ------------------------------------------------
+
+scan_run_checkpoints = Table(
+    "scan_run_checkpoints",
+    metadata,
+    # Two roles, one row each: where the run resumed from and where it got to. A separate
+    # table rather than six columns on scan_runs, because a checkpoint is four fields that
+    # only mean anything together, and because most runs have neither.
+    Column(
+        "run_id",
+        PgUUID(as_uuid=True),
+        ForeignKey("scan_runs.run_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("role", Text, primary_key=True),
+    Column("checkpoint_kind", Text, nullable=False),
+    Column("token", String(MAX_CHECKPOINT_TOKEN_LENGTH), nullable=False),
+    Column("issuer", Text, nullable=False),
+    _timestamp("issued_at"),
+    _timestamp("recorded_at"),
+    _enum_check("checkpoint_kind", CheckpointKind),
+    CheckConstraint(
+        "role IN ('baseline', 'result')",
+        name="ck_scan_run_checkpoints_role",
+    ),
+    comment="Where a delta run resumed from, and the cursor it left behind.",
+)
+
+
+collector_checkpoints = Table(
+    "collector_checkpoints",
+    metadata,
+    # Keyed on the job, not on the collector host. A job moved to a new collector host that
+    # still binds the same domain controller has a watermark that is still valid -- USNs
+    # belong to the DC, not to whoever read them -- and keying on the host would throw away
+    # a usable cursor every time an operator rebuilt a server. What actually protects the
+    # cursor is `issuer`, which the advance rule compares.
+    Column("collector", Text, primary_key=True),
+    Column("job", Text, primary_key=True),
+    Column("checkpoint_kind", Text, nullable=False),
+    Column("token", String(MAX_CHECKPOINT_TOKEN_LENGTH), nullable=False),
+    Column("issuer", Text, nullable=False),
+    _timestamp("issued_at"),
+    # Which run and batch moved it here. A checkpoint advances per *applied batch*, so the
+    # batch is the finer attribution and the one that matters when a run dies half way.
+    Column("run_id", PgUUID(as_uuid=True), nullable=True),
+    Column("batch_id", PgUUID(as_uuid=True), nullable=True),
+    Column("collector_host", Text, nullable=True),
+    _timestamp("advanced_at"),
+    # Why the most recent attempt to move this cursor was refused, and when. Cleared on the
+    # next successful advance. Stored rather than only logged because it is the operator's
+    # only warning that a job has stopped making progress: a refused checkpoint leaves the
+    # job resuming from the same place forever, and every run after it looks successful.
+    Column("last_rejection_code", Text, nullable=True),
+    Column("last_rejection_message", Text, nullable=True),
+    _timestamp("last_rejected_at", nullable=True),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    _enum_check("collector", CollectorKind),
+    _enum_check("checkpoint_kind", CheckpointKind),
+    Index("ix_collector_checkpoints_advanced_at", "advanced_at"),
+    comment=(
+        "The resume point of each scheduled collection job. Advanced only by an applied "
+        "batch or a succeeded run, and never backwards within one issuer."
+    ),
+)

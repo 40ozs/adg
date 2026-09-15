@@ -54,10 +54,12 @@ from app.contracts.v1 import (
     SmbAceObservation,
     SmbShareObservation,
     SourceDescriptor,
+    keys,
 )
 from app.contracts.v1.common import ObservationKind
 from app.domain import (
     AclAceFacts,
+    Checkpoint,
     DirectoryResource,
     DomainValidationError,
     GroupScope,
@@ -360,6 +362,27 @@ class ObservationRow:
 
 
 @dataclass(frozen=True, slots=True)
+class AffirmationRow:
+    """One object the collector re-read and found unchanged (contract 1.4).
+
+    ``object_key`` is the storage key, derived here the same way every other key in this
+    module is: by re-running the contract's own derivation and refusing a ``source_key``
+    that does not come back out of it. An affirmation names an object by key alone -- there
+    is no payload to re-derive the key *from* -- so this check is the only thing standing
+    between a malformed key and a lookup that silently matches nothing and reports the
+    object as unaffirmable.
+    """
+
+    kind: ObservationKind
+    source_key: str
+    object_key: str
+    digest: str
+    observed_at: dt.datetime
+    run_id: UUID
+    batch_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
 class BatchPlan:
     """Everything one batch will write, already deduplicated and ordered."""
 
@@ -378,14 +401,20 @@ class BatchPlan:
     ntfs_aces: tuple[NtfsAceRow, ...]
     references: tuple[PrincipalReferenceRow, ...]
     observations: tuple[ObservationRow, ...]
+    affirmations: tuple[AffirmationRow, ...] = ()
+    checkpoint: Checkpoint | None = None
 
     @property
     def observation_count(self) -> int:
         return len(self.observations)
 
     @property
+    def affirmation_count(self) -> int:
+        return len(self.affirmations)
+
+    @property
     def is_empty(self) -> bool:
-        return not self.observations
+        return not self.observations and not self.affirmations
 
 
 def source_fingerprint(source: SourceDescriptor) -> str:
@@ -580,7 +609,64 @@ def plan_batch(batch: ObservationBatch) -> BatchPlan:
             )
         ),
         observations=tuple(observations),
+        affirmations=tuple(_affirmation_rows(batch, run_id, batch_id)),
+        checkpoint=batch.checkpoint.to_domain() if batch.checkpoint else None,
     )
+
+
+def _affirmation_rows(
+    batch: ObservationBatch, run_id: UUID, batch_id: UUID
+) -> list[AffirmationRow]:
+    rows: list[AffirmationRow] = []
+    for affirmation in batch.affirmations:
+        rows.append(
+            AffirmationRow(
+                kind=ObservationKind(affirmation.kind),
+                source_key=affirmation.source_key,
+                object_key=_affirmed_object_key(affirmation.source_key),
+                digest=affirmation.digest,
+                observed_at=affirmation.observed_at,
+                run_id=run_id,
+                batch_id=batch_id,
+            )
+        )
+    return rows
+
+
+def _affirmed_object_key(source_key: str) -> str:
+    """The ``ntfs_resources.resource_key`` an affirmed ``source_key`` names.
+
+    The derivation is inverted and then *re-applied*: strip the prefix, parse what is left
+    as a UNC path, and require the key that comes back to be the one that was sent. A bare
+    prefix-strip would accept ``resource|C:\finance`` or a path with the wrong case and
+    turn it into a lookup that finds nothing, which the caller can only report as "this
+    object cannot be affirmed" -- indistinguishable from an object ADG has genuinely never
+    seen, and the collector would keep re-sending it forever without ever being told why.
+    """
+    prefix = "resource|"
+    if not source_key.startswith(prefix):
+        raise DomainValidationError(
+            f"An ntfs_resource affirmation's source_key must start with {prefix!r}; "
+            f"received {source_key!r}.",
+            field="source_key",
+        )
+    candidate = source_key[len(prefix) :]
+    try:
+        derived = keys.ntfs_resource_key(candidate)
+    except DomainValidationError as exc:
+        raise DomainValidationError(
+            f"An ntfs_resource affirmation's source_key must name a canonical UNC path; "
+            f"{source_key!r} does not: {exc}",
+            field="source_key",
+        ) from exc
+    if derived != source_key:
+        raise DomainValidationError(
+            f"source_key {source_key!r} is not the derivation for the path it names, which "
+            f"is {derived!r}. An affirmation carries no payload to re-derive the key from, "
+            "so a key that does not round-trip would become a lookup that matches nothing.",
+            field="source_key",
+        )
+    return candidate
 
 
 def _principal_row(observation: PrincipalObservation, run_id: UUID) -> PrincipalRow:

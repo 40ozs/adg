@@ -183,6 +183,7 @@ def resource(
     ace_count: int,
     owner_sid: str | None = None,
     dacl_protected: bool = True,
+    digest: str | None = None,
 ) -> dict[str, Any]:
     return _dump(
         NtfsResourceObservation(
@@ -200,6 +201,7 @@ def resource(
             is_acl_boundary=True,
             boundary_reason=AclBoundaryReason.SCAN_ROOT,
             depth_from_share_root=0,
+            acl_hash=digest,
         )
     )
 
@@ -250,17 +252,34 @@ def scan(
     target: str | None = None,
     errors: Sequence[dict[str, Any]] = (),
     run_id: str | None = None,
+    affirmations: Sequence[dict[str, Any]] = (),
+    mode: str | None = None,
+    job: str | None = None,
+    baseline: dict[str, Any] | None = None,
+    checkpoint: dict[str, Any] | None = None,
+    batch_checkpoint: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One run as start + one batch + completion, ready for ``tests.support.ingest.replay``.
 
     ``reconcile`` is separate from ``status`` on purpose: several tests need a *successful*
     run that reconciles nothing, which is what an ordinary incremental collection is, and
     conflating the two would make those cases unreachable.
+
+    The contract 1.4 arguments — affirmations, mode, job, the two checkpoints — bump the
+    payload's declared version only when one of them is used, so every existing caller keeps
+    producing the 1.3 payload it produced before. That is the additive rule the contract
+    itself states, applied to the fixtures that exercise it.
     """
     identifier = run_id or str(uuid.uuid4())
     finished = completed_at or started_at + dt.timedelta(minutes=5)
     rows = [{**item, "run_id": identifier} for item in observations]
+    affirmed = [dict(item) for item in affirmations]
     batch_id = str(uuid.uuid4())
+    version = (
+        "1.4"
+        if any((affirmed, mode, job, baseline, checkpoint, batch_checkpoint))
+        else SCHEMA_VERSION
+    )
 
     source: dict[str, Any] = {
         "collector": collector,
@@ -272,42 +291,55 @@ def scan(
         source["target"] = target
 
     batches: list[dict[str, Any]] = []
-    if rows:
-        batches.append(
-            {
-                "schema_version": SCHEMA_VERSION,
-                "run_id": identifier,
-                "batch_id": batch_id,
-                "sequence": 1,
-                "is_final": True,
-                "observations": rows,
-            }
-        )
+    if rows or affirmed:
+        batch: dict[str, Any] = {
+            "schema_version": version,
+            "run_id": identifier,
+            "batch_id": batch_id,
+            "sequence": 1,
+            "is_final": True,
+            "observations": rows,
+        }
+        if affirmed:
+            batch["affirmations"] = affirmed
+        if batch_checkpoint is not None:
+            batch["checkpoint"] = batch_checkpoint
+        batches.append(batch)
 
-    return {
-        "start": {
-            "schema_version": SCHEMA_VERSION,
-            "run_id": identifier,
-            "source": source,
-            "started_at": _iso(started_at),
-            "scopes": [{"kind": kind, "key": key} for kind, key in scopes],
-            "incremental": incremental,
-        },
-        "batches": batches,
-        "completion": {
-            "schema_version": SCHEMA_VERSION,
-            "run_id": identifier,
-            "status": status,
-            "completed_at": _iso(finished),
-            "batch_count": len(batches),
-            "observation_count": len(rows),
-            "error_count": len(errors),
-            "errors": list(errors),
-            "reconciled_scopes": (
-                [{"kind": kind, "key": key} for kind, key in scopes] if reconcile else []
-            ),
-        },
+    start: dict[str, Any] = {
+        "schema_version": version,
+        "run_id": identifier,
+        "source": source,
+        "started_at": _iso(started_at),
+        "scopes": [{"kind": kind, "key": key} for kind, key in scopes],
+        "incremental": incremental,
     }
+    if mode is not None:
+        start["mode"] = mode
+    if job is not None:
+        start["job"] = job
+    if baseline is not None:
+        start["baseline"] = baseline
+
+    completion: dict[str, Any] = {
+        "schema_version": version,
+        "run_id": identifier,
+        "status": status,
+        "completed_at": _iso(finished),
+        "batch_count": len(batches),
+        "observation_count": len(rows),
+        "error_count": len(errors),
+        "errors": list(errors),
+        "reconciled_scopes": (
+            [{"kind": kind, "key": key} for kind, key in scopes] if reconcile else []
+        ),
+    }
+    if affirmed:
+        completion["affirmation_count"] = len(affirmed)
+    if checkpoint is not None:
+        completion["checkpoint"] = checkpoint
+
+    return {"start": start, "batches": batches, "completion": completion}
 
 
 def smb_scan(
@@ -370,6 +402,7 @@ def ntfs_scan(
     share_name: str = "Finance",
     status: str = "succeeded",
     reconcile: bool = True,
+    **extra: Any,
 ) -> dict[str, Any]:
     tree = f"\\\\{server_name.casefold()}\\{share_name.casefold()}"
     return scan(
@@ -383,4 +416,5 @@ def ntfs_scan(
         completed_at=completed_at,
         status=status,
         reconcile=reconcile,
+        **extra,
     )

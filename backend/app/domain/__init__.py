@@ -81,6 +81,14 @@ from app.domain.identity import (
     WellKnownPrincipal,
     referenced_principal_key,
 )
+from app.domain.incremental import (
+    MAX_CHECKPOINT_TOKEN_LENGTH,
+    Checkpoint,
+    CheckpointKind,
+    CheckpointRejection,
+    CollectionMode,
+    ReconciliationDrift,
+)
 from app.domain.inheritance import (
     SUBSTITUTED_TRUSTEES,
     AclBoundaryReason,
@@ -133,6 +141,7 @@ __all__ = [
     "EMPTY_BASIS",
     "FULL_CONTROL_MASK",
     "GENERIC_RIGHT_BITS",
+    "MAX_CHECKPOINT_TOKEN_LENGTH",
     "MAX_DEPTH_CEILING",
     "MAX_EDGES_CEILING",
     "MAX_NODES_CEILING",
@@ -151,7 +160,11 @@ __all__ = [
     "AclBoundaryReason",
     "AclLayer",
     "AdjacencyProvider",
+    "Checkpoint",
+    "CheckpointKind",
+    "CheckpointRejection",
     "CollectionBasis",
+    "CollectionMode",
     "CollectorKind",
     "ComputerIdentity",
     "Direction",
@@ -182,6 +195,7 @@ __all__ = [
     "PrincipalKind",
     "QueryShape",
     "ReachedNode",
+    "ReconciliationDrift",
     "ResourceKind",
     "ScanRun",
     "ScanStatus",

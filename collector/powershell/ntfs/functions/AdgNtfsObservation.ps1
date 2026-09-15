@@ -22,6 +22,16 @@
 # Contract 1.3: ntfs_resource gained resource_kind, boundary_reason and parent_acl_hash.
 $script:AdgSchemaVersion = '1.3'
 
+# The minor that introduced affirmations. A batch declares it only when it carries one,
+# because that is what "additive" means in both directions: a later minor's rule may not be
+# applied to an earlier payload, and an earlier payload may not use a later minor's field.
+$script:AdgIncrementalSchemaVersion = '1.4'
+
+# Affirmations are a key and a digest rather than an object, so they are capped higher than
+# observations. The ceiling still exists: a batch has to stay something a server can reject
+# whole.
+$script:AdgMaxBatchAffirmations = 5000
+
 # First line of the normalized ACL document. Mirrors ACL_NORMAL_FORM_VERSION. A change of
 # format changes this token, so two digests from different formats can never be compared as
 # though they agreed.

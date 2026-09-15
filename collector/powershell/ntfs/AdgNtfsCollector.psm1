@@ -15,6 +15,7 @@
         AdgNtfsConfig.ps1       where a walk starts, how far it goes, what it refuses
         AdgNtfsSource.ps1       the only code that touches a file system (the test seam)
         AdgNtfsCheckpoint.ps1   enough state to resume a walk, and nothing more
+        AdgNtfsDigestIndex.ps1  what was last reported per path, so an unchanged DACL is affirmed
         AdgNtfsWalk.ps1         the traversal, its loop guards, and its metrics
         AdgNtfsScan.ps1         streaming batches, scopes, and reconciliation
         AdgNtfsTransport.ps1    submission, with the contract's retry rules
@@ -40,6 +41,7 @@ $files = @(
     'AdgNtfsConfig.ps1'
     'AdgNtfsSource.ps1'
     'AdgNtfsCheckpoint.ps1'
+    'AdgNtfsDigestIndex.ps1'
     'AdgNtfsWalk.ps1'
     'AdgNtfsScan.ps1'
     'AdgNtfsTransport.ps1'
@@ -119,7 +121,14 @@ Export-ModuleMember -Function @(
     'Remove-AdgNtfsCheckpoint'
 
     # Orchestration and transport
+    'New-AdgNtfsDigestIndex'
+    'Import-AdgNtfsDigestIndex'
+    'Get-AdgNtfsAffirmableDigest'
+    'Set-AdgNtfsDigest'
+    'Export-AdgNtfsDigestIndex'
     'New-AdgNtfsBatchWriter'
+    'Add-AdgNtfsResourceGroup'
+    'Add-AdgNtfsAffirmation'
     'Add-AdgNtfsObservationGroup'
     'Send-AdgNtfsPendingBatch'
     'Complete-AdgNtfsBatchWriter'

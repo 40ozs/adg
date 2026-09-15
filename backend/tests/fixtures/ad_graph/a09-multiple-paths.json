@@ -46,7 +46,7 @@
     "note": "A collector that reads only the member attribute loses the Domain Users route entirely. Path enumeration returns shortest first, lexicographic within a length."
   },
   "start": {
-    "schema_version": "1.3",
+    "schema_version": "1.4",
     "run_id": "00000000-0000-4000-8000-000000000a09",
     "source": {
       "collector": "active_directory",
@@ -62,18 +62,19 @@
         "key": "s-1-5-21-2000000001-2000000002-2000000003"
       }
     ],
-    "incremental": false
+    "incremental": false,
+    "mode": "full"
   },
   "batches": [
     {
-      "schema_version": "1.3",
+      "schema_version": "1.4",
       "run_id": "00000000-0000-4000-8000-000000000a09",
       "batch_id": "00000000-0000-4000-8000-100000000001",
       "sequence": 1,
       "is_final": true,
       "observations": [
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:01Z",
@@ -88,7 +89,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:02Z",
@@ -103,7 +104,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:03Z",
@@ -118,7 +119,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:04Z",
@@ -133,7 +134,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "principal",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:05Z",
@@ -148,7 +149,7 @@
           "is_deleted": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:06Z",
@@ -160,7 +161,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:07Z",
@@ -172,7 +173,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:08Z",
@@ -184,7 +185,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:09Z",
@@ -196,7 +197,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:10Z",
@@ -208,7 +209,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:11Z",
@@ -220,7 +221,7 @@
           "is_foreign_security_principal": false
         },
         {
-          "schema_version": "1.3",
+          "schema_version": "1.4",
           "kind": "membership_edge",
           "run_id": "00000000-0000-4000-8000-000000000a09",
           "observed_at": "2026-09-14T09:00:12Z",
@@ -231,11 +232,12 @@
           "member_kind": "domain_group",
           "is_foreign_security_principal": false
         }
-      ]
+      ],
+      "affirmations": []
     }
   ],
   "completion": {
-    "schema_version": "1.3",
+    "schema_version": "1.4",
     "run_id": "00000000-0000-4000-8000-000000000a09",
     "status": "succeeded",
     "completed_at": "2026-09-14T09:10:00Z",
@@ -248,6 +250,7 @@
         "kind": "domain",
         "key": "s-1-5-21-2000000001-2000000002-2000000003"
       }
-    ]
+    ],
+    "affirmation_count": 0
   }
 }

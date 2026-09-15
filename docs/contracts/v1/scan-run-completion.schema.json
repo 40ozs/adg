@@ -5,45 +5,119 @@
   "description": "Closes a scan run and, optionally, reconciles the scopes it enumerated. Reconciliation is the ONLY mechanism by which an object can be marked absent, and it is permitted only for a run that succeeded with no errors and was not incremental. A partial or failed run therefore cannot delete anything: unseen is not the same as gone.",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": ["schema_version", "run_id", "status", "completed_at", "batch_count", "observation_count"],
+  "required": [
+    "schema_version",
+    "run_id",
+    "status",
+    "completed_at",
+    "batch_count",
+    "observation_count"
+  ],
   "properties": {
-    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
-    "run_id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schemaVersion"
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
     "status": {
       "description": "succeeded: every declared scope was fully enumerated. partial: usable observations, incomplete coverage. failed: coverage unknown. canceled: stopped deliberately.",
       "type": "string",
-      "enum": ["succeeded", "partial", "failed", "canceled"]
+      "enum": [
+        "succeeded",
+        "partial",
+        "failed",
+        "canceled"
+      ]
     },
-    "completed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "completed_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
     "batch_count": {
       "description": "Number of batches the collector sent. The server compares this with what it received and downgrades the run to partial on a mismatch.",
       "type": "integer",
       "minimum": 0
     },
-    "observation_count": { "type": "integer", "minimum": 0 },
-    "error_count": { "type": "integer", "minimum": 0 },
+    "observation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "error_count": {
+      "type": "integer",
+      "minimum": 0
+    },
     "errors": {
       "description": "Failures encountered during the run. An unreadable object is reported here, never silently omitted: access the collector could not observe is unobserved, not absent.",
       "type": "array",
       "maxItems": 1000,
-      "items": { "$ref": "common.schema.json#/$defs/collectorError" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/collectorError"
+      }
     },
     "reconciled_scopes": {
       "description": "Scopes this run enumerated completely. Objects in these scopes that the run did not report may be marked absent. Must be a subset of the scopes declared at start, and must be empty unless status is 'succeeded' with error_count 0.",
       "type": "array",
       "maxItems": 1000,
-      "items": { "$ref": "common.schema.json#/$defs/scope" }
+      "items": {
+        "$ref": "common.schema.json#/$defs/scope"
+      }
     },
-    "notes": { "type": ["string", "null"], "maxLength": 2000 }
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000
+    },
+    "affirmation_count": {
+      "description": "Contract 1.4. How many affirmations the collector sent, counted the way observation_count counts observations.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "checkpoint": {
+      "description": "Contract 1.4. The cursor the next delta may resume from. Permitted ONLY on a run whose status is 'succeeded' with no errors. A partial run did not read everything below its watermark, so a cursor placed there would make the next delta start above exactly the objects this run failed on - a gap that closes only by accident, because nothing afterwards looks missing. The server refuses one on a run it downgraded for short delivery, for the same reason.",
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/collectorCheckpoint"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
   },
   "if": {
     "anyOf": [
-      { "properties": { "status": { "not": { "const": "succeeded" } } }, "required": ["status"] },
-      { "properties": { "error_count": { "minimum": 1 } }, "required": ["error_count"] }
+      {
+        "properties": {
+          "status": {
+            "not": {
+              "const": "succeeded"
+            }
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      {
+        "properties": {
+          "error_count": {
+            "minimum": 1
+          }
+        },
+        "required": [
+          "error_count"
+        ]
+      }
     ]
   },
   "then": {
-    "properties": { "reconciled_scopes": { "maxItems": 0 } }
+    "properties": {
+      "reconciled_scopes": {
+        "maxItems": 0
+      }
+    }
   },
   "examples": [
     {
@@ -55,7 +129,12 @@
       "observation_count": 2412,
       "error_count": 0,
       "errors": [],
-      "reconciled_scopes": [{ "kind": "directory_tree", "key": "\\\\fs01\\finance" }]
+      "reconciled_scopes": [
+        {
+          "kind": "directory_tree",
+          "key": "\\\\fs01\\finance"
+        }
+      ]
     },
     {
       "schema_version": "1.0",

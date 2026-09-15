@@ -35,6 +35,8 @@
         'Select-AdgFixtureAttributes'
         'ConvertFrom-AdgLdapEntry'
         'Get-AdgLdapRootDse'
+        'Get-AdgDirectoryIssuer'
+        'Add-AdgUsnFilter'
         'Get-AdgRangedAttributeState'
         'Get-AdgGroupMemberReference'
         'New-AdgAdCollectorConfig'

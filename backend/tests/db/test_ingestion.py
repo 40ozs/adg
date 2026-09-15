@@ -159,6 +159,13 @@ class TestBatchIdempotency:
             "servers_written": 0,
             "shares_written": 0,
             "share_aces_written": 0,
+            # Contract 1.4. A batch that affirms nothing and carries no checkpoint reports
+            # these as empty rather than omitting them: the assertion is deliberately an
+            # exact comparison, so a field appearing or disappearing from this response is
+            # a change the frontend types against and has to be seen here first.
+            "affirmed": 0,
+            "refused_affirmations": [],
+            "checkpoint": None,
         }
         assert second.json()["duplicate"] is True
         assert second.json()["applied"] == 0

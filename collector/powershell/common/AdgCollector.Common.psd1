@@ -22,6 +22,8 @@
         'New-AdgPrincipalObservation'
         'New-AdgMembershipObservation'
         'New-AdgScope'
+        'New-AdgCheckpoint'
+        'New-AdgAffirmation'
         'New-AdgScanRunStart'
         'New-AdgObservationBatch'
         'New-AdgCollectorError'

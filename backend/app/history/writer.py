@@ -53,10 +53,11 @@ from __future__ import annotations
 import datetime as dt
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Final
+from typing import Any, Final, cast
 from uuid import UUID
 
 from sqlalchemy import (
+    CursorResult,
     RowMapping,
     Select,
     Text,
@@ -170,6 +171,60 @@ class ClosureOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class AffirmationOutcome:
+    """What a batch of affirmations did to the timeline (Phase 7B).
+
+    The three refusal lists are the point of this type. An affirmation that cannot be
+    applied is not an error and must not fail the batch -- the collector re-reads the object
+    in full on the next pass -- but it must not be *silent* either, because an affirmation
+    silently dropped looks exactly like one applied, and the object would then be missing
+    from the run's coverage without anything saying so.
+    """
+
+    extended: int = 0
+    """Open versions whose interval grew because the affirmation confirmed them."""
+
+    unchanged: int = 0
+    """Affirmations confirming a span the open version already covers -- a replay, or a
+    reading older than the last confirmation. Counted, not folded into ``extended``."""
+
+    untracked: tuple[str, ...] = ()
+    """Keys with no open version at all. ADG has never stored this object, so there is no
+    state for the digest to have matched and nothing to confirm."""
+
+    absent: tuple[str, ...] = ()
+    """Keys whose open version is a tombstone. The collector says the object is unchanged
+    and ADG's record says it is gone; reviving it is a claim about state, which only a full
+    observation carries. Refused, so the collector sends the object properly."""
+
+    def __add__(self, other: AffirmationOutcome) -> AffirmationOutcome:
+        return AffirmationOutcome(
+            extended=self.extended + other.extended,
+            unchanged=self.unchanged + other.unchanged,
+            untracked=self.untracked + other.untracked,
+            absent=self.absent + other.absent,
+        )
+
+    @property
+    def applied(self) -> int:
+        return self.extended + self.unchanged
+
+    def as_history_outcome(self) -> HistoryOutcome:
+        """The same counts in the vocabulary a batch reports its timeline effect in.
+
+        An affirmation can only ever extend or confirm, so the other six counters are zero
+        by construction rather than by omission. Folding it in means a batch's reported
+        history covers everything that batch did to the timeline, which is what a caller
+        reading one number needs it to mean.
+        """
+        return HistoryOutcome(extended=self.extended, unchanged=self.unchanged)
+
+    @property
+    def refused_keys(self) -> tuple[str, ...]:
+        return self.untracked + self.absent
+
+
+@dataclass(frozen=True, slots=True)
 class _Incoming:
     """One observed state, ready to compare against whatever is open."""
 
@@ -241,7 +296,9 @@ class HistoryWriter:
                 continue
 
             if current.is_present and current.state_hash == entry.digest:
-                extension = self._extension(current, entry, now)
+                extension = self._extension(
+                    current, observed_at=entry.observed_at, run_id=entry.run_id, now=now
+                )
                 if extension is None:
                     outcome += HistoryOutcome(unchanged=1)
                 else:
@@ -294,6 +351,137 @@ class HistoryWriter:
             await self._session.execute(insert(object_versions).values(to_open))
         return outcome
 
+    # ------------------------------------------------------------------ affirmation
+
+    async def affirm(
+        self,
+        kind: ObservationKind,
+        keys: Sequence[str],
+        *,
+        observed_at: dt.datetime,
+        run_id: UUID,
+        now: dt.datetime,
+    ) -> AffirmationOutcome:
+        """Confirm that these objects still hold the state already recorded (Phase 7B).
+
+        This is :meth:`record` with the comparison already settled. ``record`` computes a
+        digest from an incoming payload and, when it equals the open version's, extends the
+        interval; an affirmation *is* the claim that the two are equal, verified by the
+        caller against the digest the collector sent. So the same extension is applied by
+        the same helper, and an affirmation cannot do anything to a timeline that an
+        identical re-observation would not have done. ``tests/db/test_history_affirm.py``
+        asserts that equivalence directly rather than leaving it as a claim in a docstring.
+
+        What this method will not do is open a version, close one, or change a state. Every
+        one of those is a statement about what an object *is*, and an affirmation carries no
+        state to make it with -- so a key with nothing open, or with a tombstone open, is
+        refused and named in the outcome rather than being quietly given one.
+        """
+        if kind not in HISTORICAL_KINDS:
+            raise DomainValidationError(
+                f"{kind.value} is not a historically tracked kind.", field="kind"
+            )
+        unique = sorted(set(keys))
+        if not unique:
+            return AffirmationOutcome()
+
+        open_versions = await self._open_versions(kind, unique)
+
+        extensions: list[dict[str, Any]] = []
+        unchanged = 0
+        untracked: list[str] = []
+        absent: list[str] = []
+        for key in unique:
+            current = open_versions.get(key)
+            if current is None:
+                untracked.append(key)
+                continue
+            if not current.is_present:
+                absent.append(key)
+                continue
+            extension = self._extension(current, observed_at=observed_at, run_id=run_id, now=now)
+            if extension is None:
+                unchanged += 1
+            else:
+                extensions.append(extension)
+
+        if extensions:
+            await self._extend_versions(extensions)
+        return AffirmationOutcome(
+            extended=len(extensions),
+            unchanged=unchanged,
+            untracked=tuple(untracked),
+            absent=tuple(absent),
+        )
+
+    async def affirm_contained(
+        self,
+        kind: ObservationKind,
+        container_keys: Sequence[str],
+        *,
+        observed_at: dt.datetime,
+        run_id: UUID,
+        now: dt.datetime,
+    ) -> AffirmationOutcome:
+        """Confirm every open version of ``kind`` whose container is one of these keys.
+
+        The entries of a container are not independently affirmable and must not be
+        affirmed one by one. An NTFS ACE is not something a collector enumerates: it reads a
+        *descriptor*, and the entries come with it. What the collector verified is therefore
+        the descriptor's digest, and what that digest covers is the whole DACL -- so the
+        honest unit of affirmation is "the entries of this resource", which is exactly the
+        predicate here.
+
+        It is also the only affordable one. A batch may affirm 5,000 resources; listing
+        their entries would mean tens of thousands of keys crossing into Python and back
+        out again per batch, which is the cost this whole mechanism exists to avoid. Two
+        indexed statements do it instead, on ``ix_object_versions_container``.
+
+        Unlike :meth:`affirm`, this reports no per-key refusals. There is nothing sensible
+        to report: the caller verified a digest over the container, so a contained version
+        that is missing or tombstoned is not a collector error but a disagreement between
+        two things ADG itself stores -- the resource's digest and its entries -- which
+        ingestion checks when the entries arrive rather than when they are affirmed.
+        """
+        if kind not in HISTORICAL_KINDS:
+            raise DomainValidationError(
+                f"{kind.value} is not a historically tracked kind.", field="kind"
+            )
+        unique = sorted(set(container_keys))
+        if not unique:
+            return AffirmationOutcome()
+
+        extended = 0
+        for chunk in _chunks(unique, KEY_CHUNK):
+            containers = any_(bindparam("containers", chunk, type_=ARRAY(Text)))
+            open_present = (
+                object_versions.c.object_kind == kind.value,
+                object_versions.c.valid_to.is_(None),
+                object_versions.c.is_present.is_(True),
+                object_versions.c.container_key == containers,
+            )
+            # Forward and backward as two statements, because they set different columns:
+            # a later confirmation moves last_seen_at and the run that last saw it, an
+            # earlier one moves valid_from and the run that opened it. This is
+            # :meth:`_extension`'s rule, expressed as a predicate instead of a row.
+            forward = await self._session.execute(
+                update(object_versions)
+                .where(*open_present, object_versions.c.last_seen_at < observed_at)
+                .values(last_seen_at=observed_at, last_seen_run_id=run_id, updated_at=now)
+            )
+            backward = await self._session.execute(
+                update(object_versions)
+                .where(*open_present, object_versions.c.valid_from > observed_at)
+                .values(valid_from=observed_at, opened_by_run_id=run_id, updated_at=now)
+            )
+            # `rowcount` lives on CursorResult, which is what a DML statement returns;
+            # `Session.execute` is typed as returning the base Result.
+            extended += max(
+                cast("CursorResult[Any]", forward).rowcount,
+                cast("CursorResult[Any]", backward).rowcount,
+            )
+        return AffirmationOutcome(extended=extended)
+
     def _incoming(
         self, binding: KindBinding, rows: Sequence[Mapping[str, Any]]
     ) -> dict[str, _Incoming]:
@@ -339,7 +527,12 @@ class HistoryWriter:
         }
 
     def _extension(
-        self, current: _OpenVersion, entry: _Incoming, now: dt.datetime
+        self,
+        current: _OpenVersion,
+        *,
+        observed_at: dt.datetime,
+        run_id: UUID,
+        now: dt.datetime,
     ) -> dict[str, Any] | None:
         """The update that grows an open version, or ``None`` when it already covers this.
 
@@ -348,16 +541,16 @@ class HistoryWriter:
         reporting the same state — it extends it backward, and the run that opened the
         version changes with it, because the earliest evidence is what opened it.
         """
-        forward = entry.observed_at > current.last_seen_at
-        backward = entry.observed_at < current.valid_from
+        forward = observed_at > current.last_seen_at
+        backward = observed_at < current.valid_from
         if not forward and not backward:
             return None
         return {
             "target_id": current.version_id,
-            "new_last_seen_at": entry.observed_at if forward else current.last_seen_at,
-            "new_last_seen_run_id": entry.run_id if forward else None,
-            "new_valid_from": entry.observed_at if backward else current.valid_from,
-            "new_opened_by_run_id": entry.run_id if backward else None,
+            "new_last_seen_at": observed_at if forward else current.last_seen_at,
+            "new_last_seen_run_id": run_id if forward else None,
+            "new_valid_from": observed_at if backward else current.valid_from,
+            "new_opened_by_run_id": run_id if backward else None,
             "written_at": now,
         }
 

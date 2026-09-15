@@ -1,0 +1,116 @@
+{
+  "$comment": [
+    "ADG collection orchestrator. Copy this file, edit it, and point one Windows scheduled",
+    "task at Invoke-AdgCollection.ps1 on a short interval (every 15 minutes is a reasonable",
+    "default). Each job decides for itself whether it is due, so one task drives all six.",
+    "",
+    "No secrets here, ever. The API credential is read from the environment variable the",
+    "collector configurations name (default ADG_COLLECTOR_KEY).",
+    "",
+    "The six job kinds and what each may claim:",
+    "  ad_principals        delta by uSNChanged; never reconciles (reads half the domain)",
+    "  ad_memberships       delta by uSNChanged; never reconciles (reads half the domain)",
+    "  smb_inventory        always full; may reconcile (a server has tens of shares)",
+    "  ntfs_important_roots always incremental (a named subset, on purpose)",
+    "  ntfs_deep_scan       full walk; affirms unchanged descriptors; may reconcile",
+    "  full_reconciliation  every collector, everything, reconciling. The repair pass.",
+    "",
+    "Why the reconciliation job exists at all: a delta reads what its source says has",
+    "changed, and nothing announces a deletion to a query that filters on change metadata.",
+    "A deleted principal simply fails to appear, which is exactly what an unchanged one",
+    "does. Running the deltas more often never tells them apart. Only this does."
+  ],
+
+  "schema": "adg-orchestrator/1",
+
+  "stateDirectory": "C:\\ProgramData\\ADG\\state",
+  "collectorHost": "COLLECTOR01",
+  "apiBaseUrl": "https://adg.corp.example.com",
+  "apiTokenEnvironmentVariable": "ADG_COLLECTOR_TOKEN",
+
+  "jobs": [
+    {
+      "name": "ad-principals",
+      "kind": "ad_principals",
+      "enabled": true,
+      "every": "15m",
+      "strategy": "auto",
+      "collectorConfig": "C:\\ProgramData\\ADG\\adg-ad-collector.json",
+      "maxAttempts": 3,
+      "retryBaseSeconds": 30
+    },
+    {
+      "name": "ad-memberships",
+      "kind": "ad_memberships",
+      "enabled": true,
+      "every": "15m",
+      "strategy": "auto",
+      "collectorConfig": "C:\\ProgramData\\ADG\\adg-ad-collector.json",
+      "maxAttempts": 3,
+      "retryBaseSeconds": 30
+    },
+    {
+      "name": "smb-inventory",
+      "kind": "smb_inventory",
+      "enabled": true,
+      "every": "6h",
+      "strategy": "full",
+      "reconcile": true,
+      "collectorConfig": "C:\\ProgramData\\ADG\\adg-smb-targets.json",
+      "maxAttempts": 3,
+      "retryBaseSeconds": 60
+    },
+    {
+      "$comment": [
+        "The trees whose permissions matter most, read often. Narrowed on purpose, so it is",
+        "marked incremental and never reconciles: reconciling a subset would mark every",
+        "directory outside it as deleted."
+      ],
+      "name": "ntfs-important-roots",
+      "kind": "ntfs_important_roots",
+      "enabled": true,
+      "every": "6h",
+      "roots": [
+        "\\\\FS01\\Finance",
+        "\\\\FS01\\HR"
+      ],
+      "collectorConfig": "C:\\ProgramData\\ADG\\adg-ntfs-targets.json",
+      "maxAttempts": 2,
+      "retryBaseSeconds": 120
+    },
+    {
+      "$comment": [
+        "The whole tree, overnight. It re-reads every descriptor -- writing an ACL moves no",
+        "timestamp a walk could test, so there is nothing safe to skip -- but re-sends only",
+        "the ones whose digest changed, and affirms the rest. That is what lets it remain a",
+        "complete enumeration, and keep the right to reconcile, at a fraction of the payload.",
+        "Set digestIndexPath in the NTFS collector configuration to enable the affirmations."
+      ],
+      "name": "ntfs-deep-scan",
+      "kind": "ntfs_deep_scan",
+      "enabled": true,
+      "every": "7d",
+      "reconcile": true,
+      "onlyBetween": { "start": "22:00", "end": "06:00" },
+      "collectorConfig": "C:\\ProgramData\\ADG\\adg-ntfs-targets.json",
+      "maxAttempts": 2,
+      "retryBaseSeconds": 300
+    },
+    {
+      "$comment": [
+        "The repair pass. Everything, from every collector, reconciling every scope. This is",
+        "the only job that can discover that something is gone, so its interval is the upper",
+        "bound on how long ADG can believe in access that no longer exists."
+      ],
+      "name": "full-reconciliation",
+      "kind": "full_reconciliation",
+      "enabled": true,
+      "every": "7d",
+      "reconcile": true,
+      "onlyBetween": { "start": "23:00", "end": "05:00" },
+      "collectorConfig": "C:\\ProgramData\\ADG\\adg-ad-collector.json",
+      "maxAttempts": 1,
+      "retryBaseSeconds": 300
+    }
+  ]
+}
