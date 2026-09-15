@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.changes import ChangeAction, ChangeScope, ChangeService, ChangeSignificance, ScopeTarget
 from app.changes.service import ChangeFilter
 from app.contracts.v1.common import ObservationKind
-from app.domain import SharePermission
+from app.domain import PrincipalKind, SharePermission
 from app.domain.errors import DomainValidationError
 from tests.support import history as h
 from tests.support.ingest import replay
@@ -276,3 +276,77 @@ class TestAReorderingIsOnlyAChangeWhenTheAclMoved:
         key = f"{FINANCE_PATH}|{GROUP}|allow|0x{FULL_CONTROL:08x}|0x03"
         timeline = await ChangeService(session).object_changes(ObservationKind.NTFS_ACE, key)
         assert [c.significance for c in timeline.changes] == [ChangeSignificance.NOISE]
+
+
+class TestAFirstObservationDoesNotBreakTheComparison:
+    r"""The defect the release audit found on the first comparison it ran.
+
+    Two container facts answer different questions, and a single scan can make them
+    disagree. ``action_for`` asks whether the container **object** was in the record before
+    this version opened; the window falls back to the newest confirmation of a **sibling**
+    inside that container. A scan stamps its observations at the instant each was read, so a
+    group's member edge can open before the group principal is first seen while another edge
+    was already confirmed — no container observed before, and a sibling bound available.
+
+    ``ObjectChange`` refuses that pair, correctly. What was wrong was building it: the
+    refusal is a ``DomainValidationError``, so an internal disagreement reached the caller as
+    ``422 Unprocessable Entity`` on a request that was entirely well-formed.
+
+    The estate below is the ordinary case, not a contrived one: one scan, one group, two
+    members, and the group observed after its own edges.
+    """
+
+    @staticmethod
+    async def _estate(client: AsyncClient) -> None:
+        bob = f"{h.DOMAIN_SID}-1105"
+        await replay(
+            client,
+            h.ad_scan(
+                observations=[
+                    # The edges first, and the group they belong to last. The order is what
+                    # a collector produces when it reads memberships before the group object.
+                    h.edge(GROUP, ALICE, at=h.MONDAY),
+                    h.edge(GROUP, bob, at=h.MONDAY + dt.timedelta(minutes=1)),
+                    h.principal(GROUP, at=h.MONDAY + dt.timedelta(minutes=3)),
+                    h.principal(ALICE, at=h.MONDAY, kind=PrincipalKind.USER),
+                    h.principal(bob, at=h.MONDAY, kind=PrincipalKind.USER),
+                ],
+                started_at=h.MONDAY,
+            ),
+        )
+
+    async def test_comparing_across_it_answers_rather_than_refusing(
+        self, client: AsyncClient, session: AsyncSession
+    ) -> None:
+        await self._estate(client)
+
+        comparison = await ChangeService(session).compare(
+            h.MONDAY - dt.timedelta(days=1),
+            h.FRIDAY,
+            significance=ALL_SIGNIFICANCE,
+        )
+
+        assert comparison.unobserved_at_from > 0
+        first_seen = [
+            change for change in comparison.changes if change.action is ChangeAction.FIRST_OBSERVED
+        ]
+        assert first_seen, "the estate was built to produce first observations"
+        for change in first_seen:
+            assert change.window is None, (
+                f"{change.key} is a first observation carrying a window; nothing was "
+                "watching its container, so the bound would be invented"
+            )
+
+    async def test_the_api_returns_it_rather_than_a_422(self, client: AsyncClient) -> None:
+        """Where it actually surfaced. A 422 tells the caller their request was wrong."""
+        await self._estate(client)
+
+        response = await client.get(
+            "/api/v1/changes/compare",
+            params={
+                "from": (h.MONDAY - dt.timedelta(days=1)).isoformat().replace("+00:00", "Z"),
+                "to": h.FRIDAY.isoformat().replace("+00:00", "Z"),
+            },
+        )
+
+        assert response.status_code == 200, response.text

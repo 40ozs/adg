@@ -93,7 +93,9 @@ hides sections an account cannot use, but that is a courtesy and not a control.
   indistinguishable from one somebody typed, and the administrator executing it has no way to
   tell. The signature proves the document came from this deployment unmodified — not that a
   named approver pressed a button, which is recorded inside the document and in the audit
-  chain.
+  chain. A configured key must be **at least 32 characters**, refused at startup otherwise:
+  refusing an unsigned export and then accepting a guessable key would be a control in name
+  only.
 - **A role ADG does not recognize grants nothing.** Unrecognized values are reported on
   `/auth/me` and logged, so a misassigned app role is diagnosable rather than mysterious.
 - **Ingestion is never anonymous.** Collectors authenticate with a key from

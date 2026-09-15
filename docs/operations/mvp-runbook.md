@@ -225,6 +225,34 @@ can be rebuilt by re-scanning, but the run history — what was observed when �
 docker exec adg-db-1 pg_dump -U adg -d adg -Fc > adg-$(Get-Date -Format yyyyMMdd).dump
 ```
 
+Restoring, which is the half worth rehearsing — a backup nobody has restored is a hypothesis:
+
+```powershell
+# 1. Stop the API so nothing writes while the database is being replaced.
+.\scripts\stack-down.ps1
+.\scripts\stack-up.ps1 -DbOnly
+
+# 2. Restore into an empty database. --clean --if-exists drops what is there first, so this
+#    is not an overlay on whatever the database already held.
+Get-Content adg-20260914.dump -AsByteStream -Raw |
+    docker exec -i adg-db-1 pg_restore -U adg -d adg --clean --if-exists --no-owner
+
+# 3. Confirm the schema is at the revision the application expects. A restore from an older
+#    dump lands on an older schema, and the API will not correct it for you.
+cd backend; .\.venv\Scripts\python.exe -m alembic current; cd ..
+.\.venv\Scripts\python.exe -m alembic upgrade head   # only if 'current' is behind
+
+# 4. Bring the rest back up and check the API agrees the database is reachable.
+.\scripts\stack-up.ps1
+Invoke-RestMethod http://localhost:8000/health/ready
+```
+
+`-AsByteStream -Raw` matters: PowerShell's default pipeline would decode the custom-format
+dump as text and corrupt it. What you should see afterwards is the **Collectors page**
+reporting the same last-success times the dump was taken with — if it reports `no_data`, the
+restore reached an empty database and every view is about to render an empty answer that
+nobody looked for.
+
 ### Logs
 
 The API logs one JSON object per line (`ADG_LOG_FORMAT=json`; `text` for local reading).
@@ -267,9 +295,32 @@ ADG_OIDC_CLIENT_ID=<app registration id>
 ADG_WEB_URL=https://adg.example.com        # https, or the session cookie is discarded
 ```
 
-Assign the `viewer`, `auditor` and `admin` app roles in Entra ID. A role ADG does not
-recognize grants nothing and is reported on `/auth/me` as unrecognized, so a typo shows up as
-a log line and a note on screen rather than as a blank product.
+Assign the app roles in Entra ID. A role ADG does not recognize grants nothing and is reported
+on `/auth/me` as unrecognized, so a typo shows up as a log line and a note on screen rather
+than as a blank product.
+
+| Role | For | Deliberately cannot |
+| --- | --- | --- |
+| `viewer` | Reading the estate, the change feed and alerts | Read governance records or simulations |
+| `auditor` | The above, plus governance records, simulations and change plans — strictly reading | Answer a review, run a simulation, write a plan |
+| `admin` | Running the server: settings, watches, replaying a collector payload, exporting an approved plan | Create or answer a review; write or approve a plan |
+| `reviewer` | Answering the review items assigned to them | Scope or close a campaign — that would be choosing their own questions |
+| `governance_admin` | Creating, scoping, assigning and closing campaigns; recording ownership; writing change plans | Answer a review item; approve a plan |
+| `remediation_planner` | Writing change plans and submitting them for approval | Approve one, or export one |
+| `remediation_approver` | Approving or rejecting somebody else's plan | Write one, or export the approved result |
+| `remediator` | **Reserved.** Grants nothing; there is no write adapter (ADR-0035) | Everything — holding it is indistinguishable from holding no role |
+
+Three of these are a separation of duties rather than a convenience, and giving one person
+two roles does not defeat it: planning, approving and exporting a change are checked against
+the *person* as well as the token, so the second act is still refused
+([ADR-0038](../decisions/0038-proposing-approving-and-carrying-out-are-three-pairs-of-hands.md)).
+
+If this deployment will export change plans, it also needs a signing key of at least 32
+characters:
+
+```powershell
+ADG_REMEDIATION_SIGNING_KEY=<32+ random characters>   # empty means export is refused
+```
 
 ---
 

@@ -43,6 +43,15 @@ SUPPORTED_DB_SCHEME = "postgresql+psycopg"
 #: because it looks like a control.
 MIN_COLLECTOR_KEY_LENGTH = 32
 
+#: Shortest change-plan signing key ADG will accept, for the reason above and one more. The
+#: HMAC over an exported change plan is the only thing that distinguishes an instruction this
+#: deployment produced from one somebody typed, and the administrator executing it at two in
+#: the morning has nothing else to check. A short key makes that signature forgeable while
+#: leaving every procedure around it looking intact, which is the failure ADR-0035 exists to
+#: prevent. Refusing an unsigned export (app/remediation/export.py) and then accepting a
+#: four-character key would be a control in name only.
+MIN_SIGNING_KEY_LENGTH = 32
+
 
 class Settings(BaseSettings):
     """Runtime configuration for the ADG backend."""
@@ -312,6 +321,27 @@ class Settings(BaseSettings):
                 "Development authentication issues its own tokens and verifies no "
                 "credential. Set ADG_AUTH_MODE=oidc and configure ADG_OIDC_ISSUER, "
                 "ADG_OIDC_AUDIENCE, and ADG_OIDC_JWKS_URL."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _require_a_strong_signing_key(self) -> Settings:
+        """A configured signing key must be long enough to be worth having.
+
+        Empty is allowed and means this deployment cannot export, which is a refusal the
+        export path states in full. What is refused here is the middle case: a key short
+        enough to guess, which produces signatures that verify, documents that look
+        authoritative, and a control that is not one.
+        """
+        key = self.remediation_signing_key.strip()
+        if key and len(key) < MIN_SIGNING_KEY_LENGTH:
+            raise ValueError(
+                f"ADG_REMEDIATION_SIGNING_KEY is shorter than {MIN_SIGNING_KEY_LENGTH} "
+                "characters. It is the HMAC key over an exported change plan, which is the "
+                "only thing separating an instruction this deployment produced from one "
+                "somebody typed. Generate one with "
+                "[Convert]::ToBase64String((1..32 | ForEach-Object "
+                "{ Get-Random -Maximum 256 })), or leave it empty to disable export."
             )
         return self
 

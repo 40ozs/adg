@@ -50,6 +50,27 @@ services:
       ADG_OIDC_GROUP_ROLE_MAP: ${ADG_OIDC_GROUP_ROLE_MAP:-}
       # Collector credentials. Empty means ingestion requires an administrator's token.
       ADG_COLLECTOR_API_KEYS: ${ADG_COLLECTOR_API_KEYS:-}
+      # History retention. Two switches, and the destructive one defaults to off: a window
+      # set while thinking about disk capacity is not authorization to delete permission
+      # history. Nothing in the API acts on these; pruning is an operator command.
+      ADG_HISTORY_RETENTION_DAYS: ${ADG_HISTORY_RETENTION_DAYS:-0}
+      ADG_HISTORY_RETENTION_ENABLED: ${ADG_HISTORY_RETENTION_ENABLED:-false}
+      # Whether closing a scan run re-evaluates risks and watches inline. Off by default, and
+      # that is a cost decision: see the note in .env.example before turning it on.
+      ADG_ALERTS_ON_RUN_COMPLETION: ${ADG_ALERTS_ON_RUN_COMPLETION:-false}
+      # The HMAC key over an exported change plan. A SECRET; empty means this deployment
+      # cannot export. Minimum 32 characters when set, refused at startup otherwise.
+      ADG_REMEDIATION_SIGNING_KEY: ${ADG_REMEDIATION_SIGNING_KEY:-}
+      # 'disabled' is the only value a production deployment may hold.
+      ADG_REMEDIATION_EXECUTION_MODE: ${ADG_REMEDIATION_EXECUTION_MODE:-disabled}
+      # Risk rules and alert destinations, as this installation has configured them. These
+      # name FILES, so a path set here must also be mounted into this container -- the volume
+      # below is commented out because an empty value (the shipped defaults) needs no mount.
+      # A path that is set and cannot be read is a startup error, never a silent fallback.
+      ADG_RISK_CONFIGURATION_PATH: ${ADG_RISK_CONFIGURATION_PATH:-}
+      ADG_ALERT_POLICY_PATH: ${ADG_ALERT_POLICY_PATH:-}
+    # volumes:
+    #   - ./config:/etc/adg:ro     # then set the two paths above to /etc/adg/<file>.json
     ports:
       - "${ADG_API_PORT:-8000}:8000"
     depends_on:

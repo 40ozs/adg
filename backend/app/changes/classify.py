@@ -234,11 +234,32 @@ def classify(
         sibling_ace_changes=sibling_ace_changes,
     )
     outcome = evaluate(facts, rules)
+    # A first observation never carries a window, whatever a sibling confirmation says.
+    #
+    # The two container facts answer different questions and can disagree. ``action_for``
+    # asks whether the *container object* was in the record before this version opened;
+    # ``window_between`` falls back to the newest confirmation of a *sibling* inside that
+    # container. A scan stamps its observations at different instants, so a group's member
+    # edge can open at 08:01 while the group principal is first seen at 08:03 and another
+    # edge was confirmed at 08:00 — no container observed before (so: first observation) and
+    # a sibling bound available (so: a window). ObjectChange rejects that pair, which turned
+    # an internal disagreement into a 422 on an ordinary estate; the release audit hit it on
+    # the first comparison it ran.
+    #
+    # The action is what decides, because it is the one that says whether anything was
+    # watching. If nothing was, there is no earlier confirmation of *this object's* absence
+    # to bound it, and a sibling's reading is not one — it would be the invented lower bound
+    # ADR-0019 exists to refuse, and it would read exactly like a measured one.
+    window = (
+        None
+        if action is ChangeAction.FIRST_OBSERVED
+        else window_between(before, after, container_confirmed_at=container_confirmed_at)
+    )
     return ObjectChange(
         kind=kind,
         key=key,
         action=action,
-        window=window_between(before, after, container_confirmed_at=container_confirmed_at),
+        window=window,
         before=before,
         after=after,
         deltas=deltas,

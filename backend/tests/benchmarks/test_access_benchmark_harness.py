@@ -12,6 +12,7 @@ recorded numbers still look current.
 from __future__ import annotations
 
 import json
+import os
 from urllib.parse import unquote
 
 import pytest
@@ -24,9 +25,20 @@ from tests.benchmarks.access_benchmark import (
     bench_database_url,
     build_parser,
     machine_facts,
+    measure,
     render,
 )
 from tests.support.access_estate import SHARE_UNC, SUBJECT
+
+# Read at import time: the autouse environment-isolation fixture clears ADG_* before each
+# test, matching tests/test_database_smoke.py.
+SMOKE_ENABLED = os.getenv("ADG_RUN_SMOKE_TESTS") == "1"
+
+#: Only the end-to-end class needs PostgreSQL; everything else here is pure.
+needs_database = pytest.mark.skipif(
+    not SMOKE_ENABLED,
+    reason="Set ADG_RUN_SMOKE_TESTS=1 with PostgreSQL running, or run backend-test.ps1 -Smoke.",
+)
 
 
 class TestItMeasuresTheShapesThePhaseNamed:
@@ -120,6 +132,41 @@ class TestItsDefaultsAreSafe:
         assert arguments.repeat == 3
         assert arguments.json is True
 
-    def test_it_measures_the_test_database_and_never_the_development_one(self) -> None:
+    def test_it_measures_the_benchmark_database_and_never_the_development_one(self) -> None:
         """This harness truncates what it points at, so where it points is load-bearing."""
-        assert bench_database_url().rsplit("/", 1)[1].endswith("_test")
+        assert bench_database_url().rsplit("/", 1)[1].endswith("_bench")
+
+    def test_it_is_never_the_test_database_either(self) -> None:
+        """Sharing it would let a benchmark truncate the tables out from under a test run.
+
+        ``graph_benchmark`` has asserted this since it was written; this module pointed at
+        ``<database>_test`` until the release audit — the same mistake, with nothing
+        watching for it.
+        """
+        assert not bench_database_url().rsplit("/", 1)[1].endswith("_test")
+
+
+@pytest.mark.smoke
+@needs_database
+class TestItStillRunsEndToEnd:
+    """The assertion the other classes cannot make, and the one that would have caught this.
+
+    Everything above tests the harness's *pure* parts — the statistics, the parser, the URL
+    rule — and every one of them passed for the whole time this benchmark was unable to
+    build an estate at all. Ingestion started requiring a credential in Phase 6A, the
+    benchmark's client sent none, and because no test called :func:`measure` the failure
+    surfaced only when somebody tried to re-measure during the release audit. The recorded
+    numbers still read as current the entire time.
+
+    So this runs the real thing, at the smallest size that exercises every step: build an
+    estate through the ingestion API, then ask each of the three questions.
+    """
+
+    async def test_measure_builds_an_estate_and_times_every_shape(self) -> None:
+        results = await measure(sizes=[5], repeat=1)
+
+        assert {item.shape for item in results} == set(SHAPES)
+        for item in results:
+            assert item.samples, f"{item.shape} recorded no sample"
+            assert item.rows > 0, f"{item.shape} measured an empty estate"
+            assert item.median_ms > 0

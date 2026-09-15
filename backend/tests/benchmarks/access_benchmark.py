@@ -41,7 +41,9 @@ from app.db import Database
 from app.main import create_app
 from app.models.schema import metadata
 from app.runtime import install_selector_event_loop_policy
+from tests.benchmarks.graph_benchmark import ensure_database
 from tests.support.access_estate import SHARE_UNC, SUBJECT, load
+from tests.support.auth import auth_headers
 
 DEFAULT_SIZES = (10, 100)
 DEFAULT_REPEAT = 8
@@ -108,14 +110,19 @@ def machine_facts() -> dict[str, Any]:
 
 
 def bench_database_url() -> str:
-    """The smoke test database, which these runs truncate.
+    """The benchmark database, which these runs truncate. Never the development one.
 
-    The same database `tests/db` uses, and never the development one: the estates here are
-    rebuilt from empty on every run and anything else living there would be destroyed.
+    ``<database>_bench``, matching ``graph_benchmark`` — and deliberately **not**
+    ``<database>_test``, which is what this used to be. The estates here are rebuilt from
+    empty on every run, so pointing at the smoke test database meant a benchmark truncating
+    the tables out from under a concurrent ``backend-test.ps1 -Smoke``. ``graph_benchmark``
+    had already drawn that conclusion and had a test pinning it; this module had not, and
+    the release audit found the two disagreeing.
     """
     base = build_settings().database_url
     head, _, name = base.rpartition("/")
-    return f"{head}/{name.removesuffix('_test')}_test"
+    stem = name.removesuffix("_test").removesuffix("_bench")
+    return f"{head}/{stem}_bench"
 
 
 async def truncate(database: Database) -> None:
@@ -125,7 +132,12 @@ async def truncate(database: Database) -> None:
 
 
 async def measure(sizes: Sequence[int], repeat: int) -> list[Measurement]:
-    settings = build_settings(database_url=bench_database_url())
+    url = bench_database_url()
+    # Created and migrated here rather than assumed: this database is the benchmark's own,
+    # so nothing else will have brought it into being. Borrowed from graph_benchmark, which
+    # has needed exactly this since it stopped sharing the test database.
+    ensure_database(url)
+    settings = build_settings(database_url=url)
     database = Database(settings)
     application = create_app(settings)
     # Set directly rather than through the lifespan, which is the seam tests/db uses too.
@@ -133,7 +145,14 @@ async def measure(sizes: Sequence[int], repeat: int) -> list[Measurement]:
 
     results: list[Measurement] = []
     transport = ASGITransport(app=application)
-    async with AsyncClient(transport=transport, base_url="http://benchmark") as client:
+    # Signed in, for the same reason tests/db's client fixture is: since Phase 6A every
+    # route needs a credential and ingestion needs one that carries 'collectors:ingest'.
+    # A benchmark that built its estate anonymously stopped being able to build one at all,
+    # and because nothing here is asserted it failed silently -- the release audit found
+    # this module unable to run while the numbers it had produced still read as current.
+    async with AsyncClient(
+        transport=transport, base_url="http://benchmark", headers=auth_headers(settings)
+    ) as client:
         for size in sizes:
             await truncate(database)
             await load(client, size)

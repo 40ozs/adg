@@ -20,6 +20,51 @@ Two rules govern everything here.
 
 ---
 
+## Authenticating every request
+
+Unnumbered and first, because it applies to all three `POST` routes below and a collector
+that gets it wrong never reaches any of them. **Ingestion is never anonymous.** A request
+carrying no credential is refused with `401` before it reaches the database or any ingestion
+logic — so an unauthenticated request costs the server nothing worth having.
+
+Two ways to present one, and a collector uses the first:
+
+| | Header | Value |
+| --- | --- | --- |
+| **Collector key** (normal) | `X-ADG-Collector-Key` | The *secret* alone — not `<key id>:<secret>` |
+| **Administrator token** | `Authorization: Bearer <token>` | For replaying a payload by hand |
+
+The server is configured with `ADG_COLLECTOR_API_KEYS=<key id>:<secret>,...`. The key id
+names the collector host in the server's logs and is never sent. Keys are compared in
+constant time and must be **at least 32 characters**; a presented-but-wrong key is refused
+outright rather than falling through to the bearer check, so a typo produces a `401` saying
+the key is wrong rather than one saying a token is missing.
+
+A collector key grants exactly one capability, `collectors:ingest`. **It can write
+observations and cannot read a single one back**, so a key lifted off a file server does not
+become a map of the estate.
+
+```powershell
+$headers = @{ 'X-ADG-Collector-Key' = $env:ADG_COLLECTOR_KEY }
+Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $json `
+    -ContentType 'application/json'
+```
+
+**Transport is https outside a development machine.** These payloads carry the estate's
+security descriptors and the header carries a bearer secret; both are readable by anything on
+the path over plain http. The API does not terminate TLS itself — put it behind a reverse
+proxy that does.
+
+Three failures worth telling apart, because none of them is fixed by retrying:
+
+| Status | Meaning | What to do |
+| ---: | --- | --- |
+| `401` | No credential, or a key that is not configured | Fix the collector's configuration |
+| `403` | A token whose account lacks `collectors:ingest` | Fix the role assignment |
+| `422` | The credential was fine and the payload is wrong | Fix the payload (§7) |
+
+---
+
 ## 1. The sequence
 
 ```text
@@ -399,18 +444,21 @@ descriptor stores SIDs, not names) and a `principal` observation with
 
 ```powershell
 function Send-AdgBatch {
-    param([string] $ApiBaseUrl, [string] $RunId, [hashtable] $Batch)
+    param([string] $ApiBaseUrl, [string] $RunId, [hashtable] $Batch, [string] $CollectorKey)
 
-    $json = $Batch | ConvertTo-Json -Depth 12 -Compress
-    $uri  = "$ApiBaseUrl/api/v1/scan-runs/$RunId/batches"
+    $json    = $Batch | ConvertTo-Json -Depth 12 -Compress
+    $uri     = "$ApiBaseUrl/api/v1/scan-runs/$RunId/batches"
+    $headers = @{ 'X-ADG-Collector-Key' = $CollectorKey }   # never anonymous; see above
 
     for ($attempt = 1; $attempt -le 5; $attempt++) {
         try {
-            return Invoke-RestMethod -Method Post -Uri $uri -Body $json -ContentType 'application/json'
+            return Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $json `
+                -ContentType 'application/json'
         }
         catch [Microsoft.PowerShell.Commands.HttpResponseException] {
             $status = [int] $_.Exception.Response.StatusCode
             if ($status -eq 422) { throw }          # payload is wrong; retrying cannot help
+            if ($status -eq 401 -or $status -eq 403) { throw }   # credential is wrong; likewise
             if ($attempt -eq 5)  { throw }
             Start-Sleep -Seconds ([Math]::Pow(2, $attempt))   # same batch_id: the retry is idempotent
         }

@@ -34,6 +34,7 @@ docs/
   decisions/      Architecture decision records.
   handoffs/       Per-phase implementation handoffs.
   operations/     Runbook: install, verify, point at a domain, operate.
+  release/        Readiness, security review, measured performance, known limits.
 scripts/          Windows developer commands (PowerShell 7).
   windows-test-tree/  Builds real NTFS trees to validate and benchmark the collector against.
 ```
@@ -42,6 +43,13 @@ Two documents are the place to start:
 [`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) to get it running, and
 [`docs/architecture/mvp-capabilities.md`](docs/architecture/mvp-capabilities.md) for what it
 answers and — just as deliberately — what it does not.
+
+Before deploying it anywhere that matters, read
+[`docs/release/known-limitations.md`](docs/release/known-limitations.md), and in particular
+§1: the NTFS collector has been validated against real volumes and against Windows' own
+access check, and **the Active Directory and SMB collectors have never met a real domain.**
+[`docs/release/release-readiness.md`](docs/release/release-readiness.md) says what that means
+for a first installation.
 
 ## Prerequisites
 

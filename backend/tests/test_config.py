@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from app.config import DEV_DATABASE_URL, build_settings
+from app.config import DEV_DATABASE_URL, MIN_SIGNING_KEY_LENGTH, build_settings
 
 
 def test_defaults_are_development_oriented() -> None:
@@ -70,3 +70,38 @@ def test_cors_origins_are_split_and_trimmed() -> None:
 def test_connect_timeout_bounds_are_enforced() -> None:
     with pytest.raises(ValidationError):
         build_settings(database_connect_timeout_seconds=0)
+
+
+class TestTheChangePlanSigningKey:
+    """Three states, and only the middle one is a mistake.
+
+    Empty means this deployment cannot export, which the export path refuses in full. A long
+    key signs. A short key is the case the release audit added: it signs *and* is guessable,
+    so every document it produces verifies and none of them proves anything — a control that
+    reads as one from every side except the one that matters.
+    """
+
+    def test_no_key_is_allowed_because_it_means_export_is_disabled(self) -> None:
+        assert build_settings().remediation_signing_key == ""
+
+    def test_a_long_key_is_accepted(self) -> None:
+        key = "s" * MIN_SIGNING_KEY_LENGTH
+        assert build_settings(remediation_signing_key=key).remediation_signing_key == key
+
+    def test_a_short_key_is_refused_at_startup(self) -> None:
+        with pytest.raises(ValidationError, match="ADG_REMEDIATION_SIGNING_KEY"):
+            build_settings(remediation_signing_key="s" * (MIN_SIGNING_KEY_LENGTH - 1))
+
+    def test_whitespace_does_not_make_a_short_key_long(self) -> None:
+        """Measured after stripping, because the signer strips before it uses the value."""
+        with pytest.raises(ValidationError, match="ADG_REMEDIATION_SIGNING_KEY"):
+            build_settings(remediation_signing_key="  short  ")
+
+    def test_the_message_names_the_setting_and_how_to_generate_one(self) -> None:
+        with pytest.raises(ValidationError) as caught:
+            build_settings(remediation_signing_key="too-short")
+
+        message = str(caught.value)
+        assert "ADG_REMEDIATION_SIGNING_KEY" in message
+        assert str(MIN_SIGNING_KEY_LENGTH) in message
+        assert "Get-Random" in message
