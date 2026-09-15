@@ -432,6 +432,27 @@ their own gates.
 Recorded at completion, and it lists another session's files as well as this phase's; only
 this phase's were staged. See *Working alongside another session*.
 
+Everything this phase produced is committed as **`56a6037`** — *Phase 7C: what changed,
+whether it matters, and what it did*.
+
+`git status --short` reports **107 modified or untracked paths**, and
+**104 of them belong to the concurrent session**: the collector modules,
+the contract schemas, `app/governance/`, `app/risk_engine/`, `app/simulation/`,
+`app/ingestion/`, the AD graph fixtures, and their own migrations and handoffs. They are
+listed by `git status` because they are in the tree, not because this phase touched them.
+
+Of this phase's own files, these remain modified after the commit and are the four shared
+files whose *other* hunks belong to the concurrent session — this phase's hunks are
+committed and theirs are not:
+
 ```
-(recorded in the commit trailer below)
+ M backend/app/api/__init__.py
+ M backend/app/models/schema.py
+ M backend/tests/api/test_authorization.py
 ```
+
+A reader checking out `56a6037` alone gets a coherent Phase 7C: the routers are registered,
+the index is declared, the authorization audit lists the five routes, and every test in
+`tests/changes/` and `tests/db/test_change*.py` passes. The one thing that will not hold in
+isolation is `tests/contracts/test_openapi_snapshot.py`, because the committed
+`openapi.json` describes an application that also serves the concurrent session's routes.
