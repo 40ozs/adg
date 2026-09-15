@@ -13,16 +13,19 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import Settings
 from app.db import Database
 from app.domain import DEFAULT_LIMITS, DomainValidationError, TraversalLimits
 from app.repositories import MembershipRepository
 
 __all__ = [
     "PRINTABLE_IDENTIFIER",
+    "RequestSettings",
     "Session",
     "TraversalBounds",
     "get_session",
     "membership_repository",
+    "request_settings",
     "traversal_limits",
 ]
 
@@ -47,6 +50,26 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+
+def request_settings(request: Request) -> Settings:
+    """The settings **this application** was built with.
+
+    Not :func:`app.config.get_settings`, which is a process-wide ``lru_cache`` over the
+    environment. The two agree for a server started from the environment and diverge for every
+    application built with explicit settings — which is what ``create_app(settings)`` is for,
+    and what every test that needs a particular configuration does.
+
+    The divergence is silent and was found the expensive way: a route reading ``get_settings``
+    inside an app built with a signing key reported that the deployment had none, and the
+    export it refused looked like a bug in the export rather than in the wiring. This is the
+    same seam ``get_session`` uses, for the same reason.
+    """
+    settings: Settings = request.app.state.settings
+    return settings
+
+
+RequestSettings = Annotated[Settings, Depends(request_settings)]
 
 
 def traversal_limits(

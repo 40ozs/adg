@@ -32,6 +32,7 @@ import { PrincipalName } from "@/components/Identity";
 import { PagePosition, Pager } from "@/components/Pager";
 import { ResourceAccessTable, TokenSummary } from "@/components/EffectiveAccess";
 import { ShareAceTable } from "@/components/RawAcl";
+import { SimulateAction } from "@/components/SimulateLink";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { Tabs, type TabDefinition } from "@/components/Tabs";
 
@@ -316,6 +317,7 @@ async function directGroupsPanel(options: PanelOptions): Promise<JSX.Element> {
               foreign: item.is_foreign_security_principal,
               lastSeen: item.last_observed_at,
             }))}
+            membership={{ subjectKey: principal.key, direction: "groups-of" }}
           />
           <Pager
             navigation={pageNavigation({
@@ -410,6 +412,7 @@ async function directMembersPanel(options: PanelOptions): Promise<JSX.Element> {
               foreign: item.is_foreign_security_principal,
               lastSeen: item.last_observed_at,
             }))}
+            membership={{ subjectKey: principal.key, direction: "members-of" }}
           />
           <Pager
             navigation={pageNavigation({
@@ -643,6 +646,7 @@ function RightSummary({
 
 function MembershipTable({
   rows,
+  membership,
 }: {
   rows: readonly {
     principal: Parameters<typeof PrincipalName>[0]["principal"];
@@ -650,6 +654,13 @@ function MembershipTable({
     foreign: boolean;
     lastSeen: string;
   }[];
+  /**
+   * Which end of each edge this page is looking from, so a `Simulate` action can name the
+   * group and the member the right way round. Omitted, no action is offered: a row that
+   * could not say which of the two principals is the group must not propose to change the
+   * membership, because the proposal would be about the wrong edge.
+   */
+  membership?: { subjectKey: string; direction: "groups-of" | "members-of" };
 }): JSX.Element {
   const ambiguous = ambiguousLabels(rows.map((row) => row.principal));
   return (
@@ -660,6 +671,7 @@ function MembershipTable({
             <th scope="col">Principal</th>
             <th scope="col">Edge</th>
             <th scope="col">Last observed</th>
+            {membership && <th scope="col">What if</th>}
           </tr>
         </thead>
         <tbody>
@@ -680,6 +692,29 @@ function MembershipTable({
               <td className="muted">
                 <time dateTime={row.lastSeen}>{row.lastSeen}</time>
               </td>
+              {membership && (
+                <td>
+                  <SimulateAction
+                    seed={{
+                      kind: "remove_member",
+                      group_key:
+                        membership.direction === "groups-of"
+                          ? row.principal.key
+                          : membership.subjectKey,
+                      member_key:
+                        membership.direction === "groups-of"
+                          ? membership.subjectKey
+                          : row.principal.key,
+                      edge_kind: row.edge,
+                      subject_key:
+                        membership.direction === "groups-of"
+                          ? membership.subjectKey
+                          : row.principal.key,
+                    }}
+                    title="Measure what removing this membership would do. Nothing is applied."
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

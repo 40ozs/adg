@@ -23,7 +23,7 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import Session
@@ -40,6 +40,7 @@ from app.contracts.v1 import ObservationBatch, ScanRunCompletion, ScanRunStart
 from app.domain import Checkpoint, CollectorKind, ReconciliationDrift, ScanStatus
 from app.ingestion.checkpoints import CheckpointAdvance
 from app.ingestion.service import IngestionService, RunSummary
+from app.services.alerts import PostRunOutcome, evaluate_run_after_commit
 
 logger = logging.getLogger("adg.api.ingestion")
 
@@ -351,6 +352,7 @@ async def complete_scan_run(
     completion: ScanRunCompletion,
     session: Session,
     principal: IngestPrincipal,
+    request: Request,
 ) -> ScanRunCompletedResponse:
     if UUID(completion.run_id) != run_id:
         raise HTTPException(
@@ -361,6 +363,12 @@ async def complete_scan_run(
             ),
         )
     outcome = await IngestionService(session).complete_run(completion)
+    # The run is committed by the line above. Everything after it is downstream work that
+    # must not be able to undo it -- see evaluate_run_after_commit, which opens its own
+    # session and never raises. This is the whole of "alert delivery failure does not roll
+    # back source ingestion": by the time a webhook is contacted, the observations are
+    # durable and nothing in this handler can take them away.
+    post_run = await _post_run(request, session, run_id, completion)
     logger.info(
         "ingestion.run.complete",
         extra={
@@ -372,6 +380,7 @@ async def complete_scan_run(
                 outcome.checkpoint.accepted if outcome.checkpoint is not None else None
             ),
             "subject": principal.subject,
+            "post_run": post_run.summary,
         },
     )
     return ScanRunCompletedResponse(
@@ -383,6 +392,36 @@ async def complete_scan_run(
         drift=[_drift_view(item) for item in outcome.drift],
         checkpoint=_advance_view(outcome.checkpoint),
     )
+
+
+async def _post_run(
+    request: Request,
+    session: Session,
+    run_id: UUID,
+    completion: ScanRunCompletion,
+) -> PostRunOutcome:
+    """Re-evaluate the rules and the watches, and let nothing that happens there fail this.
+
+    ``evaluate_run_after_commit`` already catches its own failures; this catches the ones it
+    cannot -- a defect in the call itself, an exhausted connection pool, a settings property
+    that raises because somebody edited the alert policy badly. Without it, a broken
+    downstream would turn a successful completion into a 500 **after** the ingestion
+    committed, and the collector would retry a run that had already been recorded.
+
+    That is the whole acceptance criterion made structural rather than dependent on one
+    function's internal discipline.
+    """
+    try:
+        snapshot = await IngestionService(session).get_run(run_id)
+        return await evaluate_run_after_commit(
+            request.app.state.database,
+            request.app.state.settings,
+            run_id=run_id,
+            window_from=(snapshot.started_at if snapshot is not None else completion.completed_at),
+        )
+    except Exception as error:
+        logger.exception("ingestion.run.post_run_failed", extra={"run_id": str(run_id)})
+        return PostRunOutcome(ran=True, failed=str(error))
 
 
 @router.get(

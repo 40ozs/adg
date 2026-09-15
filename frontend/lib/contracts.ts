@@ -17,12 +17,16 @@ export type Capability =
   | "identities:read"
   | "access:read"
   | "risks:read"
+  | "alerts:read"
+  | "alerts:manage"
   | "changes:read"
   | "collectors:read"
   | "collectors:ingest"
   | "search"
   | "settings:read"
   | "settings:write"
+  | "simulations:read"
+  | "simulations:run"
   | "remediation:execute";
 
 export interface RoleDescription {
@@ -881,4 +885,842 @@ export interface ChangeImpactResponse {
   explanation: string;
   access: AccessDeltaView | null;
   membership: MembershipDeltaView | null;
+}
+
+/* ------------------------------------------------------------------------ governance */
+
+/**
+ * The access-review surface.
+ *
+ * Every conclusion below is the backend's. This application chooses wording and layout and
+ * derives nothing: it does not decide whether a grant drifted, whether a reviewer is
+ * overdue, whether removing an entry would end somebody's access, or what a rights mask
+ * means. Each of those is a sentence or a boolean on the wire, for the reason
+ * `docs/contracts/derived-responses.md` gives once — a client that re-derives a conclusion
+ * is a second implementation of it, and the two disagree on the day it matters.
+ */
+
+export type CampaignFocus = "resource" | "principal";
+export type CampaignStatus = "draft" | "active" | "closed" | "canceled";
+export type DecisionKind = "certify" | "revoke" | "modify" | "abstain" | "investigate";
+export type ReviewItemStatus = "pending" | "decided";
+export type CommentRequirement = "standard" | "always";
+export type DriftVerdict = "unchanged" | "modified" | "removed" | "unobserved";
+export type GrantChangeKind = "added" | "removed" | "changed";
+export type FindingRelation = "access" | "target" | "principal";
+
+export interface ScopeView {
+  kind: string;
+  key: string;
+}
+
+export interface GenerationOptionsView {
+  include_inherited: boolean;
+  include_builtin: boolean;
+  include_deny: boolean;
+}
+
+export interface CampaignView {
+  campaign_id: string;
+  name: string;
+  description: string | null;
+  focus: string;
+  status: string;
+  baseline_at: string;
+  due_at: string | null;
+  scopes: ScopeView[];
+  options: GenerationOptionsView;
+  comment_requirement: string;
+  item_count: number;
+  /** Grants present at the baseline that produced no item, by reason. Never hide this. */
+  excluded_counts: Record<string, number>;
+  snapshot_digest: string | null;
+  generated_at: string | null;
+  activated_at: string | null;
+  closed_at: string | null;
+  closed_by_subject: string | null;
+  created_by_subject: string;
+  created_at: string;
+}
+
+export interface CampaignListResponse {
+  items: CampaignView[];
+  page: PageInfo;
+}
+
+export interface GrantView {
+  ace_key: string;
+  trustee_sid: string;
+  trustee_key: string;
+  ace_type: string;
+  access_mask: number | null;
+  permission: string | null;
+  ace_flags: number | null;
+  source: string | null;
+  inherited_from: string | null;
+  order_index: number | null;
+  inherited: boolean;
+  deny: boolean;
+  version_id: number;
+  observed_from: string;
+  last_confirmed_at: string;
+  certainty: string;
+}
+
+export interface ItemView {
+  item_id: string;
+  campaign_id: string;
+  focus: string;
+  target_kind: string;
+  target_key: string;
+  target_path: string | null;
+  principal_key: string;
+  principal_sid: string;
+  principal_display_name: string | null;
+  grants: GrantView[];
+  evidence_digest: string;
+  certainty: string;
+  status: string;
+  assignment_id: string | null;
+  current_decision_id: string | null;
+  decided_at: string | null;
+  created_at: string;
+}
+
+export interface ItemListResponse {
+  items: ItemView[];
+  page: PageInfo;
+}
+
+export interface DecisionView {
+  decision_id: string;
+  item_id: string;
+  campaign_id: string;
+  decision: string;
+  rationale: string | null;
+  decided_by_subject: string;
+  decided_by_display_name: string | null;
+  decided_at: string;
+  decided_late: boolean;
+  supersedes_decision_id: string | null;
+  superseded_at: string | null;
+  superseded_by_decision_id: string | null;
+  current: boolean;
+}
+
+export interface GrantChangeView {
+  kind: string;
+  ace_key: string;
+  fields: string[];
+  /** The same fields in words. Rendered by the backend so every screen agrees. */
+  field_labels: string[];
+  before: GrantView | null;
+  after: GrantView | null;
+}
+
+export interface DriftView {
+  verdict: string;
+  has_drifted: boolean;
+  /**
+   * One sentence written for the person deciding. Rendered rather than assembled here: the
+   * difference between "it was removed" and "nobody has looked" is the one a client would
+   * get wrong, and it changes what the reviewer does next.
+   */
+  summary: string;
+  compared_at: string;
+  baseline_digest: string;
+  current_content_digest: string | null;
+  changes: GrantChangeView[];
+  current_grants: GrantView[];
+  current_certainty: string | null;
+  target_present: boolean | null;
+  target_certainty: string | null;
+  evidence_reissued: boolean;
+}
+
+export interface ItemDetailResponse {
+  item: ItemView;
+  decisions: DecisionView[];
+  drift: DriftView;
+}
+
+export interface DriftCountsView {
+  unchanged: number;
+  modified: number;
+  removed: number;
+  unobserved: number;
+}
+
+export interface DriftItemView {
+  item: ItemView;
+  drift: DriftView;
+}
+
+export interface DriftReportResponse {
+  campaign_id: string;
+  compared_at: string;
+  total_items: number;
+  /** Items actually compared. Shown beside the total, always. */
+  covered: number;
+  has_more: boolean;
+  counts: DriftCountsView;
+  drifted: DriftItemView[];
+}
+
+export interface AccessSummaryView {
+  at: string;
+  available: boolean;
+  unavailable_reason: string | null;
+  has_access: boolean | null;
+  rights: RightsView | null;
+  certainty: string | null;
+  limiting_layer: string | null;
+}
+
+export interface GroupRouteView {
+  principal: PrincipalSummary;
+  depth: number;
+  chain: string[];
+  rights: RightsView;
+  layer: string;
+  inherited: boolean;
+}
+
+export interface EntryRemovalView {
+  ace_key: string;
+  rights_removed: RightsView;
+  rights_after: RightsView;
+  revokes_all_access: boolean;
+  changes_nothing: boolean;
+  alternate_paths: number;
+}
+
+export interface ReachView {
+  available: boolean;
+  unavailable_reason: string | null;
+  direct_paths: number;
+  group_paths: number;
+  routes: GroupRouteView[];
+  removals: EntryRemovalView[];
+  /**
+   * `true` when removing this item's entries would leave the principal with access anyway.
+   * `null` means no explanation could be produced — never rendered as "removing it works",
+   * because that is the reassuring answer and has to be measured.
+   */
+  removing_reviewed_entries_leaves_access: boolean | null;
+  truncated: boolean;
+}
+
+export interface RelatedFindingView {
+  finding_key: string;
+  rule_id: string;
+  status: string;
+  severity: string;
+  band: string;
+  confidence: string;
+  relation: string;
+  detected_at: string;
+  first_detected_at: string;
+  resource_key: string | null;
+  share_key: string | null;
+  principal_key: string | null;
+  detail: Record<string, unknown>;
+}
+
+export interface LastChangeView {
+  kind: string;
+  key: string;
+  action: string;
+  significance: string;
+  severity: string;
+  direction: string;
+  reasons: string[];
+  changed_after: string | null;
+  changed_at_or_before: string | null;
+  is_exact: boolean;
+}
+
+export interface ItemContextResponse {
+  item: ItemView;
+  campaign_id: string;
+  comment_requirement: string;
+  drift: DriftView;
+  baseline_access: AccessSummaryView;
+  current_access: AccessSummaryView;
+  reach: ReachView;
+  resolved_resource_key: string | null;
+  findings: RelatedFindingView[];
+  findings_truncated: boolean;
+  changes: LastChangeView[];
+  changes_truncated: boolean;
+}
+
+export interface BulkDecisionResponse {
+  campaign_id: string;
+  decision: string;
+  item_count: number;
+  decisions: DecisionView[];
+  note: string;
+}
+
+export interface QueueEntryView {
+  campaign_id: string;
+  name: string;
+  focus: string;
+  status: string;
+  baseline_at: string;
+  due_at: string | null;
+  assigned: number;
+  decided: number;
+  pending: number;
+  overdue: boolean;
+}
+
+export interface QueueResponse {
+  subject: string;
+  entries: QueueEntryView[];
+  total_pending: number;
+  overdue_campaigns: number;
+}
+
+export interface ReviewerProgressView {
+  assignment_id: string;
+  reviewer_subject: string;
+  reviewer_display_name: string | null;
+  scope: ScopeView | null;
+  due_at: string | null;
+  assigned: number;
+  decided: number;
+  pending: number;
+  completion: number;
+  late_decisions: number;
+  overdue: boolean;
+}
+
+export interface CampaignStatusResponse {
+  campaign: CampaignView;
+  total_items: number;
+  pending_items: number;
+  decided_items: number;
+  /** Items nobody was asked about. Never folded into the pending total. */
+  unassigned_items: number;
+  completion: number;
+  decisions_by_kind: Record<string, number>;
+  overdue: boolean;
+  reviewers: ReviewerProgressView[];
+  overdue_reviewers: number;
+  late_decisions: number;
+  audit_head: string | null;
+}
+
+export interface AssignmentView {
+  assignment_id: string;
+  campaign_id: string;
+  reviewer_subject: string;
+  reviewer_display_name: string | null;
+  reviewer_email: string | null;
+  scope: ScopeView | null;
+  due_at: string | null;
+  assigned_by_subject: string;
+  assigned_at: string;
+  revoked_at: string | null;
+  revoked_by_subject: string | null;
+  active: boolean;
+}
+
+export interface AssignmentListResponse {
+  items: AssignmentView[];
+}
+
+export interface ProposalView {
+  proposal_id: string;
+  item_id: string;
+  campaign_id: string;
+  decision_id: string | null;
+  action: string;
+  status: string;
+  target_kind: string;
+  target_key: string;
+  principal_key: string;
+  ace_keys: string[];
+  details: Record<string, unknown>;
+  proposed_by_subject: string;
+  proposed_at: string;
+  /** Constant. Present so a client cannot render a proposal as an action taken. */
+  note: string;
+}
+
+/* --------------------------------------------------------------------------------
+ * Risks (Phase 8B)
+ *
+ * The four fields below that carry no findings are the important ones. `coverage`,
+ * `configuration`, `severity_counts` (including its zeros) and `status_counts` are what
+ * keep an empty report from reading as a clean estate — which is this product's own
+ * failure mode applied to its own interface.
+ * ------------------------------------------------------------------------------ */
+
+export interface FindingSubjectView {
+  resource_key: string | null;
+  share_key: string | null;
+  principal_key: string | null;
+  discriminator: string | null;
+  kind: string;
+}
+
+/**
+ * What the last evaluation covered.
+ *
+ * `has_ever_run: false` is the state a client must never render as a clean report: the
+ * rules have not been evaluated, so an empty list means nothing has looked.
+ */
+export interface RiskCoverageView {
+  has_ever_run: boolean;
+  evaluated_at: string | null;
+  trigger: string | null;
+  complete: boolean;
+  rules_run: string[];
+  rules_skipped: string[];
+  truncation: string | null;
+  evaluation_id: string | null;
+}
+
+export interface RiskConfigurationView {
+  version: string;
+  rules_enabled: number;
+  rules_disabled: string[];
+  marks_anything_sensitive: boolean;
+}
+
+export interface RemediationView {
+  summary: string;
+  steps: string[];
+  caution: string | null;
+}
+
+export interface RiskRuleView {
+  rule_id: string;
+  title: string;
+  detects: string;
+  matters_because: string;
+  remediation: RemediationView;
+  enabled: boolean;
+  subject_kind: string;
+  version: string;
+  severities: Record<string, string>;
+  requires_configuration: boolean;
+}
+
+export interface FindingSummaryView {
+  key: string;
+  rule_id: string;
+  title: string;
+  status: string;
+  severity: string;
+  confidence: string;
+  band: string;
+  qualifiers: string[];
+  subject: FindingSubjectView;
+  detail: Record<string, unknown>;
+  first_detected_at: string;
+  detected_at: string;
+  last_evaluated_at: string;
+  resolved_at: string | null;
+  occurrence_count: number;
+  evidence_count: number;
+  evidence_digest: string;
+  detail_url: string;
+}
+
+export interface EvidenceRecordView {
+  kind: string;
+  key: string;
+  record: Record<string, unknown>;
+}
+
+export interface FindingEventView {
+  event_type: string;
+  occurred_at: string;
+  evaluation_id: string;
+  rule_version: string;
+  severity: string | null;
+  confidence: string | null;
+  evidence_digest: string | null;
+  previous_evidence_digest: string | null;
+}
+
+export interface FindingDetailView {
+  finding: FindingSummaryView;
+  rule: RiskRuleView;
+  evidence: EvidenceRecordView[];
+  events: FindingEventView[];
+  reproduces: boolean;
+  reproduction_note: string;
+}
+
+export interface RiskSummaryResponse {
+  coverage: RiskCoverageView;
+  configuration: RiskConfigurationView;
+  severity_counts: Record<string, number>;
+  rule_counts: Record<string, number>;
+  status_counts: Record<string, number>;
+  total: number;
+}
+
+export interface FindingsResponse {
+  filters: Record<string, unknown>;
+  coverage: RiskCoverageView;
+  configuration: RiskConfigurationView;
+  severity_counts: Record<string, number>;
+  rule_counts: Record<string, number>;
+  status_counts: Record<string, number>;
+  items: FindingSummaryView[];
+  page: PageInfo;
+}
+
+export interface RiskRulesResponse {
+  rules: RiskRuleView[];
+  configuration: RiskConfigurationView;
+}
+
+/* --------------------------------------------------------------------------------
+ * Alerts (Phase 8B)
+ * ------------------------------------------------------------------------------ */
+
+export interface WatchView {
+  watch_id: string;
+  kind: string;
+  key: string;
+  label: string;
+  triggers: string[];
+  cooldown_seconds: number;
+  enabled: boolean;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What each kind of watch can be told about. Served, never hard-coded here. */
+export interface WatchKindView {
+  kind: string;
+  triggers: string[];
+  covers: string;
+}
+
+export interface WatchesResponse {
+  watches: WatchView[];
+  kinds: WatchKindView[];
+  min_cooldown_seconds: number;
+  max_cooldown_seconds: number;
+  /** What a new watch gets if it does not name one. Served, so a form cannot guess wrong. */
+  default_cooldown_seconds: number;
+}
+
+export interface AlertView {
+  alert_key: string;
+  trigger: string;
+  trigger_description: string;
+  /** `stateful` resolves and can reopen; `transient` never resolves. */
+  lifecycle: string;
+  status: string;
+  summary: string;
+  watch_id: string | null;
+  watch_label: string | null;
+  resource_key: string | null;
+  share_key: string | null;
+  principal_key: string | null;
+  first_raised_at: string;
+  last_raised_at: string;
+  last_notified_at: string | null;
+  resolved_at: string | null;
+  occurrence_count: number;
+  /** Above zero means this happened more often than anybody was told. */
+  suppressed_total: number;
+  suppressed_since_notice: number;
+  payload: Record<string, unknown>;
+  detail_url: string;
+}
+
+export interface AlertEventView {
+  event_id: string;
+  transition: string;
+  suppression_reason: string | null;
+  notified: boolean;
+  folds: number;
+  summary: string;
+  occurred_at: string;
+  recorded_at: string;
+  payload_digest: string;
+  source_run_id: string | null;
+  source_evaluation_id: string | null;
+}
+
+export interface AlertDeliveryView {
+  delivery_id: string;
+  sink_name: string;
+  status: string;
+  attempts: number;
+  last_error: string | null;
+  enqueued_at: string;
+  next_attempt_at: string;
+  delivered_at: string | null;
+}
+
+export interface AlertDetailResponse {
+  alert: AlertView;
+  events: AlertEventView[];
+  deliveries: AlertDeliveryView[];
+}
+
+export interface AlertsResponse {
+  filters: Record<string, unknown>;
+  items: AlertView[];
+  status_counts: Record<string, number>;
+  trigger_counts: Record<string, number>;
+  page: PageInfo;
+}
+
+export interface AlertQueueResponse {
+  depth: Record<string, number>;
+  stale: number;
+  abandoned: number;
+  oldest_pending_at: string | null;
+  policy: string[];
+}
+
+// ---------------------------------------------------------------- simulations (9B)
+
+/**
+ * What-if proposals.
+ *
+ * `notice` and `applied` appear on every simulation payload and are not decoration: the
+ * phase's first acceptance criterion is that the non-destructive nature is unmistakable, and
+ * the sentence is served by the API so that three surfaces cannot each word it their own way.
+ */
+export interface SimulationChangeView {
+  kind: string;
+  kind_description: string;
+  description: string;
+  document: Record<string, unknown>;
+  group: PrincipalSummary | null;
+  member: PrincipalSummary | null;
+  trustee: PrincipalSummary | null;
+}
+
+export interface SimulationApplicationView {
+  change: SimulationChangeView;
+  outcome: string;
+  outcome_description: string;
+  applied: boolean;
+  detail: Record<string, string>;
+}
+
+export interface SimulationCaveatView {
+  code: string;
+  description: string;
+}
+
+export interface SimulationRouteView {
+  layer: string;
+  chain: PrincipalSummary[];
+  ace_key: string | null;
+  ace_position: number;
+  rights: RightsView;
+  assumed: boolean;
+  inherited: boolean;
+  via_group: boolean;
+}
+
+export interface SimulationResourceView {
+  resource_key: string;
+  share_key: string | null;
+  path: string | null;
+  sensitive: boolean;
+  sensitivity_labels: string[];
+  /** Null when the caller does not hold `alerts:read`. Never a guessed false. */
+  watched: boolean | null;
+}
+
+export interface SimulationDeltaView {
+  subject: PrincipalSummary;
+  resource: SimulationResourceView;
+  access_path: string;
+  direction: string;
+  direction_description: string;
+  changed: boolean;
+  rights_before: RightsView;
+  rights_after: RightsView;
+  rights_added: RightsView;
+  rights_removed: RightsView;
+  certainty_before: string;
+  certainty_after: string;
+  limiting_layer_after: string;
+  caveats: SimulationCaveatView[];
+  alternate_path_retained: boolean;
+  retained_routes: SimulationRouteView[];
+}
+
+export interface SimulationSummaryView {
+  evaluated: number;
+  unchanged: number;
+  gained_access: number;
+  lost_access: number;
+  expanded: number;
+  reduced: number;
+  changed: number;
+  principals_gaining: PrincipalSummary[];
+  principals_losing: PrincipalSummary[];
+  principals_affected: number;
+  resources_affected: string[];
+  sensitive_resources_affected: string[];
+  watched_resources_affected: string[] | null;
+  /**
+   * Deltas where the proposal removes one route and another survives. A high number against
+   * a removal proposal usually means the change achieves less than it appears to.
+   */
+  alternate_paths_retained: number;
+}
+
+export interface SimulationBaselineView {
+  kind: string;
+  token: string;
+  run_id: string | null;
+  at: string | null;
+  captured_at: string;
+  is_empty: boolean;
+  stale: boolean;
+  current_token: string;
+}
+
+export interface SimulationBoundsView {
+  max_principals: number;
+  max_resources: number;
+  max_pairs: number;
+  max_explanations: number;
+  time_budget_ms: number;
+}
+
+export interface SimulationScopeView {
+  kind: string;
+  subject_key: string | null;
+  resource_key: string | null;
+  path: string;
+  limit: number;
+  after: string | null;
+}
+
+export interface SimulationTruncationView {
+  code: string;
+  description: string;
+}
+
+export interface SimulationCostView {
+  pairs_evaluated: number;
+  resolutions: number;
+  explanations: number;
+  edges_read: number;
+  elapsed_ms: number;
+}
+
+export interface SimulationReportView {
+  notice: string;
+  /** Always false. A field rather than prose so a client can assert on it. */
+  applied: false;
+  simulation_id: string | null;
+  overlay_hash: string;
+  change_count: number;
+  baseline: SimulationBaselineView;
+  scope: SimulationScopeView;
+  bounds: SimulationBoundsView;
+  applications: SimulationApplicationView[];
+  inert: boolean;
+  summary: SimulationSummaryView;
+  deltas: SimulationDeltaView[];
+  complete: boolean;
+  truncation: SimulationTruncationView[];
+  cost: SimulationCostView;
+}
+
+export interface StoredSimulationView {
+  simulation_id: string;
+  name: string;
+  description: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  change_count: number;
+  overlay_hash: string;
+  changes: SimulationChangeView[];
+  baseline: SimulationBaselineView;
+}
+
+export interface SimulationEvaluationView {
+  evaluation_id: string;
+  simulation_id: string;
+  scope_kind: string;
+  baseline_token: string;
+  stale_baseline: boolean;
+  pairs_evaluated: number;
+  complete: boolean;
+  duration_ms: number;
+  computed_at: string;
+  report: Record<string, unknown>;
+}
+
+export interface StoredSimulationsResponse {
+  notice: string;
+  simulations: StoredSimulationView[];
+  page: PageInfo;
+}
+
+export interface SimulationDetailResponse {
+  notice: string;
+  simulation: StoredSimulationView;
+  stale: boolean;
+  current_token: string;
+  evaluations: SimulationEvaluationView[];
+}
+
+export interface StoredSimulationResponse {
+  notice: string;
+  simulation: StoredSimulationView;
+  report: SimulationReportView;
+}
+
+export interface SimulationVocabularyEntry {
+  code: string;
+  description: string;
+}
+
+export interface SimulationVocabularyResponse {
+  notice: string;
+  change_kinds: SimulationVocabularyEntry[];
+  inherited_ace_dispositions: SimulationVocabularyEntry[];
+  outcomes: SimulationVocabularyEntry[];
+  directions: SimulationVocabularyEntry[];
+  caveats: SimulationVocabularyEntry[];
+  truncations: SimulationVocabularyEntry[];
+  scope_kinds: SimulationVocabularyEntry[];
+  max_changes: number;
+  bounds_ceilings: SimulationBoundsView;
+}
+
+export interface SimulationExportResponse {
+  document_version: string;
+  notice: string;
+  exported_at: string;
+  plan: {
+    simulation_id: string;
+    name: string;
+    description: string | null;
+    created_by: string | null;
+    created_at: string;
+    overlay_hash: string;
+    baseline: SimulationBaselineView;
+    changes: SimulationChangeView[];
+  };
+  result: SimulationEvaluationView | null;
+  stale: boolean;
+  current_token: string;
+  vocabulary: SimulationVocabularyResponse;
 }

@@ -279,7 +279,7 @@ async function aclPanel(options: PanelOptions): Promise<JSX.Element> {
       {state.kind === "ready" && (
         <>
           <NoteList notes={aclHashNotes(state.data.acl_hash)} />
-          <NtfsAceTable entries={state.data.entries} />
+          <NtfsAceTable entries={state.data.entries} resourceKey={resource.path} />
           <p className="muted">
             Entries are listed in the order the DACL stores them, across pages. ADG does not
             offer an explicit-only filter here: filtering one page would describe the page

@@ -19,8 +19,22 @@ from app.auth.dependencies import install_auth
 from app.config import Settings, get_settings
 from app.db import Database
 from app.domain import DomainValidationError
+from app.governance.generation import CampaignTooLarge
+from app.governance.repository import ScopeTooLarge
+from app.governance.service import (
+    GovernanceConflict,
+    GovernanceForbidden,
+    GovernanceNotFound,
+    NotHomogeneous,
+)
 from app.ingestion.service import IngestionConflict, RunNotFound
 from app.logging_config import configure_logging
+from app.remediation.errors import (
+    RemediationConflict,
+    RemediationDisabled,
+    RemediationForbidden,
+    RemediationNotFound,
+)
 
 logger = logging.getLogger("adg.api")
 
@@ -140,6 +154,96 @@ def _install_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RunNotFound)
     async def _run_not_found(request: Request, exc: RunNotFound) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)})
+
+    @app.exception_handler(RemediationNotFound)
+    async def _remediation_not_found(request: Request, exc: RemediationNotFound) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)})
+
+    @app.exception_handler(RemediationConflict)
+    async def _remediation_conflict(request: Request, exc: RemediationConflict) -> JSONResponse:
+        # 409 rather than 422, for the reason the governance conflict gives: nothing about the
+        # request is wrong. The plan is real, the caller is entitled, and the world has moved.
+        # The most important member of this class is the stale-state refusal -- "a change this
+        # plan names is no longer what ADG observed" -- and a 422 would send somebody to edit
+        # a request that was correct.
+        logger.info(
+            "remediation.rejected.conflict",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
+    @app.exception_handler(RemediationForbidden)
+    async def _remediation_forbidden(request: Request, exc: RemediationForbidden) -> JSONResponse:
+        # The separation of duties, not the capability gate -- the capability let the request
+        # in. Logged at warning for the reason the governance one is: somebody approving their
+        # own change plan is worth seeing, whether it is a client bug or a person trying.
+        logger.warning(
+            "remediation.denied.separation_of_duties",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": str(exc)})
+
+    @app.exception_handler(RemediationDisabled)
+    async def _remediation_disabled(request: Request, exc: RemediationDisabled) -> JSONResponse:
+        # Unreachable from any route, and registered anyway. If an execution path is ever
+        # wired up and the refusing executor does its job, the caller gets a documented "this
+        # product does not do that" rather than a 500 that reads like a bug -- and this is one
+        # more place a reader finds the posture written down.
+        logger.error(
+            "remediation.execution_attempted",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(GovernanceNotFound)
+    async def _governance_not_found(request: Request, exc: GovernanceNotFound) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)})
+
+    @app.exception_handler(GovernanceConflict)
+    async def _governance_conflict(request: Request, exc: GovernanceConflict) -> JSONResponse:
+        # 409 rather than 422: the request was well-formed and the current state refuses it.
+        # "Activate a campaign that is already active" is not something the caller can fix by
+        # correcting the body, and telling them it is would send them looking in the wrong
+        # place.
+        logger.info(
+            "governance.rejected.conflict",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
+    @app.exception_handler(GovernanceForbidden)
+    async def _governance_forbidden(request: Request, exc: GovernanceForbidden) -> JSONResponse:
+        # The assignment gate, not the capability gate -- the capability let the request in.
+        # Logged at warning because somebody answering another reviewer's item is worth
+        # seeing, whether it is a bug in a client or a person trying.
+        logger.warning(
+            "governance.denied.not_assigned",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": str(exc)})
+
+    @app.exception_handler(NotHomogeneous)
+    async def _not_homogeneous(request: Request, exc: NotHomogeneous) -> JSONResponse:
+        # 422 rather than 409: the batch itself is the thing that is wrong, and the caller
+        # fixes it by selecting a different set. The message names the axis that failed so
+        # that "select fewer" is not the only advice a client can give.
+        logger.info(
+            "governance.rejected.not_homogeneous",
+            extra={"request_id": getattr(request.state, "request_id", None)},
+        )
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(CampaignTooLarge)
+    async def _campaign_too_large(request: Request, exc: CampaignTooLarge) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
+    @app.exception_handler(ScopeTooLarge)
+    async def _scope_too_large(request: Request, exc: ScopeTooLarge) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
 
     @app.exception_handler(InvalidCursor)
     async def _invalid_cursor(request: Request, exc: InvalidCursor) -> JSONResponse:

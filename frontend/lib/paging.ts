@@ -66,18 +66,40 @@ export function cursorFor(trail: Trail): string | undefined {
   return trail.cursors.length === 0 ? undefined : trail.cursors[trail.cursors.length - 1];
 }
 
-export type QueryValue = string | number | boolean | null | undefined;
+export type QueryValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  /** A repeatable parameter: written once per element, never joined. */
+  | readonly string[];
 
 /**
  * A relative href.
  *
  * Empty, null and undefined values are dropped rather than written as empty parameters,
  * so a link to the first page is the bare path and not `?tab=&page=`.
+ *
+ * An **array** is written as a repeated parameter — `?severity=critical&severity=high` —
+ * which is what the API's repeatable filters expect. Joining the values into one parameter
+ * would be accepted by the URL and then read by the backend as a single unknown value; the
+ * filters refuse unknown values rather than ignoring them, so this would surface as a 422
+ * rather than as a wrong result. It would still be wrong, and one layer further from the
+ * mistake. An empty array writes nothing, which is how "no filter" is expressed.
  */
 export function hrefWith(basePath: string, params: Record<string, QueryValue>): string {
   const search = new URLSearchParams();
   for (const [name, value] of Object.entries(params)) {
     if (value === null || value === undefined || value === "") {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== "") {
+          search.append(name, item);
+        }
+      }
       continue;
     }
     search.set(name, String(value));

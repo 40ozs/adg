@@ -53,6 +53,19 @@ PATH_PARAMETERS = {
     "server": "fs01",
     "share": "fs01%7Cfinance",
     "resource": "fs01%7Cfinance",
+    # Governance identifiers are surrogate UUIDs. Any syntactically valid one does: every
+    # request using them must be refused before anything looks it up.
+    "campaign_id": "00000000-0000-0000-0000-0000000000c1",
+    "item_id": "00000000-0000-0000-0000-0000000000f1",
+    "owner_id": "00000000-0000-0000-0000-0000000000a1",
+    "watch_id": "00000000-0000-0000-0000-0000000000b1",
+    "simulation_id": "00000000-0000-0000-0000-0000000000d1",
+    "plan_id": "00000000-0000-0000-0000-0000000000e1",
+    "export_id": "00000000-0000-0000-0000-0000000000e2",
+    # A finding key and an alert key are both a 64-character hex digest, and the route
+    # constrains the shape. Any well-formed one does: the request must be refused before
+    # anything looks it up.
+    "key": "0" * 64,
 }
 
 
@@ -237,6 +250,132 @@ ROUTE_CAPABILITIES: dict[tuple[str, str], str | None] = {
     # list of what was edited, and the more sensitive one does not inherit the weaker
     # requirement. See the note at the include site in app/api/__init__.
     ("GET", "/api/v1/changes/impact"): Capability.ACCESS_READ.value,
+    # Governance. Three capabilities, and the split is the point: reading an attestation,
+    # giving one, and running the review that asks for it are separately held. A plain
+    # viewer holds none of them -- a decision rationale can name a person and say something
+    # about them that no ACL ever would -- and `admin` holds only the read, because running
+    # an access review is a compliance function and not an operations one. See ADR-0029.
+    ("POST", "/api/v1/governance/campaigns"): Capability.GOVERNANCE_MANAGE.value,
+    ("GET", "/api/v1/governance/campaigns"): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/campaigns/{campaign_id}"): Capability.GOVERNANCE_READ.value,
+    (
+        "POST",
+        "/api/v1/governance/campaigns/{campaign_id}/generation",
+    ): Capability.GOVERNANCE_MANAGE.value,
+    (
+        "POST",
+        "/api/v1/governance/campaigns/{campaign_id}/activation",
+    ): Capability.GOVERNANCE_MANAGE.value,
+    (
+        "POST",
+        "/api/v1/governance/campaigns/{campaign_id}/closure",
+    ): Capability.GOVERNANCE_MANAGE.value,
+    (
+        "POST",
+        "/api/v1/governance/campaigns/{campaign_id}/assignments",
+    ): Capability.GOVERNANCE_MANAGE.value,
+    (
+        "GET",
+        "/api/v1/governance/campaigns/{campaign_id}/assignments",
+    ): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/campaigns/{campaign_id}/items"): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/campaigns/{campaign_id}/drift"): Capability.GOVERNANCE_READ.value,
+    # A bulk decision is a decision, so it is governance:review and not governance:manage --
+    # the same separation of duties, and the homogeneity rules in app/governance/service.py
+    # are what keep it from being a way to assert more than one thing at once.
+    (
+        "POST",
+        "/api/v1/governance/campaigns/{campaign_id}/decisions",
+    ): Capability.GOVERNANCE_REVIEW.value,
+    # governance:read, not governance:review: reading what was asked of you is not answering
+    # it, and an auditor checking whether anybody has a backlog has to be able to look.
+    ("GET", "/api/v1/governance/queue"): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/campaigns/{campaign_id}/status"): Capability.GOVERNANCE_READ.value,
+    (
+        "GET",
+        "/api/v1/governance/campaigns/{campaign_id}/verification",
+    ): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/campaigns/{campaign_id}/audit"): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/items/{item_id}"): Capability.GOVERNANCE_READ.value,
+    ("GET", "/api/v1/governance/items/{item_id}/context"): Capability.GOVERNANCE_READ.value,
+    # Deliberately governance:review, which governance:manage does NOT include: whoever
+    # chooses the questions does not also give the answers. The capability only admits the
+    # request -- the item must also be assigned to the caller, which app/governance/service.py
+    # checks against the database and tests/db/test_governance_api.py proves.
+    ("POST", "/api/v1/governance/items/{item_id}/decisions"): Capability.GOVERNANCE_REVIEW.value,
+    ("POST", "/api/v1/governance/items/{item_id}/remediation"): Capability.GOVERNANCE_REVIEW.value,
+    ("POST", "/api/v1/governance/owners"): Capability.GOVERNANCE_MANAGE.value,
+    ("GET", "/api/v1/governance/owners"): Capability.GOVERNANCE_READ.value,
+    ("DELETE", "/api/v1/governance/owners/{owner_id}"): Capability.GOVERNANCE_MANAGE.value,
+    # The risk report. One capability, and no route can start an evaluation: reading a
+    # report must not be able to trigger the most expensive thing in the product.
+    ("GET", "/api/v1/risks/summary"): Capability.RISKS_READ.value,
+    ("GET", "/api/v1/risks/rules"): Capability.RISKS_READ.value,
+    ("GET", "/api/v1/risks/evaluations"): Capability.RISKS_READ.value,
+    ("GET", "/api/v1/risks/findings"): Capability.RISKS_READ.value,
+    ("GET", "/api/v1/risks/findings/{key}"): Capability.RISKS_READ.value,
+    # Alerts. Reading one and deciding who gets woken up are separately held: somebody who
+    # could quietly disable the watch on the payroll share could make an exposure land in
+    # nobody's inbox, which is this product's own failure mode performed on the product.
+    ("GET", "/api/v1/alerts"): Capability.ALERTS_READ.value,
+    ("GET", "/api/v1/alerts/{key}"): Capability.ALERTS_READ.value,
+    ("GET", "/api/v1/alerts/watches"): Capability.ALERTS_READ.value,
+    ("POST", "/api/v1/alerts/watches"): Capability.ALERTS_MANAGE.value,
+    ("PATCH", "/api/v1/alerts/watches/{watch_id}"): Capability.ALERTS_MANAGE.value,
+    ("DELETE", "/api/v1/alerts/watches/{watch_id}"): Capability.ALERTS_MANAGE.value,
+    ("GET", "/api/v1/alerts/deliveries"): Capability.ALERTS_READ.value,
+    ("POST", "/api/v1/alerts/deliveries/drain"): Capability.ALERTS_MANAGE.value,
+    # What-if proposals. Two capabilities, and the split is the same shape as the alerts
+    # one: reading a report somebody already ran is one disclosure, and making the estate
+    # compute a new one is an act. simulations:read is deliberately not held by a plain
+    # viewer either -- a simulation discloses *potential* access, which is a route map for
+    # privilege escalation assembled out of answers a reader would otherwise compose by
+    # hand. See ADR-0034. No route here writes to Windows.
+    ("GET", "/api/v1/simulations/vocabulary"): Capability.SIMULATIONS_READ.value,
+    ("GET", "/api/v1/simulations"): Capability.SIMULATIONS_READ.value,
+    ("GET", "/api/v1/simulations/{simulation_id}"): Capability.SIMULATIONS_READ.value,
+    (
+        "GET",
+        "/api/v1/simulations/{simulation_id}/evaluations",
+    ): Capability.SIMULATIONS_READ.value,
+    ("GET", "/api/v1/simulations/{simulation_id}/export"): Capability.SIMULATIONS_READ.value,
+    ("POST", "/api/v1/simulations/preview"): Capability.SIMULATIONS_RUN.value,
+    ("POST", "/api/v1/simulations"): Capability.SIMULATIONS_RUN.value,
+    (
+        "POST",
+        "/api/v1/simulations/{simulation_id}/evaluations",
+    ): Capability.SIMULATIONS_RUN.value,
+    ("DELETE", "/api/v1/simulations/{simulation_id}"): Capability.SIMULATIONS_RUN.value,
+    # Change plans. Four capabilities, and the three that act are held by disjoint roles
+    # (ADR-0038): whoever writes a plan does not approve it, and whoever approves it does not
+    # produce the signed instruction. No route here writes to Windows -- ADG has no write
+    # adapter and remediation:execute is granted by no role -- and the absence of an
+    # execution route is itself asserted, by tests/remediation/test_no_write_path.py.
+    ("GET", "/api/v1/remediation/execution-policy"): Capability.REMEDIATION_READ.value,
+    ("GET", "/api/v1/remediation/candidates"): Capability.REMEDIATION_READ.value,
+    ("GET", "/api/v1/remediation"): Capability.REMEDIATION_READ.value,
+    ("GET", "/api/v1/remediation/{plan_id}"): Capability.REMEDIATION_READ.value,
+    ("GET", "/api/v1/remediation/{plan_id}/audit"): Capability.REMEDIATION_READ.value,
+    ("GET", "/api/v1/remediation/{plan_id}/exports"): Capability.REMEDIATION_READ.value,
+    (
+        "GET",
+        "/api/v1/remediation/{plan_id}/exports/{export_id}",
+    ): Capability.REMEDIATION_READ.value,
+    (
+        "GET",
+        "/api/v1/remediation/{plan_id}/exports/{export_id}/runbook",
+    ): Capability.REMEDIATION_READ.value,
+    ("POST", "/api/v1/remediation"): Capability.REMEDIATION_PLAN.value,
+    ("PUT", "/api/v1/remediation/{plan_id}/changes"): Capability.REMEDIATION_PLAN.value,
+    ("POST", "/api/v1/remediation/{plan_id}/simulation"): Capability.REMEDIATION_PLAN.value,
+    ("POST", "/api/v1/remediation/{plan_id}/submission"): Capability.REMEDIATION_PLAN.value,
+    ("POST", "/api/v1/remediation/{plan_id}/cancellation"): Capability.REMEDIATION_PLAN.value,
+    # Answering a plan, and never writing one. A governance administrator and a remediation
+    # planner both hold REMEDIATION_PLAN and neither holds this.
+    ("POST", "/api/v1/remediation/{plan_id}/approval"): Capability.REMEDIATION_APPROVE.value,
+    # Producing the signed instruction: the third pair of hands, held only by the platform
+    # administrator who is going to carry the work out.
+    ("POST", "/api/v1/remediation/{plan_id}/exports"): Capability.REMEDIATION_EXPORT.value,
 }
 
 
@@ -283,7 +422,9 @@ class TestEveryRouteRequiresTheRightCapability:
 
         assert public == set(PUBLIC_PATHS)
 
-    @pytest.mark.parametrize("role", [Role.VIEWER, Role.AUDITOR, Role.ADMIN])
+    @pytest.mark.parametrize(
+        "role", [Role.VIEWER, Role.AUDITOR, Role.ADMIN, Role.REVIEWER, Role.GOVERNANCE_ADMIN]
+    )
     async def test_each_role_reaches_exactly_what_its_capabilities_allow(
         self, permissive: AsyncClient, auth_settings: Settings, role: Role
     ) -> None:
@@ -592,7 +733,18 @@ class TestTheAuthConfigEndpoint:
 
         assert body["mode"] == "development"
         assert body["development"] is True
-        assert body["development_accounts"] == ["viewer", "auditor", "admin"]
+        # One account per active role, in the order the default list declares them. The two
+        # governance accounts are separate from "admin" on purpose: running a review and
+        # answering one are separately held (ADR-0029), and a developer should see that.
+        assert body["development_accounts"] == [
+            "viewer",
+            "auditor",
+            "admin",
+            "reviewer",
+            "governance",
+            "planner",
+            "approver",
+        ]
 
     async def test_it_publishes_the_role_table_so_the_ui_need_not_hard_code_it(
         self, anonymous: AsyncClient

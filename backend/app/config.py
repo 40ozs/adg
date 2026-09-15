@@ -14,12 +14,22 @@ from typing import Any, Literal
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.alerts.configuration import DEFAULT_POLICY, AlertPolicy, load_policy
 from app.auth.dev_users import DEFAULT_DEV_AUTH_USERS, DevelopmentUser, parse_development_users
 from app.auth.roles import Role, parse_roles
 from app.history.retention import RetentionPolicy
+from app.risk_engine.configuration import (
+    DEFAULT_CONFIGURATION,
+    RiskConfiguration,
+    load_configuration,
+)
 
 Environment = Literal["development", "test", "production"]
 LogFormat = Literal["json", "text"]
+#: Which remediator a deployment has. There is deliberately no value naming a real
+#: write adapter: see app/remediation/executor.py.
+RemediationExecutionMode = Literal["disabled", "lab"]
+
 AuthMode = Literal["oidc", "development"]
 
 # Development-only default. Production deployments must supply ADG_DATABASE_URL;
@@ -99,6 +109,91 @@ class Settings(BaseSettings):
     """Whether anything acts on the window. Nothing in the API or the collectors calls the
     prune; it is an operator action."""
 
+    # --- Risk rules ------------------------------------------------------------------
+    #
+    # The rules themselves ship with the application; this names a file that may re-grade
+    # their severities, move their thresholds, turn one off, and -- the part ADG cannot
+    # supply -- declare which resources are sensitive. Empty means the shipped defaults, in
+    # which case the sensitive-resource rule runs and reports nothing, because nothing has
+    # been marked. That is a configuration state rather than a clean result; see ADR-0024.
+    risk_configuration_path: str = ""
+    """Path to a risk configuration JSON document. Empty uses the shipped defaults.
+
+    A path that is set and cannot be read is a startup error rather than a silent fall back:
+    an operator who configured a policy and typed the path wrongly would otherwise receive a
+    report produced by settings they never wrote."""
+
+    # --- Alerting ----------------------------------------------------------------------
+    #
+    # Which triggers are live, how loud, and where an alert goes. Empty means the shipped
+    # policy: every trigger on, a fifteen-minute cooldown, critical findings only, and one
+    # sink that writes to the operator log. A log sink rather than none, deliberately -- an
+    # installation with nowhere to deliver would enqueue alerts nothing ever drains.
+    alert_policy_path: str = ""
+    """Path to an alert policy JSON document. Empty uses the shipped defaults.
+
+    A path that is set and cannot be read is a startup error rather than a silent fall back,
+    for the reason the risk configuration gives: an operator who configured a destination and
+    typed the path wrongly would otherwise get an installation that delivers nowhere and says
+    nothing about it. **The file may carry a webhook credential, so it is configuration and
+    never source control.**"""
+
+    alerts_on_run_completion: bool = False
+    """Whether closing a scan run re-evaluates the risk rules and the watches inline.
+
+    **Off by default, and that is a cost decision rather than a doubt about the feature.**
+    Turning it on adds an incremental risk evaluation, a change-feed scan per watch and a
+    delivery attempt to the collector's final request, on an engine nobody has profiled
+    against an estate with millions of access control entries. An installation that has
+    measured it, or whose estate is small, should turn it on and get alerts within seconds of
+    a scan; everything else should drive both from a schedule:
+
+        python -m app.operations evaluate-risks
+        python -m app.operations drain-alerts --loop
+
+    Being off is never silent: every completion logs ``post_run`` saying so, and the risk
+    report's ``coverage`` block says when the rules were last evaluated -- so an installation
+    that turned neither on sees "the rules have not been evaluated" rather than a clean
+    report.
+
+    It cannot cost the estate an observation either way. The work runs in its own session
+    **after** the ingestion transaction has committed, and both the function and its call
+    site swallow failures into a log line."""
+
+    # --- Remediation -------------------------------------------------------------------
+    #
+    # ADG describes changes and performs none of them. These three settings say what the
+    # deployment may do with a change plan, and the defaults say "write one, and hand it to
+    # a person". There is deliberately no setting that enables a real write path: shipping
+    # one is an adapter, a credential and a capability grant, not a configuration change.
+    # See docs/architecture/remediation.md section 8 and ADR-0035.
+    remediation_execution_mode: RemediationExecutionMode = "disabled"
+    """Which remediator implementation this deployment gets. ``disabled`` is the only value a
+    production deployment may hold, refused at startup otherwise.
+
+    ``lab`` selects a fixture-backed executor that mutates an in-memory copy of a JSON file
+    and can reach nothing else -- no Windows object, no collected table, no file it was not
+    pointed at. It exists so the remediator interface can be exercised; nothing in the API
+    constructs one."""
+
+    remediation_lab_fixture_path: str = ""
+    """The fixture ``lab`` mode reads. Required in that mode and meaningless otherwise.
+
+    Required rather than optional because a lab executor without a fixture would have to
+    invent the objects it is asked about, and would then report every plan as carried out --
+    which is exactly the failure a lab adapter exists to make visible."""
+
+    remediation_signing_key: str = ""
+    """The HMAC key that signs an exported change plan. **A secret: configuration, never
+    source control.**
+
+    Empty means this deployment cannot export. That is a refusal rather than a fallback to an
+    unsigned document: an unsigned change plan is indistinguishable from one somebody typed,
+    and the administrator executing it at two in the morning has no way to tell them apart.
+    The key identifier published beside a signature is a digest prefix of this value, so
+    rotating it changes the identifier and a verifier holding the old key can say "signed
+    with a key I do not have" instead of reporting tampering that did not happen."""
+
     # Comma-separated '<key id>:<secret>' pairs that collectors present as
     # X-ADG-Collector-Key. Empty means ingestion requires an administrator's bearer token.
     collector_api_keys: str = ""
@@ -114,6 +209,29 @@ class Settings(BaseSettings):
         return RetentionPolicy(
             retain_days=self.history_retention_days, enabled=self.history_retention_enabled
         )
+
+    @property
+    def risk_configuration(self) -> RiskConfiguration:
+        """The risk rules as this installation has configured them.
+
+        Read on each access rather than cached on the settings object: the file is read once
+        per evaluation, not once per request, and an operator who edits it does not have to
+        restart the API to have the next report use it.
+        """
+        path = self.risk_configuration_path.strip()
+        return load_configuration(path) if path else DEFAULT_CONFIGURATION
+
+    @property
+    def alert_policy(self) -> AlertPolicy:
+        """The alert policy as this installation has configured it.
+
+        Read on each access rather than cached on the settings object, matching
+        :attr:`risk_configuration`: the file is read once per evaluation rather than once per
+        request, and an operator who adds a webhook does not have to restart the API for the
+        next alert to use it.
+        """
+        path = self.alert_policy_path.strip()
+        return load_policy(path) if path else DEFAULT_POLICY
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -194,6 +312,44 @@ class Settings(BaseSettings):
                 "Development authentication issues its own tokens and verifies no "
                 "credential. Set ADG_AUTH_MODE=oidc and configure ADG_OIDC_ISSUER, "
                 "ADG_OIDC_AUDIENCE, and ADG_OIDC_JWKS_URL."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _reject_lab_remediation_in_production(self) -> Settings:
+        """Lab remediation mode cannot be combined with a production environment.
+
+        Stated here as well as in :func:`app.remediation.executor.remediator_for`, on
+        purpose. A guard written once is a guard somebody moves; this one refuses at startup,
+        so the process does not begin rather than beginning with an executor that reports
+        changes it made to a fixture as though they had happened in the estate.
+        """
+        if self.is_production and self.remediation_execution_mode != "disabled":
+            raise ValueError(
+                f"ADG_REMEDIATION_EXECUTION_MODE={self.remediation_execution_mode} cannot be "
+                "used with ADG_ENVIRONMENT=production. Lab mode applies changes to a test "
+                "fixture and reports them as applied; a production deployment running it "
+                "would be one misreading away from somebody believing ADG had carried out a "
+                "change it had not. Set ADG_REMEDIATION_EXECUTION_MODE=disabled."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _require_a_lab_fixture(self) -> Settings:
+        """Lab mode without a fixture is refused rather than degraded to ``disabled``.
+
+        A test that asked for a lab executor and silently received a refusing one would pass
+        for the wrong reason, which is worse than a startup failure naming the setting.
+        """
+        if (
+            self.remediation_execution_mode == "lab"
+            and not self.remediation_lab_fixture_path.strip()
+        ):
+            raise ValueError(
+                "ADG_REMEDIATION_EXECUTION_MODE=lab requires "
+                "ADG_REMEDIATION_LAB_FIXTURE_PATH. A lab executor without a fixture would "
+                "have to invent the objects it is asked about, and would then report every "
+                "plan as carried out."
             )
         return self
 

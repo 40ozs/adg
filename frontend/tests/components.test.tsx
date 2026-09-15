@@ -75,11 +75,37 @@ describe("the primary navigation", () => {
   });
 
   it("labels a placeholder section so it is not mistaken for an empty one", () => {
+    // Rendered from a synthetic item, because nothing in the real navigation is a
+    // placeholder any more. The badge still has to work: it is the difference between "this
+    // page shows nothing because nothing is computed" and "this page shows nothing because
+    // nothing is there", and the next section to land ahead of its data needs it.
+    pathname = "/";
+    render(
+      <PrimaryNav
+        capabilities={VIEWER}
+        items={[
+          {
+            id: "future",
+            label: "Future",
+            href: "/future",
+            requires: null,
+            placeholder: true,
+            description: "Arrives in a later phase.",
+          },
+        ]}
+      />,
+    );
+
+    const section = screen.getByRole("link", { name: /Future/ });
+    expect(within(section).getByLabelText("not yet available")).toBeInTheDocument();
+  });
+
+  it("shows Risks without a badge, now that it has data behind it", () => {
     pathname = "/";
     render(<PrimaryNav capabilities={VIEWER} />);
 
     const risks = screen.getByRole("link", { name: /Risks/ });
-    expect(within(risks).getByLabelText("not yet available")).toBeInTheDocument();
+    expect(within(risks).queryByLabelText("not yet available")).not.toBeInTheDocument();
   });
 });
 

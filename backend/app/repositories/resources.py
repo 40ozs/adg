@@ -503,6 +503,15 @@ class ResourceRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    @property
+    def session(self) -> AsyncSession:
+        """The session every read runs against.
+
+        Exposed for the same reason as :attr:`app.repositories.MembershipRepository.session`:
+        the repositories that wrap this one build themselves over the same connection.
+        """
+        return self._session
+
     # ---------------------------------------------------------------- servers
 
     async def list_servers(

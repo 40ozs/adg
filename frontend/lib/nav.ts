@@ -57,8 +57,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Risks",
     href: "/risks",
     requires: "risks:read",
-    placeholder: true,
-    description: "Findings across the estate. Arrives in a later phase.",
+    description: "Findings across the estate, the records behind each one, and the alerts.",
   },
   {
     id: "changes",
@@ -66,6 +65,20 @@ export const NAV_ITEMS: readonly NavItem[] = [
     href: "/changes",
     requires: "changes:read",
     description: "What moved in the estate, whether it matters, and what it did to access.",
+  },
+  {
+    id: "simulations",
+    label: "What-if",
+    href: "/simulations",
+    requires: "simulations:read",
+    description: "Propose a permission change and measure what it would do. Changes nothing.",
+  },
+  {
+    id: "governance",
+    label: "Reviews",
+    href: "/governance",
+    requires: "governance:read",
+    description: "Access review campaigns, your queue, and the decisions recorded.",
   },
   {
     id: "collectors",

@@ -10,8 +10,16 @@ import "server-only";
 
 import type { ApiResult, RequestOptions } from "@/lib/api/client";
 import { apiRequest } from "@/lib/api/client";
+import type { SimulationRequestBody } from "@/lib/simulation";
 import type {
+  AlertDetailResponse,
+  AlertQueueResponse,
+  AlertsResponse,
   AuthConfig,
+  BulkDecisionResponse,
+  CampaignListResponse,
+  CampaignStatusResponse,
+  CampaignView,
   ChangeComparisonResponse,
   ChangeImpactResponse,
   ChangeSummaryResponse,
@@ -19,26 +27,44 @@ import type {
   ChangesResponse,
   CollectionOperations,
   CollectionStatus,
+  DecisionView,
   DevelopmentLogin,
   DirectGroupsResponse,
+  DriftReportResponse,
   DirectMembersResponse,
+  FindingDetailView,
+  FindingsResponse,
   EffectiveGroupsResponse,
   EffectiveMembersResponse,
+  ItemContextResponse,
+  ItemDetailResponse,
+  ItemListResponse,
   MemberInclusion,
   NtfsResourceDetailView,
   Principal,
   PrincipalDetail,
   PrincipalResourcesResponse,
+  QueueResponse,
   RawNtfsAclResponse,
   RawShareAclResponse,
   ResourcePrincipalsResponse,
+  RiskRulesResponse,
+  RiskSummaryResponse,
   ScanRunList,
   SearchResults,
   ServerDetail,
   ServersResponse,
   ShareDetailView,
   SharesResponse,
+  SimulationDetailResponse,
+  SimulationExportResponse,
+  SimulationReportView,
+  SimulationVocabularyResponse,
+  StoredSimulationResponse,
+  StoredSimulationsResponse,
   TrusteeSharesResponse,
+  WatchView,
+  WatchesResponse,
 } from "@/lib/contracts";
 
 /** Paths this application depends on. Asserted against the published OpenAPI document. */
@@ -71,6 +97,22 @@ export const USED_PATHS = [
   "/api/v1/changes/timeline",
   "/api/v1/changes/compare",
   "/api/v1/changes/impact",
+  "/api/v1/governance/campaigns",
+  "/api/v1/governance/campaigns/{campaign_id}",
+  "/api/v1/governance/campaigns/{campaign_id}/status",
+  "/api/v1/governance/campaigns/{campaign_id}/items",
+  "/api/v1/governance/campaigns/{campaign_id}/drift",
+  "/api/v1/governance/campaigns/{campaign_id}/decisions",
+  "/api/v1/governance/queue",
+  "/api/v1/governance/items/{item_id}",
+  "/api/v1/governance/items/{item_id}/context",
+  "/api/v1/governance/items/{item_id}/decisions",
+  "/api/v1/simulations",
+  "/api/v1/simulations/preview",
+  "/api/v1/simulations/vocabulary",
+  "/api/v1/simulations/{simulation_id}",
+  "/api/v1/simulations/{simulation_id}/evaluations",
+  "/api/v1/simulations/{simulation_id}/export",
 ] as const;
 
 /**
@@ -403,4 +445,355 @@ export function fetchChangeImpact(
   },
 ): Promise<ApiResult<ChangeImpactResponse>> {
   return apiRequest<ChangeImpactResponse>("/api/v1/changes/impact", { token, query });
+}
+
+/* -------------------------------------------------------------------------- governance */
+
+/**
+ * The access-review surface.
+ *
+ * Two of these are writes, which is new: every other call in this module is a `GET`. They
+ * are reached from server actions (`app/governance/actions.ts`) rather than from the
+ * browser-facing proxy, which forwards `GET` only and says why. The token therefore still
+ * never exists in the browser, and the proxy's rule is not weakened to let a review screen
+ * post a decision.
+ */
+
+export function fetchCampaigns(
+  token: string,
+  query: { status?: string; mine?: boolean; limit?: number; cursor?: string } = {},
+): Promise<ApiResult<CampaignListResponse>> {
+  return apiRequest<CampaignListResponse>("/api/v1/governance/campaigns", {
+    token,
+    query: { ...query, mine: query.mine === undefined ? undefined : String(query.mine) },
+  });
+}
+
+export function fetchCampaign(
+  token: string,
+  campaignId: string,
+): Promise<ApiResult<CampaignView>> {
+  return apiRequest<CampaignView>(`/api/v1/governance/campaigns/${segment(campaignId)}`, {
+    token,
+  });
+}
+
+/** How far a campaign has got, who is behind, and what it deliberately left out. */
+export function fetchCampaignStatus(
+  token: string,
+  campaignId: string,
+): Promise<ApiResult<CampaignStatusResponse>> {
+  return apiRequest<CampaignStatusResponse>(
+    `/api/v1/governance/campaigns/${segment(campaignId)}/status`,
+    { token },
+  );
+}
+
+export function fetchCampaignItems(
+  token: string,
+  campaignId: string,
+  query: PageQuery & {
+    status?: string;
+    mine?: boolean;
+    unassigned?: boolean;
+    principal_key?: string;
+    target_key?: string;
+  } = {},
+): Promise<ApiResult<ItemListResponse>> {
+  const { mine, unassigned, ...rest } = query;
+  return apiRequest<ItemListResponse>(
+    `/api/v1/governance/campaigns/${segment(campaignId)}/items`,
+    {
+      token,
+      query: {
+        ...rest,
+        mine: mine === undefined ? undefined : String(mine),
+        unassigned: unassigned === undefined ? undefined : String(unassigned),
+      },
+    },
+  );
+}
+
+/**
+ * What the estate has done to a campaign's items since it was frozen.
+ *
+ * Bounded on the server and the response says by how much, so a page rendering "nothing has
+ * changed" must show `covered` against `total_items` beside it.
+ */
+export function fetchCampaignDrift(
+  token: string,
+  campaignId: string,
+  query: PageQuery = {},
+): Promise<ApiResult<DriftReportResponse>> {
+  return apiRequest<DriftReportResponse>(
+    `/api/v1/governance/campaigns/${segment(campaignId)}/drift`,
+    { token, query },
+  );
+}
+
+export function fetchReviewerQueue(
+  token: string,
+  query: { include_closed?: boolean } = {},
+): Promise<ApiResult<QueueResponse>> {
+  return apiRequest<QueueResponse>("/api/v1/governance/queue", {
+    token,
+    query: {
+      include_closed:
+        query.include_closed === undefined ? undefined : String(query.include_closed),
+    },
+  });
+}
+
+export function fetchReviewItem(
+  token: string,
+  itemId: string,
+): Promise<ApiResult<ItemDetailResponse>> {
+  return apiRequest<ItemDetailResponse>(`/api/v1/governance/items/${segment(itemId)}`, {
+    token,
+  });
+}
+
+/** The whole review screen in one call: drift, both access answers, why, risk, last change. */
+export function fetchReviewContext(
+  token: string,
+  itemId: string,
+): Promise<ApiResult<ItemContextResponse>> {
+  return apiRequest<ItemContextResponse>(
+    `/api/v1/governance/items/${segment(itemId)}/context`,
+    { token },
+  );
+}
+
+export function submitDecision(
+  token: string,
+  itemId: string,
+  body: { decision: string; rationale?: string | null },
+): Promise<ApiResult<DecisionView>> {
+  return apiRequest<DecisionView>(`/api/v1/governance/items/${segment(itemId)}/decisions`, {
+    token,
+    method: "POST",
+    body,
+  });
+}
+
+/**
+ * One decision across several items the API has agreed are one question.
+ *
+ * The homogeneity rules are the server's and are not re-implemented here. This application
+ * disables the control when it can already tell the selection will be refused — which is a
+ * courtesy, exactly like the navigation filter, and never the control.
+ */
+export function submitBulkDecision(
+  token: string,
+  campaignId: string,
+  body: { item_ids: string[]; decision: string; rationale?: string | null },
+): Promise<ApiResult<BulkDecisionResponse>> {
+  return apiRequest<BulkDecisionResponse>(
+    `/api/v1/governance/campaigns/${segment(campaignId)}/decisions`,
+    { token, method: "POST", body },
+  );
+}
+
+/* ------------------------------------------------------------------ risks and alerts */
+
+/** The dashboard header: counts, coverage and rule configuration in one call. */
+export function fetchRiskSummary(token: string): Promise<ApiResult<RiskSummaryResponse>> {
+  return apiRequest<RiskSummaryResponse>("/api/v1/risks/summary", { token });
+}
+
+/**
+ * A filtered page of findings.
+ *
+ * Every filter is repeatable except `place`, `principal` and the two instants. Unknown
+ * values are refused by the API with a 422 rather than ignored, so a typo in a severity
+ * surfaces as an error rather than as a wider result nobody notices.
+ */
+export function fetchFindings(
+  token: string,
+  query: {
+    status?: string[];
+    severity?: string[];
+    confidence?: string[];
+    rule?: string[];
+    place?: string;
+    principal?: string;
+    first_seen_from?: string;
+    last_seen_to?: string;
+  } & PageQuery,
+): Promise<ApiResult<FindingsResponse>> {
+  return apiRequest<FindingsResponse>("/api/v1/risks/findings", { token, query });
+}
+
+/** One finding, its evidence records, its timeline, and whether it still reproduces. */
+export function fetchFinding(
+  token: string,
+  key: string,
+): Promise<ApiResult<FindingDetailView>> {
+  return apiRequest<FindingDetailView>(`/api/v1/risks/findings/${segment(key)}`, { token });
+}
+
+/** The rule catalog as configured, including the rules that are off. */
+export function fetchRiskRules(token: string): Promise<ApiResult<RiskRulesResponse>> {
+  return apiRequest<RiskRulesResponse>("/api/v1/risks/rules", { token });
+}
+
+export function fetchAlerts(
+  token: string,
+  query: { status?: string[]; trigger?: string[]; watch_id?: string; since?: string } & PageQuery,
+): Promise<ApiResult<AlertsResponse>> {
+  return apiRequest<AlertsResponse>("/api/v1/alerts", { token, query });
+}
+
+/** One alert, every occurrence of it including the suppressed ones, and its deliveries. */
+export function fetchAlert(
+  token: string,
+  key: string,
+): Promise<ApiResult<AlertDetailResponse>> {
+  return apiRequest<AlertDetailResponse>(`/api/v1/alerts/${segment(key)}`, { token });
+}
+
+export function fetchWatches(token: string): Promise<ApiResult<WatchesResponse>> {
+  return apiRequest<WatchesResponse>("/api/v1/alerts/watches", { token });
+}
+
+export function createWatch(
+  token: string,
+  body: {
+    kind: string;
+    key: string;
+    label: string;
+    triggers: string[];
+    cooldown_seconds?: number;
+    notes?: string | null;
+  },
+): Promise<ApiResult<WatchView>> {
+  return apiRequest<WatchView>("/api/v1/alerts/watches", { token, method: "POST", body });
+}
+
+export function updateWatch(
+  token: string,
+  watchId: string,
+  body: {
+    label?: string;
+    triggers?: string[];
+    cooldown_seconds?: number;
+    enabled?: boolean;
+    notes?: string | null;
+  },
+): Promise<ApiResult<WatchView>> {
+  return apiRequest<WatchView>(`/api/v1/alerts/watches/${segment(watchId)}`, {
+    token,
+    method: "PATCH",
+    body,
+  });
+}
+
+export function deleteWatch(token: string, watchId: string): Promise<ApiResult<null>> {
+  return apiRequest<null>(`/api/v1/alerts/watches/${segment(watchId)}`, {
+    token,
+    method: "DELETE",
+  });
+}
+
+/** Depth, staleness, abandonment, and the policy in force. */
+export function fetchAlertQueue(token: string): Promise<ApiResult<AlertQueueResponse>> {
+  return apiRequest<AlertQueueResponse>("/api/v1/alerts/deliveries", { token });
+}
+
+
+// ---------------------------------------------------------------- simulations (9B)
+
+/**
+ * What-if proposals.
+ *
+ * Two POSTs that look alike and are not: `previewSimulation` computes an answer and keeps
+ * nothing, and `storeSimulation` writes the proposal and its first evaluation down. Neither
+ * writes to Active Directory, to a share, or to an NTFS descriptor -- there is no code path
+ * from any of these to a Windows object, and every response carries the sentence saying so.
+ */
+export function previewSimulation(
+  token: string,
+  body: SimulationRequestBody,
+): Promise<ApiResult<SimulationReportView>> {
+  return apiRequest<SimulationReportView>("/api/v1/simulations/preview", {
+    token,
+    method: "POST",
+    body,
+    // A bounded simulation is still the most expensive request this API serves, and the
+    // server's own time budget is ten seconds. A client timeout under it would abandon a
+    // request the API was about to answer.
+    timeoutMs: 30_000,
+  });
+}
+
+export function storeSimulation(
+  token: string,
+  body: SimulationRequestBody & { name: string; description?: string | null },
+): Promise<ApiResult<StoredSimulationResponse>> {
+  return apiRequest<StoredSimulationResponse>("/api/v1/simulations", {
+    token,
+    method: "POST",
+    body,
+    timeoutMs: 30_000,
+  });
+}
+
+export function fetchSimulations(
+  token: string,
+  options: PageQuery = {},
+): Promise<ApiResult<StoredSimulationsResponse>> {
+  return apiRequest<StoredSimulationsResponse>("/api/v1/simulations", { token, query: options });
+}
+
+export function fetchSimulation(
+  token: string,
+  simulationId: string,
+): Promise<ApiResult<SimulationDetailResponse>> {
+  return apiRequest<SimulationDetailResponse>(`/api/v1/simulations/${segment(simulationId)}`, {
+    token,
+  });
+}
+
+export function evaluateSimulation(
+  token: string,
+  simulationId: string,
+): Promise<ApiResult<SimulationReportView>> {
+  return apiRequest<SimulationReportView>(
+    `/api/v1/simulations/${segment(simulationId)}/evaluations`,
+    { token, method: "POST", timeoutMs: 30_000 },
+  );
+}
+
+export function deleteSimulation(token: string, simulationId: string): Promise<ApiResult<null>> {
+  return apiRequest<null>(`/api/v1/simulations/${segment(simulationId)}`, {
+    token,
+    method: "DELETE",
+  });
+}
+
+/** The plan, the result, and the vocabulary that explains it, in one document. */
+export function fetchSimulationExport(
+  token: string,
+  simulationId: string,
+  evaluationId?: string,
+): Promise<ApiResult<SimulationExportResponse>> {
+  return apiRequest<SimulationExportResponse>(
+    `/api/v1/simulations/${segment(simulationId)}/export`,
+    { token, query: { evaluation_id: evaluationId } },
+  );
+}
+
+/**
+ * The closed vocabularies a report speaks, with their wording.
+ *
+ * Fetched rather than hard-coded for the reason the navigation's capability list is fetched:
+ * a second copy of a vocabulary is a second copy that can be wrong, and the wrong one is
+ * always the one somebody trusts. `loss_may_not_hold` is the entry that matters -- a client
+ * that invented its own text for it would be writing the sentence that stands between a
+ * report and a remediation that achieves nothing.
+ */
+export function fetchSimulationVocabulary(
+  token: string,
+): Promise<ApiResult<SimulationVocabularyResponse>> {
+  return apiRequest<SimulationVocabularyResponse>("/api/v1/simulations/vocabulary", { token });
 }
