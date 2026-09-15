@@ -22,15 +22,7 @@ from typing import Final
 from sqlalchemy import Table
 
 from app.contracts.v1.common import ObservationKind
-from app.models.schema import (
-    membership_edges,
-    ntfs_aces,
-    ntfs_resources,
-    principals,
-    servers,
-    smb_share_aces,
-    smb_shares,
-)
+from app.models.current import CURRENT_STATE_KEYS
 
 __all__ = ["BINDINGS", "KindBinding", "binding_for"]
 
@@ -51,33 +43,38 @@ class KindBinding:
     """The column naming the far end of the relation this object expresses, or ``None``."""
 
 
+def _binding(kind: ObservationKind, container: str | None, related: str | None) -> KindBinding:
+    """One binding, taking its table and key column from :data:`app.models.current.
+    CURRENT_STATE_KEYS`.
+
+    Where a kind lives and how its keys are spelled is stated once, there, because the
+    current-state filter needs the same pair and a second literal list of tables would
+    eventually disagree with the first by one row -- and the symptom would be a kind that
+    is filtered for presence in the query path and not in the writer, or the reverse.
+    """
+    table, key_column = CURRENT_STATE_KEYS[kind]
+    return KindBinding(kind, table, key_column, container, related)
+
+
 BINDINGS: Final[dict[ObservationKind, KindBinding]] = {
     # A local group's host contains it: S-1-5-32-544 means a different group on every
     # machine, and the host is what separates them. The domain SID is the far end because
     # "which principals belonged to this domain as of T" is the question a domain-scoped
     # reconciliation is judged by.
-    ObservationKind.PRINCIPAL: KindBinding(
-        ObservationKind.PRINCIPAL, principals, "principal_key", "host_key", "domain_sid"
-    ),
+    ObservationKind.PRINCIPAL: _binding(ObservationKind.PRINCIPAL, "host_key", "domain_sid"),
     # An edge belongs to its group -- that is the enumeration a collector performs -- and
     # points at its member. Both directions are indexed because membership is walked both
     # ways: "who was in this group" and "which groups did this principal reach".
-    ObservationKind.MEMBERSHIP_EDGE: KindBinding(
-        ObservationKind.MEMBERSHIP_EDGE, membership_edges, "edge_key", "group_key", "member_key"
+    ObservationKind.MEMBERSHIP_EDGE: _binding(
+        ObservationKind.MEMBERSHIP_EDGE, "group_key", "member_key"
     ),
-    ObservationKind.SERVER: KindBinding(ObservationKind.SERVER, servers, "server_key", None, None),
-    ObservationKind.SMB_SHARE: KindBinding(
-        ObservationKind.SMB_SHARE, smb_shares, "share_key", "server_key", None
+    ObservationKind.SERVER: _binding(ObservationKind.SERVER, None, None),
+    ObservationKind.SMB_SHARE: _binding(ObservationKind.SMB_SHARE, "server_key", None),
+    ObservationKind.SMB_ACE: _binding(ObservationKind.SMB_ACE, "share_key", "trustee_key"),
+    ObservationKind.NTFS_RESOURCE: _binding(
+        ObservationKind.NTFS_RESOURCE, "share_key", "server_key"
     ),
-    ObservationKind.SMB_ACE: KindBinding(
-        ObservationKind.SMB_ACE, smb_share_aces, "ace_key", "share_key", "trustee_key"
-    ),
-    ObservationKind.NTFS_RESOURCE: KindBinding(
-        ObservationKind.NTFS_RESOURCE, ntfs_resources, "resource_key", "share_key", "server_key"
-    ),
-    ObservationKind.NTFS_ACE: KindBinding(
-        ObservationKind.NTFS_ACE, ntfs_aces, "ace_key", "resource_key", "trustee_key"
-    ),
+    ObservationKind.NTFS_ACE: _binding(ObservationKind.NTFS_ACE, "resource_key", "trustee_key"),
 }
 
 

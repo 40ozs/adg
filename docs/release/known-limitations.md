@@ -76,24 +76,31 @@ Neither appears in a real ACL, which is why the 5,626-case matrix does not conta
 
 ---
 
-## 3. The live-versus-as-of divergence (correctness, measured)
+## 3. The live-versus-as-of divergence — **fixed**
 
-**ADG deletes nothing on ingestion** — an absent observation is not evidence of removal — and
-current-state reads are not routed through presence. So after a reconciled scan has proved an
-ACE gone:
+This entry used to read: *ADG deletes nothing on ingestion, current-state reads are not
+routed through presence, so after a reconciled scan has proved an ACE gone the point-in-time
+engine stops counting it and the live engine does not.* The first half is still true and
+always will be. The second half is no longer.
 
-* the **point-in-time** engine (history, comparisons, simulations with a baseline) correctly
-  stops counting it;
-* the **live** engine still counts it.
+Current-state reads now go through one presence predicate — an object is current unless
+`object_versions` holds an open tombstone for it — described in
+[`current-state-presence.md`](../architecture/current-state-presence.md). Membership edges,
+share ACEs, NTFS ACEs, shares, directories, servers and principals a successful authoritative
+reconciliation proved absent are excluded from every current-state answer, while every row
+and every version stays stored and every point-in-time answer still reconstructs them.
 
-This is pinned with exact masks by
-`tests/db/test_simulation_equivalence.py::TestTheKnownExceptionIsMeasured`, deliberately in a
-test rather than only in a document, so that the day somebody routes current-state reads
-through presence, the test says so.
+The regression matrix is `tests/db/test_current_state_presence.py`, and
+`TestCurrentAgreesWithAsOfTheLatestState` holds the invariant directly: over a fully
+reconciled estate, the live and as-of-latest answers to the same question must be the same
+number.
 
-> **What a person would wrongly conclude:** that access removed and reconciled away is still
-> live. The as-of answer is the correct one; the live answer lags until the object is
-> otherwise rewritten.
+**What remains, and it is narrow.** A run that may not reconcile — partial, failed,
+incremental, downgraded, or one that declared no reconciled scope — removes nothing, by
+design. So between a removal happening in Windows and the next *successful authoritative*
+scan of the scope it lies in, the live answer still shows the old grant. That is the
+collection cadence, not a state-selection defect: ADG reports what it was last told by
+somebody in a position to tell it.
 
 ---
 

@@ -1055,6 +1055,18 @@ object_versions = Table(
         "valid_to",
         postgresql_where=text("valid_to IS NOT NULL"),
     ),
+    # The current-state predicate: "does an open tombstone exist for this object". One
+    # partial index over open absences only, so it is the size of the removals rather than
+    # of the estate, and every current-state read is an index probe that misses -- see
+    # `app.models.current`. Doubly partial on purpose: `valid_to IS NULL` alone would index
+    # every live object, which is the whole table and is what `ux_object_versions_open`
+    # already covers for a different question.
+    Index(
+        "ix_object_versions_open_absent",
+        "object_kind",
+        "object_key",
+        postgresql_where=text("valid_to IS NULL AND is_present = false"),
+    ),
     Index("ix_object_versions_last_seen_run", "last_seen_run_id"),
     # The change feed's driving predicate: every change is a version opening, so "what
     # changed between Tuesday and Friday" is a range scan on valid_from. The row id is the

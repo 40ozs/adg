@@ -332,7 +332,9 @@ class VersionReader:
         """Objects a reconciled scan currently reports as gone.
 
         The current-state tables still hold a row for every one of these -- nothing in ADG
-        deletes a collected fact -- so this is the only way to ask "what has been removed".
+        deletes a collected fact -- so this is the only way to *enumerate* what has been
+        removed. These are exactly the rows :mod:`app.models.current` filters out of an
+        ordinary read: same predicate, read forwards instead of as an anti-join.
         """
         statement = (
             select(*VERSION_COLUMNS)

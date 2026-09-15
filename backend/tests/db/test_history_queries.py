@@ -294,21 +294,21 @@ class TestPointInTimeEffectiveAccess:
         assert answer.certainty is Certainty.OBSERVED
         assert not answer.rests_on_reconstructed_state
 
-    async def test_the_live_answer_still_counts_what_a_reconciled_scan_proved_is_gone(
+    async def test_the_live_answer_no_longer_counts_what_a_reconciled_scan_proved_is_gone(
         self, session: AsyncSession
     ) -> None:
-        """A real limitation of this phase, pinned rather than left to be discovered.
+        """What was this phase's top limitation, now asserted to be closed.
 
         Nothing in ADG deletes a collected fact, so ``membership_edges`` still holds the
         edge that put Alice in ``Finance-RW`` and ``ntfs_aces`` still holds the Full Control
         entry -- an ACE's identity includes its mask, so tightening the DACL *added* a row
-        rather than changing one. Phase 7A records both removals in the timeline and does
-        not change what the current-state repositories read, so the **live** answer
-        overstates Alice's access and the **as-of-now** answer does not.
+        rather than changing one. Both rows are still there, and both are now excluded from
+        current state by the open tombstone the reconciling scan left over them
+        (:mod:`app.models.current`), so the live answer and the as-of-now answer agree.
 
-        This is the top prerequisite for Phase 7B: routing current-state reads through the
-        open version's presence. It is asserted here so that the day it is fixed, this test
-        fails and says what changed.
+        The pair is still read two ways on purpose: "live and as-of-latest give the same
+        number over a reconciled estate" is the invariant the fix rests on, and it is worth
+        measuring here as well as in ``tests/db/test_current_state_presence.py``.
         """
         live = await AccessService(
             ResourceRepository(session), MembershipRepository(session)
@@ -317,8 +317,8 @@ class TestPointInTimeEffectiveAccess:
             ALICE, FINANCE_PATH, h.NEXT_MONDAY
         )
 
-        assert live.access.has_access
-        assert live.access.rights.value == FULL_CONTROL
+        assert not live.access.has_access
+        assert live.access.rights.value == as_of_now.access.access.rights.value
         assert not as_of_now.access.access.has_access
 
     async def test_an_instant_before_collection_began_grants_nothing_and_says_why(

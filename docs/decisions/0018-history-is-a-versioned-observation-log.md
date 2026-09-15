@@ -85,10 +85,15 @@ are **unchanged** and remain the projection every existing query reads.
 
 **Negative / accepted costs**
 
-- **A live answer still counts an entry a reconciled scan proved is gone.** Nothing deletes a
-  collected fact, and Phase 7A does not route current-state reads through presence, so the
-  live effective-access answer can overstate access where the as-of-now answer does not. This
-  is pinned by a test that will fail when it is fixed.
+- ~~**A live answer still counts an entry a reconciled scan proved is gone.**~~ Nothing
+  deletes a collected fact, and Phase 7A did not route current-state reads through presence,
+  so the live effective-access answer could overstate access where the as-of-now answer did
+  not. **Since paid off** (2026-09-15): current-state reads go through one presence
+  predicate, stated in `app/models/current.py` and described in
+  `docs/architecture/current-state-presence.md`. The decision this ADR records is unchanged —
+  nothing is deleted, and current state is still a projection; what changed is which
+  projected rows a live query selects. The test that pinned the divergence now asserts the
+  agreement.
 - JSONB state is not column-typed. Reconstruction goes through the same record constructors
   the live repositories use, so callers still get typed records, but the database cannot
   constrain the contents of a version's state the way it constrains the row it came from.
@@ -103,8 +108,9 @@ are **unchanged** and remain the projection every existing query reads.
 
 **Follow-up required**
 
-- Phase 7B: route current-state reads through the open version's presence, so the product's
-  ordinary answers stop counting removed grants.
+- ~~Route current-state reads through the open version's presence, so the product's ordinary
+  answers stop counting removed grants.~~ **Done** (2026-09-15) —
+  `docs/handoffs/p0-current-state-correctness.md`.
 - Phase 7B: an HTTP surface for the point-in-time services. None was added here.
 - A `ViaParent` selector exists for ACE kinds only; a scope kind added later needs its rule
   added to `CLOSURE_RULES` or it closes nothing (which is the safe default, and silent).

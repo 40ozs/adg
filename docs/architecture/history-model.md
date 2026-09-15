@@ -275,10 +275,14 @@ a superseded entry — an ACE's identity includes its mask, so tightening a DACL
 rather than changing one. Phase 7A records both removals in the timeline and does not apply
 them to the current-state read path; the **as-of-now** answer is the correct one today.
 
-Routing current-state reads through the open version's presence is the top prerequisite for
-the next phase, and the divergence is pinned by
-`tests/db/test_history_queries.py::TestPointInTimeEffectiveAccess::test_the_live_answer_still_counts_what_a_reconciled_scan_proved_is_gone`,
-so the day it is fixed that test fails and says what changed.
+> **Since fixed.** Current-state reads are now routed through the open version's presence:
+> an object is current unless `object_versions` holds an open tombstone for it. Nothing is
+> deleted and the paragraph above still describes what is *stored*; what changed is which
+> stored rows a live query selects. The rule is
+> [`current-state-presence.md`](current-state-presence.md), and the test that pinned the
+> divergence —
+> `tests/db/test_history_queries.py::TestPointInTimeEffectiveAccess` — now asserts that the
+> live and as-of-now answers agree.
 
 No HTTP surface was added. The point-in-time services are a domain and service layer, in the
 rhythm this project has followed since Phase 5 (engine, then API).

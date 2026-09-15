@@ -16,6 +16,11 @@ written to be cheap at any estate size:
 Keys are compared case-folded because that is how they are stored (see
 ``Server.identity_key`` and friends); display columns are matched with ``ILIKE`` because
 they preserve the case that was observed.
+
+Every statement runs against the ``current_*`` sources in :mod:`app.models.current`, so a
+principal, server, share or directory that a successful authoritative reconciliation proved
+gone is not offered as a destination to navigate to. History still holds it; search is a way
+into the estate as it is.
 """
 
 from __future__ import annotations
@@ -25,7 +30,12 @@ from dataclasses import dataclass
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.schema import ntfs_resources, principals, servers, smb_shares
+from app.models.current import (
+    current_ntfs_resources,
+    current_principals,
+    current_servers,
+    current_smb_shares,
+)
 
 __all__ = [
     "MAX_HITS_PER_CATEGORY",
@@ -109,9 +119,9 @@ class SearchRepository:
         computer that reported it, which is exactly why ``principal_key`` scopes it by host.
         """
         statement = (
-            select(principals)
-            .where(principals.c.sid == sid)
-            .order_by(principals.c.principal_key)
+            select(current_principals)
+            .where(current_principals.c.sid == sid)
+            .order_by(current_principals.c.principal_key)
             .limit(self._limit + 1)
         )
         return await self._principals(statement)
@@ -119,18 +129,18 @@ class SearchRepository:
     async def principals_by_name(self, term: str) -> tuple[PrincipalHit, ...]:
         pattern = f"{escape_like(term)}%"
         statement = (
-            select(principals)
+            select(current_principals)
             .where(
                 or_(
-                    principals.c.display_name.ilike(pattern, escape=_LIKE_ESCAPE),
-                    principals.c.sam_account_name.ilike(pattern, escape=_LIKE_ESCAPE),
-                    principals.c.user_principal_name.ilike(pattern, escape=_LIKE_ESCAPE),
+                    current_principals.c.display_name.ilike(pattern, escape=_LIKE_ESCAPE),
+                    current_principals.c.sam_account_name.ilike(pattern, escape=_LIKE_ESCAPE),
+                    current_principals.c.user_principal_name.ilike(pattern, escape=_LIKE_ESCAPE),
                     # A principal nobody could resolve still has the name the ACE carried,
                     # and that is frequently the only string an investigator has.
-                    principals.c.last_known_name.ilike(pattern, escape=_LIKE_ESCAPE),
+                    current_principals.c.last_known_name.ilike(pattern, escape=_LIKE_ESCAPE),
                 )
             )
-            .order_by(principals.c.display_name, principals.c.principal_key)
+            .order_by(current_principals.c.display_name, current_principals.c.principal_key)
             .limit(self._limit + 1)
         )
         return await self._principals(statement)
@@ -138,14 +148,18 @@ class SearchRepository:
     async def servers_by_name(self, term: str) -> tuple[ServerHit, ...]:
         pattern = f"{escape_like(term.casefold())}%"
         statement = (
-            select(servers.c.server_key, servers.c.name, servers.c.dns_host_name)
+            select(
+                current_servers.c.server_key,
+                current_servers.c.name,
+                current_servers.c.dns_host_name,
+            )
             .where(
                 or_(
-                    servers.c.server_key.like(pattern, escape=_LIKE_ESCAPE),
-                    func.lower(servers.c.dns_host_name).like(pattern, escape=_LIKE_ESCAPE),
+                    current_servers.c.server_key.like(pattern, escape=_LIKE_ESCAPE),
+                    func.lower(current_servers.c.dns_host_name).like(pattern, escape=_LIKE_ESCAPE),
                 )
             )
-            .order_by(servers.c.server_key)
+            .order_by(current_servers.c.server_key)
             .limit(self._limit + 1)
         )
         rows = (await self._session.execute(statement)).mappings().all()
@@ -169,20 +183,20 @@ class SearchRepository:
         typed a bare ``\\\\FS01`` asked for.
         """
         statement = select(
-            smb_shares.c.share_key,
-            smb_shares.c.server_key,
-            smb_shares.c.name,
-            smb_shares.c.share_type,
-            smb_shares.c.description,
+            current_smb_shares.c.share_key,
+            current_smb_shares.c.server_key,
+            current_smb_shares.c.name,
+            current_smb_shares.c.share_type,
+            current_smb_shares.c.description,
         )
         if term is not None:
             pattern = f"{escape_like(term.casefold())}%"
             statement = statement.where(
-                func.lower(smb_shares.c.name).like(pattern, escape=_LIKE_ESCAPE)
+                func.lower(current_smb_shares.c.name).like(pattern, escape=_LIKE_ESCAPE)
             )
         if server_key is not None:
-            statement = statement.where(smb_shares.c.server_key == server_key.casefold())
-        statement = statement.order_by(smb_shares.c.share_key).limit(self._limit + 1)
+            statement = statement.where(current_smb_shares.c.server_key == server_key.casefold())
+        statement = statement.order_by(current_smb_shares.c.share_key).limit(self._limit + 1)
 
         rows = (await self._session.execute(statement)).mappings().all()
         return tuple(
@@ -205,14 +219,14 @@ class SearchRepository:
         pattern = f"{escape_like(term.casefold())}%"
         statement = (
             select(
-                ntfs_resources.c.resource_key,
-                ntfs_resources.c.path,
-                ntfs_resources.c.server_key,
-                ntfs_resources.c.share_key,
-                ntfs_resources.c.is_acl_boundary,
+                current_ntfs_resources.c.resource_key,
+                current_ntfs_resources.c.path,
+                current_ntfs_resources.c.server_key,
+                current_ntfs_resources.c.share_key,
+                current_ntfs_resources.c.is_acl_boundary,
             )
-            .where(ntfs_resources.c.resource_key.like(pattern, escape=_LIKE_ESCAPE))
-            .order_by(ntfs_resources.c.resource_key)
+            .where(current_ntfs_resources.c.resource_key.like(pattern, escape=_LIKE_ESCAPE))
+            .order_by(current_ntfs_resources.c.resource_key)
             .limit(self._limit + 1)
         )
         rows = (await self._session.execute(statement)).mappings().all()

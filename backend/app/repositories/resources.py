@@ -28,6 +28,14 @@ The NTFS side adds one more, and it is the reason this phase exists at all:
   and nothing in this module intersects them. Access over SMB is limited by both, local
   access bypasses the share layer entirely, and an auditor who cannot see the two
   separately cannot tell which one is doing the limiting.
+
+Every read here runs against the ``current_*`` sources in :mod:`app.models.current` rather
+than the base tables, so a share, directory or entry that a successful authoritative
+reconciliation proved gone is out of the raw ACL, out of the inventory and out of the access
+answer, while its row and its whole timeline stay stored for the point-in-time reader. That
+is a filter on *presence*, not on parentage: a share whose server was never described is
+still current and is still reported with a ``None`` parent, exactly as above. See
+``docs/architecture/current-state-presence.md``.
 """
 
 from __future__ import annotations
@@ -62,15 +70,14 @@ from app.domain import (
     parse_local_path,
     parse_unc_path,
 )
-from app.models.schema import (
-    ReferenceKind,
-    ntfs_aces,
-    ntfs_resources,
-    principal_references,
-    servers,
-    smb_share_aces,
-    smb_shares,
+from app.models.current import (
+    current_ntfs_aces,
+    current_ntfs_resources,
+    current_servers,
+    current_smb_share_aces,
+    current_smb_shares,
 )
+from app.models.schema import ReferenceKind, principal_references
 from app.repositories.membership import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page, RowLike
 
 __all__ = [
@@ -520,12 +527,12 @@ class ResourceRepository:
         """Every known server, ordered by key."""
         page_size = _page_size(limit)
         statement: Select[Any] = (
-            select(servers, _share_count_column())
-            .order_by(servers.c.server_key)
+            select(current_servers, _share_count_column())
+            .order_by(current_servers.c.server_key)
             .limit(page_size + 1)
         )
         if after is not None:
-            statement = statement.where(servers.c.server_key > after)
+            statement = statement.where(current_servers.c.server_key > after)
 
         rows = (await self._session.execute(statement)).mappings().all()
         return _page(rows, page_size, server_record, lambda record: record.server_key)
@@ -534,8 +541,8 @@ class ResourceRepository:
         row = (
             (
                 await self._session.execute(
-                    select(servers, _share_count_column()).where(
-                        servers.c.server_key == server_key.casefold()
+                    select(current_servers, _share_count_column()).where(
+                        current_servers.c.server_key == server_key.casefold()
                     )
                 )
             )
@@ -546,7 +553,9 @@ class ResourceRepository:
 
     async def count_servers(self) -> int:
         return int(
-            (await self._session.execute(select(func.count()).select_from(servers))).scalar_one()
+            (
+                await self._session.execute(select(func.count()).select_from(current_servers))
+            ).scalar_one()
         )
 
     async def servers_by_keys(self, keys: Sequence[str]) -> dict[str, ServerRecord]:
@@ -555,8 +564,8 @@ class ResourceRepository:
         rows = (
             (
                 await self._session.execute(
-                    select(servers, _share_count_column()).where(
-                        servers.c.server_key.in_(sorted(set(keys)))
+                    select(current_servers, _share_count_column()).where(
+                        current_servers.c.server_key.in_(sorted(set(keys)))
                     )
                 )
             )
@@ -573,13 +582,13 @@ class ResourceRepository:
         """Shares published by one server, ordered by key."""
         page_size = _page_size(limit)
         statement: Select[Any] = (
-            select(smb_shares)
-            .where(smb_shares.c.server_key == server_key.casefold())
-            .order_by(smb_shares.c.share_key)
+            select(current_smb_shares)
+            .where(current_smb_shares.c.server_key == server_key.casefold())
+            .order_by(current_smb_shares.c.share_key)
             .limit(page_size + 1)
         )
         if after is not None:
-            statement = statement.where(smb_shares.c.share_key > after)
+            statement = statement.where(current_smb_shares.c.share_key > after)
 
         rows = (await self._session.execute(statement)).mappings().all()
         return _page(rows, page_size, share_record, lambda record: record.share_key)
@@ -587,8 +596,8 @@ class ResourceRepository:
     async def count_shares(self, server_key: str) -> int:
         statement = (
             select(func.count())
-            .select_from(smb_shares)
-            .where(smb_shares.c.server_key == server_key.casefold())
+            .select_from(current_smb_shares)
+            .where(current_smb_shares.c.server_key == server_key.casefold())
         )
         return int((await self._session.execute(statement)).scalar_one())
 
@@ -596,7 +605,9 @@ class ResourceRepository:
         row = (
             (
                 await self._session.execute(
-                    select(smb_shares).where(smb_shares.c.share_key == share_key.casefold())
+                    select(current_smb_shares).where(
+                        current_smb_shares.c.share_key == share_key.casefold()
+                    )
                 )
             )
             .mappings()
@@ -610,7 +621,9 @@ class ResourceRepository:
         rows = (
             (
                 await self._session.execute(
-                    select(smb_shares).where(smb_shares.c.share_key.in_(sorted(set(keys))))
+                    select(current_smb_shares).where(
+                        current_smb_shares.c.share_key.in_(sorted(set(keys)))
+                    )
                 )
             )
             .mappings()
@@ -621,8 +634,8 @@ class ResourceRepository:
     async def has_aces(self, share_key: str) -> bool:
         """Whether any ACE names this share, even if the share itself was never described."""
         statement = select(
-            select(smb_share_aces.c.ace_key)
-            .where(smb_share_aces.c.share_key == share_key.casefold())
+            select(current_smb_share_aces.c.ace_key)
+            .where(current_smb_share_aces.c.share_key == share_key.casefold())
             .exists()
         )
         return bool((await self._session.execute(statement)).scalar_one())
@@ -640,9 +653,11 @@ class ResourceRepository:
         """
         page_size = _page_size(limit)
         statement = (
-            select(smb_share_aces)
-            .where(smb_share_aces.c.share_key == share_key.casefold())
-            .order_by(smb_share_aces.c.order_index.nulls_last(), smb_share_aces.c.ace_key)
+            select(current_smb_share_aces)
+            .where(current_smb_share_aces.c.share_key == share_key.casefold())
+            .order_by(
+                current_smb_share_aces.c.order_index.nulls_last(), current_smb_share_aces.c.ace_key
+            )
             .offset(max(0, offset))
             .limit(page_size + 1)
         )
@@ -653,8 +668,8 @@ class ResourceRepository:
     async def count_acl(self, share_key: str) -> int:
         statement = (
             select(func.count())
-            .select_from(smb_share_aces)
-            .where(smb_share_aces.c.share_key == share_key.casefold())
+            .select_from(current_smb_share_aces)
+            .where(current_smb_share_aces.c.share_key == share_key.casefold())
         )
         return int((await self._session.execute(statement)).scalar_one())
 
@@ -665,8 +680,8 @@ class ResourceRepository:
         row = (
             (
                 await self._session.execute(
-                    select(ntfs_resources).where(
-                        ntfs_resources.c.resource_key == resource_key.casefold()
+                    select(current_ntfs_resources).where(
+                        current_ntfs_resources.c.resource_key == resource_key.casefold()
                     )
                 )
             )
@@ -690,8 +705,10 @@ class ResourceRepository:
         rows = (
             (
                 await self._session.execute(
-                    select(ntfs_resources).where(
-                        ntfs_resources.c.resource_key.in_(sorted({key.casefold() for key in keys}))
+                    select(current_ntfs_resources).where(
+                        current_ntfs_resources.c.resource_key.in_(
+                            sorted({key.casefold() for key in keys})
+                        )
                     )
                 )
             )
@@ -703,8 +720,8 @@ class ResourceRepository:
     async def has_ntfs_aces(self, resource_key: str) -> bool:
         """Whether any ACE names this path, even if the directory itself was never read."""
         statement = select(
-            select(ntfs_aces.c.ace_key)
-            .where(ntfs_aces.c.resource_key == resource_key.casefold())
+            select(current_ntfs_aces.c.ace_key)
+            .where(current_ntfs_aces.c.resource_key == resource_key.casefold())
             .exists()
         )
         return bool((await self._session.execute(statement)).scalar_one())
@@ -723,9 +740,9 @@ class ResourceRepository:
         """
         page_size = _page_size(limit)
         statement = (
-            select(ntfs_aces)
-            .where(ntfs_aces.c.resource_key == resource_key.casefold())
-            .order_by(ntfs_aces.c.order_index.nulls_last(), ntfs_aces.c.ace_key)
+            select(current_ntfs_aces)
+            .where(current_ntfs_aces.c.resource_key == resource_key.casefold())
+            .order_by(current_ntfs_aces.c.order_index.nulls_last(), current_ntfs_aces.c.ace_key)
             .offset(max(0, offset))
             .limit(page_size + 1)
         )
@@ -736,8 +753,8 @@ class ResourceRepository:
     async def count_ntfs_acl(self, resource_key: str) -> int:
         statement = (
             select(func.count())
-            .select_from(ntfs_aces)
-            .where(ntfs_aces.c.resource_key == resource_key.casefold())
+            .select_from(current_ntfs_aces)
+            .where(current_ntfs_aces.c.resource_key == resource_key.casefold())
         )
         return int((await self._session.execute(statement)).scalar_one())
 
@@ -748,34 +765,38 @@ class ResourceRepository:
         would produce a number that looks like an answer and is not one. A DACL is tens of
         entries, so reading them all costs one indexed scan.
 
-        **Stored entries can disagree about position, and that is not an error here.** An
+        **Entries can still disagree about position, and that is not an error here.** An
         ACE's identity excludes ``order_index`` — deliberately, so that reordering a DACL
-        does not look like every entry being deleted and recreated — and nothing removes an
-        entry a later scan stopped seeing. So an ACE that used to sit at position 0 and the
-        different ACE that replaced it both survive, both claiming position 0, and the
-        normalizer rightly refuses to hash that: the document would depend on which row came
-        back first. The answer is to fall back to the *unordered* form, which the normal
-        form exists to express. It says plainly that the server cannot establish evaluation
-        order from what it holds, it can never collide with an ordered digest, and
-        ``ordered: false`` reports it on the wire — all of which beats failing the request,
-        which would make one stale row take a directory's whole ACL off the air.
+        does not look like every entry being deleted and recreated. A reconciliation now
+        takes the superseded entry out of current state, which removes the commonest way two
+        rows came to claim position 0; what it cannot remove is a collision between entries
+        that are *both* current, because nothing about the stored data forbids one. When it
+        happens the normalizer rightly refuses to hash: the document would depend on which
+        row came back first. The answer is to fall back to the *unordered* form, which the
+        normal form exists to express. It says plainly that the server cannot establish
+        evaluation order from what it holds, it can never collide with an ordered digest,
+        and ``ordered: false`` reports it on the wire — all of which beats failing the
+        request, which would take a directory's whole ACL off the air over one position.
         """
         rows = (
             (
                 await self._session.execute(
-                    select(ntfs_aces)
-                    .where(ntfs_aces.c.resource_key == resource.resource_key)
-                    .order_by(ntfs_aces.c.order_index.nulls_last(), ntfs_aces.c.ace_key)
+                    select(current_ntfs_aces)
+                    .where(current_ntfs_aces.c.resource_key == resource.resource_key)
+                    .order_by(
+                        current_ntfs_aces.c.order_index.nulls_last(), current_ntfs_aces.c.ace_key
+                    )
                 )
             )
             .mappings()
             .all()
         )
         entries = [ntfs_ace_record(row).acl_facts for row in rows]
-        # A NULL DACL carries no entries by definition. Rows can nonetheless survive from a
-        # run that read a real DACL before the newest run found the descriptor replaced, so
-        # they are excluded from the document rather than allowed to contradict it -- and
-        # stored_ace_count still reports every row, so ace_count_agrees exposes the split.
+        # A NULL DACL carries no entries by definition. Current entries can nonetheless
+        # survive a run that found the descriptor replaced -- the NTFS scope may not have
+        # been reconciled since -- so they are excluded from the document rather than allowed
+        # to contradict it, and stored_ace_count still reports every current row, so
+        # ace_count_agrees exposes the split.
         hashed = [] if not resource.dacl_present else entries
         try:
             normalized = normalize_acl(
@@ -873,14 +894,14 @@ class ResourceRepository:
         predicate = _trustee_predicate(trustee_key, trustee_sid)
 
         keys_statement: Select[Any] = (
-            select(smb_share_aces.c.share_key)
+            select(current_smb_share_aces.c.share_key)
             .where(predicate)
-            .group_by(smb_share_aces.c.share_key)
-            .order_by(smb_share_aces.c.share_key)
+            .group_by(current_smb_share_aces.c.share_key)
+            .order_by(current_smb_share_aces.c.share_key)
             .limit(page_size + 1)
         )
         if after is not None:
-            keys_statement = keys_statement.where(smb_share_aces.c.share_key > after)
+            keys_statement = keys_statement.where(current_smb_share_aces.c.share_key > after)
 
         keys = [row[0] for row in (await self._session.execute(keys_statement)).all()]
         has_more = len(keys) > page_size
@@ -891,12 +912,12 @@ class ResourceRepository:
         ace_rows = (
             (
                 await self._session.execute(
-                    select(smb_share_aces)
-                    .where(smb_share_aces.c.share_key.in_(visible), predicate)
+                    select(current_smb_share_aces)
+                    .where(current_smb_share_aces.c.share_key.in_(visible), predicate)
                     .order_by(
-                        smb_share_aces.c.share_key,
-                        smb_share_aces.c.order_index.nulls_last(),
-                        smb_share_aces.c.ace_key,
+                        current_smb_share_aces.c.share_key,
+                        current_smb_share_aces.c.order_index.nulls_last(),
+                        current_smb_share_aces.c.ace_key,
                     )
                 )
             )
@@ -920,8 +941,8 @@ class ResourceRepository:
         self, *, trustee_key: str | None = None, trustee_sid: Sid | None = None
     ) -> int:
         statement = (
-            select(func.count(func.distinct(smb_share_aces.c.share_key)))
-            .select_from(smb_share_aces)
+            select(func.count(func.distinct(current_smb_share_aces.c.share_key)))
+            .select_from(current_smb_share_aces)
             .where(_trustee_predicate(trustee_key, trustee_sid))
         )
         return int((await self._session.execute(statement)).scalar_one())
@@ -958,9 +979,9 @@ class ResourceRepository:
         silently shortened DACL.
         """
         statement = (
-            select(ntfs_aces)
-            .where(ntfs_aces.c.resource_key == resource_key.casefold())
-            .order_by(ntfs_aces.c.order_index.nulls_last(), ntfs_aces.c.ace_key)
+            select(current_ntfs_aces)
+            .where(current_ntfs_aces.c.resource_key == resource_key.casefold())
+            .order_by(current_ntfs_aces.c.order_index.nulls_last(), current_ntfs_aces.c.ace_key)
             .limit(max(1, limit) + 1)
         )
         rows = (await self._session.execute(statement)).mappings().all()
@@ -971,9 +992,11 @@ class ResourceRepository:
     ) -> tuple[ShareAceRecord, ...]:
         """Every stored entry for one share's ACL, in evaluation order."""
         statement = (
-            select(smb_share_aces)
-            .where(smb_share_aces.c.share_key == share_key.casefold())
-            .order_by(smb_share_aces.c.order_index.nulls_last(), smb_share_aces.c.ace_key)
+            select(current_smb_share_aces)
+            .where(current_smb_share_aces.c.share_key == share_key.casefold())
+            .order_by(
+                current_smb_share_aces.c.order_index.nulls_last(), current_smb_share_aces.c.ace_key
+            )
             .limit(max(1, limit) + 1)
         )
         rows = (await self._session.execute(statement)).mappings().all()
@@ -997,12 +1020,12 @@ class ResourceRepository:
         if not folded:
             return {}
         statement = (
-            select(ntfs_aces)
-            .where(ntfs_aces.c.resource_key.in_(folded))
+            select(current_ntfs_aces)
+            .where(current_ntfs_aces.c.resource_key.in_(folded))
             .order_by(
-                ntfs_aces.c.resource_key,
-                ntfs_aces.c.order_index.nulls_last(),
-                ntfs_aces.c.ace_key,
+                current_ntfs_aces.c.resource_key,
+                current_ntfs_aces.c.order_index.nulls_last(),
+                current_ntfs_aces.c.ace_key,
             )
         )
         rows = (await self._session.execute(statement)).mappings().all()
@@ -1016,12 +1039,12 @@ class ResourceRepository:
         if not folded:
             return {}
         statement = (
-            select(smb_share_aces)
-            .where(smb_share_aces.c.share_key.in_(folded))
+            select(current_smb_share_aces)
+            .where(current_smb_share_aces.c.share_key.in_(folded))
             .order_by(
-                smb_share_aces.c.share_key,
-                smb_share_aces.c.order_index.nulls_last(),
-                smb_share_aces.c.ace_key,
+                current_smb_share_aces.c.share_key,
+                current_smb_share_aces.c.order_index.nulls_last(),
+                current_smb_share_aces.c.ace_key,
             )
         )
         rows = (await self._session.execute(statement)).mappings().all()
@@ -1047,6 +1070,14 @@ class ResourceRepository:
         silently omitted exactly the paths open to the world would invert the finding this
         tool exists to produce. It is a second indexed read
         (``ix_ntfs_resources_null_dacl``), unioned into the same keyset page.
+
+        **The reference index is not itself current state.** It is append-only -- a row
+        records that an ACL once named a principal -- and a directory whose entries a
+        reconciled scan proved gone would otherwise keep offering itself as a candidate
+        forever, to be listed with a verdict of no access on a path that may not even
+        exist. So each reference is confirmed against the entry it stands for
+        (:func:`_still_named`), which settles both cases at once: closing a resource closes
+        its entries too, so a removed directory names nobody either.
         """
         page_size = _page_size(limit)
         if not principal_keys:
@@ -1055,9 +1086,10 @@ class ResourceRepository:
         named = select(principal_references.c.reference_key.label("candidate_key")).where(
             principal_references.c.principal_key.in_(sorted(set(principal_keys))),
             principal_references.c.reference_kind == ReferenceKind.NTFS_ACE.value,
+            _still_named(current_ntfs_aces, "resource_key"),
         )
-        unrestricted = select(ntfs_resources.c.resource_key.label("candidate_key")).where(
-            ~ntfs_resources.c.dacl_present
+        unrestricted = select(current_ntfs_resources.c.resource_key.label("candidate_key")).where(
+            ~current_ntfs_resources.c.dacl_present
         )
         return await self._candidate_page(named.union(unrestricted), page_size, after)
 
@@ -1081,6 +1113,7 @@ class ResourceRepository:
         named = select(principal_references.c.reference_key.label("candidate_key")).where(
             principal_references.c.principal_key.in_(sorted(set(principal_keys))),
             principal_references.c.reference_kind == ReferenceKind.SMB_ACE.value,
+            _still_named(current_smb_share_aces, "share_key"),
         )
         return await self._candidate_page(named, page_size, after)
 
@@ -1139,11 +1172,30 @@ def _share_root_key(share_key: str) -> str:
     return UncPath(server=server, share=name).comparison_key
 
 
+def _still_named(aces: Any, container_column: str) -> Any:
+    """Whether a reference row still corresponds to an entry that is currently present.
+
+    ``principal_references`` is an index over what has ever been observed and is never
+    pruned, so it answers "could this principal be involved here" out of history. Confirming
+    each row against the current ACL keeps the candidate set from outliving the entries that
+    justified it, and costs one probe of ``ix_ntfs_aces_trustee`` / ``ix_smb_share_aces_
+    trustee`` -- ``(trustee_key, container)``, which is exactly the pair being matched.
+    """
+    return (
+        select(aces.c.ace_key)
+        .where(
+            aces.c[container_column] == principal_references.c.reference_key,
+            aces.c.trustee_key == principal_references.c.principal_key,
+        )
+        .exists()
+    )
+
+
 def _trustee_predicate(trustee_key: str | None, trustee_sid: Sid | None) -> Any:
     if trustee_key is not None:
-        return smb_share_aces.c.trustee_key == trustee_key
+        return current_smb_share_aces.c.trustee_key == trustee_key
     if trustee_sid is not None:
-        return smb_share_aces.c.trustee_sid == trustee_sid.value
+        return current_smb_share_aces.c.trustee_sid == trustee_sid.value
     raise ValueError("A trustee query needs either trustee_key or trustee_sid.")
 
 
@@ -1156,8 +1208,8 @@ def _share_count_column() -> Any:
     """
     return (
         select(func.count())
-        .select_from(smb_shares)
-        .where(smb_shares.c.server_key == servers.c.server_key)
+        .select_from(current_smb_shares)
+        .where(current_smb_shares.c.server_key == current_servers.c.server_key)
         .scalar_subquery()
         .label("share_count")
     )

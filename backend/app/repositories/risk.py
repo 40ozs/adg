@@ -50,24 +50,26 @@ from app.domain import (
     UnresolvedReason,
 )
 from app.domain.errors import DomainValidationError
+from app.models.current import (
+    current_membership_edges,
+    current_ntfs_aces,
+    current_ntfs_resources,
+    current_principals,
+    current_smb_share_aces,
+    current_smb_shares,
+)
 from app.models.schema import (
     RiskEvaluationTrigger,
     RiskFindingEventType,
     RiskFindingStatus,
-    membership_edges,
-    ntfs_aces,
-    ntfs_resources,
     object_versions,
     observations,
     principal_references,
-    principals,
     risk_evaluations,
     risk_finding_events,
     risk_findings,
     scan_run_scopes,
     scan_runs,
-    smb_share_aces,
-    smb_shares,
 )
 from app.risk_engine import (
     AceFacts,
@@ -261,8 +263,8 @@ class RiskFactsRepository:
             seen |= frontier
             rows = (
                 await self._session.execute(
-                    sa.select(membership_edges.c.group_key)
-                    .where(membership_edges.c.member_key.in_(sorted(frontier)))
+                    sa.select(current_membership_edges.c.group_key)
+                    .where(current_membership_edges.c.member_key.in_(sorted(frontier)))
                     .distinct()
                     .limit(MAX_TRUSTEES)
                 )
@@ -382,11 +384,15 @@ class RiskFactsRepository:
     async def _resource_rows(
         self, resource_keys: Sequence[str] | None, truncated: list[str]
     ) -> Sequence[Any]:
-        statement = sa.select(ntfs_resources).order_by(ntfs_resources.c.resource_key)
+        statement = sa.select(current_ntfs_resources).order_by(
+            current_ntfs_resources.c.resource_key
+        )
         if resource_keys is not None:
             if not resource_keys:
                 return []
-            statement = statement.where(ntfs_resources.c.resource_key.in_(sorted(resource_keys)))
+            statement = statement.where(
+                current_ntfs_resources.c.resource_key.in_(sorted(resource_keys))
+            )
         rows = (await self._session.execute(statement.limit(MAX_RESOURCES + 1))).all()
         if len(rows) > MAX_RESOURCES:
             truncated.append(
@@ -402,15 +408,15 @@ class RiskFactsRepository:
         if not resource_keys:
             return []
         statement = (
-            sa.select(ntfs_aces)
-            .where(ntfs_aces.c.resource_key.in_(resource_keys))
+            sa.select(current_ntfs_aces)
+            .where(current_ntfs_aces.c.resource_key.in_(resource_keys))
             # Stored order, which the access check honors. An entry with no order index sorts
             # last rather than at zero: an unordered entry must not displace an ordered one,
             # because in this evaluator position decides whether a Deny wins.
             .order_by(
-                ntfs_aces.c.resource_key,
-                sa.nullslast(ntfs_aces.c.order_index.asc()),
-                ntfs_aces.c.ace_key,
+                current_ntfs_aces.c.resource_key,
+                sa.nullslast(current_ntfs_aces.c.order_index.asc()),
+                current_ntfs_aces.c.ace_key,
             )
         )
         rows = (await self._session.execute(statement.limit(MAX_ACES + 1))).all()
@@ -423,9 +429,9 @@ class RiskFactsRepository:
         if not share_keys:
             return []
         statement = (
-            sa.select(smb_shares)
-            .where(smb_shares.c.share_key.in_(share_keys))
-            .order_by(smb_shares.c.share_key)
+            sa.select(current_smb_shares)
+            .where(current_smb_shares.c.share_key.in_(share_keys))
+            .order_by(current_smb_shares.c.share_key)
             .limit(MAX_RESOURCES)
         )
         return (await self._session.execute(statement)).all()
@@ -436,12 +442,12 @@ class RiskFactsRepository:
         if not share_keys:
             return []
         statement = (
-            sa.select(smb_share_aces)
-            .where(smb_share_aces.c.share_key.in_(share_keys))
+            sa.select(current_smb_share_aces)
+            .where(current_smb_share_aces.c.share_key.in_(share_keys))
             .order_by(
-                smb_share_aces.c.share_key,
-                sa.nullslast(smb_share_aces.c.order_index.asc()),
-                smb_share_aces.c.ace_key,
+                current_smb_share_aces.c.share_key,
+                sa.nullslast(current_smb_share_aces.c.order_index.asc()),
+                current_smb_share_aces.c.ace_key,
             )
         )
         rows = (await self._session.execute(statement.limit(MAX_ACES + 1))).all()
@@ -455,7 +461,7 @@ class RiskFactsRepository:
             return {}
         rows = (
             await self._session.execute(
-                sa.select(principals).where(principals.c.principal_key.in_(keys))
+                sa.select(current_principals).where(current_principals.c.principal_key.in_(keys))
             )
         ).all()
         return {row.principal_key: _principal_facts(row) for row in rows}
@@ -484,9 +490,13 @@ class RiskFactsRepository:
             remaining = MAX_EDGES - edges_read
             rows = (
                 await self._session.execute(
-                    sa.select(membership_edges.c.group_key, membership_edges.c.member_key)
-                    .where(membership_edges.c.group_key.in_(sorted(frontier)))
-                    .order_by(membership_edges.c.group_key, membership_edges.c.member_key)
+                    sa.select(
+                        current_membership_edges.c.group_key, current_membership_edges.c.member_key
+                    )
+                    .where(current_membership_edges.c.group_key.in_(sorted(frontier)))
+                    .order_by(
+                        current_membership_edges.c.group_key, current_membership_edges.c.member_key
+                    )
                     .limit(remaining + 1)
                 )
             ).all()

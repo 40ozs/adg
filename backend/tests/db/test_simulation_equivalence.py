@@ -14,16 +14,19 @@ same five steps, and every one of them is real:
 The apparatus is ``tests/support/equivalence.py``; its docstring explains why the
 recollection is three runs and why the post-change answer is read two ways.
 
-## The one exception, and it is measured rather than asserted
+## The one exception, and it is gone
 
-ADG deletes nothing on ingestion — an absent observation is not evidence of removal — and
-current-state reads are not routed through presence. So after a reconciled scan has proved an
-ACE gone, the **live** engine still counts it while the **point-in-time** engine does not.
-Every removal case here therefore agrees with the as-of reading and disagrees with the live
-one, and :class:`TestTheKnownExceptionIsMeasured` pins that divergence with the exact masks.
-It is Phase 7A's limitation 1 and Phase 9A's limitation 6, and it belongs in a test rather
-than only in a document: the day somebody routes current-state reads through presence, this
-suite tells them the limitation is gone.
+This suite used to carry a measured divergence. ADG deletes nothing on ingestion — an absent
+observation is not evidence of removal — and current-state reads were not routed through
+presence, so after a reconciled scan had proved an ACE gone the **live** engine still counted
+it while the **point-in-time** engine did not. Every removal case agreed with the as-of
+reading and disagreed with the live one.
+
+Current-state reads now go through one presence predicate
+(``docs/architecture/current-state-presence.md``), so the two readings agree on a removal and
+:class:`TestTheFormerExceptionIsGone` asserts that, keeping the record of the divergence
+where a reader will look for it. Both readings are still computed for every comparison,
+because the pair is what makes the agreement a measurement rather than a claim.
 """
 
 from __future__ import annotations
@@ -511,18 +514,24 @@ class TestInheritanceChanges:
         assert equivalence.equivalent, equivalence.report()
 
 
-class TestTheKnownExceptionIsMeasured:
-    async def test_a_removal_diverges_from_the_live_reading_and_agrees_with_the_as_of_one(
+class TestTheFormerExceptionIsGone:
+    """The limitation this class used to pin, now asserted to be absent.
+
+    It read: *ADG deletes nothing on ingestion and current-state reads do not consult
+    presence, so after a reconciled scan has proved an entry gone the live engine still
+    counts it.* The first half is still true — nothing is deleted — and the second is not:
+    current-state reads go through the presence predicate in ``app/models/current.py``, so
+    the two readings now agree on a removal. See
+    ``docs/architecture/current-state-presence.md`` and
+    ``tests/db/test_current_state_presence.py``.
+
+    The class is kept rather than deleted, with its assertions inverted, so that the record
+    of the divergence and of its ending are in the same place a reader will look for it.
+    """
+
+    async def test_a_removal_now_agrees_with_the_live_reading_as_well_as_the_as_of_one(
         self, client: AsyncClient, session: AsyncSession
     ) -> None:
-        """ADG deletes nothing on ingestion, and current-state reads do not consult presence.
-
-        So after a reconciled scan has proved an entry gone, the live engine still counts it.
-        The prediction is right; the *live reading* is the thing that has not caught up. This
-        is Phase 7A's limitation 1 and Phase 9A's limitation 6, measured with exact masks
-        rather than asserted in a document — and the day somebody routes current-state reads
-        through presence, this test tells them the limitation is gone.
-        """
         before = estate()
         after = before.without_membership(FINANCE_RW, ALICE)
         overlay = SimulationOverlay.from_changes(
@@ -546,28 +555,25 @@ class TestTheKnownExceptionIsMeasured:
         assert comparison.predicted_before == MODIFY
         assert comparison.predicted_after == 0
         assert comparison.observed_after == 0, "the point-in-time reading sees the removal"
-        assert comparison.observed_after_live == MODIFY, (
-            "the current-state reading does not, because nothing is deleted on ingestion "
-            "and it is not routed through presence"
+        assert comparison.observed_after_live == 0, (
+            "and so does the current-state reading: the edge row is still stored, and the "
+            "open tombstone over it is what stops it being current"
         )
         assert comparison.agrees
-        assert not comparison.live_agrees
+        assert comparison.live_agrees
 
-    async def test_a_proposal_naming_an_entry_a_reconciled_scan_proved_gone_still_applies(
+    async def test_a_proposal_naming_an_entry_a_reconciled_scan_proved_gone_is_inert(
         self, client: AsyncClient, session: AsyncSession
     ) -> None:
-        """The same limitation, seen from the applicability check rather than the answer.
+        """The same fix, seen from the applicability check rather than from the answer.
 
-        Applicability is decided against the baseline, and a *current* baseline reads the
-        ACE table directly. So an entry a reconciled scan has proved absent is still there
-        to be matched, and the proposal is reported as ``applied`` rather than
-        ``target_not_found`` -- with an impact list computed from a grant that no longer
-        exists. Measured here rather than described, because it is the one case where the
-        report is confidently wrong rather than merely bounded.
-
-        **The workaround exists and is one field**: an ``as_of`` baseline is routed through
-        presence, so a simulation against the recollection instant answers correctly. That
-        is asserted below, so the fix is documented by a passing test rather than by prose.
+        Applicability is decided against the baseline, and a *current* baseline now reads
+        the ACE table through the presence predicate. So an entry a reconciled scan has
+        proved absent is not there to be matched, and a proposal to remove it reports
+        ``target_not_found`` rather than an impact list computed from a grant that no longer
+        exists. This used to be the one case in the simulation surface where the report was
+        confidently wrong rather than merely bounded, and the documented workaround was to
+        pass an ``as_of`` baseline; both readings are asserted below, and they now agree.
         """
         before = estate()
         target = before.ntfs_aces[1]  # Finance-RO, Read & Execute
@@ -593,10 +599,13 @@ class TestTheKnownExceptionIsMeasured:
             overlay, scope=scope, baseline=await service.baseline(at=dt.datetime.now(dt.UTC))
         )
 
-        assert live.applications[0].outcome is ChangeOutcome.APPLIED
-        assert live.deltas[0].direction is ImpactDirection.LOST_ACCESS
+        assert live.applications[0].outcome is ChangeOutcome.TARGET_NOT_FOUND
+        assert live.inert is True
         assert as_of.applications[0].outcome is ChangeOutcome.TARGET_NOT_FOUND
         assert as_of.inert is True
+        assert not any(delta.direction is ImpactDirection.LOST_ACCESS for delta in live.deltas), (
+            "nothing can be lost by removing an entry that is not in the baseline"
+        )
 
 
 class TestTheHarnessItself:

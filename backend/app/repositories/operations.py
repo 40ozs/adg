@@ -1,11 +1,15 @@
 """Reading collector operations: five statements, whatever the estate holds.
 
 The collector status page asks five things at once — the latest run of each scope, the last
-success of each scope, the last failure of each scope, how many of every object are stored,
-and what went wrong across all of them. Each is one statement, and none of them grows with
-the number of scopes, servers or errors. That is the property
+success of each scope, the last failure of each scope, how many of every object is
+**currently present**, and what went wrong across all of them. Each is one statement, and
+none of them grows with the number of scopes, servers or errors. That is the property
 ``tests/db/test_query_cost.py`` holds: an operator page that issued a query per server would
 be slowest on exactly the estate that needs it most.
+
+The counts are of the estate as it now stands rather than of every row ever written
+(:mod:`app.models.current`): an inventory that went on counting a decommissioned server's
+shares would tell an operator that collection is healthy over ground that is no longer there.
 
 ``DISTINCT ON`` does the per-scope reduction in one index-ordered pass. It is PostgreSQL
 specific; so is the rest of this application, and the alternative — a correlated subquery
@@ -22,18 +26,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.observation import ScanStatus
 from app.domain.operations import ErrorGroup, ObjectCounts, RunOutcome
+from app.models.current import (
+    current_membership_edges,
+    current_ntfs_aces,
+    current_ntfs_resources,
+    current_principals,
+    current_servers,
+    current_smb_share_aces,
+    current_smb_shares,
+)
 from app.models.schema import (
     collector_sources,
-    membership_edges,
-    ntfs_aces,
-    ntfs_resources,
-    principals,
     scan_run_errors,
     scan_run_scopes,
     scan_runs,
-    servers,
-    smb_share_aces,
-    smb_shares,
 )
 
 __all__ = ["OperationsRepository"]
@@ -145,13 +151,13 @@ class OperationsRepository:
             return select(func.count()).select_from(table).scalar_subquery()
 
         statement = select(
-            total(principals).label("principals"),
-            total(membership_edges).label("membership_edges"),
-            total(servers).label("servers"),
-            total(smb_shares).label("shares"),
-            total(smb_share_aces).label("share_aces"),
-            total(ntfs_resources).label("directories"),
-            total(ntfs_aces).label("ntfs_aces"),
+            total(current_principals).label("principals"),
+            total(current_membership_edges).label("membership_edges"),
+            total(current_servers).label("servers"),
+            total(current_smb_shares).label("shares"),
+            total(current_smb_share_aces).label("share_aces"),
+            total(current_ntfs_resources).label("directories"),
+            total(current_ntfs_aces).label("ntfs_aces"),
             total(scan_runs).label("scan_runs"),
         )
         row = (await self._session.execute(statement)).mappings().one()

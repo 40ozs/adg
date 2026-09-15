@@ -184,29 +184,31 @@ nothing about correctness. `tests/db/test_simulation_equivalence.py`, over the a
 Plus two controls on the harness itself: recollecting an unchanged estate moves no answer, and
 the two readings below agree while nothing has been removed.
 
-### The one exception, measured rather than asserted
+### The one exception, and it is gone
 
-The post-change answer is read **two ways**, and reporting both is the point:
+The post-change answer is read **two ways**, and reporting both is still the point:
 
 * **`as_of`** — the point-in-time engine at the recollection instant, which routes every read
   through `object_versions` and therefore excludes what a reconciled scan proved gone. **This
   is the reference**, and every case above agrees with it.
-* **`live`** — the ordinary current-state engine. ADG deletes nothing on ingestion (an absent
-  observation is not evidence of removal) and current-state reads are not routed through
-  presence, so a live answer still counts a grant a reconciled scan has proved gone.
+* **`live`** — the ordinary current-state engine. ADG still deletes nothing on ingestion (an
+  absent observation is not evidence of removal), so this reading is the ACE and edge tables
+  *filtered by presence* rather than read raw.
 
-So every *removal* case agrees with the as-of reading and disagrees with the live one, and
-`TestTheKnownExceptionIsMeasured` pins that divergence with exact masks — including its
-consequence for applicability: a proposal naming an ACE a reconciled scan has proved gone is
-still reported as `applied` against a *current* baseline, with an impact list computed from a
-grant that no longer exists. That is the one case where the report is confidently wrong rather
-than merely bounded, and the workaround is one field: an `as_of` baseline is presence-routed
-and answers correctly. The test asserts both halves, so the fix is documented by a passing
-test rather than by prose.
+This is where the validation used to carry a measured divergence: current-state reads were not
+routed through presence, so every *removal* case agreed with the as-of reading and disagreed
+with the live one — including for applicability, where a proposal naming an ACE a reconciled
+scan had proved gone was reported as `applied` against a *current* baseline, with an impact
+list computed from a grant that no longer existed. It was the one case where the report was
+confidently wrong rather than merely bounded, and the workaround was to pass an `as_of`
+baseline.
 
-This is Phase 7A's limitation 1 and Phase 9A's limitation 6. It belongs in a test rather than
-only in a document: the day somebody routes current-state reads through presence, this suite
-tells them the limitation is gone.
+Both readings now agree. `TestTheFormerExceptionIsGone` asserts that with exact masks, and
+asserts the applicability half too: a proposal naming a reconciled-away entry reports
+`target_not_found` and is inert on a current baseline, exactly as on an as-of one. The
+mechanism is in [`current-state-presence.md`](current-state-presence.md); the matrix behind it
+is `tests/db/test_current_state_presence.py`. The pair is still computed for every comparison,
+because the agreement is worth measuring rather than assuming.
 
 ### What the validation does not cover
 

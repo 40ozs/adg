@@ -90,6 +90,25 @@ def with_run_id(document: dict[str, Any], run_id: str | None = None) -> dict[str
     return rewritten
 
 
+def without_reconciliation(document: dict[str, Any]) -> dict[str, Any]:
+    r"""The same transcript, claiming no completeness over any scope.
+
+    Needed whenever two scenarios are replayed into **one** estate. Most of them reconcile
+    the same scope -- ``directory_tree \\fs01\finance`` is the usual one -- and two
+    reconciling runs over one scope are not additive: each claims to have enumerated that
+    scope completely, so the second is entitled to conclude that everything the first
+    reported and it did not is gone (:mod:`app.history.closure`). Current-state reads
+    respect that (:mod:`app.models.current`), so stacking two reconciling transcripts
+    *removes* half the estate the fixture meant to build.
+
+    Dropping the reconciliation from the later run says the honest thing instead: it
+    observed these objects and makes no claim about what else is in the scope.
+    """
+    rewritten = copy.deepcopy(document)
+    rewritten["completion"]["reconciled_scopes"] = []
+    return rewritten
+
+
 async def replay(client: AsyncClient, document: dict[str, Any]) -> dict[str, Any]:
     """Post start, batches, and completion; assert each step was accepted."""
     run_id = document["start"]["run_id"]

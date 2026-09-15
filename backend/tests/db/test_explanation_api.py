@@ -37,7 +37,15 @@ from app.contracts.derived import EXAMPLE_DIR, generate
 from app.db import Database
 from tests.db.test_query_cost import StatementLog
 from tests.fixtures import load_raw
-from tests.support.ingest import AD_KINDS, NTFS_KINDS, of_kinds, replay, smb_only, storable_document
+from tests.support.ingest import (
+    AD_KINDS,
+    NTFS_KINDS,
+    of_kinds,
+    replay,
+    smb_only,
+    storable_document,
+    without_reconciliation,
+)
 
 
 def ntfs_only(document: dict[str, Any]) -> dict[str, Any]:
@@ -135,11 +143,17 @@ async def payroll_estate(client: AsyncClient) -> None:
     ``09-broken-inheritance`` supplies the protected directory and the local-group nesting
     that reaches it; ``01-direct-user-grant`` supplies Alice, who is collected, is granted on
     the parent, and is in no local group. Neither scenario alone contains both sides of the
-    distinction, and replaying two transcripts into one estate is what a real server does
-    every night anyway.
+    distinction.
+
+    The second run is replayed **without its reconciliation**. Both scenarios reconcile
+    ``directory_tree \\fs01\finance``, and two such runs are not additive: the second claims
+    to have enumerated that tree completely, which entitles it to conclude that Payroll --
+    which it does not report -- is gone. That is a real claim and ADG acts on it
+    (:mod:`app.models.current`), so making it here would delete the half of the estate this
+    fixture exists to build. See :func:`tests.support.ingest.without_reconciliation`.
     """
     await seed(client, "09-broken-inheritance")
-    await seed(client, "01-direct-user-grant")
+    await replay(client, without_reconciliation(storable_document("01-direct-user-grant")))
 
 
 class TestTheExplanationIsOneRenderableObject:

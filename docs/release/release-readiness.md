@@ -284,6 +284,8 @@ In the order that would most improve confidence:
 3. **Model deny-only SIDs.** ADG **over-reports** for members of local administrator groups.
 4. **Measure the steady-state incremental risk pass** and the estate sizes above 400 shares.
    `performance-baseline.md` §3.3 is a specific warning against extrapolating the risk curve.
-5. **Route current-state reads through presence**, closing the live-versus-as-of divergence
-   on removals (`known-limitations.md` §3).
+5. ~~**Route current-state reads through presence**, closing the live-versus-as-of divergence
+   on removals.~~ **Done** — see
+   [`current-state-presence.md`](../architecture/current-state-presence.md) and
+   [`p0-current-state-correctness.md`](../handoffs/p0-current-state-correctness.md).
 6. **Load and concurrency testing.** Every measurement is one client against an idle server.

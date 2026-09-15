@@ -38,14 +38,16 @@ produced it, which proves consistency and nothing about correctness.
    * **``as_of``** — the point-in-time engine at the recollection instant, which routes every
      read through ``object_versions`` and therefore excludes what a reconciled scan proved
      gone. This is the reading a removal must be judged against, and it is the reference.
-   * **``live``** — the ordinary current-state engine, which reads the ACE and edge tables
-     directly. ADG deletes nothing on ingestion (by design: an absent observation is not
-     evidence of removal), and current-state reads are not routed through presence, so a
-     live answer still counts a grant a reconciled scan has proved is gone. That is Phase
-     7A's limitation 1 and Phase 9A's limitation 6.
+   * **``live``** — the ordinary current-state engine. ADG deletes nothing on ingestion (by
+     design: an absent observation is not evidence of removal), so this reading is the ACE
+     and edge tables filtered by presence rather than read raw: an object a reconciled scan
+     proved gone is excluded while its row and its whole timeline stay stored. See
+     ``docs/architecture/current-state-presence.md``.
 
-   Both are recorded so the second is *measured* rather than asserted in a document.
-   ``tests/db/test_simulation_equivalence.py`` pins the divergence explicitly.
+   The two used to disagree about exactly one thing — a removal — and both are still
+   recorded, because the agreement is worth *measuring* rather than assuming.
+   ``tests/db/test_simulation_equivalence.py`` and
+   ``tests/db/test_current_state_presence.py`` assert it.
 """
 
 from __future__ import annotations

@@ -17,6 +17,12 @@ Two bounds live here rather than in the caller:
   ``max_edges`` **plus one**: a traversal can only declare itself truncated when it is
   offered the edge that exceeds its budget, so the repository has to be willing to read one
   row more than the traversal will keep. See :data:`EDGE_FETCH_CEILING`.
+
+Every read here runs against :data:`app.models.current.current_principals` and
+:data:`~app.models.current.current_membership_edges` rather than the base tables, so an edge
+a successful authoritative reconciliation proved gone is not in the graph, not in the token
+built from it, and not in the access answer -- while its row and its whole timeline stay
+stored for the point-in-time reader. See ``docs/architecture/current-state-presence.md``.
 """
 
 from __future__ import annotations
@@ -39,7 +45,8 @@ from app.domain import (
     PrincipalKind,
     Sid,
 )
-from app.models.schema import membership_edges, principal_aliases, principals
+from app.models.current import current_membership_edges, current_principals
+from app.models.schema import principal_aliases
 
 __all__ = [
     "EDGE_FETCH_CEILING",
@@ -179,13 +186,13 @@ class DirectEdgeRecord:
 
 
 _EDGE_COLUMNS = (
-    membership_edges.c.edge_key,
-    membership_edges.c.group_key,
-    membership_edges.c.member_key,
-    membership_edges.c.edge_kind,
-    membership_edges.c.host_key,
-    membership_edges.c.member_kind,
-    membership_edges.c.is_foreign_security_principal,
+    current_membership_edges.c.edge_key,
+    current_membership_edges.c.group_key,
+    current_membership_edges.c.member_key,
+    current_membership_edges.c.edge_kind,
+    current_membership_edges.c.host_key,
+    current_membership_edges.c.member_kind,
+    current_membership_edges.c.is_foreign_security_principal,
 )
 
 
@@ -228,14 +235,14 @@ class MembershipRepository:
         if not keys:
             return {}
         origin = (
-            membership_edges.c.group_key
+            current_membership_edges.c.group_key
             if direction is Direction.DOWN
-            else membership_edges.c.member_key
+            else current_membership_edges.c.member_key
         )
         far = (
-            membership_edges.c.member_key
+            current_membership_edges.c.member_key
             if direction is Direction.DOWN
-            else membership_edges.c.group_key
+            else current_membership_edges.c.group_key
         )
 
         result: dict[str, list[GraphEdge]] = {key: [] for key in keys}
@@ -249,7 +256,7 @@ class MembershipRepository:
                 # Deterministic order so that a truncated fetch truncates the same way
                 # twice: an unstable prefix would make one bounded answer differ from the
                 # next for no visible reason.
-                .order_by(origin, far, membership_edges.c.edge_key)
+                .order_by(origin, far, current_membership_edges.c.edge_key)
                 .limit(remaining)
             )
             rows = (await self._session.execute(statement)).mappings().all()
@@ -265,7 +272,9 @@ class MembershipRepository:
         row = (
             (
                 await self._session.execute(
-                    select(principals).where(principals.c.principal_key == principal_key)
+                    select(current_principals).where(
+                        current_principals.c.principal_key == principal_key
+                    )
                 )
             )
             .mappings()
@@ -305,13 +314,13 @@ class MembershipRepository:
         if sid is None:
             return PrincipalResolution(record=None)
 
-        statement = select(principals).where(principals.c.sid == sid.value)
+        statement = select(current_principals).where(current_principals.c.sid == sid.value)
         if host_key is not None:
             # Nothing is scoped to this host, so only unscoped principals can answer. The
             # host-scoped lookup above already ruled the other case out.
-            statement = statement.where(principals.c.host_key.is_(None))
+            statement = statement.where(current_principals.c.host_key.is_(None))
         rows = (
-            (await self._session.execute(statement.order_by(principals.c.principal_key)))
+            (await self._session.execute(statement.order_by(current_principals.c.principal_key)))
             .mappings()
             .all()
         )
@@ -327,8 +336,8 @@ class MembershipRepository:
             rows = (
                 (
                     await self._session.execute(
-                        select(principals).where(
-                            principals.c.principal_key
+                        select(current_principals).where(
+                            current_principals.c.principal_key
                             == any_(bindparam("keys", chunk, type_=ARRAY(Text)))
                         )
                     )
@@ -376,15 +385,15 @@ class MembershipRepository:
         for a SID that demonstrably appears in a group would hide a real membership.
         """
         statement = select(
-            select(principals.c.principal_key)
-            .where(principals.c.principal_key == key)
+            select(current_principals.c.principal_key)
+            .where(current_principals.c.principal_key == key)
             .exists()
             .label("as_principal"),
-            select(membership_edges.c.edge_key)
+            select(current_membership_edges.c.edge_key)
             .where(
                 or_(
-                    membership_edges.c.group_key == key,
-                    membership_edges.c.member_key == key,
+                    current_membership_edges.c.group_key == key,
+                    current_membership_edges.c.member_key == key,
                 )
             )
             .exists()
@@ -410,9 +419,9 @@ class MembershipRepository:
         if not unique:
             return frozenset()
         statement = (
-            select(membership_edges.c.group_key)
-            .where(membership_edges.c.group_key.in_(unique))
-            .group_by(membership_edges.c.group_key)
+            select(current_membership_edges.c.group_key)
+            .where(current_membership_edges.c.group_key.in_(unique))
+            .group_by(current_membership_edges.c.group_key)
         )
         rows = (await self._session.execute(statement)).all()
         return frozenset(row[0] for row in rows)
@@ -424,9 +433,9 @@ class MembershipRepository:
     ) -> Page[DirectEdgeRecord]:
         """Principals directly inside ``group_key``, ordered by member key."""
         return await self._direct(
-            anchor=membership_edges.c.group_key,
+            anchor=current_membership_edges.c.group_key,
             anchor_value=group_key,
-            counterpart=membership_edges.c.member_key,
+            counterpart=current_membership_edges.c.member_key,
             limit=limit,
             after=after,
         )
@@ -436,9 +445,9 @@ class MembershipRepository:
     ) -> Page[DirectEdgeRecord]:
         """Groups that directly contain ``member_key``, ordered by group key."""
         return await self._direct(
-            anchor=membership_edges.c.member_key,
+            anchor=current_membership_edges.c.member_key,
             anchor_value=member_key,
-            counterpart=membership_edges.c.group_key,
+            counterpart=current_membership_edges.c.group_key,
             limit=limit,
             after=after,
         )
@@ -460,15 +469,15 @@ class MembershipRepository:
         statement: Select[Any] = (
             select(
                 *_EDGE_COLUMNS,
-                membership_edges.c.first_observed_at,
-                membership_edges.c.last_observed_at,
-                membership_edges.c.last_observed_run_id,
+                current_membership_edges.c.first_observed_at,
+                current_membership_edges.c.last_observed_at,
+                current_membership_edges.c.last_observed_run_id,
                 counterpart.label("counterpart_key"),
             )
             .where(anchor == anchor_value)
             # (counterpart, edge_key) is unique, so the pair is a total order and the cursor
             # cannot land in the middle of a tie.
-            .order_by(counterpart, membership_edges.c.edge_key)
+            .order_by(counterpart, current_membership_edges.c.edge_key)
             .limit(page_size + 1)
         )
         if after is not None:
@@ -503,13 +512,17 @@ class MembershipRepository:
         if (group_key is None) == (member_key is None):
             raise ValueError("Count exactly one side: pass group_key or member_key, not both.")
         column = (
-            membership_edges.c.group_key if group_key is not None else membership_edges.c.member_key
+            current_membership_edges.c.group_key
+            if group_key is not None
+            else current_membership_edges.c.member_key
         )
         value = group_key if group_key is not None else member_key
         return int(
             (
                 await self._session.execute(
-                    select(func.count()).select_from(membership_edges).where(column == value)
+                    select(func.count())
+                    .select_from(current_membership_edges)
+                    .where(column == value)
                 )
             ).scalar_one()
         )
