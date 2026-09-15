@@ -137,7 +137,7 @@ way round.
 | Phase 7B | `b3d4a46` | Phase 7B: add incremental collection and reconciliation | 71 | `0008_incremental_collection` |
 | Phases 8A–10C | `401c988` | Integrate phases 8A-10C: risk, simulation, governance and remediation planning | 226 | eight, listed above |
 | Release audit | `c6a0ee0` | Release audit: fix correctness, security, benchmark and operational findings | 23 | none |
-| Integration docs | *(see below)* | Document the repository consolidation | 4 | none |
+| Integration docs | `ccdc88e` | Document the repository consolidation | 4 | none |
 
 ### What was verified about commit `b3d4a46` in isolation
 
@@ -392,6 +392,54 @@ The differences that do exist are all in the repository rather than in the produ
    only**, where it describes Phase 7B's own application rather than the tree Phase 7C
    snapshotted. At `main` it is byte-identical to the audited file.
 
+---
+
+## Remote push
+
+```powershell
+git fetch origin --prune
+git push origin main          # no force, no lease
+```
+
+| | |
+| --- | --- |
+| `origin/main` before | `fde6e4ae8b4135fba1f8299a52abfb0ec8f36084` |
+| Push result | `fde6e4a..ccdc88e  main -> main` — an ordinary **fast-forward** |
+| Local `main` after | `ccdc88ed7387a23025af5aea117f523f79978506` |
+| `origin/main` after | `ccdc88ed7387a23025af5aea117f523f79978506` |
+| `git rev-list --left-right --count main...origin/main` | `0  0` — no divergence |
+| `git status -sb` | `## main...origin/main` |
+| GitHub's own view (`gh api repos/40ozs/adg/commits/main`) | `ccdc88e  Document the repository consolidation` |
+
+The fast-forward was possible because `6365308` had already joined `fde6e4a` into this
+history. No branch protection was encountered, nothing was forced, and no remote branch was
+deleted.
+
+`git branch --set-upstream-to=origin/main main` was run after the push so the tracking
+relationship is recorded; the local branch had never had an upstream.
+
+### The SHAs this consolidation produced
+
+| | |
+| --- | --- |
+| Starting HEAD | `5537b164f4eb869b148824fd2f85fd19b1d8270d` |
+| Phase 7B | `b3d4a464224fafcc774a1b2445f5dcef854b4938` |
+| Phases 8A–10C | `401c988` |
+| Release audit | `c6a0ee0` |
+| Integration merge into `main` | `cf38f96` |
+| Unrelated-history merge | `6365308` |
+| Integration documentation | `ccdc88e` |
+| **Final `main`, local and remote** | **`ccdc88ed7387a23025af5aea117f523f79978506`** |
+
+### One thing to be precise about
+
+This section describes the push of `ccdc88e`, which is the commit that introduced the
+document containing it. The paragraph you are reading was therefore added afterwards, in a
+follow-up commit that was pushed the same way. The clean-`main` validation above was run
+against `6365308`; the two commits after it — `ccdc88e` and this one — add documentation
+under `docs/integration/` and change no code, no test, no migration and no contract. The
+hermetic backend suite was re-run on the canonical tree after `ccdc88e` and reported
+**5,663 passed, 10 skipped, 1,110 deselected · exit 0**, unchanged.
 ---
 
 ## Remaining limitations
