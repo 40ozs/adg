@@ -112,7 +112,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_credentials=True,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["*"],
-            expose_headers=[REQUEST_ID_HEADER],
+            # The demo markers are readable cross-origin, so the web shell can tell a
+            # synthetic answer from a real one without a second request.
+            expose_headers=[REQUEST_ID_HEADER, RUNTIME_MODE_HEADER, DEMO_NOTICE_HEADER],
         )
 
     @app.middleware("http")
