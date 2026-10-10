@@ -23,7 +23,26 @@ integration (Demo Mode's additive `/runtime` and `runtime_mode` fields as merged
 
 ## Verdict
 
-⟪TBD⟫
+**READY_FOR_ADG_DEMO_MAIN_MERGE_WITH_LIMITATIONS.**
+
+The completed Null Meridian estate now runs through the completed Demo Mode architecture as
+its default and canonical dataset: one runtime contract (`production|demo`), one dataset
+contract, one reset/status/scan/verify CLI, one database authority (`deployment_marker`), one
+fingerprint. Both feature sets are preserved — Demo Mode's boundary, guards, mutation policy,
+runtime API and indicator; Null Meridian's canon, three generations, scenarios A–H, risk
+tuning and the `by_keys` fix — and the integrated reset reproduces Null Meridian's own
+recorded fingerprint (`db736602…85c28a0`) byte for byte. Production isolation is intact and
+tested. Every integration-caused gate passes; every remaining failure is identical on `main`.
+
+The limitations (§9) are not integration regressions: CI is red on `main` and here for the same
+pre-existing reasons (three mypy errors; SQLAlchemy 2.1 `DISTINCT ON` deprecation — 80 DB tests,
+identical ids, zero failures under 2.0.54); the Docker stack was validated but not run (no
+daemon); scenario H's simulation answer is honestly partial at the product's bounds; and a
+public deployment still needs a sign-in decision.
+
+The integration also fixed two defects found on the way: Demo Mode's API could not import
+without the dev-only `httpx` (so its image could not start), and `--json` CLI output was
+interleaved with log lines.
 
 ```text
 Demo Mode     = the runtime, safety, persistence and operation boundary  (app.demo_mode)
@@ -110,7 +129,12 @@ earlier point of the dataset's own history — and `scan` replays the rest; a DB
 reset(g1) → scan(g2, via the API) → scan(g3, via the lifecycle) reaches current-state, history
 and run digests identical to a full reset. `scan` now runs the risk pass after the generation
 it applies (it previously ran none, so the risk view lagged a synthetic scan). `verify` moved
-into the lifecycle and requires the baseline before checking probes.
+into the lifecycle and requires the baseline before checking probes. `--report PATH` (from
+NM's reset) writes the JSON report. Standard output now carries only the report: the
+in-process ingestion builds the application, which installs its log handler on stdout, so
+`--json` output was interleaved with log lines and did not parse (found by this integration's
+evidence run; the code path is unchanged from Demo Mode's CLI); the CLI now runs each command
+with stdout redirected to stderr and prints the report afterwards (tested).
 
 ### 3.4 Startup refusals
 
@@ -230,7 +254,66 @@ Golden scenarios A–H: generator-side in `tests/demo/test_null_meridian_estate.
 
 ## 5. Determinism
 
-⟪TBD⟫
+Three resets of the integrated application, each `python -m app.demo_mode reset` (default
+dataset, Null Meridian), run in a venv holding **only the API image's dependencies** (no
+`[dev]` extras, so no `httpx`) — the way the compose `demo-reset` service runs it:
+
+| | Reset 1 | Reset 2 | Reset 3 |
+| --- | --- | --- | --- |
+| Database | new, empty, unmarked `adg_demo` | dropped and recreated: new, empty, unmarked | the reset-2 database, already marked (`--no-migrate`) |
+| Initialized (marker written) | yes | yes | no (marker kept) |
+| Runs (succeeded / partial / failed) | 300 (297 / 1 / 2) | 300 (297 / 1 / 2) | 300 (297 / 1 / 2) |
+| Observations applied | 41,756 | 41,756 | 41,756 |
+| Probes | 23 / 23 | 23 / 23 | 23 / 23 |
+| Risk pass (dated 2026-10-01T06:00Z) | 9,666 matched, 9,386 open, complete | same | same |
+| **Canonical fingerprint** | `228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0` | **identical** | **identical** |
+| Per-source digests | 11 | all 11 equal to reset 1 | — |
+| NM-scope fingerprint (4512524 algorithm, run unchanged) | `db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0` | **identical** | — |
+| Duration (whole / ingestion through the API) | 139.8 s / 93.4 s | 137.4 s / 90.4 s | 132.3 s |
+
+Reports: [`docs/demo/evidence/reset-1.json`](../demo/evidence/reset-1.json),
+[`reset-2.json`](../demo/evidence/reset-2.json) (written by `reset --report`). After reset 3,
+`verify` → ok, 23 probes, same fingerprint; `status` → `baseline_applied: true`, marker
+`demo` / `null-meridian-v1` / `null-meridian-v1`; `scan` → refused, every generation applied.
+
+Counts after every reset (identical across all three): current principals
+2,139, membership edges 6,224, servers
+33, shares 124, share ACEs 606,
+NTFS resources 826, NTFS ACEs 4,117; object
+versions 14,316, scan runs 300, open tombstones
+70.
+
+| Source | Digest (reset 1) | Reset 2 |
+| --- | --- | --- |
+| `current:membership_edge` | `10aa3f796aeff011…` | = |
+| `current:ntfs_ace` | `f0d1ebb2ed751782…` | = |
+| `current:ntfs_resource` | `1785f3fe5969b267…` | = |
+| `current:principal` | `b580544a3d76fae0…` | = |
+| `current:server` | `5b969787e29308fb…` | = |
+| `current:smb_ace` | `4ea8a55e8049808e…` | = |
+| `current:smb_share` | `c52bf0b41c4e7576…` | = |
+| `object_versions` | `7ba7b8697ae1e8e5…` | = |
+| `risk_findings` | `1507c197517dcb9d…` | = |
+| `scan_run_errors` | `7ed6c7ef69dedcc4…` | = |
+| `scan_run_scopes` | `5c69258a3f03d105…` | = |
+| `scan_runs` | `6b929acfc2f6070f…` | = |
+
+**Fingerprint scope.** The canonical fingerprint is Demo Mode's (§3.9), so its value differs
+from both source branches' recorded values by construction: Demo Mode's
+`f3f70279…` was over the reference estate with a sequential hash, and NM's `db736602…` over ten
+raw tables including risk timestamps. To show the dataset state did not change, the NM
+branch's own `fingerprint()` — copied verbatim from `4512524` into a scratch script, not into
+the product — was run against the integrated database after resets 1 and 2: it returns
+`db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0`, the value NM recorded, with
+all ten of its table digests equal to NM's committed `reset-1.json`. `deployment_marker` is in
+neither scope. The integration changed how the estate is loaded and guarded, not one row of
+what is loaded — risk-finding timestamps included, because the dataset now carries NM's
+evaluation instant through the contract.
+
+The DB suites assert the same independently: `TestRepeatability` (a second full reset with
+Python sockets refused — equal fingerprint, digests, counts) and
+`TestTheHistoryReplaysThroughTheSyntheticScan` (reset to g1, scan g2 and g3 — every
+non-risk digest equal to the full reset's; the same number of open findings).
 
 ## 6. Tests
 
@@ -244,11 +327,11 @@ on an untouched worktree of `cc13ad2` with its own databases.
 | --- | --- | --- |
 | Demo Mode focused — `tests/demo_mode` hermetic | — (source: 81 passed, 2 skipped) | **94 passed, 0 skipped** |
 | Demo Mode focused — `tests/demo_mode/test_demo_database.py` (PostgreSQL) | — (source: 24 passed) | **27 passed** |
-| Null Meridian focused — `tests/demo/test_null_meridian_{canon,estate}.py`, `test_demo_mode.py` | — | **110 passed** (34 + 32 + 44) |
+| Null Meridian focused — `tests/demo/test_null_meridian_{canon,estate}.py`, `test_demo_mode.py` | — | **111 passed** (34 + 32 + 45) |
 | Null Meridian focused — `tests/db/test_null_meridian_demo.py` (PostgreSQL) | — (source: 21) | **34 passed** |
 | `by_keys` regression — `tests/db/test_risk_findings.py::TestLookupByKeyAtScale` | — | **passed** (in 23/23 of the file) |
-| Hermetic backend, SQLAlchemy 2.1.4 (`-m "not smoke"`) | 5,549 passed, 124 skipped | **⟪HERMETIC⟫** |
-| Hermetic backend, SQLAlchemy 2.0.54 | — | **5,761 passed, 124 skipped, 0 failed** |
+| Hermetic backend, SQLAlchemy 2.1.4 (`-m "not smoke"`) | 5,549 passed, 124 skipped | **5,762 passed, 124 skipped, 0 failed** |
+| Hermetic backend, SQLAlchemy 2.0.54 | — | **5,761 passed, 124 skipped, 0 failed** (taken before the last hermetic test, the CLI `--json` test, was added) |
 | DB backend, SQLAlchemy 2.1.4 (`-m smoke`) | 1,064 passed, **80 failed**, 1 xfailed | 1,126 passed, **80 failed**, 1 xfailed |
 | — the 80 failures | | **identical test ids** (80/80; none only on either side); every one `sqlalchemy.exc.SADeprecationWarning: Passing expression to distinct to generate a DISTINCT ON clause is deprecated`, promoted to an error by `filterwarnings = error::DeprecationWarning:app.*` — on both sides |
 | DB backend, SQLAlchemy 2.0.54 (`-m smoke`) | — (NM source: 1,165 passed) | **1,206 passed, 0 failed**, 1 xfailed |
@@ -262,9 +345,10 @@ on an untouched worktree of `cc13ad2` with its own databases.
 | Browser (headless Chromium, §8) | — | **22/22 checks** |
 | GitHub Actions CI on the pushed branch | run 35009148121: Backend **fails at Type check** (the 3 mypy errors), unit/DB steps skipped; Frontend, Collector (Pester), Compose pass | run 38091215282: **the same** — Backend fails at Type check with the same errors; Frontend, **Collector (Pester)**, Compose pass |
 
-Notes. The SQLAlchemy 2.1.4 DB run was taken at `a9fe81b`; the only later code change
-(`ResetReport.canonical`, `7fa7680`) is covered by `TestResettingToAPointInHistory`, re-run
-after it (8/8 of the scan and history tests passed). The mypy finding the Demo Mode branch
+Notes. Both DB runs were taken at `a9fe81b`. The later code changes are
+`ResetReport.canonical` (`7fa7680`, covered by `TestResettingToAPointInHistory`, re-run after
+it: 8/8 scan and history tests passed) and the CLI's stdout routing (hermetic test; exercised
+by the three evidence resets in §5); neither touches what a reset writes. The mypy finding the Demo Mode branch
 introduced (two unused `type: ignore` comments in its tests — its handoff ran `mypy app`, not
 `mypy app tests` as CI does) is fixed; integrated mypy equals `main`. No test was skipped,
 weakened or deleted to pass: the two Demo Mode tests that skipped while Null Meridian was
@@ -345,7 +429,7 @@ production Next build (`next start`), driven by headless Chromium (Playwright 1.
    refused with `ADG_ENVIRONMENT=production`, so a public demo needs OIDC or a deliberate
    read-only visitor mode. `ADG_ENVIRONMENT=production` is *allowed* in demo mode by decision
    (§3.4), reversing the NM branch's refusal.
-6. **Time.** A Null Meridian reset takes ⟪RESET_TIME⟫; the Null Meridian DB tests add about
+6. **Time.** A Null Meridian reset takes about 2¼ minutes here (132–140 s); the Null Meridian DB tests add about
    9–10 minutes to the smoke run (two full resets and the history replay). A synthetic scan of
    one Null Meridian generation is a synchronous request of a minute or two (100 runs and a
    risk pass); there is still no UI button for it (API and CLI only). Concurrent synthetic
@@ -373,4 +457,23 @@ worsens either. The source branches `claude/vibrant-gates-rhovf1` and
 
 ## 11. Files changed (relative to `main`)
 
-⟪TBD⟫
+82 files. "reconciled" marks a file this integration changed beyond what the two source
+merges brought in (`git diff a2a6d00`). Removed relative to the Null Meridian source, and so
+absent from the list: `backend/app/demo/null_meridian/reset.py` (its reset, marker and
+fingerprint — consolidated into `app.demo_mode`).
+
+**Backend — Demo Mode (`app/demo_mode`, runtime, API, config)** — `backend/app/api/__init__.py` (modified); `backend/app/api/demo.py` (added, reconciled); `backend/app/api/health.py` (modified); `backend/app/api/meta.py` (modified); `backend/app/api/remediation.py` (modified); `backend/app/api/runtime.py` (added); `backend/app/config.py` (modified, reconciled); `backend/app/contracts/openapi.py` (modified, reconciled); `backend/app/demo_mode/__init__.py` (added); `backend/app/demo_mode/__main__.py` (added, reconciled); `backend/app/demo_mode/datasets.py` (added, reconciled); `backend/app/demo_mode/ingest.py` (added, reconciled); `backend/app/demo_mode/lifecycle.py` (added, reconciled); `backend/app/demo_mode/marker.py` (added); `backend/app/demo_mode/policy.py` (added); `backend/app/demo_mode/providers.py` (added); `backend/app/demo_mode/reference.py` (added); `backend/app/main.py` (modified); `backend/app/runtime_mode.py` (added).
+
+**Backend — Null Meridian (`app/demo`)** — `backend/app/demo/estate.py` (modified); `backend/app/demo/null_meridian/__init__.py` (added, reconciled); `backend/app/demo/null_meridian/__main__.py` (added, reconciled); `backend/app/demo/null_meridian/canon.py` (added); `backend/app/demo/null_meridian/dataset.py` (added, reconciled); `backend/app/demo/null_meridian/estate.py` (added); `backend/app/demo/null_meridian/generations.py` (added, reconciled); `backend/app/demo/null_meridian/manifest.py` (added); `backend/app/demo/null_meridian/names.py` (added); `backend/app/demo/null_meridian/risk.py` (added); `backend/app/demo/null_meridian/scenarios.py` (added); `backend/app/demo/transcripts.py` (modified).
+
+**Backend — other** — `backend/app/models/schema.py` (modified); `backend/app/repositories/risk.py` (modified, reconciled).
+
+**Backend tests** — `backend/tests/api/test_authorization.py` (modified); `backend/tests/contracts/test_openapi_snapshot.py` (modified, reconciled); `backend/tests/db/test_null_meridian_demo.py` (added, reconciled); `backend/tests/db/test_risk_findings.py` (modified); `backend/tests/demo/test_demo_mode.py` (added, reconciled); `backend/tests/demo/test_null_meridian_canon.py` (added); `backend/tests/demo/test_null_meridian_estate.py` (added); `backend/tests/demo_mode/__init__.py` (added); `backend/tests/demo_mode/test_boundary.py` (added); `backend/tests/demo_mode/test_datasets.py` (added, reconciled); `backend/tests/demo_mode/test_demo_database.py` (added, reconciled); `backend/tests/demo_mode/test_runtime_mode.py` (added); `backend/tests/test_health_api.py` (modified).
+
+**Database** — `database/migrations/versions/0017_deployment_marker.py` (added).
+
+**Frontend** — `frontend/app/demo/page.tsx` (added, reconciled); `frontend/app/globals.css` (modified, reconciled); `frontend/components/AppShell.tsx` (modified); `frontend/components/Banners.tsx` (modified, reconciled); `frontend/components/DemoGuide.tsx` (added, reconciled); `frontend/lib/api/adg.ts` (modified, reconciled); `frontend/lib/api/health.ts` (modified); `frontend/lib/contracts.ts` (modified, reconciled); `frontend/tests/contracts.test.ts` (modified, reconciled); `frontend/tests/demo-guide.test.tsx` (added, reconciled); `frontend/tests/demo-indicator.test.tsx` (added, reconciled).
+
+**Docs** — `docs/architecture/demo-mode.md` (added, reconciled); `docs/contracts/v1/openapi.demo.json` (added, reconciled); `docs/contracts/v1/openapi.json` (modified); `docs/decisions/0039-demo-is-a-deployment-boundary.md` (added, reconciled); `docs/decisions/README.md` (modified); `docs/demo/evidence/reset-1.json` (added, reconciled); `docs/demo/evidence/reset-2.json` (added, reconciled); `docs/demo/null-meridian.canon.json` (added); `docs/demo/null-meridian.manifest.json` (added); `docs/demo/null-meridian.md` (added, reconciled); `docs/handoffs/adg-demo-integration-01-access-path.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-guide.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-indicator.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-risks.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-simulation.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01.md` (added, reconciled); `docs/handoffs/adg-demo-null-meridian-01.md` (added, reconciled); `docs/handoffs/demo-mode-01-indicator.png` (added); `docs/handoffs/demo-mode-01.md` (added, reconciled).
+
+**Deployment and scripts** — `.env.example` (modified, reconciled); `README.md` (modified, reconciled); `docker-compose.demo.yml` (added, reconciled); `docker-compose.yml` (modified, reconciled); `scripts/demo-reset.ps1` (added, reconciled).

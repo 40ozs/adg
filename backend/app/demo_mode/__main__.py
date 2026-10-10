@@ -17,12 +17,18 @@ disagree about which database is the demo. Every command refuses to run unless
 demo or empty (see :mod:`app.demo_mode.marker`).
 
 Exit codes: ``0`` done, ``1`` failed or refused (the message says which), ``2`` usage.
+
+Standard output carries the report and nothing else, so ``--json`` is machine-readable: the
+application's log lines -- the in-process ingestion builds the application, which installs
+its log handler on standard output as a served API does -- go to standard error while a
+command runs.
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import pathlib
 import sys
@@ -144,6 +150,26 @@ def _reset_text(report: ResetReport) -> str:
     return "\n".join(lines)
 
 
+def _run(args: argparse.Namespace, settings: Settings) -> tuple[dict[str, object], str]:
+    """Run one command; return its report as a document and as console text."""
+    if args.command == "reset":
+        report = asyncio.run(
+            reset_demo(settings, migrate=not args.no_migrate, generations=args.generations)
+        )
+        payload: dict[str, object] = report.as_dict()
+        if args.report:
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        return payload, _reset_text(report)
+    if args.command == "status":
+        payload = asyncio.run(demo_status(settings, with_fingerprint=True)).as_dict()
+    elif args.command == "scan":
+        payload = asyncio.run(_scan(settings))
+    else:
+        payload = asyncio.run(verify_demo(settings))
+    return payload, json.dumps(payload, indent=2)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -170,25 +196,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return EXIT_FAILED
 
     try:
-        if args.command == "reset":
-            report = asyncio.run(
-                reset_demo(settings, migrate=not args.no_migrate, generations=args.generations)
-            )
-            payload: dict[str, object] = report.as_dict()
-            if args.report:
-                args.report.parent.mkdir(parents=True, exist_ok=True)
-                args.report.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-            text = _reset_text(report)
-        elif args.command == "status":
-            status = asyncio.run(demo_status(settings, with_fingerprint=True))
-            payload = status.as_dict()
-            text = json.dumps(payload, indent=2)
-        elif args.command == "scan":
-            payload = asyncio.run(_scan(settings))
-            text = json.dumps(payload, indent=2)
-        else:
-            payload = asyncio.run(verify_demo(settings))
-            text = json.dumps(payload, indent=2)
+        # Log handlers installed while the command runs bind to whatever sys.stdout is when
+        # they are created; pointing it at stderr keeps every log line out of the report.
+        with contextlib.redirect_stdout(sys.stderr):
+            payload, text = _run(args, settings)
     except (DemoLifecycleError, DemoTargetRefused, DatasetUnavailable) as failure:
         print(f"Refused: {failure}", file=sys.stderr)
         return EXIT_FAILED

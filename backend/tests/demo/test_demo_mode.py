@@ -311,3 +311,42 @@ class TestNoProductionCodePath:
         )
         assert completed.returncode == 0, completed.stderr[-2000:]
         assert "imported" in completed.stdout
+
+
+class TestTheOperatorCommand:
+    def test_json_output_is_the_report_and_nothing_else(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """The in-process ingestion builds the application, which installs a log handler on
+        standard output mid-command. ``--json`` must still print parseable JSON only."""
+        import logging
+
+        from app.config import get_settings
+        from app.demo_mode import __main__ as cli
+        from app.demo_mode.lifecycle import StatusReport
+        from app.logging_config import configure_logging
+
+        async def noisy_status(settings: Settings, *, with_fingerprint: bool = False) -> Any:
+            configure_logging(level="WARNING", log_format="text")  # as create_app does
+            logging.getLogger("adg.auth").warning("auth.mode.development")
+            return StatusReport(
+                runtime_mode=RuntimeMode.DEMO,
+                dataset_key="null-meridian-v1",
+                dataset=None,
+                dataset_error=None,
+                inspection=None,
+                target_error="not inspected in this test",
+            )
+
+        monkeypatch.setattr(cli, "demo_status", noisy_status)
+        monkeypatch.setenv("ADG_RUNTIME_MODE", "demo")
+        monkeypatch.setenv("ADG_DATABASE_URL", DEMO_URL)
+        get_settings.cache_clear()
+        try:
+            assert cli.main(["--json", "status"]) == 0
+        finally:
+            get_settings.cache_clear()
+
+        captured = capsys.readouterr()
+        assert json.loads(captured.out)["dataset_key"] == "null-meridian-v1"
+        assert "auth.mode.development" in captured.err
