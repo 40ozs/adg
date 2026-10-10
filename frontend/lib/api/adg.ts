@@ -50,6 +50,7 @@ import type {
   ResourcePrincipalsResponse,
   RiskRulesResponse,
   RiskSummaryResponse,
+  RuntimeInfo,
   ScanRunList,
   SearchResults,
   ServerDetail,
@@ -70,6 +71,7 @@ import type {
 /** Paths this application depends on. Asserted against the published OpenAPI document. */
 export const USED_PATHS = [
   "/auth/config",
+  "/runtime",
   "/auth/me",
   "/auth/dev/login",
   "/api/v1/collection/status",
@@ -141,6 +143,14 @@ export type PageQuery = {
 /** Public: a client has to know how to sign in before it can. */
 export function fetchAuthConfig(options: RequestOptions = {}): Promise<ApiResult<AuthConfig>> {
   return apiRequest<AuthConfig>("/auth/config", options);
+}
+
+/**
+ * Public: whether this deployment runs on real or synthetic data. Read by the shell on every
+ * page, before sign-in, so the demo indicator is never something only a signed-in user sees.
+ */
+export function fetchRuntime(options: RequestOptions = {}): Promise<ApiResult<RuntimeInfo>> {
+  return apiRequest<RuntimeInfo>("/runtime", options);
 }
 
 export function fetchPrincipal(token: string): Promise<ApiResult<Principal>> {

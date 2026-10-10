@@ -3911,6 +3911,57 @@
         "title": "CycleView",
         "type": "object"
       },
+      "DatasetView": {
+        "properties": {
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "facts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Facts",
+            "type": "object"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "seed": {
+            "title": "Seed",
+            "type": "string"
+          },
+          "snapshot_date": {
+            "format": "date",
+            "title": "Snapshot Date",
+            "type": "string"
+          },
+          "synthetic": {
+            "default": true,
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "company_name",
+          "domain",
+          "snapshot_date",
+          "seed",
+          "description"
+        ],
+        "title": "DatasetView",
+        "type": "object"
+      },
       "DecisionKind": {
         "description": "What a reviewer concluded about one grant.\n\n``ABSTAIN`` is a first-class answer rather than a way of leaving an item pending. A\nreviewer who cannot judge a grant has said something real — usually that the wrong\nperson was asked — and recording it beats an item that sits unanswered and is\nindistinguishable from one nobody opened.",
         "enum": [
@@ -5630,6 +5681,17 @@
           "basis_token": {
             "title": "Basis Token",
             "type": "string"
+          },
+          "demo_notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demo Notice"
           },
           "document": {
             "additionalProperties": true,
@@ -10871,12 +10933,22 @@
       },
       "ReadinessResponse": {
         "properties": {
+          "data_source": {
+            "description": "collectors, or synthetic on a demo deployment.",
+            "title": "Data Source",
+            "type": "string"
+          },
           "dependencies": {
             "items": {
               "$ref": "#/components/schemas/DependencyStatus"
             },
             "title": "Dependencies",
             "type": "array"
+          },
+          "runtime_mode": {
+            "description": "production or demo. Fixed by deployment.",
+            "title": "Runtime Mode",
+            "type": "string"
           },
           "status": {
             "enum": [
@@ -10894,6 +10966,8 @@
         "required": [
           "status",
           "version",
+          "runtime_mode",
+          "data_source",
           "dependencies"
         ],
         "title": "ReadinessResponse",
@@ -12017,6 +12091,54 @@
           "completeness"
         ],
         "title": "RunOutcomeView",
+        "type": "object"
+      },
+      "RuntimeView": {
+        "properties": {
+          "data_source": {
+            "description": "collectors, or synthetic on a demo deployment.",
+            "title": "Data Source",
+            "type": "string"
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DatasetView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The synthetic dataset's public name card. Demo only."
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One sentence for the UI to show on a demo deployment.",
+            "title": "Notice"
+          },
+          "runtime_mode": {
+            "description": "production or demo. Fixed by deployment.",
+            "title": "Runtime Mode",
+            "type": "string"
+          },
+          "synthetic": {
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "runtime_mode",
+          "data_source",
+          "synthetic"
+        ],
+        "title": "RuntimeView",
         "type": "object"
       },
       "ScanRunCompletedResponse": {
@@ -16169,6 +16291,10 @@
             "title": "Name",
             "type": "string"
           },
+          "runtime_mode": {
+            "title": "Runtime Mode",
+            "type": "string"
+          },
           "version": {
             "title": "Version",
             "type": "string"
@@ -16177,7 +16303,8 @@
         "required": [
           "name",
           "version",
-          "environment"
+          "environment",
+          "runtime_mode"
         ],
         "title": "VersionResponse",
         "type": "object"
@@ -26942,6 +27069,27 @@
         "summary": "Readiness probe",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/runtime": {
+      "get": {
+        "operationId": "runtime_runtime_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Runtime mode and data source",
+        "tags": [
+          "meta"
         ]
       }
     },

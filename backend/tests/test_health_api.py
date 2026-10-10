@@ -64,6 +64,7 @@ async def test_version_endpoint_reports_name_version_and_environment(
         "name": "ADG",
         "version": __version__,
         "environment": "test",
+        "runtime_mode": "production",
     }
 
 

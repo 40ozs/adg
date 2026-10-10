@@ -48,6 +48,30 @@ export interface AuthConfig {
   roles: RoleDescription[];
 }
 
+/** A demo deployment's synthetic dataset: the fiction's public name card (`GET /runtime`). */
+export interface DemoDataset {
+  key: string;
+  company_name: string;
+  domain: string;
+  snapshot_date: string;
+  seed: string;
+  synthetic: boolean;
+  description: string;
+  facts: Record<string, string>;
+}
+
+/**
+ * What this deployment is connected to. Fixed by deployment configuration
+ * (`ADG_RUNTIME_MODE`); nothing in the UI or the API can change it.
+ */
+export interface RuntimeInfo {
+  runtime_mode: "production" | "demo";
+  data_source: "collectors" | "synthetic";
+  synthetic: boolean;
+  dataset: DemoDataset | null;
+  notice: string | null;
+}
+
 export interface Principal {
   subject: string;
   display_name: string | null;

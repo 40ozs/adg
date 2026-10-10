@@ -367,6 +367,77 @@ dl.facts dd {
   flex-wrap: wrap;
 }
 
+/*
+ * The demo indicator. A labelled pill, not a banner: persistent and unmissable without
+ * covering the application it is describing. The word "Demo environment" carries the
+ * meaning; the color only reinforces it.
+ */
+.demo-indicator {
+  position: relative;
+  font-size: 0.82rem;
+}
+
+.demo-indicator summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: baseline;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--info-surface);
+  padding: 0.15rem 0.7rem;
+  list-style: none;
+}
+
+.demo-indicator summary::-webkit-details-marker {
+  display: none;
+}
+
+.demo-indicator strong {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.demo-indicator-detail {
+  color: var(--muted);
+}
+
+.demo-indicator-panel {
+  position: absolute;
+  z-index: 10;
+  margin-top: 0.4rem;
+  width: min(26rem, calc(100vw - 2.5rem));
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+  padding: 0.75rem 1rem;
+}
+
+.demo-indicator-panel p {
+  margin: 0 0 0.5rem;
+}
+
+.demo-indicator-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+  margin: 0;
+}
+
+.demo-indicator-facts dt {
+  color: var(--muted);
+}
+
+.demo-indicator-facts dd {
+  margin: 0;
+}
+
+.demo-indicator-fact {
+  display: contents;
+}
+
 .role-pill {
   border: 1px solid var(--border-strong);
   border-radius: 999px;

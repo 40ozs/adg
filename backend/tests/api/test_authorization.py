@@ -190,6 +190,9 @@ ROUTE_CAPABILITIES: dict[tuple[str, str], str | None] = {
     ("GET", "/health/live"): None,
     ("GET", "/health/ready"): None,
     ("GET", "/version"): None,
+    # Real or synthetic data. Public so the demo indicator shows before sign-in; it discloses
+    # the runtime mode and, on a demo only, the synthetic dataset's name card.
+    ("GET", "/runtime"): None,
     ("GET", "/auth/config"): None,
     ("POST", "/auth/dev/login"): None,
     ("GET", "/auth/me"): AUTHENTICATED,
