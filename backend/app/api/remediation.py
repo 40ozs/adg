@@ -55,6 +55,8 @@ from app.auth.dependencies import CurrentPrincipal, requires
 from app.auth.principal import AuthenticatedPrincipal
 from app.auth.roles import Capability
 from app.config import Settings
+from app.demo_mode.datasets import DatasetUnavailable, DemoDatasetMetadata, cached_dataset
+from app.demo_mode.policy import SIMULATION_NOTICE, defang_runbook
 from app.domain import (
     AceSource,
     AceType,
@@ -393,6 +395,9 @@ class ExportDetailView(ExportView):
     """The PowerShell an administrator runs. Present on the response that creates an export
     and on the one that reads it back; regenerated from the stored document each time rather
     than saved, so what somebody runs comes from the current renderer."""
+    demo_notice: str | None = None
+    """Set only by a demo deployment, whose runbook names fictional objects and is served
+    inert. Absent in production, where the response is exactly what it always was."""
 
 
 class AuditEventView(BaseModel):
@@ -697,7 +702,7 @@ async def create_export(
 ) -> ExportDetailView:
     """The last act. A signed document and a script — and still nothing applied by ADG."""
     export, runbook = await _service(session, settings).export(_actor(principal), plan_id)
-    return _export_detail(export, runbook)
+    return _demo_safe(_export_detail(export, runbook), settings)
 
 
 @router.get(
@@ -728,7 +733,9 @@ async def get_export(
     settings: RequestSettings,
 ) -> ExportDetailView:
     """The document is served as it was signed. The runbook is re-rendered from the plan."""
-    return await _export_with_runbook(_service(session, settings), plan_id, export_id)
+    return _demo_safe(
+        await _export_with_runbook(_service(session, settings), plan_id, export_id), settings
+    )
 
 
 @router.get(
@@ -753,7 +760,9 @@ async def get_runbook(
     that a browser saves and offers to run on a double-click is exactly the artifact the
     ``-Execute`` switch exists to defuse, and there is no reason to help it along.
     """
-    detail = await _export_with_runbook(_service(session, settings), plan_id, export_id)
+    detail = _demo_safe(
+        await _export_with_runbook(_service(session, settings), plan_id, export_id), settings
+    )
     return Response(content=detail.runbook or "", media_type="text/plain; charset=utf-8")
 
 
@@ -1053,6 +1062,29 @@ def _export_view(export: PlanExport) -> ExportView:
         signature_key_id=export.signature_key_id,
         basis_token=export.basis_token,
         audit_head_digest=export.audit_head_digest,
+    )
+
+
+def _demo_safe(detail: ExportDetailView, settings: Settings) -> ExportDetailView:
+    """On a demo deployment, make the runbook inert and say why (mutation policy B).
+
+    The signed document is untouched -- signing, approval and the audit chain are ADG's own
+    records and run for real. Only the script, which names fictional objects, is defanged.
+    A no-op in production.
+    """
+    if not settings.is_demo or detail.runbook is None:
+        return detail
+    try:
+        dataset: DemoDatasetMetadata | None = cached_dataset(
+            settings.resolved_demo_dataset
+        ).metadata
+    except DatasetUnavailable:
+        dataset = None
+    return detail.model_copy(
+        update={
+            "runbook": defang_runbook(detail.runbook, dataset),
+            "demo_notice": SIMULATION_NOTICE,
+        }
     )
 
 

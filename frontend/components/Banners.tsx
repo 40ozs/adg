@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import Link from "next/link";
 
-import type { AuthConfig, CollectionStatus, Principal } from "@/lib/contracts";
+import type { AuthConfig, CollectionStatus, Principal, RuntimeInfo } from "@/lib/contracts";
 import type { Caveat, ViewState } from "@/lib/state";
 
 /**
@@ -25,6 +25,74 @@ export function DevelopmentAuthBanner({ config }: { config: AuthConfig }): JSX.E
       verifies no credential. Anyone who can reach it can sign in as any account.
       Environment: <code>{config.environment}</code>.
     </div>
+  );
+}
+
+/**
+ * The demo environment indicator: persistent, small, and impossible to mistake.
+ *
+ * It has to say two things at once, because both are true and a viewer needs both: the
+ * *application* is real — the same API, access engine, history and risk rules a production
+ * deployment runs — and the *organization* is fictional. A full-width warning would bury the
+ * first under the second; a footnote would lose the second. A labelled pill in the header,
+ * with the explanation one click away, carries both.
+ *
+ * Rendered from `GET /runtime`, which is deployment configuration. There is deliberately no
+ * control here: a demo cannot be switched to live data from the browser, so the indicator
+ * offers nothing to switch.
+ */
+export function DemoEnvironmentIndicator({
+  runtime,
+}: {
+  runtime: RuntimeInfo;
+}): JSX.Element | null {
+  if (runtime.runtime_mode !== "demo") {
+    return null;
+  }
+  const dataset = runtime.dataset;
+  return (
+    <details className="demo-indicator">
+      <summary aria-label="Demo environment: synthetic enterprise data. Show details.">
+        <strong>Demo environment</strong>
+        <span className="demo-indicator-detail">
+          Synthetic enterprise data{dataset ? ` · ${dataset.company_name}` : ""}
+        </span>
+      </summary>
+      <div className="demo-indicator-panel">
+        <p>
+          {runtime.notice ??
+            "This environment uses deterministic synthetic data. No production Active " +
+              "Directory or file servers are connected."}
+        </p>
+        <p className="muted">
+          The application is real: every answer comes from ADG&rsquo;s own API, access engine,
+          history and risk rules. The organization, its people and its file servers are
+          fictional.
+        </p>
+        {dataset && (
+          <dl className="demo-indicator-facts">
+            <dt>Organization</dt>
+            <dd>{dataset.company_name}</dd>
+            <dt>Domain</dt>
+            <dd>
+              <code>{dataset.domain}</code>
+            </dd>
+            <dt>Snapshot</dt>
+            <dd>{dataset.snapshot_date}</dd>
+            <dt>Seed</dt>
+            <dd>
+              <code>{dataset.seed}</code>
+            </dd>
+            {Object.entries(dataset.facts).map(([name, value]) => (
+              <div key={name} className="demo-indicator-fact">
+                <dt>{name}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
+    </details>
   );
 }
 

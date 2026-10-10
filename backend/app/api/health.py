@@ -37,6 +37,8 @@ class DependencyStatus(BaseModel):
 class ReadinessResponse(BaseModel):
     status: Literal["ready", "not_ready"]
     version: str
+    runtime_mode: str = Field(description="production or demo. Fixed by deployment.")
+    data_source: str = Field(description="collectors, or synthetic on a demo deployment.")
     dependencies: list[DependencyStatus]
 
 
@@ -62,9 +64,12 @@ async def ready(request: Request, response: Response) -> ReadinessResponse:
             extra={"dependency": "postgresql", "error": result.error},
         )
 
+    mode = request.app.state.settings.runtime_mode
     return ReadinessResponse(
         status="ready" if result.ok else "not_ready",
         version=__version__,
+        runtime_mode=mode.value,
+        data_source=mode.data_source,
         dependencies=[
             DependencyStatus(
                 name="postgresql",

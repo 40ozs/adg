@@ -39,6 +39,27 @@ scripts/          Windows developer commands (PowerShell 7).
   windows-test-tree/  Builds real NTFS trees to validate and benchmark the collector against.
 ```
 
+## Demo Mode
+
+The same application can run as a **demo deployment** on deterministic synthetic data, with
+no Windows host, collector, domain, SMB server or PowerShell anywhere in it:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+```
+
+or, against a local PostgreSQL with a dedicated `adg_demo` database:
+
+```bash
+export ADG_RUNTIME_MODE=demo ADG_DEMO_DATASET=adg-reference-estate \
+       ADG_DATABASE_URL=postgresql+psycopg://adg:adg_dev_password@localhost:5432/adg_demo
+python -m app.demo_mode reset      # migrate, mark, wipe, ingest, evaluate, validate
+python -m app                      # the API, in demo mode
+```
+
+The mode is deployment configuration (`ADG_RUNTIME_MODE`), never a switch in the UI. See
+[`docs/architecture/demo-mode.md`](docs/architecture/demo-mode.md).
+
 Two documents are the place to start:
 [`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) to get it running, and
 [`docs/architecture/mvp-capabilities.md`](docs/architecture/mvp-capabilities.md) for what it

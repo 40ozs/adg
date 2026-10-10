@@ -7,22 +7,26 @@ during development). No secret value is ever committed to source control; see
 
 from __future__ import annotations
 
+import re
 import secrets
 from functools import lru_cache
 from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 from app.alerts.configuration import DEFAULT_POLICY, AlertPolicy, load_policy
 from app.auth.dev_users import DEFAULT_DEV_AUTH_USERS, DevelopmentUser, parse_development_users
 from app.auth.roles import Role, parse_roles
+from app.demo_mode.datasets import CANONICAL_DATASET, DATASETS
 from app.history.retention import RetentionPolicy
 from app.risk_engine.configuration import (
     DEFAULT_CONFIGURATION,
     RiskConfiguration,
     load_configuration,
 )
+from app.runtime_mode import RuntimeMode, parse_runtime_mode
 
 Environment = Literal["development", "test", "production"]
 LogFormat = Literal["json", "text"]
@@ -52,6 +56,16 @@ MIN_COLLECTOR_KEY_LENGTH = 32
 #: four-character key would be a control in name only.
 MIN_SIGNING_KEY_LENGTH = 32
 
+#: How a demo deployment's database must be named: ``demo`` as a whole word of the database
+#: name (``adg_demo``, ``adg-demo``, ``demo``). A convention rather than a proof -- the
+#: deployment marker in the database itself is the proof -- but a cheap, independent one
+#: that stops a demo being pointed at ``adg``, the name every other deployment uses.
+DEMO_DATABASE_NAME = re.compile(r"(?:^|[^a-z0-9])demo(?:[^a-z0-9]|$)")
+
+#: The only alert sink kind a demo deployment may hold. A demo has nobody to page and no
+#: business making outbound requests on a visitor's behalf.
+DEMO_ALERT_SINK_KINDS = frozenset({"log"})
+
 
 class Settings(BaseSettings):
     """Runtime configuration for the ADG backend."""
@@ -65,6 +79,19 @@ class Settings(BaseSettings):
 
     app_name: str = "ADG"
     environment: Environment = "development"
+
+    # --- Runtime mode ---------------------------------------------------------------
+    #
+    # Which world this deployment is connected to. A deployment boundary read once at
+    # startup, never a preference a request can change. Unset means production, which is
+    # what every deployment that predates the setting is; any value that is not exactly a
+    # runtime mode is a startup error, never a fall back. See app/runtime_mode.py and
+    # docs/architecture/demo-mode.md.
+    runtime_mode: RuntimeMode = RuntimeMode.PRODUCTION
+    demo_dataset: str = ""
+    """The synthetic dataset a demo deployment runs on (a key of
+    app.demo_mode.datasets.DATASETS). Empty means the canonical dataset. Meaningless, and
+    refused, in production."""
     log_level: str = "INFO"
     log_format: LogFormat = "json"
 
@@ -228,7 +255,14 @@ class Settings(BaseSettings):
         restart the API to have the next report use it.
         """
         path = self.risk_configuration_path.strip()
-        return load_configuration(path) if path else DEFAULT_CONFIGURATION
+        if path:
+            return load_configuration(path)
+        if self.is_demo:
+            # A synthetic dataset may declare its own sensitive resources, as an operator
+            # would for a real estate; without them the sensitive-resource rule runs and
+            # reports nothing. Supplied through the dataset contract, never hard-coded here.
+            return _dataset_risk_configuration(self.resolved_demo_dataset)
+        return DEFAULT_CONFIGURATION
 
     @property
     def alert_policy(self) -> AlertPolicy:
@@ -240,7 +274,13 @@ class Settings(BaseSettings):
         next alert to use it.
         """
         path = self.alert_policy_path.strip()
-        return load_policy(path) if path else DEFAULT_POLICY
+        policy = load_policy(path) if path else DEFAULT_POLICY
+        if self.is_demo:
+            # Checked on every read, not only at startup, because the file is re-read on every
+            # read: a webhook added to a running demo's policy is refused at the next
+            # evaluation rather than delivered to.
+            _refuse_outbound_alert_sinks(policy)
+        return policy
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -249,6 +289,18 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def is_demo(self) -> bool:
+        """Whether this deployment runs on synthetic data. Distinct from :attr:`is_production`,
+        which is about how strict the deployment is, not what it is connected to: a public
+        demo is a production-grade deployment of demo mode."""
+        return self.runtime_mode is RuntimeMode.DEMO
+
+    @property
+    def resolved_demo_dataset(self) -> str:
+        """The dataset key a demo deployment runs on: the configured one, or the canonical."""
+        return self.demo_dataset.strip() or CANONICAL_DATASET
 
     @property
     def is_development_auth(self) -> bool:
@@ -285,6 +337,11 @@ class Settings(BaseSettings):
         if normalized not in allowed:
             raise ValueError(f"ADG_LOG_LEVEL must be one of {sorted(allowed)}; received {value!r}.")
         return normalized
+
+    @field_validator("runtime_mode", mode="before")
+    @classmethod
+    def _parse_runtime_mode(cls, value: object) -> RuntimeMode:
+        return parse_runtime_mode(value)
 
     @field_validator("database_url")
     @classmethod
@@ -428,6 +485,53 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _validate_runtime_mode(self) -> Settings:
+        """The demo deployment's startup contract. Every refusal names what to change.
+
+        Production is checked for one thing only -- that it was not handed a demo setting,
+        which is a contradiction about what the deployment is. Everything else about a
+        production deployment is exactly as it was before demo mode existed.
+        """
+        if not self.is_demo:
+            if self.demo_dataset.strip():
+                raise ValueError(
+                    f"ADG_DEMO_DATASET={self.demo_dataset!r} is set but ADG_RUNTIME_MODE is "
+                    "production. A production deployment runs on what its collectors report, "
+                    "never on a synthetic dataset. Unset ADG_DEMO_DATASET, or set "
+                    "ADG_RUNTIME_MODE=demo if this deployment is a demo."
+                )
+            return self
+
+        if self.resolved_demo_dataset not in DATASETS:
+            raise ValueError(
+                f"ADG_DEMO_DATASET={self.demo_dataset!r} is not a registered demo dataset. "
+                f"Registered: {', '.join(sorted(DATASETS))}."
+            )
+        database = (make_url(self.database_url).database or "").casefold()
+        if not DEMO_DATABASE_NAME.search(database):
+            raise ValueError(
+                f"ADG_RUNTIME_MODE=demo requires a dedicated demo database, named with 'demo' "
+                f"as a word (for example adg_demo); ADG_DATABASE_URL names {database!r}. A demo "
+                "deployment wipes and refills its database, so it is never pointed at the "
+                "database a production or development deployment uses."
+            )
+        if self.remediation_execution_mode != "disabled":
+            raise ValueError(
+                "ADG_REMEDIATION_EXECUTION_MODE must be 'disabled' when ADG_RUNTIME_MODE=demo. "
+                "A demo simulates remediation by serving its runbook inert; it holds no "
+                "executor of any kind."
+            )
+        if self.collector_api_keys.strip():
+            raise ValueError(
+                "ADG_COLLECTOR_API_KEYS must be empty when ADG_RUNTIME_MODE=demo. A demo "
+                "deployment accepts no observations from collectors -- its data comes from the "
+                "synthetic dataset alone -- so a collector credential configured here could "
+                "only be a production credential in the wrong place."
+            )
+        _refuse_outbound_alert_sinks(self.alert_policy)
+        return self
+
+    @model_validator(mode="after")
     def _generate_development_secret(self) -> Settings:
         """Give development mode a signing secret when none was configured.
 
@@ -438,6 +542,38 @@ class Settings(BaseSettings):
         if self.is_development_auth and not self.dev_auth_secret.strip():
             self.dev_auth_secret = secrets.token_urlsafe(48)
         return self
+
+
+def _dataset_risk_configuration(key: str) -> RiskConfiguration:
+    """The optional ``risk_configuration()`` a demo dataset supplies, or the defaults."""
+    from app.demo_mode.datasets import DatasetUnavailable, cached_dataset
+
+    try:
+        supplier = getattr(cached_dataset(key), "risk_configuration", None)
+    except DatasetUnavailable:
+        return DEFAULT_CONFIGURATION
+    if not callable(supplier):
+        return DEFAULT_CONFIGURATION
+    configuration = supplier()
+    if not isinstance(configuration, RiskConfiguration):
+        raise TypeError(
+            f"Demo dataset {key!r} returned {type(configuration).__name__} from "
+            "risk_configuration(); expected app.risk_engine.configuration.RiskConfiguration."
+        )
+    return configuration
+
+
+def _refuse_outbound_alert_sinks(policy: AlertPolicy) -> None:
+    outbound = sorted(
+        f"{sink.name} ({sink.kind})"
+        for sink in policy.sinks
+        if sink.enabled and sink.kind not in DEMO_ALERT_SINK_KINDS
+    )
+    if outbound:
+        raise ValueError(
+            f"ADG_RUNTIME_MODE=demo allows only log alert sinks; the alert policy enables "
+            f"{', '.join(outbound)}. A demo deployment makes no outbound deliveries."
+        )
 
 
 def _parse_group_role_map(raw: str) -> dict[str, Role]:

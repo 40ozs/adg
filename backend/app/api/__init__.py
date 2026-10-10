@@ -21,6 +21,13 @@ Deliberately public:
   they disclose only reachability and a version.
 * ``/version`` — the same.
 * ``/auth/config`` — a client cannot authenticate before it knows how to.
+* ``/runtime`` — whether this deployment runs on real or synthetic data. The demo indicator
+  must be visible before anyone signs in, and it discloses no infrastructure.
+
+**Every route also carries the demo policy guard** (:mod:`app.demo_mode.policy`). In
+production it does nothing. In demo mode it refuses the routes the mutation policy marks
+unavailable -- the collector ingestion routes -- before authentication is consulted, so the
+refusal is the same for every caller and does not depend on what the frontend shows.
 """
 
 from __future__ import annotations
@@ -33,6 +40,7 @@ from app.api import (
     auth,
     changes,
     collection,
+    demo,
     governance,
     graph,
     groups,
@@ -41,6 +49,7 @@ from app.api import (
     remediation,
     resources,
     risks,
+    runtime,
     scan_runs,
     search,
     simulations,
@@ -48,22 +57,25 @@ from app.api import (
 from app.auth.dependencies import requires
 from app.auth.roles import Capability
 from app.config import Settings
+from app.demo_mode.policy import demo_policy_guard
 
 #: Paths that answer without a token, and why each one has to. ``/auth/dev/login`` is on
 #: the list because it *is* the way a development session is obtained — and it exists only
 #: when ``ADG_AUTH_MODE=development``, which cannot be combined with production.
 PUBLIC_PATHS: frozenset[str] = frozenset(
-    {"/health/live", "/health/ready", "/version", "/auth/config", "/auth/dev/login"}
+    {"/health/live", "/health/ready", "/version", "/runtime", "/auth/config", "/auth/dev/login"}
 )
 
 
 def build_api_router(settings: Settings) -> APIRouter:
     """Every route this deployment serves, each behind the capability it requires."""
-    api_router = APIRouter()
+    # The demo policy guard rides on every route; see the module docstring.
+    api_router = APIRouter(dependencies=[Depends(demo_policy_guard)])
 
     # Unauthenticated by design; see PUBLIC_PATHS.
     api_router.include_router(health.router)
     api_router.include_router(meta.router)
+    api_router.include_router(runtime.router)
 
     # Authentication: /auth/config is public, /auth/me requires only a valid token, and
     # /auth/dev/login exists only in development mode.
@@ -140,6 +152,12 @@ def build_api_router(settings: Settings) -> APIRouter:
     # collector key rather than a role is the normal credential there.
     api_router.include_router(scan_runs.router)
     api_router.include_router(collection.router)
+
+    # The demo deployment's own routes. Absent -- not refused, absent -- in production, so a
+    # production deployment has no synthetic-scan route to reach. Each declares its own
+    # capability.
+    if settings.is_demo:
+        api_router.include_router(demo.router)
 
     return api_router
 

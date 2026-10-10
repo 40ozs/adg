@@ -1,0 +1,65 @@
+# ADG Demo Mode: the same images and the same application, on synthetic data, with its own
+# database volume. Layered over the base stack:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+#
+# What changes, and why each change is a boundary rather than a preference:
+#
+# * ADG_RUNTIME_MODE=demo. The API refuses collector ingestion, refuses collector keys and
+#   outbound alert sinks at startup, and will not start against a database that is not marked
+#   demo. See docs/architecture/demo-mode.md.
+# * A separate PostgreSQL volume (adg_demo_pgdata) and database (adg_demo). The demo never
+#   shares storage with a production or development stack, and its database is named for it.
+# * A one-shot demo-reset service runs `python -m app.demo_mode reset` -- migrate, identify,
+#   wipe, ingest the synthetic dataset through the real ingestion routes, evaluate the risk
+#   rules, validate -- and the API starts only after it succeeds.
+#
+# No Windows host, collector, domain, SMB share or PowerShell is involved anywhere in it.
+#
+# ADG_DEMO_DATASET selects the synthetic dataset. The canonical one is null-meridian-v1,
+# which becomes available when the Null Meridian generator merges; until then this file
+# selects the reference estate that ships in app.demo. Set ADG_DEMO_DATASET=null-meridian-v1
+# once it is present -- selecting it before then is a clear startup refusal, never a fallback.
+
+x-demo-environment: &demo-environment
+  ADG_RUNTIME_MODE: demo
+  ADG_DEMO_DATASET: ${ADG_DEMO_DATASET:-adg-reference-estate}
+  ADG_ENVIRONMENT: ${ADG_ENVIRONMENT:-development}
+  ADG_LOG_LEVEL: ${ADG_LOG_LEVEL:-INFO}
+  ADG_LOG_FORMAT: ${ADG_LOG_FORMAT:-json}
+  ADG_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-adg}:${POSTGRES_PASSWORD:-adg_dev_password}@db:5432/adg_demo
+  # Refused in demo mode when non-empty: a demo accepts no observations from collectors.
+  ADG_COLLECTOR_API_KEYS: ""
+  # Log sink only; any other sink kind is refused in demo mode.
+  ADG_ALERT_POLICY_PATH: ""
+
+services:
+  db:
+    environment:
+      POSTGRES_DB: adg_demo
+    volumes:
+      - adg_demo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-adg} -d adg_demo"]
+
+  demo-reset:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    environment:
+      <<: *demo-environment
+    command: ["python", "-m", "app.demo_mode", "reset"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    environment:
+      <<: *demo-environment
+    depends_on:
+      demo-reset:
+        condition: service_completed_successfully
+
+volumes:
+  adg_demo_pgdata:

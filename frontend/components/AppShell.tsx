@@ -1,9 +1,9 @@
 import type { JSX } from "react";
 import Link from "next/link";
 
-import { fetchAuthConfig } from "@/lib/api/adg";
+import { fetchAuthConfig, fetchRuntime } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
-import { DevelopmentAuthBanner } from "@/components/Banners";
+import { DemoEnvironmentIndicator, DevelopmentAuthBanner } from "@/components/Banners";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { PrimaryNav } from "@/components/PrimaryNav";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -15,13 +15,22 @@ import { SignOutButton } from "@/components/SignOutButton";
  * never asks "who is this?" for itself. The order of the landmarks is the keyboard order:
  * a skip link, then the header (brand, search, account), then navigation, then main.
  *
+ * The demo indicator sits in the header, beside the brand, for the reason the development
+ * banner sits above it: whether the data is real is something to know before reading any of
+ * it, signed in or not.
+ *
  * Signed-out visitors still get the frame, without navigation. Replacing the whole shell
  * with a login form would throw away the one thing they need — the development-mode banner,
  * which has to be visible before anyone signs in, not after.
  */
 export async function AppShell({ children }: { children: React.ReactNode }): Promise<JSX.Element> {
-  const [viewer, config] = await Promise.all([currentViewer(), fetchAuthConfig()]);
+  const [viewer, config, runtime] = await Promise.all([
+    currentViewer(),
+    fetchAuthConfig(),
+    fetchRuntime(),
+  ]);
   const capabilities = viewer.status === "signed-in" ? viewer.principal.capabilities : [];
+  const demo = runtime.ok && runtime.data.runtime_mode === "demo";
 
   return (
     <div className="shell">
@@ -36,6 +45,8 @@ export async function AppShell({ children }: { children: React.ReactNode }): Pro
           ADG
           <small>Access auditing and governance</small>
         </Link>
+
+        {runtime.ok && <DemoEnvironmentIndicator runtime={runtime.data} />}
 
         {viewer.status === "signed-in" && <GlobalSearch />}
 
@@ -77,6 +88,13 @@ export async function AppShell({ children }: { children: React.ReactNode }): Pro
       <footer className="shell-footer">
         Read-only by default. ADG observes and explains access; it does not change
         permissions.
+        {demo && (
+          <>
+            {" "}
+            Demo environment: the organization and its data are fictional, and no directory or
+            file server is connected.
+          </>
+        )}
       </footer>
     </div>
   );

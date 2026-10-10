@@ -55,6 +55,18 @@ const EXPECTED: Record<string, string[]> = {
     "roles",
   ],
   RoleDescription: ["role", "active", "capabilities"],
+  // Demo Mode. The shell reads these on every page, before sign-in.
+  RuntimeView: ["runtime_mode", "data_source", "synthetic", "dataset", "notice"],
+  DatasetView: [
+    "key",
+    "company_name",
+    "domain",
+    "snapshot_date",
+    "seed",
+    "synthetic",
+    "description",
+    "facts",
+  ],
   // Risks (Phase 8B). The four entries below that carry no findings are the important ones:
   // coverage, configuration and the two count maps are what keep an empty report from
   // reading as a clean estate, and a page that believed in one the API stopped sending
@@ -353,9 +365,9 @@ const EXPECTED: Record<string, string[]> = {
     "operating_system",
     "share_count",
   ],
-  ReadinessResponse: ["status", "version", "dependencies"],
+  ReadinessResponse: ["status", "version", "runtime_mode", "data_source", "dependencies"],
   DependencyStatus: ["name", "ok", "latency_ms", "error"],
-  VersionResponse: ["name", "version", "environment"],
+  VersionResponse: ["name", "version", "environment", "runtime_mode"],
 
   // Detail views. These are long on purpose: the second assertion below fails when the API
   // grows a required field the frontend ignores, and a short list would pass by saying

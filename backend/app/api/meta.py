@@ -15,6 +15,7 @@ class VersionResponse(BaseModel):
     name: str
     version: str
     environment: str
+    runtime_mode: str
 
 
 @router.get("/version", response_model=VersionResponse, summary="Application version")
@@ -24,4 +25,5 @@ async def version(request: Request) -> VersionResponse:
         name=settings.app_name,
         version=__version__,
         environment=settings.environment,
+        runtime_mode=settings.runtime_mode.value,
     )
