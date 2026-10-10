@@ -92,6 +92,7 @@ from app.models.schema import (
     smb_share_aces,
     smb_shares,
 )
+from app.sql_compat import distinct_on
 
 __all__ = [
     "AffirmationResult",
@@ -1787,16 +1788,15 @@ class IngestionService:
         """
         joined = scan_runs.join(collector_sources, scan_runs.c.source_id == collector_sources.c.id)
         scope_target = func.coalesce(collector_sources.c.target, "")
-        statement = (
-            select(scan_runs, collector_sources)
-            .select_from(joined)
-            .distinct(collector_sources.c.collector, scope_target)
-            .order_by(
-                collector_sources.c.collector,
-                scope_target,
-                scan_runs.c.started_at.desc(),
-                scan_runs.c.run_id.desc(),
-            )
+        statement = distinct_on(
+            select(scan_runs, collector_sources).select_from(joined),
+            collector_sources.c.collector,
+            scope_target,
+        ).order_by(
+            collector_sources.c.collector,
+            scope_target,
+            scan_runs.c.started_at.desc(),
+            scan_runs.c.run_id.desc(),
         )
         rows = (await self._session.execute(statement)).mappings().all()
         return tuple(_run_summary(row) for row in rows)

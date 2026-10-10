@@ -69,6 +69,7 @@ from app.contracts.v1.common import ObservationKind
 from app.history.model import ObjectVersion
 from app.history.repository import VERSION_COLUMNS, version_from_row
 from app.models.schema import object_versions
+from app.sql_compat import distinct_on
 
 __all__ = [
     "MAX_PAGE",
@@ -268,15 +269,14 @@ class ChangeRepository:
                 for version in versions
             ]
         )
-        statement = (
-            select(*VERSION_COLUMNS)
-            .where(bounds)
-            .distinct(object_versions.c.object_kind, object_versions.c.object_key)
-            .order_by(
-                object_versions.c.object_kind,
-                object_versions.c.object_key,
-                object_versions.c.valid_from.desc(),
-            )
+        statement = distinct_on(
+            select(*VERSION_COLUMNS).where(bounds),
+            object_versions.c.object_kind,
+            object_versions.c.object_key,
+        ).order_by(
+            object_versions.c.object_kind,
+            object_versions.c.object_key,
+            object_versions.c.valid_from.desc(),
         )
         newest: dict[tuple[ObservationKind, str], ObjectVersion] = {}
         for row in (await self._session.execute(statement)).mappings():
@@ -314,19 +314,18 @@ class ChangeRepository:
         ]
         if not branches:
             return {}
-        statement = (
+        statement = distinct_on(
             select(
                 object_versions.c.object_kind,
                 object_versions.c.object_key,
                 object_versions.c.valid_from,
-            )
-            .where(or_(*branches), object_versions.c.is_present)
-            .distinct(object_versions.c.object_kind, object_versions.c.object_key)
-            .order_by(
-                object_versions.c.object_kind,
-                object_versions.c.object_key,
-                object_versions.c.valid_from.asc(),
-            )
+            ).where(or_(*branches), object_versions.c.is_present),
+            object_versions.c.object_kind,
+            object_versions.c.object_key,
+        ).order_by(
+            object_versions.c.object_kind,
+            object_versions.c.object_key,
+            object_versions.c.valid_from.asc(),
         )
         return {
             (ObservationKind(row["object_kind"]), row["object_key"]): row["valid_from"]
