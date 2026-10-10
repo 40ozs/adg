@@ -1,5 +1,10 @@
 # ADG-DEMO-NULL-MERIDIAN-01 — the Null Meridian synthetic estate and Demo Mode
 
+> **Integrated by [ADG-DEMO-INTEGRATION-01](adg-demo-integration-01.md).** This file records
+> the source branch as it was handed over. Where it describes the runtime values, the reset
+> command, the database marker or the dataset's availability, the integration handoff and
+> [docs/architecture/demo-mode.md](../architecture/demo-mode.md) are current.
+
 **Status:** implemented · **Date:** 2026-10-10 · **Branch:** `claude/inspiring-volta-6uzdsy` ·
 **Starting SHA:** `cc13ad2ebe78f3d798c63e7ccd6066af6b9ceb5c`
 

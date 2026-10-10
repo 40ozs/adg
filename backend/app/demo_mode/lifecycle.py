@@ -203,8 +203,9 @@ class ResetReport:
 
     @property
     def canonical(self) -> bool:
-        """Whether the database now holds the dataset's canonical baseline."""
-        return len(self.applied) == self.baseline
+        """Whether the database holds the dataset's whole canonical baseline (and possibly
+        later generations), rather than an earlier point of its history."""
+        return len(self.applied) >= self.baseline
 
     def as_dict(self) -> dict[str, Any]:
         seed = self.seed

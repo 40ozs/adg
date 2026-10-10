@@ -588,6 +588,7 @@ class TestResettingToAPointInHistory:
 
         assert [item.name for item in report.applied] == ["baseline", "rescan"]
         assert report.probes_checked and report.ok
+        assert report.canonical
         status = await demo_status(settings)
         assert [g.applied for g in status.generations] == [True, True]
         assert status.baseline_applied

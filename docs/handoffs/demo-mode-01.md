@@ -1,5 +1,10 @@
 # Handoff — ADG-DEMO-MODE-01 (first-class Demo Mode around the synthetic data system)
 
+> **Integrated by [ADG-DEMO-INTEGRATION-01](adg-demo-integration-01.md).** This file records
+> the source branch as it was handed over. Where it describes the runtime values, the reset
+> command, the database marker or the dataset's availability, the integration handoff and
+> [docs/architecture/demo-mode.md](../architecture/demo-mode.md) are current.
+
 **Date:** 2026-10-10
 **Branch:** `claude/vibrant-gates-rhovf1` (not pushed — push not authorized)
 **Starting SHA:** `cc13ad27e11e538c849d4e0a53f2358e36454392` (= `main`)

@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-10
-- **Phase:** ADG-DEMO-MODE-01
+- **Phase:** ADG-DEMO-MODE-01; amended by ADG-DEMO-INTEGRATION-01 (see *Integration*)
 - **Deciders:** ADG maintainers
 
 ## Context
@@ -28,8 +28,10 @@ everything ADG knows — history, current state, tombstones — is derived at in
    (`app.demo_mode.ingest`), using dependency overrides that exist only on an application
    object that never listens; the served application refuses those routes (`demo_only`).
 3. Synthetic data is consumed through a contract (`app.demo_mode.datasets.SyntheticDataset`:
-   metadata, generations, probes) from generators that own it. Demo Mode never generates data
-   and never substitutes one dataset for another.
+   metadata, generations, probes; optionally a baseline size, a risk configuration and
+   scenarios) from generators that own it. Demo Mode never generates data and never
+   substitutes one dataset for another. Null Meridian (`null-meridian-v1`) is the canonical
+   dataset and the default.
 4. A demo database is identified three ways — runtime mode, a `demo` database name, and a
    `deployment_marker` row written only when the reset initializes an *empty* database — and
    nothing is wiped or served unless all hold.
@@ -62,6 +64,28 @@ everything ADG knows — history, current state, tombstones — is derived at in
 - An additive migration (`0017_deployment_marker`) and three additive response fields
   (`/version.runtime_mode`, `/health/ready.runtime_mode`, `.data_source`) and one public route
   (`/runtime`).
-- The canonical dataset is a cross-branch dependency until the Null Meridian generator merges.
 - A public demo still needs a visitor sign-in decision (development auth is refused with
   `ADG_ENVIRONMENT=production`).
+- A Null Meridian reset takes minutes (300 runs through the real routes and a full risk
+  pass), and its database suite adds roughly ten minutes to the smoke run.
+
+## Integration (ADG-DEMO-INTEGRATION-01)
+
+Demo Mode and the Null Meridian dataset were built on separate branches, each with its own
+runtime value, reset and database guard. Integrating them kept one of each:
+
+| Concern | Kept | Removed |
+| --- | --- | --- |
+| Runtime values | `production` \| `demo` (`RuntimeMode`, fail-closed) | `standard` \| `demo` (`Literal`); `standard` is now refused like any unknown value |
+| Operator commands | `python -m app.demo_mode reset\|status\|scan\|verify` | `python -m app.demo.null_meridian reset` (the package keeps pure `manifest`/`transcripts`/`stats` utilities) |
+| Database authority | `deployment_marker` (migration 0017) + `demo`-as-a-word name rule | `COMMENT ON DATABASE` marker; substring name check |
+| Startup refusals | Demo Mode's validator (collector keys, executors, non-log sinks, unregistered dataset, name) | Null Meridian's duplicate validator. Its refusal of `ADG_ENVIRONMENT=production` was **not** adopted: strictness and connection are separate axes, and refusing it would push a public demo onto development sign-in |
+| In-process ingestion | Demo Mode's dependency-override provider (no credential minted) over Null Meridian's dependency-free ASGI poster | `httpx` in the provider (a dev-only dependency that stopped the API image from importing) and the admin-token seeding client |
+| Risk configuration | the dataset's `risk_configuration()` | the import of Null Meridian's configuration in `app/config.py` |
+| Fingerprint | Demo Mode's dataset-agnostic fingerprint, now with per-source digests | Null Meridian's table fingerprint (its value is reproduced exactly by the integrated reset; see the handoff) |
+
+The contract gained `baseline_generations` (a dataset may make several scans its canonical
+state — Null Meridian makes all three), per-generation `evaluated_at` (the risk pass is dated
+by the dataset, not by whoever runs the reset), and `scenarios()` (served to the UI's demo
+guide). `reset --generations N` rewinds to an earlier point of the dataset's history so the
+synthetic scan can replay the rest.

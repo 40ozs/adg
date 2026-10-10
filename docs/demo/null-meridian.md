@@ -25,44 +25,59 @@ ones in `null-meridian.canon.json`.
 
 ## 1. Running it
 
-Demo Mode is a deployment property, chosen when the API process starts:
+Null Meridian is the canonical dataset of ADG's **Demo Mode**
+([docs/architecture/demo-mode.md](../architecture/demo-mode.md)) and its default. Demo Mode
+is the runtime, safety, persistence and operation boundary; this package is the data. It
+generates the estate and nothing else — the reset, the database guard, the synthetic scan
+and the status commands are Demo Mode's, and they load Null Meridian through
+`app.demo.null_meridian.synthetic_dataset()`.
+
+A demo is a deployment property, chosen when the process starts:
 
 ```
-ADG_RUNTIME_MODE=demo
-ADG_DATABASE_URL=postgresql+psycopg://adg:…@localhost:5432/adg_demo   # name must contain "demo"
+ADG_RUNTIME_MODE=demo                                               # production | demo
+ADG_DATABASE_URL=postgresql+psycopg://adg:…@localhost:5432/adg_demo  # 'demo' as a word
+# ADG_DEMO_DATASET unset (or null-meridian-v1): Null Meridian
 ```
 
-and the one documented operation that puts the database into the canonical state:
+and the one operation that puts the database into the canonical state:
 
 ```powershell
-.\scripts\demo-reset.ps1                                   # Windows wrapper
-python -m app.demo.null_meridian reset --report reset.json  # from backend/, any OS
-docker compose exec api python -m app.demo.null_meridian reset   # in the compose stack
+.\scripts\demo-reset.ps1                                  # Windows wrapper
+python -m app.demo_mode reset --report reset.json         # from backend/, any OS
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build   # whole stack
 ```
 
-The demo database must exist (for the compose stack, start it with `POSTGRES_DB=adg_demo`,
-`ADG_RUNTIME_MODE=demo`). The reset:
+The demo database must exist (the compose override creates `adg_demo` on its own volume). The
+reset:
 
-1. **refuses** unless `ADG_RUNTIME_MODE=demo`, `ADG_ENVIRONMENT` is not `production`, the
-   database name contains `demo`, **and** the database either carries the demo marker or holds
-   no scan runs — a database with data that was never marked is refused even when its name
-   says `demo`;
+1. **refuses** unless `ADG_RUNTIME_MODE=demo`, the database is named with `demo` as a word,
+   **and** the database either carries a `deployment_marker` row reading `demo` or holds no
+   row in any ADG table — a database with data that was never marked is refused even when its
+   name says `demo`, and one marked for production is refused;
 2. runs `alembic upgrade heads` — the production schema, unchanged;
-3. marks the database `COMMENT ON DATABASE … IS 'adg-demo:null-meridian-v1'` (a comment, not a
-   table: the demo adds nothing to the schema);
-4. empties the ADG tables **of that database only** — everything in a marked demo database is
-   demo-owned;
-5. posts the three scan generations through `POST /api/v1/scan-runs`, `…/batches` and
-   `…/completion`, in-process, with the same validation, idempotency and reconciliation a
-   Windows collector gets;
-6. evaluates the risk rules at the fixed instant 2026-10-01T06:00Z;
+3. writes the marker (`dataset_key` and `dataset_seed` both `null-meridian-v1`), then, in the
+   transaction that locks and re-checks it, empties the ADG tables **of that database only**;
+4. posts the three scan generations, one at a time, through `POST /api/v1/scan-runs`,
+   `…/batches` and `…/completion`, in-process, with the same validation, idempotency and
+   reconciliation a Windows collector gets;
+5. evaluates the risk rules under Null Meridian's configuration, dated 2026-10-01T06:00Z (the
+   pass after the snapshot scan);
+6. checks 23 canonical objects (scenarios A–H and the partial/failed scan promises) in
+   current state;
 7. prints a report with counts and a **fingerprint** of the logical database.
 
-It is safe to run repeatedly. Two consecutive resets produce the same fingerprint
-(§9); the test suite runs it twice and compares. Exit codes: `0` done, `1` failed,
-`3` refused.
+It is safe to run repeatedly. Two consecutive resets produce the same fingerprint (§9); the
+test suite runs it twice and compares. `python -m app.demo_mode verify` re-checks a running
+demo without changing it. To watch the history happen instead, rewind and scan forward:
 
-Other commands, all pure (no database):
+```
+python -m app.demo_mode reset --generations 1   # the estate as ADG saw it on 2026-09-03
+python -m app.demo_mode scan                    # g2, 2026-09-17, and its risk pass
+python -m app.demo_mode scan                    # g3, 2026-10-01 — the canonical state again
+```
+
+Developer utilities, all pure (no configuration, no database):
 
 ```
 python -m app.demo.null_meridian stats                       # counts and distributions
@@ -70,26 +85,28 @@ python -m app.demo.null_meridian manifest --out M.json --canon-out C.json
 python -m app.demo.null_meridian transcripts --out DIR        # all 300 collector transcripts
 ```
 
-### What Demo Mode refuses
+### What a demo refuses
 
 `ADG_RUNTIME_MODE=demo` is validated at startup, with the other settings, and the process does
-not start if any of these hold:
+not start if any of these hold (the full table is in the Demo Mode architecture, §8):
 
 | Setting | Why |
 | --- | --- |
-| `ADG_ENVIRONMENT=production` | a production deployment must never be one variable away from a reset |
-| a database name without `demo` | the reset empties the database it is pointed at |
+| a database name without `demo` as a word | the reset empties the database it is pointed at |
 | `ADG_COLLECTOR_API_KEYS` set | a demo receives no collector |
 | `ADG_REMEDIATION_EXECUTION_MODE` ≠ `disabled` | no executor, not even the lab one |
-| `ADG_ALERT_POLICY_PATH` set | the shipped policy delivers only to the log |
+| an alert policy enabling a non-`log` sink | a demo delivers nowhere but the log |
+| `ADG_RUNTIME_MODE` anything but `production`/`demo` | including `standard`: never read as production |
 
-There is no API route, parameter or schema that names the mode (asserted against the published
-OpenAPI document), so a running deployment cannot be switched by a request. Every response
-from a demo deployment carries `X-ADG-Runtime-Mode: demo`. In Demo Mode there is **no** Active
-Directory or LDAP connection, no SMB connection, no Windows credential, no PowerShell
-collector, no production PostgreSQL and no file-system enumeration: the backend never had any
-of the first five (collectors push to it), the reset's only subprocess is the migration, and
-the DB test runs a full reset with Python's socket connect refused.
+No request can name or change the mode (asserted against the published OpenAPI document); the
+mode is *reported*, read-only, by `GET /runtime`. Every response from a demo deployment carries
+`X-ADG-Runtime-Mode: demo`, and the web shell shows a **Demo environment · Synthetic enterprise
+data · Null Meridian** indicator before anybody signs in, linking to the demo guide (`/demo`),
+where scenarios A–H link into the real pages. In Demo Mode there is **no** Active Directory or
+LDAP connection, no SMB connection, no Windows credential, no PowerShell collector, no
+production PostgreSQL and no file-system enumeration: the backend never had any of the first
+five (collectors push to it), the reset's only subprocess is the migration, and the DB test
+runs a full reset with Python's socket connect refused.
 
 When `ADG_RISK_CONFIGURATION_PATH` is unset, Demo Mode uses Null Meridian's own risk
 configuration (`app/demo/null_meridian/risk.py`): eleven folders declared sensitive (Finance,
@@ -408,20 +425,20 @@ OU (`OU=Legacy`, `OU=Teams and Applications`, `OU=Okta Transition`, `OU=Standard
 
 ## 9. Reproducibility and performance
 
-Measured on the development container (PostgreSQL 16, `fsync=off`, one CPU-bound Python
-process); the two reports are committed as [`evidence/reset-1.json`](evidence/reset-1.json)
-and [`evidence/reset-2.json`](evidence/reset-2.json):
+Each reset is fingerprinted by Demo Mode: SHA-256 over per-source digests of current state
+(all seven `current_*` views), `object_versions`, `scan_runs`, `scan_run_scopes`,
+`scan_run_errors` and `risk_findings`, excluding only the database-clock bookkeeping columns,
+risk-evaluation bookkeeping and serials. Validity windows, run ids, hashes, evidence and
+finding detail are all included. Two clean resets of the integrated application, committed as
+[`evidence/reset-1.json`](evidence/reset-1.json) and [`evidence/reset-2.json`](evidence/reset-2.json)
+(measured in the integration container — PostgreSQL 16, one CPU-bound Python process — and
+recorded with timings in the [integration handoff](../handoffs/adg-demo-integration-01.md)),
+produce the same fingerprint, the same per-source digests and the same counts.
 
-| Step | Reset 1 | Reset 2 |
-| --- | ---: | ---: |
-| Build canon + estate + 300 transcripts (pure) | ~8 s | ~8 s |
-| Post 300 runs / 41,756 observations through the API | 96 s | 104 s |
-| Migrate, empty, evaluate risks (9,666 matched), fingerprint | 44 s | 47 s |
-| **Whole reset** | **140 s** | **151 s** |
-| Fingerprint | `db736602…85c28a0` | `db736602…85c28a0` |
-
-The fingerprint is SHA-256 over every row of `scan_runs`, `principals`, `membership_edges`,
-`servers`, `smb_shares`, `smb_share_aces`, `ntfs_resources`, `ntfs_aces`, `object_versions`
-and `risk_findings`, excluding only the database-clock bookkeeping columns (`created_at`,
-`updated_at`), the serial `id`, and the random evaluation ids. Validity windows, run ids,
-hashes, evidence and finding detail are all included, and all are identical across resets.
+Before integration this package fingerprinted ten tables itself (`scan_runs`, `principals`,
+`membership_edges`, `servers`, `smb_shares`, `smb_share_aces`, `ntfs_resources`, `ntfs_aces`,
+`object_versions`, `risk_findings`, risk timestamps included) and recorded
+`db736602…85c28a0`. That algorithm, run unchanged against the integrated reset's database,
+still yields `db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0`, every one of
+its ten table digests equal: the integration changed how the estate is loaded and guarded, not
+one row of what is loaded.

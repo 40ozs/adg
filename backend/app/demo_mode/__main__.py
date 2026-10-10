@@ -107,11 +107,13 @@ def _statuses(runs: Sequence[SeedRunReport]) -> dict[str, int]:
 def _reset_text(report: ResetReport) -> str:
     seed = report.seed
     applied = ", ".join(item.name for item in report.applied)
-    history = (
-        "canonical baseline"
-        if report.canonical
-        else f"rewound: {len(report.applied)} of {report.baseline} baseline generations"
-    )
+    beyond = len(report.applied) - report.baseline
+    if beyond < 0:
+        history = f"rewound: {len(report.applied)} of {report.baseline} baseline generations"
+    elif beyond == 0:
+        history = "canonical baseline"
+    else:
+        history = f"canonical baseline and {beyond} later generation{'s' if beyond > 1 else ''}"
     lines = [
         f"Demo reset: {report.dataset.company_name} ({report.dataset.key}, seed "
         f"{report.dataset.seed}) into {report.database}"

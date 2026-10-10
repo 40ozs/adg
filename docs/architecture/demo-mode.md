@@ -1,15 +1,28 @@
 # Demo Mode
 
 **Status:** implemented · **Code:** `backend/app/runtime_mode.py`, `backend/app/demo_mode/`,
-`backend/app/api/runtime.py`, `backend/app/api/demo.py`, `frontend/components/Banners.tsx`
-· **Decision:** [ADR-0039](../decisions/0039-demo-is-a-deployment-boundary.md) · **Evidence:**
-[handoff](../handoffs/demo-mode-01.md)
+`backend/app/demo/null_meridian/`, `backend/app/api/runtime.py`, `backend/app/api/demo.py`,
+`frontend/components/Banners.tsx`, `frontend/components/DemoGuide.tsx` · **Decision:**
+[ADR-0039](../decisions/0039-demo-is-a-deployment-boundary.md) · **Dataset:**
+[Null Meridian](../demo/null-meridian.md) · **Evidence:** [Demo Mode](../handoffs/demo-mode-01.md),
+[Null Meridian](../handoffs/adg-demo-null-meridian-01.md),
+[integration](../handoffs/adg-demo-integration-01.md)
 
 Demo Mode is the real ADG application — the same API, ingestion, history, current-state
 derivation, access engine, risk rules, search, simulation, governance and UI — running on a
 **synthetic estate** instead of one reported by Windows collectors. One codebase, one image,
 one schema. A deployment is either `production` or `demo`, and which one it is is decided by
 its configuration, never by anybody using it.
+
+Two things, and only two, make up a demo:
+
+```text
+Demo Mode     = the runtime, safety, persistence and operation boundary  (app.demo_mode)
+Null Meridian = the deterministic synthetic enterprise dataset it runs on (app.demo.null_meridian)
+```
+
+Null Meridian generates data and nothing else. Every reset, guard, marker, scan and status
+command belongs to Demo Mode, which loads the dataset through one contract (§3).
 
 It exists so that ADG can be demonstrated, tested end to end and eventually deployed publicly
 without a Windows host, a domain, an SMB share, PowerShell, or a single real identity.
@@ -27,7 +40,9 @@ ADG_RUNTIME_MODE=demo         # synthetic data, isolated database, ingestion clo
 `parse_runtime_mode`. **Unknown values fail closed**: `foobar`, `prod`, `live` and an empty
 value are startup errors naming the accepted values. Only an *unset* variable means
 production, because that is what every deployment predating the setting already is. Case and
-surrounding whitespace are forgiven (`Demo` is unambiguous); nothing else is.
+surrounding whitespace are forgiven (`Demo` is unambiguous); nothing else is. In particular
+`standard` — the name an earlier Null Meridian branch used for production — is refused like
+any other unrecognized value rather than kept as a synonym.
 
 It is orthogonal to `ADG_ENVIRONMENT`. `ADG_ENVIRONMENT` says how strict a deployment is
 (development defaults allowed or not); `ADG_RUNTIME_MODE` says what it is connected to. A
@@ -73,11 +88,19 @@ source is never constructed (a test replaces its class with one that raises).
 
 `app.demo_mode.ingest.apply_generation` builds the ordinary application
 (`app.main.create_app`) against the demo database and hands the existing transport,
-`app.demo.seed.seed_transcripts`, an in-process ASGI client bound to it. Two dependency
-overrides exist **only on that in-process application object**, which never listens on a
-socket: the ingestion principal resolves to the collector `demo-synthetic-provider`, and the
-demo policy guard is lifted. The deployment's served application has neither, so its
-ingestion routes stay closed. The provider refuses to run unless the settings are demo.
+`app.demo.seed.seed_transcripts`, an in-process ASGI poster bound to it
+(`InProcessPoster`: the request goes straight to the application object, through every
+middleware, and addresses only the reserved host `demo-synthetic-provider.invalid`). Two
+dependency overrides exist **only on that in-process application object**, which never
+listens on a socket: the ingestion principal resolves to the collector
+`demo-synthetic-provider` — no credential is configured, minted or stored — and the demo
+policy guard is lifted. The deployment's served application has neither, so its ingestion
+routes stay closed. The provider refuses to run unless the settings are demo.
+
+The poster is a few dozen lines rather than `httpx` on purpose: `httpx` is a development
+dependency the API image does not install, and the application imports this module, so an
+`httpx` import here would stop the API — production included — from starting. A test imports
+the application with `httpx` blocked.
 
 Every synthetic observation therefore passes through the real route, the real contract
 models, the real `IngestionService`, the history writer and reconciliation — the same path,
@@ -92,22 +115,42 @@ untouched. `app.demo_mode.datasets` is the whole of what it asks of a generator:
 | Member | Meaning |
 | --- | --- |
 | `metadata: DemoDatasetMetadata` | `key`, `company_name`, `domain`, `snapshot_date`, `seed`, `synthetic=True`, `description`, display-only `facts`. Public — `/runtime` serves it and the UI shows it, so the application hard-codes no company. |
-| `generations() -> Sequence[ScanGeneration]` | The dataset's scan history, oldest first. Each is a tuple of `app.demo.transcripts.DemoTranscript` — collector-protocol v1 runs. Generation 0 is the baseline the reset installs; later ones are applied one at a time by *Run synthetic scan*. **Run ids must be deterministic** (uuid5): applied-ness is "every run id is in `scan_runs`". |
-| `risk_configuration()` *(optional)* | A `RiskConfiguration` declaring the estate's sensitive resources, as an operator would. Used when `ADG_RISK_CONFIGURATION_PATH` is empty; without it the shipped defaults apply. |
-| `probes() -> Sequence[CanonicalProbe]` | Objects the dataset promises exist in current state after its baseline, named by its own canonical ids: `principal{sid}`, `membership{group_sid,member_sid}`, `share{server,share}`, `share_ace{server,share,trustee_sid}`, `ntfs_resource{path}`, `ntfs_ace{path,trustee_sid}`. The reset fails if any is missing. |
+| `generations() -> Sequence[ScanGeneration]` | The dataset's scan history, oldest first. Each is a tuple of `app.demo.transcripts.DemoTranscript` — collector-protocol v1 runs — plus an optional `evaluated_at`, the instant the risk pass after that scan is dated (otherwise the wall clock). **Run ids must be deterministic** (uuid5): applied-ness is "every run id is in `scan_runs`". |
+| `baseline_generations` *(optional, default 1)* | How many leading generations make up the canonical state the reset installs. Later generations are applied one at a time by *Run synthetic scan*. |
+| `probes() -> Sequence[CanonicalProbe]` | Objects the dataset promises exist in current state once its baseline is applied, named by its own canonical ids: `principal{sid}`, `membership{group_sid,member_sid}`, `share{server,share}`, `share_ace{server,share,trustee_sid}`, `ntfs_resource{path}`, `ntfs_ace{path,trustee_sid}`. The reset fails if any is missing. |
+| `risk_configuration()` *(optional)* | A `RiskConfiguration` declaring the estate's sensitive resources and any operator tuning. Used when `ADG_RISK_CONFIGURATION_PATH` is empty; without it the shipped defaults apply. Production never reads it, and global `config.py` names no dataset's folders. |
+| `scenarios()` *(optional)* | `DemoScenario` walkthroughs — key, title, summary, the folder, and the people and groups by SID. Served on `GET /api/v1/demo`; the UI links each into the real pages. Display-only. |
 
 Registered datasets (`DATASETS`), each a lazy `module:callable` loader:
 
 | Key | Loader | Status |
 | --- | --- | --- |
-| `null-meridian-v1` | `app.demo.null_meridian:synthetic_dataset` | **Canonical. Pending** the Null Meridian generator (ADG-DEMO-NULL-MERIDIAN-01, branch `claude/inspiring-volta-6uzdsy`). Selecting it before that merges is a startup refusal naming the dependency — never a substitution. |
-| `adg-reference-estate` | `app.demo_mode.reference:synthetic_dataset` | Available. A thin adapter over the estate already in `app.demo` (`corp.example.com`); its transcripts are asserted byte-identical to `app.demo`'s own. |
+| `null-meridian-v1` | `app.demo.null_meridian:synthetic_dataset` | **Canonical and the default.** The Null Meridian estate ([docs](../demo/null-meridian.md)). |
+| `adg-reference-estate` | `app.demo_mode.reference:synthetic_dataset` | Selectable explicitly, never a fallback. A thin adapter over the small estate in `app.demo` (`corp.example.com`); its transcripts are asserted byte-identical to `app.demo`'s own. Fast enough for the Demo Mode database suite. |
 
-`ADG_DEMO_DATASET` selects one; empty means `null-meridian-v1`. The Null Meridian canon
-(company *Null Meridian*, `nullmeridian.info`, snapshot 2026-10-01, seed `null-meridian-v1`,
-1,800 active users, Okta 2021-10-01) is defined by that generator and documented with it;
-`tests/demo_mode/test_datasets.py::TestNullMeridianCanon` holds the generator's metadata to it
-and runs as soon as the module is present.
+`ADG_DEMO_DATASET` selects one; empty means `null-meridian-v1`. One name throughout: the
+registry key, the dataset's metadata key, its seed and the `dataset_key`/`dataset_seed` on
+the deployment marker all read `null-meridian-v1`. A selected dataset that cannot load — its
+module absent or failing to build — is a refusal at startup and at reset; nothing substitutes
+another estate, and its risk configuration is never silently replaced by the defaults.
+
+### The Null Meridian adapter
+
+`app.demo.null_meridian.dataset.NullMeridianDataset` maps the generator onto the contract
+and constructs nothing (a test checks it calls no estate constructor):
+
+| Member | Source |
+| --- | --- |
+| `metadata` | `canon` (company, `nullmeridian.info`, snapshot 2026-10-01, seed, founded) and display facts read from `manifest.build_manifest()` — the document the committed `docs/demo/null-meridian.manifest.json` is checked against. No count is hard-coded. |
+| `generations()` | `generations.build_generations()`: `g1` 2026-09-03, `g2` 09-17, `g3` 10-01; 100 runs each; each risk pass dated 06:00 UTC on its scan day (`generations.RISK_PASS_AT`). |
+| `baseline_generations` | 3 — the canon is what three scans had collected by the snapshot. |
+| `risk_configuration()` | `risk.DEMO_RISK_CONFIGURATION`: eleven sensitive folders; `redundant_access_paths.minimum_paths` 2 → 4. |
+| `scenarios()` | `scenarios.golden_scenarios()` — A to H. |
+| `probes()` | 23 objects scenarios A–H are about (e.g. the Design root's `sg-share-design-write` entry, every link of G's six-group chain, `Proj-Zephyr-RW` on Zephyr) plus the two history promises: `Wave-3-Staging` survives the partial g3 scan of `NM-MIG-FS01`, and `NM-FS-03`'s folders survive its failed g3 scan. |
+
+`tests/demo_mode/test_datasets.py::TestNullMeridianCanon` and `TestTheNullMeridianAdapter`
+hold the adapter to the canon (transcripts byte-identical to the generator's, facts equal to
+the committed manifest, every probe present in the generated estate).
 
 ## 4. Database isolation
 
@@ -130,49 +173,73 @@ against an unmarked database or one holding a different dataset than `ADG_DEMO_D
 Demo Mode uses the real schema; there is no demo-only schema. Production code never reads
 the marker, and a production database simply has none.
 
+`deployment_marker` is the **only** authority. (An earlier Null Meridian branch marked its
+database with `COMMENT ON DATABASE … 'adg-demo:null-meridian-v1'` and accepted any database
+whose name merely *contained* `demo`; both were removed at integration rather than kept as a
+second, competing authority. A populated database carrying that comment but no marker row is
+refused — a test proves it.)
+
 ## 5. Initialize and reset — one operator workflow
 
 ```bash
-export ADG_RUNTIME_MODE=demo
-export ADG_DEMO_DATASET=adg-reference-estate       # or null-meridian-v1 once merged
+export ADG_RUNTIME_MODE=demo                       # ADG_DEMO_DATASET unset: Null Meridian
 export ADG_DATABASE_URL=postgresql+psycopg://adg:<pw>@localhost:5432/adg_demo
 cd backend
 python -m app.demo_mode reset    # first run initializes; every run restores the baseline
+python -m app.demo_mode verify   # probes + fingerprint against the database as it is
 python -m app                    # serve
 ```
 
+This is the only reset there is. (`python -m app.demo.null_meridian` keeps three pure
+developer utilities — `manifest`, `transcripts`, `stats` — and has no database command.)
+
 `reset` performs, in order: refuse unless demo → load the dataset (refuse if unavailable,
 before touching the database) → `alembic upgrade heads` → identify the database (§4) → lock
-the marker and truncate every ADG table except it → ingest generation 0 through the synthetic
-provider → `app.operations.commands.evaluate_risks` (the production operator command) →
-validate: every run recorded with the status its transcript claimed, every probe present in
-current state → print a **canonical fingerprint**.
+the marker and truncate every ADG table except it → ingest the baseline **one generation at a
+time** through the synthetic provider (Null Meridian: g1, g2, g3 — 300 runs, 41,756
+observations) → `app.operations.commands.evaluate_risks`, the production operator command,
+under the dataset's risk configuration and dated by the last applied generation → validate:
+every run recorded with the status its transcript claimed, every probe present in current
+state → print a **canonical fingerprint** with one digest per source. `--report PATH` also
+writes the JSON report.
 
-The fingerprint is SHA-256 over current state (all seven `current_*` views), `object_versions`,
-`scan_runs`, `scan_run_scopes`, `scan_run_errors` and `risk_findings`, excluding only values
-about the process rather than the dataset: row bookkeeping timestamps, risk-evaluation clock
-and serials, and database serials. Every identifier, relationship, hash and observed instant
-the dataset supplied is in it. Two resets of the same dataset produce the same fingerprint.
+`reset --generations N` stops after the first `N` generations: the dataset's own history,
+rewound, so `scan` can replay the rest (`reset --generations 1`, then `scan`, `scan`). The
+probes describe the baseline, so they are checked once it is complete; a test proves that
+scanning forward reaches the same current state, history and run digests as a full reset.
 
-Other commands: `status` (dataset, marker, generations, fingerprint — changes nothing),
-`scan` (next generation), `verify` (probes + fingerprint). All refuse unless demo. `--json`
-prints machine-readable reports.
+The fingerprint is SHA-256 over per-source digests of current state (all seven `current_*`
+views), `object_versions`, `scan_runs`, `scan_run_scopes`, `scan_run_errors` and
+`risk_findings`, excluding only values about the process rather than the dataset: row
+bookkeeping timestamps, risk-evaluation bookkeeping and serials, and database serials. Every
+identifier, relationship, hash and observed instant the dataset supplied is in it. The
+deployment marker is outside it. Two resets of the same dataset produce the same fingerprint;
+reset timing and both fingerprints are recorded in the integration handoff.
+
+Other commands: `status` (dataset, marker, generations, baseline, fingerprint — changes
+nothing), `scan` (next generation, then the risk pass), `verify` (baseline applied, probes,
+counts, fingerprint). All refuse unless demo. `--json` prints machine-readable reports.
 
 With Docker: `docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build`.
 The override gives PostgreSQL its own volume and an `adg_demo` database, runs a one-shot
-`demo-reset` service, and starts the API only after it succeeds.
+`demo-reset` service (Null Meridian by default; a few minutes), and starts the API only after
+it succeeds.
 
 ## 6. Temporal semantics are untouched
 
 Demo data enters through ingestion, so it gets ADG's real observation model: append-only
 observations, `object_versions`, current state as "no open tombstone", tombstones only from a
 successful authoritative in-scope reconciliation, partial and failed runs closing nothing.
-The reference baseline already carries a **partial** NTFS run (FS02) and a **failed** one
-(FS03); tests assert they tombstone nothing, that the FS03 share survives its server's failed
-scan, that every object has exactly one open version, and that re-posting the partial run
-erases nothing. Membership changes, ACL changes, disappearance and tombstones arrive as later
-generations from the generator that defines them (Null Meridian); Demo Mode applies them and
-does not author a second history.
+Null Meridian's three generations walk through every rule: g1's NTFS scan of `NM-SEC-FS01`
+**fails** (its shares are known, its folders are not); g2 tombstones accounts crossing the
+180-day deletion line, the deleted `Project-Vega` group with its edges and a deleted folder,
+all through reconciled complete scans; g3's scan of `NM-FS-03` **fails** and that of
+`NM-MIG-FS01` is **partial**, so every folder they did not report stays current — including
+`Wave-3-Staging`, really deleted on 2026-09-25 — until a complete scan says otherwise.
+`tests/db/test_null_meridian_demo.py::TestCurrentStateSemantics` asserts each, and that
+current state is exactly what the scans justify. The reference estate carries its own partial
+(FS02) and failed (FS03) runs, asserted in `tests/demo_mode/test_demo_database.py`. Demo Mode
+applies the dataset's history and does not author a second one.
 
 ## 7. Mutation policy
 
@@ -215,10 +282,12 @@ one-sentence notice. `GET /health/ready` and `GET /version` gain `runtime_mode` 
 `data_source`). None of them discloses a connection string, database name, host or credential;
 a test asserts it.
 
-`GET /api/v1/demo` (any role; demo only) lists the dataset, which generations are applied,
-the next one, and the mutation policy. `POST /api/v1/demo/scans` (`collectors:ingest`, as a
-real run requires) applies the next generation; `409` when none remains. The routes do not
-exist in production.
+`GET /api/v1/demo` (any role; demo only) lists the dataset, which generations are applied and
+which form the baseline, the next one, the dataset's scenarios, and the mutation policy.
+`POST /api/v1/demo/scans` (`collectors:ingest`, as a real run requires) applies the next
+generation and the risk pass after it; `409` when none remains. The routes do not exist in
+production, so they are absent from `docs/contracts/v1/openapi.json` and published instead in
+`docs/contracts/v1/openapi.demo.json`, which the frontend's demo guide is checked against.
 
 ## 10. The UI
 
@@ -229,6 +298,13 @@ production Active Directory or file servers are connected."), a line saying the 
 itself is real, and the dataset's domain, snapshot and seed; the footer adds that the
 organization is fictional. Nothing is shown in production. It offers no control.
 
+The panel links to **`/demo`, the demo guide**: the dataset's scenarios (Null Meridian's A–H),
+each linking into the real application — the folder's directory page, each person's and
+group's principal page, and the access explanation of each person against the folder — plus
+the scan history and what the demo lets a visitor change. It renders `GET /api/v1/demo` and
+nothing else; there is no second, UI-only copy of a scenario. A production deployment's
+`/demo` says it is not a demo and asks its API nothing.
+
 ## 11. Background and scheduled work
 
 | Job | Demo behavior |
@@ -238,7 +314,7 @@ organization is fictional. Nothing is shown in production. It offers no control.
 | `python -m app.operations drain-alerts` | **Runs**; deliveries go to log sinks only. |
 | Inline post-run evaluation (`ADG_ALERTS_ON_RUN_COMPLETION`) | **Runs** for synthetic runs exactly as for collector runs (off by default). |
 | History retention pruning | Not scheduled by the application in any mode; a demo reset supersedes it. |
-| Synthetic scans | `python -m app.demo_mode scan` / `POST /api/v1/demo/scans` — the dataset's own generations through the synthetic provider. No demo job can reach a collector. |
+| Synthetic scans | `python -m app.demo_mode scan` / `POST /api/v1/demo/scans` — the dataset's next generation through the synthetic provider, then the production risk pass dated as the dataset dates it. No demo job can reach a collector. |
 
 ## 12. Public deployment model (not performed)
 
