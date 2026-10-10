@@ -234,23 +234,142 @@ Golden scenarios A–H: generator-side in `tests/demo/test_null_meridian_estate.
 
 ## 6. Tests
 
-⟪TBD⟫
+Environment: Linux container, Python 3.13.16, PostgreSQL 16 (local), Node 22. Two Python
+environments: packages as `pip install -e ".[dev]"` resolves them today (FastAPI 0.143,
+**SQLAlchemy 2.1.4**, pytest 9.1, mypy 2.4, ruff 0.17 — what CI installs), and the same with
+**SQLAlchemy 2.0.54** pinned in the venv only (no dependency file changed). Baselines were run
+on an untouched worktree of `cc13ad2` with its own databases.
+
+| Suite | `main` @ `cc13ad2` | Integrated |
+| --- | --- | --- |
+| Demo Mode focused — `tests/demo_mode` hermetic | — (source: 81 passed, 2 skipped) | **94 passed, 0 skipped** |
+| Demo Mode focused — `tests/demo_mode/test_demo_database.py` (PostgreSQL) | — (source: 24 passed) | **27 passed** |
+| Null Meridian focused — `tests/demo/test_null_meridian_{canon,estate}.py`, `test_demo_mode.py` | — | **110 passed** (34 + 32 + 44) |
+| Null Meridian focused — `tests/db/test_null_meridian_demo.py` (PostgreSQL) | — (source: 21) | **34 passed** |
+| `by_keys` regression — `tests/db/test_risk_findings.py::TestLookupByKeyAtScale` | — | **passed** (in 23/23 of the file) |
+| Hermetic backend, SQLAlchemy 2.1.4 (`-m "not smoke"`) | 5,549 passed, 124 skipped | **⟪HERMETIC⟫** |
+| Hermetic backend, SQLAlchemy 2.0.54 | — | **5,761 passed, 124 skipped, 0 failed** |
+| DB backend, SQLAlchemy 2.1.4 (`-m smoke`) | 1,064 passed, **80 failed**, 1 xfailed | 1,126 passed, **80 failed**, 1 xfailed |
+| — the 80 failures | | **identical test ids** (80/80; none only on either side); every one `sqlalchemy.exc.SADeprecationWarning: Passing expression to distinct to generate a DISTINCT ON clause is deprecated`, promoted to an error by `filterwarnings = error::DeprecationWarning:app.*` — on both sides |
+| DB backend, SQLAlchemy 2.0.54 (`-m smoke`) | — (NM source: 1,165 passed) | **1,206 passed, 0 failed**, 1 xfailed |
+| `ruff check .` / `ruff format --check .` | clean | clean / 395 files formatted |
+| `mypy app tests`, SQLAlchemy 2.1.4 | 3 errors | the **same 3** (`app/runtime.py:49`, `tests/test_runtime.py:31` — Windows-only asyncio attributes; `app/changes/repository.py:398` — SQLAlchemy 2.1 typing) |
+| `mypy app tests`, SQLAlchemy 2.0.54 | 2 errors | the **same 2** |
+| Frontend `tsc --noEmit` / `eslint .` | clean | clean / clean |
+| Frontend `vitest run` | — (Demo Mode source: 1,139) | **1,163 passed** (33 files; +9 demo guide, +1 indicator link, +14 demo contract) |
+| Frontend `next build` | success | success (new route `/demo`) |
+| `docker compose config -q` (base; base + demo) | OK | OK / OK |
+| Browser (headless Chromium, §8) | — | **22/22 checks** |
+| GitHub Actions CI on the pushed branch | run 35009148121: Backend **fails at Type check** (the 3 mypy errors), unit/DB steps skipped; Frontend, Collector (Pester), Compose pass | run 38091215282: **the same** — Backend fails at Type check with the same errors; Frontend, **Collector (Pester)**, Compose pass |
+
+Notes. The SQLAlchemy 2.1.4 DB run was taken at `a9fe81b`; the only later code change
+(`ResetReport.canonical`, `7fa7680`) is covered by `TestResettingToAPointInHistory`, re-run
+after it (8/8 of the scan and history tests passed). The mypy finding the Demo Mode branch
+introduced (two unused `type: ignore` comments in its tests — its handoff ran `mypy app`, not
+`mypy app tests` as CI does) is fixed; integrated mypy equals `main`. No test was skipped,
+weakened or deleted to pass: the two Demo Mode tests that skipped while Null Meridian was
+absent now run (`TestNullMeridianCanon`), and the two refusal tests that would have skipped
+once it was present (`test_an_absent_generator_is_refused_and_never_substituted`,
+`test_an_unavailable_dataset_is_refused_before_the_database_is_touched`) now use a registered
+dataset whose module is missing, so they never skip. Null Meridian's tests that asserted the
+removed contract (`standard`, the database comment, `reset.py`, the `ADG_ENVIRONMENT`
+refusal) were rewritten to assert the canonical one; the claims behind them — no runtime
+switch, no network or directory client, one subprocess, an in-process seeding client — are
+all still asserted, over both packages now.
 
 ## 7. Safety gate
 
-⟪TBD⟫
+| Demo Mode must not… | How it is excluded | Evidence (all passing) |
+| --- | --- | --- |
+| contact Active Directory / LDAP | The backend has no directory client (ADR-0004); neither demo package imports one | `tests/demo_mode/test_boundary.py::TestIsolation::test_a_demo_application_loads_no_infrastructure_client`; `tests/demo/test_demo_mode.py::TestNoProductionCodePath::test_no_demo_module_imports_a_network_or_directory_client` (every module of `app/demo_mode` and `app/demo/null_meridian`: no `ldap`, `ldap3`, `impacket`, `socket`, `httpx`, `requests`, `urllib.request`, `paramiko`) |
+| contact SMB | No SMB client anywhere | the same two tests (`smbprotocol`, `smbclient`) |
+| contact WinRM | No WinRM client | the same (`winrm`, `pypsrp`, `pywinrm`) |
+| run PowerShell | No process except the migration | `test_a_demo_application_starts_no_process` (Popen recorded: none); `test_the_only_subprocess_is_demo_modes_migration` (one `subprocess.run`, `alembic upgrade heads`, in `lifecycle.py`); NM DB `TestRepeatability`: every subprocess of a full reset recorded — only `python -m alembic upgrade heads`, no `pwsh`/`powershell` |
+| construct the production collector | Provider chosen once from the mode | `TestProviderSelection::test_demo_never_constructs_the_collector_source` |
+| accept external collector ingestion | `demo_policy_guard` on every route; the web tier forwards no `POST` | `TestTheGuard` (anonymous, administrator, forged header → `403 demo_only`); both DB suites' `test_external_ingestion_is_refused_and_writes_nothing` (Null Meridian included); browser: web proxy `405`, API `403 demo_only` |
+| load collector credentials | Startup refusal | `test_a_collector_credential_is_refused`; `tests/demo/test_demo_mode.py` refusal matrix; compose passes `ADG_COLLECTOR_API_KEYS: ""` |
+| initialize a remediation executor | `remediation_execution_mode` must be `disabled` (startup); the factory then returns only `DisabledRemediator` | `test_a_remediation_executor_is_refused`; `test_a_demo_holds_only_the_refusing_remediator`; compose pins `disabled`; runbook exports served inert (`TestTheRunbookIsInert`) |
+| connect to a production database | Name rule + `deployment_marker`, re-checked under lock; API lifespan refuses | `TestDemoRefusals`/`TestRefusals` (Demo Mode DB); NM DB `TestTheBoundary`: unmarked populated database refused *even carrying the old NM comment*, production-marked refused, scan_runs untouched (300) |
+| make Python network connections during a reset | psycopg reaches PostgreSQL through libpq, below Python's socket module | NM DB `TestRepeatability`: a **full Null Meridian reset** with `socket.socket.connect` and `socket.create_connection` replaced by functions that fail the test — passes, fingerprint identical; Demo Mode DB: every Python-level connect during a reset recorded — only the database port |
+| deliver alerts outward | Non-`log` sinks refused at startup and on every policy read | `test_an_outbound_alert_sink_*`; `test_a_demo_refuses_an_outbound_alert_sink` |
+| expose secrets | `/runtime`, `/version`, `/health/ready` carry no connection detail | `test_the_runtime_surface_discloses_no_connection_detail`; browser check on `/runtime` |
+
+No Active Directory, LDAP, SMB, WinRM or PowerShell was contacted or executed, and no credential
+was used, while building or validating this. The only databases touched were the container's
+local PostgreSQL 16 (`adg`, `adg_base*`, `adg_i20*`, `adg_i21*`, `adg_demo`, and their
+`_test`/`_demo_test`/`_nm_demo_test` derivatives).
 
 ## 8. Browser validation
 
-⟪TBD⟫
+The integrated API (`python -m app`, `ADG_RUNTIME_MODE=demo`, on the reset `adg_demo`) and the
+production Next build (`next start`), driven by headless Chromium (Playwright 1.56.1):
+**22/22 checks passed**, no page error. Screenshots, by the convention `demo-mode-01` set:
+
+| Check | Result |
+| --- | --- |
+| Signed out: header pill reads **DEMO ENVIRONMENT · Synthetic enterprise data · Null Meridian** | ✓ — [indicator](adg-demo-integration-01-indicator.png) |
+| Explanation: synthetic data, "No production Active Directory or file servers are connected", "The application is real"; no button or input | ✓ |
+| Explanation lists the dataset's facts from the manifest (1,800 / 640 / 14 / 205 / 33 / 91 / 824 / 4,111 / 3 / 300 / 41,756) and links `/demo` | ✓ |
+| Footer: organization and data fictional | ✓ |
+| Sign in (development account `admin`) | ✓ |
+| Demo guide renders scenarios **A–H** from `GET /api/v1/demo`; three generations applied | ✓ — [guide](adg-demo-integration-01-guide.png) |
+| Scenario F's *explain their access* link opens the real explanation: the transferred employee against `Finance\Reports\Revenue`, both routes named | ✓ — [access path](adg-demo-integration-01-access-path.png) |
+| Scenario B's folder renders on the real directory page with Null Meridian's ACL | ✓ |
+| Risks page renders the full pass (3 critical, 8 high, 1,957 medium, 423 low, 6,995 informational = 9,386 open) | ✓ — [risks](adg-demo-integration-01-risks.png) |
+| Scenario H through the real simulation editor: removing `Proj-Zephyr-RW`'s entry — **"This proposal changes nobody's access."** | ✓ — [simulation](adg-demo-integration-01-simulation.png) (see §9.3) |
+| No production operation: web tier `POST /api/adg/api/v1/scan-runs` → 405; API `POST /api/v1/scan-runs` as administrator → `403 demo_only` | ✓ |
+| `/runtime` → demo / synthetic / `null-meridian-v1`; no `postgresql`, password or database name in it; `X-ADG-Runtime-Mode: demo` on responses | ✓ |
 
 ## 9. Known limitations
 
-⟪TBD⟫
+1. **SQLAlchemy 2.1 drift (pre-existing, unchanged).** `pip` resolves `sqlalchemy>=2.0.30` to
+   2.1.4, whose `DISTINCT ON` deprecation the suite promotes to an error: 80 DB tests fail on
+   `main` and identically here (§6), and `/api/v1/collection/status` and the change feed raise
+   under it in either runtime mode. With 2.0.54 everything passes. Not fixed here (no
+   dependency or query change was in scope): switch `app/repositories/operations.py` and
+   `app/changes/repository.py` to `postgresql.distinct_on`, or pin `sqlalchemy<2.1`.
+2. **CI is red on `main` and here, identically** — at the Backend *Type check* step, on the
+   three pre-existing mypy errors, so CI never reaches the backend unit or DB steps. Fixing
+   item 1 and those three errors is what turns CI green; this branch adds no new error.
+3. **Scenario H's simulation is bounded.** "Everything this change could affect" for
+   `Engineering\Projects\Zephyr` reaches about 520 engineers, above the simulation's
+   `max_principals` ceiling (500), so the preview reports `complete: false` with zero changes
+   among the pairs it evaluated (50 at the UI default, 500 at the ceiling). That the clean-up
+   changes nobody rests on the empty-group finding (the group has no members) and on those
+   zero changes; the UI says plainly the answer is partial. Pre-existing: the simulation code
+   is identical in all three trees and the data is byte-identical (§5); NM's DB test asserted
+   zero changes, not completeness.
+4. **`AlertRepository.by_keys`** has the unchunked `IN` shape `RiskFindingRepository.by_keys`
+   had; bounded by alerts raised per evaluation (the demo keeps it small). Follow-up.
+5. **Public sign-in posture undecided** (unchanged from Demo Mode): development sign-in is
+   refused with `ADG_ENVIRONMENT=production`, so a public demo needs OIDC or a deliberate
+   read-only visitor mode. `ADG_ENVIRONMENT=production` is *allowed* in demo mode by decision
+   (§3.4), reversing the NM branch's refusal.
+6. **Time.** A Null Meridian reset takes ⟪RESET_TIME⟫; the Null Meridian DB tests add about
+   9–10 minutes to the smoke run (two full resets and the history replay). A synthetic scan of
+   one Null Meridian generation is a synchronous request of a minute or two (100 runs and a
+   risk pass); there is still no UI button for it (API and CLI only). Concurrent synthetic
+   scans are not serialized and were not tested.
+7. **Docker not exercised end to end.** No daemon in this container: the compose files are
+   validated with `docker compose config`, and the image's dependency set is emulated with a
+   clean venv holding only the non-dev dependencies (imports, reset, verify, status — §5).
+8. **Evidence format changed.** `docs/demo/evidence/reset-{1,2}.json` are now the canonical
+   reset report (Demo Mode's fingerprint and per-source digests). The NM-scope fingerprint is
+   recorded in §5 and in `docs/demo/null-meridian.md` §9.
+9. **Branch name.** The brief suggested `integration/ADG-DEMO-NULL-MERIDIAN`; this session's
+   assigned branch `claude/adg-demo-null-meridian-integration-5biwm0` fills that role. It was
+   pushed (the session's branch instructions require it; nothing else would survive the
+   container); no PR was opened, nothing was merged or deployed.
 
 ## 10. Main merge recommendation
 
-⟪TBD⟫
+Merge this branch into `main` with a **merge commit** (the two source merges `22d4c9c` and
+`a2a6d00` keep both histories visible; do not squash), after human review of §3. Before a
+*public* deployment — not before the merge — decide the visitor sign-in posture (§9.5).
+Independently of this work, the SQLAlchemy 2.1 query fix and the three mypy errors (§9.1–2)
+should land on `main` so CI can run the backend suites at all; this branch neither causes nor
+worsens either. The source branches `claude/vibrant-gates-rhovf1` and
+`claude/inspiring-volta-6uzdsy` are fully contained here and can be retired after the merge.
 
 ## 11. Files changed (relative to `main`)
 
