@@ -34,7 +34,9 @@ from httpx import ASGITransport, AsyncClient
 from app.config import Settings, build_settings
 from app.db import ConnectivityResult
 from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
+from app.domain.remediation import ExecutionMode
 from app.main import RUNTIME_MODE_HEADER, create_app
+from app.remediation.executor import DisabledRemediator, remediator_for
 from app.risk_engine.catalog import RuleId
 from app.risk_engine.configuration import DEFAULT_CONFIGURATION
 from app.runtime_mode import RuntimeMode
@@ -135,6 +137,17 @@ class TestTheConfigurationBoundary:
             oidc_jwks_url="https://login.example.invalid/keys",
         )
         assert settings.is_demo and settings.is_production
+
+    def test_a_demo_holds_only_the_refusing_remediator(self) -> None:
+        """Remediation execution is disabled in a demo: the factory the remediation service
+        consults hands it the remediator that refuses every plan, and nothing else."""
+        settings = demo()
+        remediator = remediator_for(
+            ExecutionMode(settings.remediation_execution_mode),
+            environment=settings.environment,
+            fixture_path=settings.remediation_lab_fixture_path,
+        )
+        assert isinstance(remediator, DisabledRemediator)
 
     def test_an_explicit_risk_configuration_still_wins(self, tmp_path: Path) -> None:
         path = tmp_path / "risk.json"
