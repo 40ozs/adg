@@ -292,6 +292,24 @@ class TestTheFindingLifecycle:
 # --------------------------------------------------------------------------------------
 
 
+class TestLookupByKeyAtScale:
+    async def test_more_keys_than_postgres_accepts_parameters_for(
+        self, seeded: DemoEstate, session: AsyncSession
+    ) -> None:
+        """A full pass over a large estate matched ~190,000 findings in the Null Meridian
+        demo, and one ``IN`` list per key exceeded PostgreSQL's 65,535 bind parameters,
+        failing the whole evaluation. The lookup is chunked; it must still find every
+        stored finding among the keys it is given."""
+        evaluation = await service(session).evaluate_estate(now=NOW)
+        stored = [finding.key for finding in evaluation.findings]
+        assert stored
+        noise = [f"absent-{index:06d}" for index in range(70_000)]
+
+        found = await RiskFindingRepository(session).by_keys([*noise, *stored])
+
+        assert set(found) == set(stored)
+
+
 class TestIncrementalEvaluationNeverClosesWhatItDidNotSee:
     async def test_a_pass_scoped_to_one_directory_resolves_nothing_elsewhere(
         self, seeded: DemoEstate, session: AsyncSession
