@@ -16,14 +16,19 @@
 #
 # No Windows host, collector, domain, SMB share or PowerShell is involved anywhere in it.
 #
-# ADG_DEMO_DATASET selects the synthetic dataset. The canonical one is null-meridian-v1,
-# which becomes available when the Null Meridian generator merges; until then this file
-# selects the reference estate that ships in app.demo. Set ADG_DEMO_DATASET=null-meridian-v1
-# once it is present -- selecting it before then is a clear startup refusal, never a fallback.
+# ADG_DEMO_DATASET selects the synthetic dataset. The default, and the canonical demo, is
+# null-meridian-v1: Null Meridian, 1,800 people and 33 file servers, three scan generations
+# (300 runs). The reset takes a few minutes. A dataset that cannot load is a refusal, never a
+# fallback to another estate. adg-reference-estate (the small estate in app.demo) may be
+# selected explicitly.
+#
+# Everything an executor, a collector or an outbound sink would need is pinned off here as
+# well as refused by the application: remediation execution is disabled, no collector key
+# and no alert-policy file is passed in, and no Windows account or credential exists.
 
 x-demo-environment: &demo-environment
   ADG_RUNTIME_MODE: demo
-  ADG_DEMO_DATASET: ${ADG_DEMO_DATASET:-adg-reference-estate}
+  ADG_DEMO_DATASET: ${ADG_DEMO_DATASET:-null-meridian-v1}
   ADG_ENVIRONMENT: ${ADG_ENVIRONMENT:-development}
   ADG_LOG_LEVEL: ${ADG_LOG_LEVEL:-INFO}
   ADG_LOG_FORMAT: ${ADG_LOG_FORMAT:-json}
@@ -32,6 +37,9 @@ x-demo-environment: &demo-environment
   ADG_COLLECTOR_API_KEYS: ""
   # Log sink only; any other sink kind is refused in demo mode.
   ADG_ALERT_POLICY_PATH: ""
+  # A demo holds no remediation executor of any kind; anything else is a startup refusal.
+  ADG_REMEDIATION_EXECUTION_MODE: disabled
+  ADG_REMEDIATION_LAB_FIXTURE_PATH: ""
 
 services:
   db:

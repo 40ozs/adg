@@ -1,9 +1,14 @@
 """``python -m app.demo_mode`` — the one operator workflow for a demo deployment.
 
     python -m app.demo_mode reset    # migrate, identify, wipe, ingest, evaluate, validate
+    python -m app.demo_mode reset --generations 1   # rewind to an earlier point of history
     python -m app.demo_mode status   # what the configured demo is connected to; changes nothing
     python -m app.demo_mode scan     # apply the dataset's next synthetic scan generation
     python -m app.demo_mode verify   # re-run the validation against the current database
+
+The dataset is Null Meridian (``null-meridian-v1``) unless ``ADG_DEMO_DATASET`` names
+another registered one. This is the only reset there is: ``app.demo.null_meridian``
+generates the estate and has no database command of its own.
 
 Every command reads the same environment the API reads (``ADG_RUNTIME_MODE``,
 ``ADG_DATABASE_URL``, ``ADG_DEMO_DATASET``), so the command and the deployment cannot
@@ -19,6 +24,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import pathlib
 import sys
 from collections.abc import Sequence
 
@@ -26,16 +32,17 @@ from pydantic import ValidationError
 
 from app.config import Settings, get_settings
 from app.db import Database
+from app.demo.seed import SeedRunReport
 from app.demo_mode.datasets import DatasetUnavailable, load_dataset
 from app.demo_mode.lifecycle import (
     DemoLifecycleError,
-    canonical_fingerprint,
-    check_probes,
+    ResetReport,
     demo_status,
     reset_demo,
     run_synthetic_scan,
+    verify_demo,
 )
-from app.demo_mode.marker import DemoTargetRefused, inspect_target, require_demo_database
+from app.demo_mode.marker import DemoTargetRefused
 from app.logging_config import configure_logging
 
 EXIT_OK = 0
@@ -55,28 +62,22 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip `alembic upgrade heads` (the schema must already be current).",
     )
+    reset.add_argument(
+        "--generations",
+        type=int,
+        metavar="N",
+        help=(
+            "Apply only the dataset's first N scan generations -- an earlier point of its "
+            "history -- so `scan` can replay the rest. Default: the canonical baseline."
+        ),
+    )
+    reset.add_argument(
+        "--report", type=pathlib.Path, help="Also write the reset report as JSON to this path."
+    )
     commands.add_parser("status", help="Report the demo's dataset, database and generations.")
     commands.add_parser("scan", help="Apply the dataset's next synthetic scan generation.")
     commands.add_parser("verify", help="Check the canonical probes and print the fingerprint.")
     return parser
-
-
-async def _verify(settings: Settings) -> dict[str, object]:
-    dataset = load_dataset(settings.resolved_demo_dataset)
-    database = Database(settings)
-    try:
-        async with database.engine.connect() as connection:
-            require_demo_database(await inspect_target(connection), allow_initialize=False)
-            probes = await check_probes(connection, dataset.probes())
-            fingerprint = await canonical_fingerprint(connection)
-    finally:
-        await database.dispose()
-    missing = [result.probe.description for result in probes if not result.present]
-    if missing:
-        raise DemoLifecycleError(
-            "Canonical objects missing from current state: " + ", ".join(missing)
-        )
-    return {"dataset": dataset.metadata.key, "probes": len(probes), "fingerprint": fingerprint}
 
 
 async def _scan(settings: Settings) -> dict[str, object]:
@@ -88,10 +89,57 @@ async def _scan(settings: Settings) -> dict[str, object]:
         await database.dispose()
     return {
         "generation": report.generation.name,
-        "runs": [run.name for run in report.seed.runs],
+        "runs": len(report.seed.runs),
+        "recorded_statuses": _statuses(report.seed.runs),
         "observations_applied": report.seed.observations_applied,
+        "risk": report.risk.as_dict(),
         "fingerprint": report.fingerprint,
     }
+
+
+def _statuses(runs: Sequence[SeedRunReport]) -> dict[str, int]:
+    counted: dict[str, int] = {}
+    for run in runs:
+        counted[run.recorded_status] = counted.get(run.recorded_status, 0) + 1
+    return dict(sorted(counted.items()))
+
+
+def _reset_text(report: ResetReport) -> str:
+    seed = report.seed
+    applied = ", ".join(item.name for item in report.applied)
+    history = (
+        "canonical baseline"
+        if report.canonical
+        else f"rewound: {len(report.applied)} of {report.baseline} baseline generations"
+    )
+    lines = [
+        f"Demo reset: {report.dataset.company_name} ({report.dataset.key}, seed "
+        f"{report.dataset.seed}) into {report.database}"
+        f"{' (initialized)' if report.initialized else ''}.",
+        f"generations: {applied} ({history})",
+        f"runs: {len(seed.runs)} {_statuses(seed.runs)}; "
+        f"observations applied: {seed.observations_applied}",
+    ]
+    lines += [
+        f"  {run.name}: {run.recorded_status}"
+        for run in seed.runs
+        if run.recorded_status != "succeeded"
+    ]
+    if report.probes_checked:
+        present = sum(result.present for result in report.probes)
+        lines.append(f"probes: {present}/{len(report.probes)} present")
+    else:
+        lines.append("probes: not checked until the baseline is complete (`scan` forward)")
+    risk = report.risk.as_dict()
+    dated = f", dated {risk['evaluated_at']}" if risk["evaluated_at"] else ""
+    incomplete = "" if risk["complete"] else " (INCOMPLETE)"
+    lines += [
+        f"risk pass: {risk['matched']} matched, {report.risk_findings_open} open"
+        f"{incomplete}{dated}",
+        f"fingerprint: {report.fingerprint}",
+        f"duration: {report.duration_seconds:.1f}s (ingestion {report.ingest_seconds:.1f}s)",
+    ]
+    return "\n".join(lines)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -121,18 +169,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         if args.command == "reset":
-            report = asyncio.run(reset_demo(settings, migrate=not args.no_migrate))
-            payload: dict[str, object] = report.as_dict()
-            text = (
-                f"Demo reset: {report.dataset.company_name} ({report.dataset.key}, seed "
-                f"{report.dataset.seed}) into {report.database}"
-                f"{' (initialized)' if report.initialized else ''}.\n"
-                f"{report.seed.summary()}\n"
-                f"probes: {sum(r.present for r in report.probes)}/{len(report.probes)} present\n"
-                f"open risk findings: {report.risk_findings_open}\n"
-                f"fingerprint: {report.fingerprint}\n"
-                f"duration: {report.duration_seconds:.2f}s"
+            report = asyncio.run(
+                reset_demo(settings, migrate=not args.no_migrate, generations=args.generations)
             )
+            payload: dict[str, object] = report.as_dict()
+            if args.report:
+                args.report.parent.mkdir(parents=True, exist_ok=True)
+                args.report.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            text = _reset_text(report)
         elif args.command == "status":
             status = asyncio.run(demo_status(settings, with_fingerprint=True))
             payload = status.as_dict()
@@ -141,7 +185,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload = asyncio.run(_scan(settings))
             text = json.dumps(payload, indent=2)
         else:
-            payload = asyncio.run(_verify(settings))
+            payload = asyncio.run(verify_demo(settings))
             text = json.dumps(payload, indent=2)
     except (DemoLifecycleError, DemoTargetRefused, DatasetUnavailable) as failure:
         print(f"Refused: {failure}", file=sys.stderr)

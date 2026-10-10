@@ -1,8 +1,9 @@
-"""The dataset contract: Demo Mode consumes the existing generator and never rewrites it.
+"""The dataset contract: Demo Mode consumes the existing generators and never rewrites them.
 
-The reference adapter is checked against :mod:`app.demo` directly -- its transcripts must be
-the generator's transcripts, byte for byte -- because an adapter that "tidied up" a run id or
-a timestamp would be a second source of synthetic truth.
+Both adapters are checked against their generators directly -- their transcripts must be the
+generator's transcripts, byte for byte -- because an adapter that "tidied up" a run id or a
+timestamp would be a second source of synthetic truth. Null Meridian is the canonical
+dataset; its canon tests run unconditionally, because it ships in this build.
 """
 
 from __future__ import annotations
@@ -27,24 +28,11 @@ from app.demo_mode.datasets import (
     DemoDatasetMetadata,
     ScanGeneration,
     SyntheticDataset,
+    baseline_generations,
+    dataset_scenarios,
     load_dataset,
 )
 from app.demo_mode.reference import ReferenceEstateDataset
-
-
-def _canonical_available() -> bool:
-    try:
-        load_dataset(CANONICAL_DATASET)
-    except DatasetUnavailable:
-        return False
-    return True
-
-
-NULL_MERIDIAN_AVAILABLE = _canonical_available()
-NULL_MERIDIAN_PENDING = (
-    "DEPENDENCY: the Null Meridian generator (ADG-DEMO-NULL-MERIDIAN-01, branch "
-    "claude/inspiring-volta-6uzdsy) has not merged; app.demo.null_meridian is absent."
-)
 
 
 class TestTheReferenceAdapter:
@@ -90,20 +78,44 @@ class TestTheReferenceAdapter:
 
 
 class TestTheRegistry:
-    def test_the_canonical_dataset_is_registered_with_its_dependency(self) -> None:
+    def test_the_canonical_dataset_is_null_meridian_and_ships_in_this_build(self) -> None:
         entry = DATASETS[CANONICAL_DATASET]
+        assert CANONICAL_DATASET == "null-meridian-v1"
         assert entry.loader == "app.demo.null_meridian:synthetic_dataset"
-        assert entry.dependency is not None
+        assert entry.dependency is None
+        assert isinstance(load_dataset(CANONICAL_DATASET), SyntheticDataset)
 
-    @pytest.mark.skipif(NULL_MERIDIAN_AVAILABLE, reason="Null Meridian generator is present")
-    def test_an_absent_generator_is_refused_and_never_substituted(self) -> None:
+    def test_the_canonical_dataset_is_the_default(self) -> None:
+        from app.config import build_settings
+
+        settings = build_settings(
+            runtime_mode="demo", database_url="postgresql+psycopg://a:b@h/adg_demo"
+        )
+        assert settings.resolved_demo_dataset == CANONICAL_DATASET
+
+    def test_an_absent_generator_is_refused_and_never_substituted(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A registered dataset whose module is missing is a refusal naming what is missing --
+        never the reference estate, or any other, in its place."""
+        monkeypatch.setitem(
+            DATASETS,
+            "absent-v1",
+            datasets.DatasetEntry(
+                "absent-v1",
+                "app.demo.no_such_generator:synthetic_dataset",
+                "fixture",
+                dependency="The absent generator must merge first.",
+            ),
+        )
         with pytest.raises(DatasetUnavailable) as refused:
-            load_dataset(CANONICAL_DATASET)
+            load_dataset("absent-v1")
 
         message = str(refused.value)
         assert "not present in this build" in message
         assert "will not substitute" in message
-        assert "claude/inspiring-volta-6uzdsy" in message
+        assert "The absent generator must merge first." in message
+        assert REFERENCE_DATASET not in message
 
     def test_an_unregistered_key_is_refused(self) -> None:
         with pytest.raises(DatasetUnavailable, match="not a registered demo dataset"):
@@ -137,7 +149,7 @@ def fixture_module(monkeypatch: pytest.MonkeyPatch) -> Iterator[types.ModuleType
     module = types.ModuleType("tests_demo_fixture_dataset")
     monkeypatch.setitem(sys.modules, module.__name__, module)
     monkeypatch.setitem(
-        DATASETS,  # type: ignore[arg-type]
+        DATASETS,
         "fixture-v1",
         datasets.DatasetEntry("fixture-v1", f"{module.__name__}:build", "fixture"),
     )
@@ -178,12 +190,11 @@ class TestTheContractIsEnforced:
             )
 
 
-@pytest.mark.skipif(not NULL_MERIDIAN_AVAILABLE, reason=NULL_MERIDIAN_PENDING)
 class TestNullMeridianCanon:
     """The canonical values ADG-DEMO-MODE-01 requires Demo Mode to carry unchanged.
 
-    Skipped until the generator merges; then it holds the generator's metadata to the canon,
-    so a drift in either place is caught at the integration boundary.
+    Holds the generator's metadata to the canon, so a drift in either place is caught at the
+    integration boundary. (Unskipped by ADG-DEMO-INTEGRATION-01: the generator is in-build.)
     """
 
     def test_the_canonical_organization(self) -> None:
@@ -234,3 +245,155 @@ class TestDatasetRiskConfiguration:
             demo_dataset="adg-reference-estate",
         )
         assert settings.risk_configuration is DEFAULT_CONFIGURATION
+
+
+class TestTheNullMeridianAdapter:
+    """``app.demo.null_meridian.synthetic_dataset()`` carries the generator's output unchanged."""
+
+    def test_its_generations_are_the_generators_byte_for_byte(self) -> None:
+        from app.demo.null_meridian.generations import GENERATIONS, build_generations
+
+        adapted = load_dataset(CANONICAL_DATASET).generations()
+        direct = build_generations()
+
+        assert [g.name for g in adapted] == [generation.key for generation in GENERATIONS]
+        assert [len(g.transcripts) for g in adapted] == [100, 100, 100]
+        for generation, (_, transcripts) in zip(adapted, direct, strict=True):
+            assert [
+                json.dumps(t.as_document(), sort_keys=True) for t in generation.transcripts
+            ] == [json.dumps(t.as_document(), sort_keys=True) for t in transcripts]
+
+    def test_the_baseline_is_every_generation(self) -> None:
+        """The canon is the 2026-10-01 snapshot: what three scans had collected by then."""
+        dataset = load_dataset(CANONICAL_DATASET)
+        assert baseline_generations(dataset) == 3 == len(dataset.generations())
+
+    def test_each_risk_pass_is_dated_by_its_generation(self) -> None:
+        from app.demo.null_meridian.generations import GENERATIONS
+
+        dates = [g.evaluated_at for g in load_dataset(CANONICAL_DATASET).generations()]
+        assert dates == [
+            dt.datetime.combine(generation.day, dt.time(6, 0), tzinfo=dt.UTC)
+            for generation in GENERATIONS
+        ]
+        # The canonical pass -- after the snapshot scan -- is the one the Null Meridian
+        # reset used before integration: 2026-10-01T06:00Z.
+        assert dates[-1] == dt.datetime(2026, 10, 1, 6, 0, tzinfo=dt.UTC)
+
+    def test_the_risk_configuration_is_the_datasets_own(self) -> None:
+        from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
+
+        supplier = load_dataset(CANONICAL_DATASET).risk_configuration  # type: ignore[attr-defined]
+        assert supplier() is DEMO_RISK_CONFIGURATION
+
+    def test_metadata_facts_come_from_the_committed_manifest(self) -> None:
+        from pathlib import Path
+
+        manifest = json.loads(
+            (
+                Path(__file__).resolve().parents[3]
+                / "docs"
+                / "demo"
+                / "null-meridian.manifest.json"
+            ).read_text(encoding="utf-8")
+        )
+        statistics = manifest["statistics"]
+        facts = load_dataset(CANONICAL_DATASET).metadata.facts
+
+        assert facts["Active employees"] == f"{statistics['employees']['active']:,}"
+        assert facts["Former employees"] == f"{statistics['employees']['former']:,}"
+        assert facts["Groups"] == f"{statistics['groups']['total']:,}"
+        assert facts["File servers"] == f"{statistics['estate']['servers']:,}"
+        assert facts["Shares"] == f"{statistics['estate']['shares']:,}"
+        assert facts["Folders"] == f"{statistics['estate']['directories']:,}"
+        assert facts["NTFS entries"] == f"{statistics['estate']['ntfs_aces']:,}"
+        assert (
+            facts["Scan runs"] == f"{sum(g['runs'] for g in statistics['generations'].values()):,}"
+        )
+        assert facts["Observations"] == (
+            f"{sum(g['observations'] for g in statistics['generations'].values()):,}"
+        )
+
+    def test_scenarios_a_to_h_come_from_the_golden_scenarios(self) -> None:
+        from app.demo.null_meridian.scenarios import SCENARIO_IDS, golden_scenarios
+
+        scenarios = dataset_scenarios(load_dataset(CANONICAL_DATASET))
+        golden = golden_scenarios()
+
+        assert [s.key for s in scenarios] == list(SCENARIO_IDS) == list("ABCDEFGH")
+        for scenario, item in zip(scenarios, golden, strict=True):
+            assert scenario.title == item["title"]
+            assert scenario.resource == item["resource"]
+            assert scenario.summary == item["demonstrates"]
+
+    def test_scenario_subjects_and_probes_name_canon_identifiers(self) -> None:
+        from app.demo.null_meridian.canon import build_canon
+
+        canon = build_canon()
+        known = {person.sid for person in canon.employees} | {g.sid for g in canon.groups}
+        dataset = load_dataset(CANONICAL_DATASET)
+        named = {s.sid for scenario in dataset_scenarios(dataset) for s in scenario.subjects}
+        probed = {
+            value
+            for probe in dataset.probes()
+            for name, value in probe.key.items()
+            if name.endswith("sid")
+        }
+        assert named and named <= known
+        assert probed and probed <= known
+
+    def test_every_probe_is_in_the_snapshot_estate_or_survives_by_rule(self) -> None:
+        """A probe is a promise about current state after the reset. Each one names an
+        object the 2026-10-01 scans report -- or, for the two history probes, one the
+        partial and failed scans may not remove."""
+        from app.demo.null_meridian.canon import SNAPSHOT
+        from app.demo.null_meridian.estate import build_estate
+
+        estate = build_estate(SNAPSHOT).estate
+        g2 = build_estate(dt.date(2026, 9, 17)).estate
+        paths = {d.path.casefold(): d for d in estate.directories} | {
+            d.path.casefold(): d for d in g2.directories
+        }
+        shares = {(s.server_name.casefold(), s.share_name.casefold()) for s in estate.shares}
+        for probe in load_dataset(CANONICAL_DATASET).probes():
+            key = probe.key
+            if probe.kind in ("ntfs_resource", "ntfs_ace"):
+                directory = paths.get(key["path"].casefold())
+                assert directory is not None, probe.description
+                if probe.kind == "ntfs_ace":
+                    trustees = {ace.trustee_sid for ace in directory.aces}
+                    assert key["trustee_sid"] in trustees, probe.description
+            elif probe.kind == "share":
+                assert (key["server"].casefold(), key["share"].casefold()) in shares
+
+    def test_two_loads_are_identical(self) -> None:
+        from app.demo.null_meridian import synthetic_dataset
+
+        first, second = synthetic_dataset(), synthetic_dataset()
+        assert first.metadata == second.metadata
+        assert first.probes() == second.probes()
+        assert [g.run_ids for g in first.generations()] == [g.run_ids for g in second.generations()]
+
+    def test_the_adapter_constructs_no_estate_object(self) -> None:
+        """An adapter points at the generator's objects; it never builds its own."""
+        import ast
+        from pathlib import Path
+
+        source = (
+            Path(__file__).resolve().parents[2] / "app" / "demo" / "null_meridian" / "dataset.py"
+        ).read_text(encoding="utf-8")
+        called = {
+            node.func.id
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        assert not called & {
+            "DemoTranscript",
+            "DemoDirectory",
+            "DemoAce",
+            "DemoPrincipal",
+            "_assemble",
+            "_assemble_nm",
+            "build_estate",
+            "materialize_directories",
+        }

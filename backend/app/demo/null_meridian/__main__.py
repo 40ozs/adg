@@ -1,46 +1,38 @@
-"""``python -m app.demo.null_meridian`` — the Null Meridian demo's operator commands.
+"""``python -m app.demo.null_meridian`` — developer utilities for the Null Meridian canon.
 
-    python -m app.demo.null_meridian reset [--skip-migrate] [--report PATH]
     python -m app.demo.null_meridian manifest [--out PATH] [--canon-out PATH]
     python -m app.demo.null_meridian transcripts --out DIR
     python -m app.demo.null_meridian stats
 
-``reset`` is the only command that writes to a database, and it refuses to run unless the
-deployment is in Demo Mode on a demo database (see :mod:`.reset`). The others are pure: they
-build the canon and print or write it.
+Every command is pure: it builds the canon and prints or writes it, and none of them reads
+configuration or opens a database. ``manifest`` is how the committed
+``docs/demo/null-meridian.manifest.json`` and ``.canon.json`` are regenerated.
 
-Exit codes: ``0`` done, ``1`` failed, ``3`` refused because the target is not a demo.
+Loading Null Meridian into a demo database is not done here. It is Demo Mode's job, behind
+Demo Mode's safety checks: ``python -m app.demo_mode reset`` (see docs/architecture/demo-mode.md).
+
+Exit codes: ``0`` done, ``2`` usage.
 """
 
 from __future__ import annotations
 
 import argparse
-import asyncio
 import json
 import pathlib
-import sys
 from collections.abc import Sequence
 
 EXIT_OK = 0
-EXIT_FAILED = 1
-EXIT_REFUSED = 3
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m app.demo.null_meridian",
-        description="The Null Meridian synthetic estate behind ADG's Demo Mode.",
+        description=(
+            "Developer utilities for the Null Meridian canon. To load it into a demo "
+            "database, use `python -m app.demo_mode reset`."
+        ),
     )
     commands = parser.add_subparsers(dest="command", required=True)
-    reset = commands.add_parser(
-        "reset", help="Empty the demo database and load the canonical Null Meridian estate."
-    )
-    reset.add_argument(
-        "--skip-migrate", action="store_true", help="Do not run 'alembic upgrade heads' first."
-    )
-    reset.add_argument(
-        "--report", type=pathlib.Path, help="Also write the reset report as JSON to this path."
-    )
     manifest = commands.add_parser(
         "manifest", help="Print or write the canonical manifest (shared with OGWA)."
     )
@@ -58,39 +50,6 @@ def build_parser() -> argparse.ArgumentParser:
     transcripts.add_argument("--out", type=pathlib.Path, required=True)
     commands.add_parser("stats", help="Print the estate's counts and distributions.")
     return parser
-
-
-def _reset(args: argparse.Namespace) -> int:
-    from app.config import get_settings
-    from app.demo.null_meridian.reset import DemoResetRefused, reset_demo
-    from app.logging_config import configure_logging
-
-    try:
-        settings = get_settings()
-    except ValueError as error:
-        print(
-            f"Refused: the configuration is not a valid demo deployment.\n{error}", file=sys.stderr
-        )
-        return EXIT_REFUSED
-    configure_logging(
-        level="WARNING",
-        log_format="text",
-        service="adg-demo-reset",
-        environment=settings.environment,
-        version="",
-    )
-    try:
-        report = asyncio.run(reset_demo(settings, migrate=not args.skip_migrate))
-    except DemoResetRefused as refusal:
-        print(f"Refused: {refusal}", file=sys.stderr)
-        return EXIT_REFUSED
-    document = report.as_document()
-    rendered = json.dumps(document, indent=2)
-    if args.report:
-        args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(rendered + "\n", encoding="utf-8")
-    print(rendered)
-    return EXIT_OK
 
 
 def _manifest(args: argparse.Namespace) -> int:
@@ -133,8 +92,6 @@ def _stats() -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.command == "reset":
-        return _reset(args)
     if args.command == "manifest":
         return _manifest(args)
     if args.command == "transcripts":

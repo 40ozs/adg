@@ -28,6 +28,7 @@ import type {
   CollectionOperations,
   CollectionStatus,
   DecisionView,
+  DemoOverview,
   DevelopmentLogin,
   DirectGroupsResponse,
   DriftReportResponse,
@@ -151,6 +152,17 @@ export function fetchAuthConfig(options: RequestOptions = {}): Promise<ApiResult
  */
 export function fetchRuntime(options: RequestOptions = {}): Promise<ApiResult<RuntimeInfo>> {
   return apiRequest<RuntimeInfo>("/runtime", options);
+}
+
+/**
+ * Paths only a demo deployment serves. Asserted against `docs/contracts/v1/openapi.demo.json`
+ * rather than the production document, which deliberately does not carry them.
+ */
+export const DEMO_USED_PATHS = ["/api/v1/demo"] as const;
+
+/** The demo dataset, its scan generations, its scenarios and the mutation policy. */
+export function fetchDemoOverview(token: string): Promise<ApiResult<DemoOverview>> {
+  return apiRequest<DemoOverview>("/api/v1/demo", { token });
 }
 
 export function fetchPrincipal(token: string): Promise<ApiResult<Principal>> {

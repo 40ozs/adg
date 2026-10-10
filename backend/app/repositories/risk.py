@@ -133,16 +133,16 @@ MAX_EDGES: Final = 50_000
 """Membership edges loaded for one bundle."""
 
 MAX_MEMBERSHIP_DEPTH: Final = 8
-
-#: Keys per ``IN`` list when looking findings up by key. Far below PostgreSQL's limit of
-#: 65,535 bind parameters per statement, which a large estate's evaluation can exceed.
-KEY_CHUNK: Final = 5_000
 """Levels of group nesting expanded downward from the trustees on a bundle's lists.
 
 Deep enough that the nesting rule at its shipped threshold of three has a level of headroom
 to report a breach with, and bounded so that a pathological directory costs a fixed number of
 round trips.
 """
+
+#: Keys per ``IN`` list when looking findings up by key. Far below PostgreSQL's limit of
+#: 65,535 bind parameters per statement, which a large estate's evaluation can exceed.
+KEY_CHUNK: Final = 5_000
 
 
 # --------------------------------------------------------------------------------------

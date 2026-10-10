@@ -56,7 +56,13 @@ from app.demo.transcripts import (
     _tree_scope_key,
 )
 
-__all__ = ["GENERATIONS", "TRANSCRIPT_NAMESPACE", "Generation", "build_generations"]
+__all__ = [
+    "GENERATIONS",
+    "RISK_PASS_AT",
+    "TRANSCRIPT_NAMESPACE",
+    "Generation",
+    "build_generations",
+]
 
 #: Run and batch ids are UUID5s under this namespace.
 TRANSCRIPT_NAMESPACE: Final = uuid.uuid5(NAMESPACE, "adg-demo-transcripts")
@@ -68,6 +74,13 @@ BATCH_SIZE: Final = 1000
 COLLECTOR_HOST_AD: Final = "NM-DC01"
 
 
+#: When the operator's scheduled risk pass runs on a scan day: after the last NTFS run of a
+#: generation has closed (the latest closes at about 05:45 UTC). The reset and every
+#: synthetic scan date their findings here, so a finding's timestamps are part of the canon
+#: rather than of the moment somebody ran the reset.
+RISK_PASS_AT: Final = dt.time(6, 0)
+
+
 @dataclass(frozen=True, slots=True)
 class Generation:
     key: str
@@ -76,6 +89,11 @@ class Generation:
     title: str
     ntfs_failed: dict[str, DemoRunError]
     """Servers whose NTFS scan failed outright in this generation."""
+
+    @property
+    def evaluated_at(self) -> dt.datetime:
+        """The instant the risk pass after this generation is dated (:data:`RISK_PASS_AT`)."""
+        return dt.datetime.combine(self.day, RISK_PASS_AT, tzinfo=dt.UTC)
 
 
 GENERATIONS: Final[tuple[Generation, ...]] = (

@@ -100,6 +100,15 @@ describe("the demo environment indicator", () => {
     expect(screen.getByText("nullmeridian.info")).toBeInTheDocument();
   });
 
+  it("points to the demo guide, where the scenarios link into the real pages", () => {
+    render(<DemoEnvironmentIndicator runtime={demo} />);
+
+    expect(screen.getByRole("link", { name: "Explore the demo scenarios" })).toHaveAttribute(
+      "href",
+      "/demo",
+    );
+  });
+
   it("offers no control: nothing to click that could switch the data source", () => {
     render(<DemoEnvironmentIndicator runtime={demo} />);
 

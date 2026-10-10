@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { USED_PATHS } from "@/lib/api/adg";
+import { DEMO_USED_PATHS, USED_PATHS } from "@/lib/api/adg";
 
 interface Schema {
   type?: string;
@@ -39,6 +39,44 @@ const document = JSON.parse(
     "utf-8",
   ),
 ) as OpenApiDocument;
+
+/**
+ * The routes only a demo deployment serves, published beside the production document by
+ * `python -m app.contracts.openapi` and kept current by the same backend snapshot test.
+ */
+const demoDocument = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../../docs/contracts/v1/openapi.demo.json", import.meta.url)),
+    "utf-8",
+  ),
+) as OpenApiDocument;
+
+/** Field names the demo guide reads, by the demo document's schema they come from. */
+const EXPECTED_DEMO: Record<string, string[]> = {
+  DemoView: [
+    "runtime_mode",
+    "dataset",
+    "generations",
+    "baseline_generations",
+    "next_generation",
+    "scenarios",
+    "mutation_policy",
+  ],
+  DatasetView: [
+    "key",
+    "company_name",
+    "domain",
+    "snapshot_date",
+    "seed",
+    "synthetic",
+    "description",
+    "facts",
+  ],
+  GenerationView: ["index", "name", "description", "applied", "in_baseline"],
+  ScenarioView: ["key", "title", "summary", "resource", "subjects", "related_resources"],
+  ScenarioSubjectView: ["kind", "name", "sid"],
+  PolicyView: ["method", "path", "operation", "treatment", "reason"],
+};
 
 /** Field names this application reads, by the API schema they come from. */
 const EXPECTED: Record<string, string[]> = {
@@ -730,6 +768,37 @@ describe("the published contract", () => {
     const missing = USED_PATHS.filter((path) => !served.has(path));
 
     expect(missing).toEqual([]);
+  });
+});
+
+describe("the published demo contract", () => {
+  it("serves every demo path this application calls", () => {
+    const served = new Set(Object.keys(demoDocument.paths));
+    const missing = DEMO_USED_PATHS.filter((path) => !served.has(path));
+
+    expect(missing).toEqual([]);
+  });
+
+  it("is absent from the production document", () => {
+    const leaked = Object.keys(document.paths).filter((path) => path.startsWith("/api/v1/demo"));
+
+    expect(leaked).toEqual([]);
+  });
+});
+
+describe.each(Object.entries(EXPECTED_DEMO))("the demo %s schema", (name, fields) => {
+  it("declares every field the demo guide reads", () => {
+    const declared = Object.keys(demoDocument.components.schemas[name]?.properties ?? {});
+    const missing = fields.filter((field) => !declared.includes(field));
+
+    expect(missing, `${name} is missing: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("has no required field the demo guide ignores", () => {
+    const required = demoDocument.components.schemas[name]?.required ?? [];
+    const ignored = required.filter((field) => !fields.includes(field));
+
+    expect(ignored, `${name} requires fields lib/contracts.ts does not carry`).toEqual([]);
   });
 });
 

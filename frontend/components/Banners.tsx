@@ -69,6 +69,9 @@ export function DemoEnvironmentIndicator({
           history and risk rules. The organization, its people and its file servers are
           fictional.
         </p>
+        <p>
+          <Link href="/demo">Explore the demo scenarios</Link>
+        </p>
         {dataset && (
           <dl className="demo-indicator-facts">
             <dt>Organization</dt>

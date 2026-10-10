@@ -1,8 +1,9 @@
 r"""The contract between Demo Mode and the synthetic data it runs on.
 
-Demo Mode does not generate data. It runs ADG against data generated elsewhere -- by
-:mod:`app.demo` today, and by the Null Meridian generator being built beside it -- and this
-module is the whole of what it needs from such a generator. Everything a dataset owns stays
+Demo Mode does not generate data. It runs ADG against data generated elsewhere -- the
+canonical Null Meridian estate in :mod:`app.demo.null_meridian`, and the small reference
+estate in :mod:`app.demo` -- and this module is the whole of what it needs from such a
+generator. Everything a dataset owns stays
 with the dataset: its organization, its identifiers, its timestamps, its seed, its golden
 scenarios and its determinism. Demo Mode carries those values through ingestion untouched
 and never re-derives one.
@@ -19,9 +20,12 @@ A dataset is anything satisfying :class:`SyntheticDataset`:
     The dataset's scan history, oldest first, as :class:`ScanGeneration` values. Each is a
     tuple of :class:`app.demo.transcripts.DemoTranscript` -- the collector-protocol v1 runs
     the existing generator already produces, posted through ``POST /api/v1/scan-runs`` exactly
-    as a Windows collector would post them. Generation 0 is the baseline the reset installs;
-    later generations are what "Run synthetic scan" applies, one at a time, in order. A
-    dataset with one generation is valid: it simply has no further scans to offer.
+    as a Windows collector would post them. The reset installs the dataset's *baseline* --
+    its first :func:`baseline_generations` generations, applied one at a time, in order --
+    and "Run synthetic scan" applies whatever follows, one generation at a time. An operator
+    may also reset to an earlier point of the history (``reset --generations N``) and then
+    replay the rest through the scan. A dataset with one generation is valid: it simply has
+    no further scans to offer.
 
 ``probes()``
     :class:`CanonicalProbe` values: a handful of objects the dataset promises exist after
@@ -29,10 +33,24 @@ A dataset is anything satisfying :class:`SyntheticDataset`:
     against current state and fails if any is missing, so a regression anywhere between the
     generator and the tables is caught at the boundary rather than in a screenshot.
 
-Optionally, ``risk_configuration()`` returning an
-:class:`app.risk_engine.configuration.RiskConfiguration`: the sensitive resources and rule
-settings an operator of that estate would declare. A demo with no ``ADG_RISK_CONFIGURATION_PATH``
-uses it; a dataset without it gets the shipped defaults.
+Optional members, read with ``getattr`` so a dataset declares only what it has:
+
+``risk_configuration()``
+    An :class:`app.risk_engine.configuration.RiskConfiguration`: the sensitive resources and
+    rule settings an operator of that estate would declare. A demo with no
+    ``ADG_RISK_CONFIGURATION_PATH`` uses it; a dataset without it gets the shipped defaults.
+    Production never reads it.
+
+``baseline_generations``
+    How many leading generations make up the canonical state the reset installs (default
+    ``1``). A dataset whose canon is "what ADG had collected by the snapshot date" -- Null
+    Meridian's three scans -- names all of them.
+
+``scenarios()``
+    :class:`DemoScenario` values: the walkthroughs the dataset is built to show, each naming
+    the folder and the people or groups it is about by the dataset's own identifiers. Served
+    on ``GET /api/v1/demo`` so the UI can link into the real application's pages for them;
+    Demo Mode renders them and attaches no meaning to any of them.
 
 **generations() is called often** -- by the demo overview on every request -- so a dataset
 should build its transcripts once and return the same tuple thereafter.
@@ -47,9 +65,9 @@ ids would make every reset look like a new estate.
 :data:`DATASETS` names every dataset this build knows. An entry is a *loader path*, not an
 object, so registering a dataset costs nothing until it is selected and a dataset whose
 module is not present in this build reports itself as unavailable, with the reason, rather
-than failing to import at startup. That is how ``null-meridian-v1`` is registered while its
-generator is still being built on another branch: selecting it before that work merges is a
-clear startup refusal, not a silent substitution of some other estate.
+than failing to import at startup. Selecting a dataset whose generator is absent -- or
+whose generator fails to build -- is a clear refusal, never a silent substitution of some
+other estate.
 """
 
 from __future__ import annotations
@@ -72,10 +90,14 @@ __all__ = [
     "DatasetEntry",
     "DatasetUnavailable",
     "DemoDatasetMetadata",
+    "DemoScenario",
     "ProbeKind",
     "ScanGeneration",
+    "ScenarioSubject",
     "SyntheticDataset",
+    "baseline_generations",
     "cached_dataset",
+    "dataset_scenarios",
     "load_dataset",
 ]
 
@@ -115,10 +137,37 @@ class ScanGeneration:
     name: str
     description: str
     transcripts: tuple[DemoTranscript, ...]
+    evaluated_at: dt.datetime | None = None
+    """The instant the risk pass that follows this generation is dated, as the operator's
+    scheduled evaluation after that scan would have been. Set by a dataset whose canon fixes
+    it, so findings' timestamps belong to the dataset rather than to the moment somebody ran
+    the reset; ``None`` means the wall clock."""
 
     @property
     def run_ids(self) -> tuple[str, ...]:
         return tuple(transcript.run_id for transcript in self.transcripts)
+
+
+@dataclass(frozen=True, slots=True)
+class ScenarioSubject:
+    """A person or group a scenario is about, by the dataset's own identifiers."""
+
+    kind: Literal["person", "group"]
+    name: str
+    sid: str
+
+
+@dataclass(frozen=True, slots=True)
+class DemoScenario:
+    """One walkthrough the dataset is built to show. Display-only; see the module docstring."""
+
+    key: str
+    title: str
+    summary: str
+    resource: str
+    """The UNC path of the folder the scenario is about."""
+    subjects: tuple[ScenarioSubject, ...] = ()
+    related_resources: tuple[str, ...] = ()
 
 
 ProbeKind = Literal["principal", "membership", "share", "share_ace", "ntfs_resource", "ntfs_ace"]
@@ -155,6 +204,28 @@ class SyntheticDataset(Protocol):
     def probes(self) -> Sequence[CanonicalProbe]: ...
 
 
+def baseline_generations(dataset: SyntheticDataset) -> int:
+    """How many leading generations the dataset's canonical baseline is. See the module docs.
+
+    Raises:
+        DatasetUnavailable: the dataset declares a baseline it does not have.
+    """
+    count = getattr(dataset, "baseline_generations", 1)
+    available = len(dataset.generations())
+    if not isinstance(count, int) or isinstance(count, bool) or not 1 <= count <= available:
+        raise DatasetUnavailable(
+            f"Demo dataset {dataset.metadata.key!r} declares a baseline of {count!r} "
+            f"generations but defines {available}."
+        )
+    return count
+
+
+def dataset_scenarios(dataset: SyntheticDataset) -> tuple[DemoScenario, ...]:
+    """The dataset's optional :class:`DemoScenario` walkthroughs, or none."""
+    supplier = getattr(dataset, "scenarios", None)
+    return tuple(supplier()) if callable(supplier) else ()
+
+
 class DatasetUnavailable(LookupError):
     """The selected dataset is not registered, or its generator is not in this build."""
 
@@ -168,12 +239,14 @@ class DatasetEntry:
     """``module:callable``. The callable takes no arguments and returns a SyntheticDataset."""
     summary: str
     dependency: str | None = None
-    """Set while the generator lives outside this build: what has to merge first."""
+    """Set while a generator lives outside this build: what has to merge first."""
 
 
-#: The dataset the product's demo is meant to run on.
+#: The dataset the product's demo runs on, and the default of ``ADG_DEMO_DATASET``. One name:
+#: the registry key, the dataset's metadata key, its seed and the marker on a demo database
+#: all read ``null-meridian-v1``.
 CANONICAL_DATASET: Final = "null-meridian-v1"
-#: The estate that ships in :mod:`app.demo` today.
+#: The small estate in :mod:`app.demo`. Selectable explicitly; never a fallback.
 REFERENCE_DATASET: Final = "adg-reference-estate"
 
 DATASETS: Final[Mapping[str, DatasetEntry]] = {
@@ -182,13 +255,7 @@ DATASETS: Final[Mapping[str, DatasetEntry]] = {
         loader="app.demo.null_meridian:synthetic_dataset",
         summary=(
             "Null Meridian: a ten-year-old, 1,800-person fictional enterprise directory and "
-            "file estate. Generated by the Null Meridian synthetic-data implementation."
-        ),
-        dependency=(
-            "The Null Meridian generator (task ADG-DEMO-NULL-MERIDIAN-01, branch "
-            "claude/inspiring-volta-6uzdsy) must provide "
-            "app.demo.null_meridian.synthetic_dataset() satisfying "
-            "app.demo_mode.datasets.SyntheticDataset."
+            "file estate, scanned three times. Generated by app.demo.null_meridian."
         ),
     ),
     REFERENCE_DATASET: DatasetEntry(
@@ -226,8 +293,7 @@ def load_dataset(key: str) -> SyntheticDataset:
         detail = f" {entry.dependency}" if entry.dependency else ""
         raise DatasetUnavailable(
             f"Demo dataset {key!r} is registered but its generator ({module_name}) is not "
-            f"present in this build.{detail} Demo Mode will not substitute another dataset; "
-            f"set ADG_DEMO_DATASET={REFERENCE_DATASET} to run against the reference estate."
+            f"present in this build.{detail} Demo Mode will not substitute another dataset."
         ) from missing
     factory = getattr(module, attribute, None)
     if not callable(factory):

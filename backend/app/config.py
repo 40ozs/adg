@@ -545,13 +545,18 @@ class Settings(BaseSettings):
 
 
 def _dataset_risk_configuration(key: str) -> RiskConfiguration:
-    """The optional ``risk_configuration()`` a demo dataset supplies, or the defaults."""
-    from app.demo_mode.datasets import DatasetUnavailable, cached_dataset
+    """The optional ``risk_configuration()`` a demo dataset supplies, or the defaults.
 
-    try:
-        supplier = getattr(cached_dataset(key), "risk_configuration", None)
-    except DatasetUnavailable:
-        return DEFAULT_CONFIGURATION
+    A dataset that cannot load is an error here, not the shipped defaults: a demo whose
+    dataset is unavailable has refused to start and has no estate to evaluate, and a
+    configuration quietly swapped for another would make the risk report a different demo's.
+
+    Raises:
+        DatasetUnavailable: the selected dataset cannot be loaded.
+    """
+    from app.demo_mode.datasets import cached_dataset
+
+    supplier = getattr(cached_dataset(key), "risk_configuration", None)
     if not callable(supplier):
         return DEFAULT_CONFIGURATION
     configuration = supplier()

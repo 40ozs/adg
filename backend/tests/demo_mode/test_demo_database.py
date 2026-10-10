@@ -44,9 +44,11 @@ from app.demo_mode.ingest import NotADemoDeployment, apply_generation
 from app.demo_mode.lifecycle import (
     DemoLifecycleError,
     _migrate,
+    canonical_digests,
     canonical_fingerprint,
     demo_status,
     reset_demo,
+    run_synthetic_scan,
     verify_demo_startup,
 )
 from app.demo_mode.marker import DemoTargetRefused
@@ -380,19 +382,23 @@ class TestRefusals:
             await verify_demo_startup(settings, database)
 
     async def test_an_unavailable_dataset_is_refused_before_the_database_is_touched(
-        self, demo_database: str
+        self, demo_database: str, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        canonical = _settings(demo_database, dataset="")
-        try:
-            load_dataset(canonical.resolved_demo_dataset)
-        except DatasetUnavailable:
-            pass
-        else:  # pragma: no cover - once the generator merges this refusal no longer applies
-            pytest.skip("The canonical dataset is available in this build.")
+        """A selected dataset whose generator is absent: refused, nothing marked, and no other
+        estate -- the reference one included -- loaded in its place."""
+        monkeypatch.setitem(
+            datasets.DATASETS,
+            "absent-v1",
+            DatasetEntry("absent-v1", "app.demo.no_such_generator:synthetic_dataset", "fixture"),
+        )
+        absent = _settings(demo_database, dataset="absent-v1")
+        with pytest.raises(DatasetUnavailable):
+            load_dataset(absent.resolved_demo_dataset)
 
         with pytest.raises(DemoLifecycleError, match="not present in this build"):
-            await reset(canonical)
+            await reset(absent)
         assert scalar(demo_database, "SELECT count(*) FROM deployment_marker") == 0
+        assert scalar(demo_database, "SELECT count(*) FROM scan_runs") == 0
 
     async def test_the_synthetic_provider_refuses_production_settings(
         self, demo_database: str
@@ -456,7 +462,9 @@ class TestTheRealApplication:
 
         assert body["dataset"]["key"] == "adg-reference-estate"
         assert [(g["name"], g["applied"]) for g in body["generations"]] == [("baseline", True)]
+        assert body["baseline_generations"] == 1
         assert body["next_generation"] is None
+        assert body["scenarios"] == []
         treatments = {p["path"]: p["treatment"] for p in body["mutation_policy"]}
         assert treatments["/api/v1/scan-runs"] == "unavailable"
 
@@ -520,7 +528,7 @@ def two_generation_dataset(monkeypatch: pytest.MonkeyPatch) -> str:
     module.build = _TwoGenerations  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, module.__name__, module)
     monkeypatch.setitem(
-        datasets.DATASETS,  # type: ignore[arg-type]
+        datasets.DATASETS,
         "two-generation-fixture",
         DatasetEntry("two-generation-fixture", f"{module.__name__}:build", "fixture"),
     )
@@ -567,3 +575,48 @@ class TestSyntheticScan:
             await database.dispose()
 
         assert (await reset(settings)).fingerprint == baseline.fingerprint
+
+
+class TestResettingToAPointInHistory:
+    """``reset --generations N``: the dataset's own history, rewound, for ``scan`` to replay."""
+
+    async def test_a_reset_can_install_more_than_the_baseline(
+        self, demo_database: str, two_generation_dataset: str
+    ) -> None:
+        settings = _settings(demo_database, dataset=two_generation_dataset)
+        report = await reset_demo(settings, migrate=False, generations=2)
+
+        assert [item.name for item in report.applied] == ["baseline", "rescan"]
+        assert report.probes_checked and report.ok
+        status = await demo_status(settings)
+        assert [g.applied for g in status.generations] == [True, True]
+        assert status.baseline_applied
+
+    async def test_a_reset_refuses_a_generation_the_dataset_does_not_have(
+        self, demo_database: str, two_generation_dataset: str
+    ) -> None:
+        settings = _settings(demo_database, dataset=two_generation_dataset)
+        for wrong in (0, 3):
+            with pytest.raises(DemoLifecycleError, match="can apply 1 to 2"):
+                await reset_demo(settings, migrate=False, generations=wrong)
+        assert scalar(demo_database, "SELECT count(*) FROM deployment_marker") == 0
+
+    async def test_scanning_forward_equals_resetting_to_the_same_point(
+        self, demo_database: str, two_generation_dataset: str
+    ) -> None:
+        settings = _settings(demo_database, dataset=two_generation_dataset)
+        await reset_demo(settings, migrate=False, generations=1)
+        database = Database(settings)
+        try:
+            dataset = load_dataset(two_generation_dataset)
+            scanned = await run_synthetic_scan(settings, database, dataset)
+            async with database.engine.connect() as connection:
+                after_scan = await canonical_digests(connection)
+        finally:
+            await database.dispose()
+        direct = await reset_demo(settings, migrate=False, generations=2)
+
+        assert scanned.generation.name == "rescan"
+        assert {k: v for k, v in after_scan.items() if k != "risk_findings"} == {
+            k: v for k, v in direct.digests.items() if k != "risk_findings"
+        }

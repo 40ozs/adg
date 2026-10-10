@@ -13,7 +13,13 @@ from __future__ import annotations
 
 import json
 
-from app.contracts.openapi import SNAPSHOT_PATH, generate
+from app.contracts.openapi import (
+    DEMO_PATH_PREFIX,
+    DEMO_SNAPSHOT_PATH,
+    SNAPSHOT_PATH,
+    generate,
+    generate_demo,
+)
 
 
 def test_the_snapshot_is_current() -> None:
@@ -47,3 +53,21 @@ def test_it_carries_no_secret() -> None:
 
     assert "snapshot-generation-only" not in raw
     assert "dev_auth_secret" not in raw
+
+
+def test_the_demo_snapshot_is_current() -> None:
+    """``openapi.demo.json`` is what the frontend's demo guide is checked against."""
+    assert generate_demo() == json.loads(DEMO_SNAPSHOT_PATH.read_text(encoding="utf-8")), (
+        "docs/contracts/v1/openapi.demo.json is out of date. "
+        "Regenerate with: python -m app.contracts.openapi"
+    )
+
+
+def test_the_demo_routes_are_published_only_in_the_demo_snapshot() -> None:
+    production = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
+    demo = json.loads(DEMO_SNAPSHOT_PATH.read_text(encoding="utf-8"))
+
+    assert not [path for path in production["paths"] if path.startswith(DEMO_PATH_PREFIX)]
+    assert set(demo["paths"]) == {DEMO_PATH_PREFIX, f"{DEMO_PATH_PREFIX}/scans"}
+    assert "snapshot-generation-only" not in DEMO_SNAPSHOT_PATH.read_text(encoding="utf-8")
+    assert "snapshot:snapshot" not in DEMO_SNAPSHOT_PATH.read_text(encoding="utf-8")

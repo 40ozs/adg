@@ -3,20 +3,25 @@
     Reset a Demo Mode database to the canonical Null Meridian estate.
 
 .DESCRIPTION
-    Runs `python -m app.demo.null_meridian reset`: migrates the demo database, empties it,
-    posts the three Null Meridian scan generations through ADG's own ingestion endpoints
-    in-process, evaluates the risk rules, and prints a report whose fingerprint is identical
-    on every run.
+    Runs `python -m app.demo_mode reset`, the one Demo Mode reset: migrates the demo
+    database, checks it is positively a demo database (named with 'demo' as a word, and
+    either empty or carrying a deployment_marker row that says demo), empties it, posts the
+    three Null Meridian scan generations through ADG's own ingestion endpoints in-process,
+    evaluates the risk rules, checks the canonical objects, and prints a report whose
+    fingerprint is identical on every run.
 
-    Refuses to run unless ADG_RUNTIME_MODE=demo and ADG_DATABASE_URL names a database whose
-    name contains 'demo'. Contacts no directory, file server or collector: the estate is
-    synthetic. See docs\demo\null-meridian.md.
+    Contacts no directory, file server or collector: the estate is synthetic. See
+    docs\architecture\demo-mode.md and docs\demo\null-meridian.md.
 
 .PARAMETER DatabaseUrl
     The demo database. Defaults to the local development server's 'adg_demo' database.
 
 .PARAMETER Report
     Also write the reset report as JSON to this path.
+
+.PARAMETER Generations
+    Apply only the first N scan generations (an earlier point of the history), so that
+    `python -m app.demo_mode scan` can replay the rest. Default: the canonical baseline.
 
 .EXAMPLE
     .\scripts\demo-reset.ps1
@@ -25,7 +30,8 @@
 [CmdletBinding()]
 param(
     [string] $DatabaseUrl = 'postgresql+psycopg://adg:adg_dev_password@localhost:5432/adg_demo',
-    [string] $Report
+    [string] $Report,
+    [int] $Generations = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,8 +44,9 @@ if (-not (Test-Path $venvPython)) {
     throw "Backend virtual environment missing. Run .\scripts\bootstrap.ps1 first."
 }
 
-$arguments = @('-m', 'app.demo.null_meridian', 'reset')
+$arguments = @('-m', 'app.demo_mode', 'reset')
 if ($Report) { $arguments += @('--report', $Report) }
+if ($Generations -gt 0) { $arguments += @('--generations', $Generations) }
 
 $previousMode = $env:ADG_RUNTIME_MODE
 $previousUrl = $env:ADG_DATABASE_URL
