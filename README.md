@@ -93,6 +93,12 @@ seeds `.env` if it is missing. It never overwrites an existing `.env`.
 .\scripts\seed-demo.ps1 -Profile large                         # for measuring, not demonstrating
 .\scripts\seed-demo.ps1 -OutDir .\.tmp\demo                    # write the transcripts, post nothing
 
+# Demo Mode: the synthetic Null Meridian estate (1,800 people, 33 file servers, three scans).
+# Runs the real API, ingestion, history and risk engine; touches no AD, SMB or collector.
+# The API must run with ADG_RUNTIME_MODE=demo against a database named *demo*.
+# See docs\demo\null-meridian.md.
+.\scripts\demo-reset.ps1
+
 # Collectors
 .\scripts\collector-test.ps1                                   # Pester suites
 .\scripts\validate-collector-output.ps1 -Path .\out            # check a collector's JSON, offline

@@ -39,6 +39,7 @@ from app.remediation.errors import (
 logger = logging.getLogger("adg.api")
 
 REQUEST_ID_HEADER = "X-Request-ID"
+RUNTIME_MODE_HEADER = "X-ADG-Runtime-Mode"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -62,7 +63,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.database = Database(resolved)
         logger.info(
             "api.startup",
-            extra={"environment": resolved.environment, "version": __version__},
+            extra={
+                "environment": resolved.environment,
+                "runtime_mode": resolved.runtime_mode,
+                "version": __version__,
+            },
         )
         try:
             yield
@@ -88,7 +93,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_credentials=True,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["*"],
-            expose_headers=[REQUEST_ID_HEADER],
+            expose_headers=[REQUEST_ID_HEADER, RUNTIME_MODE_HEADER],
         )
 
     @app.middleware("http")
@@ -101,6 +106,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response = await call_next(request)
         duration_ms = round((time.perf_counter() - started) * 1000, 3)
         response.headers[REQUEST_ID_HEADER] = request_id
+        if resolved.is_demo:
+            # So a screenshot, a proxy log or a curious client can tell synthetic data from
+            # collected data without asking. Fixed at startup, like the mode itself.
+            response.headers[RUNTIME_MODE_HEADER] = "demo"
         logger.info(
             "http.request",
             extra={

@@ -31,6 +31,7 @@ into the tables.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from typing import Final
 
@@ -62,9 +63,11 @@ __all__ = [
     "DemoServer",
     "DemoShare",
     "DemoShareAce",
+    "DirectorySpec",
     "Feature",
     "Profile",
     "build_estate",
+    "materialize_directories",
 ]
 
 # ---------------------------------------------------------------------------
@@ -944,15 +947,21 @@ def _split_unc(path: str) -> tuple[str, str]:
 
 
 def _directories(shape: Profile) -> tuple[DemoDirectory, ...]:
+    return materialize_directories(_directory_specs(shape))
+
+
+def materialize_directories(specs: Iterable[DirectorySpec]) -> tuple[DemoDirectory, ...]:
     """Materialize the specs: inherit, hash, and decide each boundary.
 
     The derivation runs the server's own functions, so this cannot encode a different idea
-    of what a child inherits than the one the product enforces.
+    of what a child inherits than the one the product enforces. A parent must precede its
+    children in ``specs``. Shared with :mod:`app.demo.null_meridian`, so both demo estates
+    derive their inherited entries in exactly one place.
     """
     built: dict[str, DemoDirectory] = {}
     output: list[DemoDirectory] = []
 
-    for spec in _directory_specs(shape):
+    for spec in specs:
         if spec.unreadable:
             continue
 

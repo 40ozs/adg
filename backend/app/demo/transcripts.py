@@ -93,12 +93,12 @@ class DemoTranscript:
         }
 
 
-def _run_id(name: str) -> str:
-    return str(uuid.uuid5(DEMO_NAMESPACE, f"run:{name}"))
+def _run_id(name: str, namespace: uuid.UUID = DEMO_NAMESPACE) -> str:
+    return str(uuid.uuid5(namespace, f"run:{name}"))
 
 
-def _batch_id(name: str, sequence: int) -> str:
-    return str(uuid.uuid5(DEMO_NAMESPACE, f"batch:{name}:{sequence}"))
+def _batch_id(name: str, sequence: int, namespace: uuid.UUID = DEMO_NAMESPACE) -> str:
+    return str(uuid.uuid5(namespace, f"batch:{name}:{sequence}"))
 
 
 def _at(base: dt.datetime, seconds: int) -> dt.datetime:
@@ -130,7 +130,9 @@ def _dump(model: Any) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _principal_observation(principal: Any, run_id: str, observed_at: dt.datetime) -> dict[str, Any]:
+def _principal_observation(
+    principal: Any, run_id: str, observed_at: dt.datetime, domain_sid: str = DOMAIN_SID
+) -> dict[str, Any]:
     return _dump(
         PrincipalObservation(
             run_id=run_id,
@@ -140,7 +142,7 @@ def _principal_observation(principal: Any, run_id: str, observed_at: dt.datetime
             ),
             sid=principal.sid,
             principal_kind=principal.principal_kind,
-            domain_sid=(DOMAIN_SID if principal.sid.startswith(f"{DOMAIN_SID}-") else None),
+            domain_sid=(domain_sid if principal.sid.startswith(f"{domain_sid}-") else None),
             host_key=principal.host_key,
             display_name=principal.display_name,
             sam_account_name=principal.sam_account_name,
@@ -172,7 +174,9 @@ def _membership_observation(edge: Any, run_id: str, observed_at: dt.datetime) ->
     )
 
 
-def _server_observation(server: Any, run_id: str, observed_at: dt.datetime) -> dict[str, Any]:
+def _server_observation(
+    server: Any, run_id: str, observed_at: dt.datetime, domain_sid: str = DOMAIN_SID
+) -> dict[str, Any]:
     return _dump(
         ServerObservation(
             run_id=run_id,
@@ -180,7 +184,7 @@ def _server_observation(server: Any, run_id: str, observed_at: dt.datetime) -> d
             source_key=keys.server_key(server.name),
             name=server.name,
             dns_host_name=server.dns_host_name,
-            domain_sid=DOMAIN_SID,
+            domain_sid=domain_sid,
             is_domain_member=server.is_domain_member,
             operating_system=server.operating_system,
         )
@@ -304,6 +308,7 @@ def _assemble(
     status: str,
     errors: tuple[DemoRunError, ...] = (),
     batch_size: int = BATCH_SIZE,
+    namespace: uuid.UUID = DEMO_NAMESPACE,
 ) -> DemoTranscript:
     """One run, as start + batches + completion.
 
@@ -311,7 +316,7 @@ def _assemble(
     a reconciled scope, so a run that hit errors must never claim one: that is what would
     let a later phase read "nobody reported it" as "it was deleted".
     """
-    run_id = _run_id(name)
+    run_id = _run_id(name, namespace)
     source = {
         "collector": collector,
         "collector_host": collector_host,
@@ -340,7 +345,7 @@ def _assemble(
             {
                 "schema_version": SCHEMA_VERSION,
                 "run_id": run_id,
-                "batch_id": _batch_id(name, sequence),
+                "batch_id": _batch_id(name, sequence, namespace),
                 "sequence": sequence,
                 "is_final": sequence == len(chunks),
                 "observations": chunk,

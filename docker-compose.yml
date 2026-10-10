@@ -32,6 +32,7 @@ services:
       dockerfile: docker/Dockerfile.backend
     environment:
       ADG_ENVIRONMENT: ${ADG_ENVIRONMENT:-development}
+      ADG_RUNTIME_MODE: ${ADG_RUNTIME_MODE:-standard}
       ADG_LOG_LEVEL: ${ADG_LOG_LEVEL:-INFO}
       ADG_LOG_FORMAT: ${ADG_LOG_FORMAT:-json}
       ADG_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-adg}:${POSTGRES_PASSWORD:-adg_dev_password}@db:5432/${POSTGRES_DB:-adg}

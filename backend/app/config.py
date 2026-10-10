@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url as sa_make_url
 
 from app.alerts.configuration import DEFAULT_POLICY, AlertPolicy, load_policy
 from app.auth.dev_users import DEFAULT_DEV_AUTH_USERS, DevelopmentUser, parse_development_users
@@ -31,6 +32,15 @@ LogFormat = Literal["json", "text"]
 RemediationExecutionMode = Literal["disabled", "lab"]
 
 AuthMode = Literal["oidc", "development"]
+
+#: Whether this deployment serves real collected data or the synthetic Null Meridian estate.
+#: There is no API that changes it: a deployment is one or the other from startup to exit.
+RuntimeMode = Literal["standard", "demo"]
+
+#: A demo deployment's database name must contain this. It is the second, independent
+#: half of the boundary: setting ADG_RUNTIME_MODE=demo by mistake on a production host
+#: still cannot point the demo reset at a database that was not created for it.
+DEMO_DATABASE_MARKER = "demo"
 
 # Development-only default. Production deployments must supply ADG_DATABASE_URL;
 # `Settings` refuses to start in production while this value is still in place.
@@ -65,6 +75,15 @@ class Settings(BaseSettings):
 
     app_name: str = "ADG"
     environment: Environment = "development"
+
+    runtime_mode: RuntimeMode = "standard"
+    """``demo`` serves the synthetic Null Meridian estate (docs/demo/null-meridian.md).
+
+    Read once, at startup, from ``ADG_RUNTIME_MODE``. A demo deployment refuses every
+    setting that would let it receive or reach real data: a production environment, a
+    collector key, a database whose name does not say ``demo``, a remediation executor, and
+    an alert policy that could deliver anywhere but the log. Nothing in the API can switch a
+    running process between the two modes."""
     log_level: str = "INFO"
     log_format: LogFormat = "json"
 
@@ -228,7 +247,15 @@ class Settings(BaseSettings):
         restart the API to have the next report use it.
         """
         path = self.risk_configuration_path.strip()
-        return load_configuration(path) if path else DEFAULT_CONFIGURATION
+        if path:
+            return load_configuration(path)
+        if self.is_demo:
+            # The demo declares its own sensitive folders, as an operator would; without
+            # them the sensitive-resource rule would run and report nothing.
+            from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
+
+            return DEMO_RISK_CONFIGURATION
+        return DEFAULT_CONFIGURATION
 
     @property
     def alert_policy(self) -> AlertPolicy:
@@ -249,6 +276,15 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def is_demo(self) -> bool:
+        return self.runtime_mode == "demo"
+
+    @property
+    def database_name(self) -> str:
+        """The database the URL names, without credentials."""
+        return sa_make_url(self.database_url).database or ""
 
     @property
     def is_development_auth(self) -> bool:
@@ -304,6 +340,47 @@ class Settings(BaseSettings):
                 "ADG_DATABASE_URL is still the development default while "
                 "ADG_ENVIRONMENT=production. Set ADG_DATABASE_URL to the production "
                 "connection string before starting the API."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _confine_demo_mode(self) -> Settings:
+        """Demo Mode is a sealed room: synthetic data in, nothing real in or out.
+
+        Each refusal closes one way real data could reach a demo, or demo behavior reach
+        real data. Stated as startup errors rather than runtime checks, so a misconfigured
+        demo never begins rather than beginning and being careful.
+        """
+        if not self.is_demo:
+            return self
+        problems: list[str] = []
+        if self.is_production:
+            problems.append(
+                "ADG_ENVIRONMENT=production: a demo is not production, and a production "
+                "deployment must never be one environment variable away from a demo reset."
+            )
+        if DEMO_DATABASE_MARKER not in self.database_name.casefold():
+            problems.append(
+                f"the database {self.database_name!r} does not contain "
+                f"{DEMO_DATABASE_MARKER!r} in its name. The demo reset empties the database "
+                "it is pointed at, so it is only ever pointed at one created for the demo, "
+                "for example 'adg_demo'."
+            )
+        if self.collector_api_keys.strip():
+            problems.append(
+                "ADG_COLLECTOR_API_KEYS is set. A demo receives no collector: its estate is "
+                "synthetic and is loaded by `python -m app.demo.null_meridian reset`."
+            )
+        if self.remediation_execution_mode != "disabled":
+            problems.append("ADG_REMEDIATION_EXECUTION_MODE must be 'disabled' in a demo.")
+        if self.alert_policy_path.strip():
+            problems.append(
+                "ADG_ALERT_POLICY_PATH is set. A demo uses the shipped policy, whose only "
+                "sink is the log, so no demo alert can be delivered anywhere."
+            )
+        if problems:
+            raise ValueError(
+                "ADG_RUNTIME_MODE=demo refuses this configuration: " + " ".join(problems)
             )
         return self
 
