@@ -28,7 +28,10 @@ def test_factory_avoids_the_proactor_loop_on_windows() -> None:
     loop = event_loop_factory()
     try:
         assert isinstance(loop, asyncio.SelectorEventLoop)
-        assert not isinstance(loop, asyncio.ProactorEventLoop)
+        # Repeated here, not just in skipif, so a type checker narrows on it: the class
+        # exists only in the Windows build of asyncio.
+        if sys.platform == "win32":
+            assert not isinstance(loop, asyncio.ProactorEventLoop)
     finally:
         loop.close()
 

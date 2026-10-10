@@ -389,7 +389,7 @@ class ChangeRepository:
         with no version at all at that instant is a gap in observation and is counted
         separately by the caller. Filtering here would merge the two.
         """
-        statement = select(*VERSION_COLUMNS).where(
+        statement: Select[Any] = select(*VERSION_COLUMNS).where(
             object_versions.c.valid_from <= moment,
             or_(object_versions.c.valid_to.is_(None), object_versions.c.valid_to > moment),
         )
