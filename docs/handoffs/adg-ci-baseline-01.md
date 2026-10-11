@@ -4,7 +4,8 @@
 **Starting SHA (`origin/main`):** `cc13ad27e11e538c849d4e0a53f2358e36454392`
 **Branch:** `claude/dazzling-keller-x3tvdx` (the session's designated branch, created from
 `origin/main` at the SHA above; it plays the role the brief named `fix/ADG-CI-BASELINE-01`)
-**Code-fix SHA:** `e54e590` (the three code commits); this report is the commit on top of it.
+**Code-fix SHA:** `e54e590` (the three original code commits) plus the SMB exporter fix of §4a,
+found by PR CI ([40ozs/adg#1](https://github.com/40ozs/adg/pull/1)) and committed after this report.
 **Previous handoff:** [p0-current-state-correctness.md](p0-current-state-correctness.md)
 
 Baseline maintenance only. No Demo Mode / Null Meridian file is touched, and neither the
@@ -231,6 +232,32 @@ it and `tests/db/conftest.py` already handle the same fixture — and restored w
 
 ---
 
+## 4a. Found by PR CI — the SMB collector contract tests on Linux
+
+PR CI on `0091add` (both runs) passed lint, format and mypy, then failed **Unit tests**:
+`5642 passed, 12 skipped, 22 errors`, all in `tests/contracts/test_smb_collector.py` —
+`The SMB collector fixture export failed (exit 1)` / `The required module 'CimCmdlets' is not
+loaded`.
+
+Missed locally because this environment had no `pwsh` on `PATH`, so those tests were skipped
+(124 skipped here against CI's 12); `ubuntu-latest` ships PowerShell. With `pwsh` on `PATH`,
+**unmodified `main` (`cc13ad2`) reproduces exactly the same 22 errors** — another latent
+failure behind the mypy step, there since Phase 2A.
+
+**Cause.** The test skips only when `pwsh` is absent. The exporter it runs,
+`collector/powershell/smb/tests/Export-AdgSmbFixturePayload.ps1`, imports
+`AdgSmbCollector.psd1`, whose `RequiredModules` (`CimCmdlets`, `SmbShare`) exist only on
+Windows, so the import fails off Windows before any fixture code runs. The NTFS and AD
+exporters have no such manifest requirement and already pass on Linux.
+
+**Fix (test scaffolding only; the exporter's sole caller is that pytest module).** Off Windows
+the exporter imports `AdgSmbCollector.psm1` directly — it replaces every acquisition function
+that would call the Windows cmdlets anyway; on Windows it still loads the manifest, unchanged.
+`tests/contracts/test_smb_collector.py`: 22 errors → **23 passed**. The collector module and
+manifest themselves are untouched.
+
+---
+
 ## 5. mypy — before
 
 `python -m mypy app tests` (CI's command), mypy 2.4.0, SQLAlchemy 2.1.4, `main` @ cc13ad2:
@@ -267,12 +294,13 @@ All on the committed tree (`e54e590`), with CI's commands, from `backend/`.
 | DB, SQLAlchemy **2.0.54** | same, `sqlalchemy<2.1` | **1152 passed, 0 failed, 0 skipped, 1 xfailed** (20m30s) |
 | Hermetic, 2.1.4 | `python -m pytest -q -m "not smoke"` | **5552 passed, 124 skipped** (73.5s) |
 | Hermetic, 2.0.54 | same | **5552 passed, 124 skipped** |
+| Hermetic, 2.1.4, **`pwsh` on `PATH`** (as on `ubuntu-latest`) | same | **5664 passed, 12 skipped, 0 errors** (with §4a; `main`: 5639 passed, 12 skipped, 22 errors) |
 | Lint | `ruff check .` | **All checks passed** |
 | Format | `ruff format --check .` | **367 files already formatted** |
 | mypy (2.1.4 — CI) | `mypy app tests` | **Success: no issues found in 366 source files** |
 | Frontend | `npm install && npm run lint && typecheck && test && build` (Node 22) | **pass** — 31 files / 1126 tests, build OK (no frontend file changed) |
 | Compose | `docker compose config -q` | **pass** |
-| Collector | `scripts/collector-test.ps1` | not reproducible here — see §9 (no collector file changed) |
+| Collector | `scripts/collector-test.ps1` | not reproducible here (§10.2); **green on `windows-latest` in PR CI** |
 
 Baselines on `main` for comparison: hermetic **5549 passed, 124 skipped**; DB **81 failed,
 1063 passed, 1 xfailed**. 1152 = 1063 + the 81 now fixed + the 8 new regression tests. The
@@ -293,12 +321,13 @@ a documented known defect (`docs/architecture/effective-access-limits.md`).
 | `backend/app/runtime.py` | platform guard spelled `sys.platform == "win32"` |
 | `backend/tests/test_runtime.py` | assertion under the same platform check |
 | `backend/tests/benchmarks/test_access_benchmark_harness.py` | restore the configured database URL for the end-to-end test |
+| `collector/powershell/smb/tests/Export-AdgSmbFixturePayload.ps1` | import the module root off Windows (§4a) |
 | `backend/tests/db/test_distinct_on_queries.py` | **new** — 8 regression tests |
 | `backend/tests/test_sql_compat.py` | **new** — 3 helper tests |
 | `docs/handoffs/adg-ci-baseline-01.md` | this report |
 
-Commits: `ef00818` (DISTINCT ON + tests), `f6fef9b` (mypy), `e54e590` (benchmark URL), then
-this report.
+Commits: `ef00818` (DISTINCT ON + tests), `f6fef9b` (mypy), `e54e590` (benchmark URL),
+`0091add` (this report), then the SMB exporter fix and this update.
 
 ---
 
@@ -327,12 +356,13 @@ this report.
    is kept typed on purpose so a change to that API is caught; 2.0 *runtime* behaviour is
    fully tested. Raising the floor to `sqlalchemy>=2.1` would remove both the helper and this
    note — a dependency decision left to the owner.
-2. **Collector (Pester) suite not reproduced faithfully.** CI runs it on `windows-latest`.
+2. **Collector (Pester) suite not reproduced faithfully here** — it passed on `windows-latest`
+   in PR CI (both runs on `0091add`). CI runs it on `windows-latest`.
    Here, PowerShell 7.4.6 with Pester 6.2.0 (from NuGet; PSGallery is blocked by the
    environment proxy) on Linux: 572 passed, 105 failed, 88 skipped. Every failure class is a
    Windows-only API — `CimCmdlets` not loadable, `WindowsPrincipal` "not supported on this
-   platform". No collector file is changed; on `main` the Windows job passed (run
-   35009148121).
+   platform". The only collector-tree change is the §4a test exporter, whose Windows path is
+   unchanged; on `main` the Windows job passed (run 35009148121).
 3. **Unpinned CI dependencies.** This failure arrived with a new upstream release, not a
    commit. The next breaking release can redden `main` the same way. A constraints/lock file
    for CI is the durable fix — out of scope here.
@@ -350,6 +380,6 @@ this report.
 
 ## Next step
 
-Push this branch and open a PR to `main` (not done here — not authorized); once CI is green,
-merge, then refresh `claude/adg-demo-null-meridian-integration-5biwm0` onto the new `main`
-and re-run its gates.
+PR [40ozs/adg#1](https://github.com/40ozs/adg/pull/1) is open against `main`. Once all four CI
+jobs are green, merge it (not done here), then refresh
+`claude/adg-demo-null-meridian-integration-5biwm0` onto the new `main` and re-run its gates.
