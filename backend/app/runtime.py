@@ -45,5 +45,7 @@ def install_selector_event_loop_policy() -> None:
     Safe to call more than once, and safe to call before a loop exists; it must be called
     before the loop that will talk to PostgreSQL is created.
     """
-    if WINDOWS:
+    # Spelled out rather than ``WINDOWS`` so a type checker narrows on it: the policy class
+    # exists only in the Windows build of asyncio, and typeshed declares it that way.
+    if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
