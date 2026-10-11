@@ -8,7 +8,11 @@ session was assigned; it plays the role the brief calls `integration/ADG-DEMO-NU
 Demo Mode `claude/vibrant-gates-rhovf1` @ `28e574320a8ef1e2c657df66d2f4570392f36f95`;
 Null Meridian `claude/inspiring-volta-6uzdsy` @ `4512524b71f453d15a1f40be48578c1509bf6828`
 (two commits: the estate, and `bc82bb3` the `RiskFindingRepository.by_keys` chunking fix).
-**Ending SHA:** the commit carrying this file (`git log -1 -- docs/handoffs/adg-demo-integration-01.md`).
+**Ending SHA:** `32fcce98bd58f74375491764d57350350e893826` for §1–§11 (the original integration).
+**Refreshed:** 2026-10-11 onto repaired `main` @ `e6dfb02` — see
+[§12](#12-refresh-onto-repaired-main-adg-demo-refresh-01). §1–§11 are kept unchanged as the
+historical record of the integration; where §12 supersedes them (CI, mypy, SQLAlchemy 2.1,
+the verdict), §12 says so.
 **Previous handoffs:** [demo-mode-01.md](demo-mode-01.md) ·
 [adg-demo-null-meridian-01.md](adg-demo-null-meridian-01.md)
 **Design:** [docs/architecture/demo-mode.md](../architecture/demo-mode.md) ·
@@ -477,3 +481,215 @@ fingerprint — consolidated into `app.demo_mode`).
 **Docs** — `docs/architecture/demo-mode.md` (added, reconciled); `docs/contracts/v1/openapi.demo.json` (added, reconciled); `docs/contracts/v1/openapi.json` (modified); `docs/decisions/0039-demo-is-a-deployment-boundary.md` (added, reconciled); `docs/decisions/README.md` (modified); `docs/demo/evidence/reset-1.json` (added, reconciled); `docs/demo/evidence/reset-2.json` (added, reconciled); `docs/demo/null-meridian.canon.json` (added); `docs/demo/null-meridian.manifest.json` (added); `docs/demo/null-meridian.md` (added, reconciled); `docs/handoffs/adg-demo-integration-01-access-path.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-guide.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-indicator.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-risks.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01-simulation.png` (added, reconciled); `docs/handoffs/adg-demo-integration-01.md` (added, reconciled); `docs/handoffs/adg-demo-null-meridian-01.md` (added, reconciled); `docs/handoffs/demo-mode-01-indicator.png` (added); `docs/handoffs/demo-mode-01.md` (added, reconciled).
 
 **Deployment and scripts** — `.env.example` (modified, reconciled); `README.md` (modified, reconciled); `docker-compose.demo.yml` (added, reconciled); `docker-compose.yml` (modified, reconciled); `scripts/demo-reset.ps1` (added, reconciled).
+
+---
+
+## 12. Refresh onto repaired `main` (ADG-DEMO-REFRESH-01)
+
+**Date:** 2026-10-11. A refresh and re-validation, not a redesign: no Demo Mode or Null
+Meridian code changed.
+
+### 12.1 Refs
+
+| Ref | Expected | Resolved at start | |
+| --- | --- | --- | --- |
+| `origin/main` | `e6dfb02` (PR #1, the CI baseline remediation) | `e6dfb021368db4cc2786ebb718e82c6c49557f30` | ✓ |
+| `origin/claude/adg-demo-null-meridian-integration-5biwm0` | `32fcce9` | `32fcce98bd58f74375491764d57350350e893826` | ✓ |
+| Demo Mode source `claude/vibrant-gates-rhovf1` | `28e5743` | `28e574320a8ef1e2c657df66d2f4570392f36f95` (unchanged) | ✓ |
+| Null Meridian source `claude/inspiring-volta-6uzdsy` | `4512524` | `4512524b71f453d15a1f40be48578c1509bf6828` (unchanged) | ✓ |
+
+Checkpoint before the merge: local integration branch created from the remote at `32fcce9`,
+working tree clean, local == remote.
+
+### 12.2 The merge
+
+```text
+main @ cc13ad2 ── … integration (§2) … ── 32fcce9 ─┐
+main @ cc13ad2 ── ef00818 … 14e756c ── e6dfb02 ────┴─ 40e3071  merge repaired main (no conflicts)
+```
+
+`40e3071` is a normal `--no-ff` merge of `origin/main` into the integration branch (parents
+`32fcce9`, `e6dfb02`); no rebase, squash, cherry-pick or force-push. **No conflicts**: the two
+sides share no changed file (main's 11 files are disjoint from the integration's 82). The merge
+is a pure union — `git diff 32fcce9 40e3071` is exactly main's 11 files (+866/−34), and
+`git diff e6dfb02 40e3071` is exactly the integration's 82 files (+24,598/−45). **No refresh
+fixes were needed**: no application or test file changed after the merge; the only later commit
+is this documentation.
+
+### 12.3 CI-baseline fixes inherited
+
+| Fix (PR #1) | Present after the refresh |
+| --- | --- |
+| SQLAlchemy 2.1 `DISTINCT ON` | `app/sql_compat.py::distinct_on` (identical to `main`); used at the four repaired sites — `app/changes/repository.py` (2), `app/repositories/operations.py`, `app/ingestion/service.py`. A repository search finds no `.distinct(<expression>)` anywhere in `backend/` (the only other `distinct` is `func.distinct` inside `count`, an aggregate). Neither demo package issues `DISTINCT ON`. |
+| mypy errors | `app/runtime.py`, `tests/test_runtime.py`, `app/changes/repository.py` as on `main` |
+| Benchmark DB URL | `tests/benchmarks/test_access_benchmark_harness.py` as on `main` |
+| SMB fixture exporter | `collector/smb/tests/Export-AdgSmbFixturePayload.ps1` as on `main` |
+
+### 12.4 Architecture re-confirmed (unchanged)
+
+* `ADG_RUNTIME_MODE`: unset → production, `production`, `demo` (case/space forgiven); `standard`,
+  empty and anything else → startup error (exercised; also refused inside the built image).
+  No route, header or UI control can switch it (`/runtime` is `GET` only; browser check:
+  the indicator holds no control).
+* Default dataset `null-meridian-v1` (`CANONICAL_DATASET`; `Settings.resolved_demo_dataset`
+  with `ADG_DEMO_DATASET` unset), loaded through `app.demo.null_meridian:synthetic_dataset`, the
+  thin adapter of §3.2. `app/demo/null_meridian/reset.py` remains deleted; no fallback to the
+  reference estate.
+* One CLI: `python -m app.demo_mode reset | status | scan | verify`.
+* `deployment_marker` (migration 0017) the only database authority; no `COMMENT ON DATABASE`
+  in `app/`. Re-checked by hand through the CLI on scratch databases: production mode →
+  refused; demo mode with database `adg` or `adgdemo` → startup refusal; a migrated, populated
+  `adg_demo_*` copy with its marker row deleted → refused, 300 scan runs untouched; the same
+  copy marked `production` → refused, untouched.
+* Demo risk configuration only through the dataset (`redundant_access_paths.minimum_paths` 4);
+  `RiskFindingRepository.by_keys` chunking (`KEY_CHUNK` 5,000) and `TestLookupByKeyAtScale`
+  (70,000 absent keys) present and passing. `AlertRepository.by_keys` untouched (follow-up).
+* The only subprocess in the demo packages is `lifecycle.py`'s `alembic upgrade heads`.
+
+### 12.5 Tests
+
+Environment: Linux container, Python 3.13.16, PostgreSQL 16 (local, CI's user/password/db),
+Node 22.22. Python venvs: `pip install -e ".[dev]"` as CI resolves it today (**SQLAlchemy
+2.1.4**, FastAPI 0.143, pytest 9.1.1, mypy 2.4.0, ruff 0.17.0); the same with SQLAlchemy
+**2.0.54** pinned in the venv only; and a **runtime-only** venv (`pip install .`, no `[dev]`).
+
+| Suite | Before the refresh (§6, at `32fcce9`) | After the refresh (`40e3071`) |
+| --- | --- | --- |
+| `ruff check .` / `ruff format --check .` | clean / clean | **clean / clean** (398 files) |
+| `mypy app tests` (SQLAlchemy 2.1.4, CI's target) | 3 errors (pre-existing on `main`) | **0 errors** (397 files) |
+| `mypy app tests` (SQLAlchemy 2.0.54 stubs) | 2 errors | 2 errors, both `app/sql_compat.py:45` (`Select.ext` is 2.1-only) — inherited unchanged from `main`, documented there (adg-ci-baseline-01 §limitations 1); CI type-checks 2.1 |
+| Hermetic backend, SQLAlchemy 2.1.4 (`-m "not smoke"`) | 5,762 passed, 124 skipped | **5,765 passed, 124 skipped, 0 failed** (101 s) — +3 = main's `tests/test_sql_compat.py` |
+| Hermetic backend, SQLAlchemy 2.0.54 | 5,761 passed, 124 skipped | **5,765 passed, 124 skipped, 0 failed** (97 s) |
+| DB backend, SQLAlchemy 2.1.4 (`-m smoke`) | 1,126 passed, **80 failed**, 1 xfailed | **1,214 passed, 0 failed, 0 skipped, 1 xfailed** (1,566.5 s = 26 min 07 s); no `DISTINCT ON`/`SADeprecationWarning` anywhere in the log. +88 = the 80 repaired + main's 8 `tests/db/test_distinct_on_queries.py` |
+| DB backend, SQLAlchemy 2.0.54 (`-m smoke`) | 1,206 passed, 1 xfailed | **1,214 passed, 0 failed, 0 skipped, 1 xfailed** (1,630.2 s = 27 min 10 s) |
+| Demo Mode focused — `tests/demo_mode` hermetic | 94 passed | **94 passed** |
+| Demo Mode focused — `tests/demo_mode/test_demo_database.py` (2.1.4) | 27 passed | **27 passed** (65 s) |
+| Null Meridian focused — `test_null_meridian_{canon,estate}.py`, `test_demo_mode.py` | 111 passed | **111 passed** |
+| Null Meridian focused — `tests/db/test_null_meridian_demo.py` (2.1.4) | 34 passed | **34 passed** (5 min 27 s) |
+| Risk chunking — `tests/db/test_risk_findings.py` / `::TestLookupByKeyAtScale` (2.1.4) | 23 / passed | **23 passed / passed** (70,000-key regression) |
+| `tests/db/test_distinct_on_queries.py` (2.1.4) | — (new on `main`) | **8 passed** |
+| Contracts — `tests/contracts` (incl. both OpenAPI snapshots) | — | **611 passed, 109 skipped** (108 need `pwsh`, 1 schema without examples — as on `main`); `test_the_demo_snapshot_is_current` and `test_the_demo_routes_are_published_only_in_the_demo_snapshot` pass |
+| Frontend `eslint .` / `tsc --noEmit` | clean / clean | **clean / clean** |
+| Frontend `vitest run` | 1,163 passed (33 files) | **1,163 passed (33 files)** |
+| Frontend `next build` | success | **success** (`/demo` built) |
+| `docker compose config -q` (base; base + demo) | OK / OK | **OK / OK** |
+| Backend image build | not run (no daemon) | **built** (see §12.8) |
+| Browser (headless Chromium, Playwright 1.56.1) | 22/22 | **22/22** (§12.7) |
+
+Scenarios A–H run through the real API in `TestTheGoldenScenariosThroughTheApi` (DB) and
+generator-side in `TestGoldenScenarios` (hermetic). Temporal semantics:
+`TestCurrentStateSemantics` (a reconciled scan tombstones what it no longer saw; a failed scan
+removes nothing; a partial scan removes nothing even what is really gone),
+`TestTemporalSemantics` (partial and failed runs tombstone nothing; a repeated partial scan
+does not erase valid state), `TestTheHistoryReplaysThroughTheSyntheticScan` and
+`TestResettingToAPointInHistory` (reset g1 → scan g2 → scan g3 equals the full reset).
+`object_versions` is inside the canonical fingerprint, whose value is unchanged (§12.6). Canon:
+the committed manifest and canon JSON are untouched by the refresh and asserted by
+`test_null_meridian_canon.py`; reset counts — 1,800 enabled users, 33 servers, 124 shares
+(91 + 33 admin), 606 share ACEs, 826 current folders (824 + the 2 the partial g3 scan keeps),
+4,117 current NTFS entries (4,111 + those 2 folders'), 300 runs, 41,756 observations — equal
+§4.
+
+`frontend/`, `backend/app/demo*`, the compose files and `database/` are byte-identical to
+`32fcce9`, which is why the frontend, contract and demo-package results are unchanged.
+
+### 12.6 Determinism
+
+Two clean canonical resets of the refreshed tree, each `python -m app.demo_mode --json reset
+--report …` in the **runtime-only venv** (no `httpx`, pytest, mypy or ruff), against a
+dropped-and-recreated, empty, unmarked `adg_demo`:
+
+| | Reset 1 | Reset 2 |
+| --- | --- | --- |
+| Initialized (marker written) | yes | yes |
+| Generations | g1 g2 g3 (baseline 3, canonical) | same |
+| Runs (succeeded / partial / failed) | 300 (297 / 1 / 2), 41,756 observations | same |
+| Probes | 23 / 23 | 23 / 23 |
+| Risk pass (2026-10-01T06:00Z) | 9,666 matched, 9,386 open, complete | same |
+| **Canonical fingerprint** | `228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0` | **identical** |
+| Per-source digests (12) | all equal to the committed `docs/demo/evidence/reset-1.json` | all equal to reset 1 |
+| Counts | equal to §5 (2,139 / 6,224 / 33 / 124 / 606 / 826 / 4,117; 14,316 versions; 300 runs; 70 open tombstones) | same |
+| **Null Meridian data fingerprint** (the `4512524` algorithm, run from a scratch copy) | `db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0` — 10/10 table digests equal NM's committed `reset-1.json` | **identical** |
+| Duration (whole / ingestion) | 94.8 s / 67.3 s | 76.1 s / 48.7 s |
+
+Both fingerprints equal the pre-refresh values (§5) exactly: the repaired baseline changed
+neither the loaded dataset nor any runtime/metadata state the fingerprint covers. That is as
+expected: `DISTINCT ON` only *selects* rows (newest run per scope, prior versions), and
+the helper renders the same SQL on 2.1 as `distinct(*expr)` did on 2.0. The reports were not
+re-committed: the committed `docs/demo/evidence/reset-{1,2}.json` already carry the same
+fingerprint and digests (only timings differ).
+
+After reset 2: `verify` → ok, 23 probes, fingerprint `228b9dce…f9efd0`; `status` →
+`runtime_mode: demo`, dataset `null-meridian-v1`, marker `demo` / `null-meridian-v1` /
+`null-meridian-v1` by `python -m app.demo_mode reset`, `baseline_applied: true`, same
+fingerprint; `scan` → refused (every generation applied; points at `reset --generations 1`).
+
+### 12.7 Browser validation
+
+The refreshed API (`python -m app` from the runtime-only venv, `ADG_RUNTIME_MODE=demo`, on the
+reset `adg_demo`) and the production Next build (`next start`), headless Chromium: **22/22
+checks, no page error** — signed-out pill *Demo environment · Synthetic enterprise data · Null
+Meridian*; explanation (no production AD/file servers, the application is real, no control,
+all 11 manifest facts, `/demo` link); footer; development sign-in; `/demo` scenarios A–H from
+the API, three generations applied, every scenario's folder linked to the directory page and
+subjects to principal/explanation pages; scenario F's explanation (both paths to
+`Finance\Reports\Revenue`); scenario B's ACL on the directory page; a principal page; the risk
+page's full pass (3 / 8 / 1957 / 423 / 6995 = 9,386 open); scenario H through the real
+simulation editor (*"This proposal changes nobody's access."*, partial answer disclosed —
+§9.3); web-tier `POST /api/adg/api/v1/scan-runs` → 405; API `POST /api/v1/scan-runs` as
+administrator → `403 demo_only`; `/runtime` demo/synthetic/`null-meridian-v1` with no
+connection detail; `X-ADG-Runtime-Mode: demo`. The UI is byte-identical to `32fcce9`, so the
+§8 screenshots remain representative and were not re-committed.
+
+### 12.8 Compose, image and runtime-only dependencies
+
+`docker compose config -q` passes for the base file and for base + `docker-compose.demo.yml`.
+The rendered demo configuration uses only `adg_demo_pgdata` (no `adg_pgdata`), database
+`adg_demo`, `ADG_RUNTIME_MODE=demo`, `ADG_DEMO_DATASET=null-meridian-v1`,
+`ADG_REMEDIATION_EXECUTION_MODE=disabled`, empty `ADG_COLLECTOR_API_KEYS`,
+`ADG_REMEDIATION_SIGNING_KEY`, alert-policy and lab-fixture paths, and a one-shot
+`demo-reset` running `python -m app.demo_mode`.
+
+A Docker daemon was available this time. The backend image was **built** from
+`git archive HEAD` with `docker/Dockerfile.backend` plus two sandbox-only lines installing the
+container's TLS-proxy CA for `pip` (the unmodified file cannot reach PyPI through this sandbox's
+proxy; the repository's Dockerfile was not changed). In the image, with `--network none`:
+`httpx`, `pytest`, `mypy`, `ruff` absent; SQLAlchemy 2.1.4; `import app.main`,
+`app.demo_mode` and the Null Meridian adapter succeed; `python -m app.demo_mode --help` runs;
+`ADG_RUNTIME_MODE=standard` is refused. Nothing was run from the image beyond those checks and
+nothing was deployed. The runtime-only venv ran both resets, `verify`, `status` and the API
+for the browser checks (§12.6–12.7).
+
+### 12.9 Collector
+
+No collector file changed in the refresh beyond main's SMB exporter fix, which arrives
+unchanged. `pwsh` is not installed here (108 contract tests skip, as on `main`); the
+authoritative check is the PR's `windows-latest` Pester job, which was green on `main`'s PR #1.
+
+### 12.10 Limitations after the refresh
+
+§9.1 (SQLAlchemy 2.1 drift) and §9.2 (CI red on mypy) are **resolved** by the inherited
+baseline: 0 DB failures and 0 mypy errors under what CI installs. Remaining:
+
+1. **Scenario H's simulation is bounded** (§9.3, unchanged): ~520 principals reach the target,
+   above the 500-principal simulation cap, so the preview is honestly partial with zero
+   changes among the pairs evaluated. A product limit, not a refresh regression.
+2. **`AlertRepository.by_keys`** unchunked (§9.4) — follow-up.
+3. **Public sign-in posture undecided** (§9.5).
+4. **Time** (§9.6): a Null Meridian reset takes 76–95 s here; the full DB suite 26 min.
+5. **mypy against SQLAlchemy 2.0 stubs** reports 2 errors in `app/sql_compat.py` — inherited
+   from `main` by design (CI type-checks 2.1); the 2.0.54 DB and hermetic suites pass.
+6. **Docker stack not run end to end**: image built and import-checked offline; `compose up`
+   was not run (not required; nothing deployed).
+7. **Collector Pester** not run locally (no `pwsh`); left to CI.
+
+### 12.11 Recommendation
+
+**READY_FOR_ADG_DEMO_PR_WITH_LIMITATIONS.** The integration is refreshed onto the repaired
+`main` by a conflict-free merge, carries every CI-baseline fix unchanged, and passes every gate
+against the now-green baseline — 0 failures in the hermetic and DB suites under SQLAlchemy 2.1.4
+and 2.0.54, 0 mypy errors, clean lint and format, frontend green, 22/22 in the browser — while
+reproducing the integrated and Null Meridian fingerprints exactly. The limitations above are
+pre-existing product limits or local-environment gaps, not refresh regressions. Merge into
+`main` with a merge commit (as §10) once a PR is authorized and its CI, including Windows
+Pester, is green.
