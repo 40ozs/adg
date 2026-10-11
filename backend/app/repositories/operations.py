@@ -41,6 +41,7 @@ from app.models.schema import (
     scan_run_scopes,
     scan_runs,
 )
+from app.sql_compat import distinct_on
 
 __all__ = ["OperationsRepository"]
 
@@ -114,7 +115,7 @@ class OperationsRepository:
             statement = statement.where(
                 scan_runs.c.status.in_([status.value for status in statuses])
             )
-        statement = statement.distinct(collector_sources.c.collector, target).order_by(
+        statement = distinct_on(statement, collector_sources.c.collector, target).order_by(
             collector_sources.c.collector,
             target,
             scan_runs.c.started_at.desc(),

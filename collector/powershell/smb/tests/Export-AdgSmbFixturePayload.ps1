@@ -38,7 +38,11 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'AdgSmbCollector.psd1') -Force
+# The manifest requires CimCmdlets and SmbShare, which exist only on Windows. This script
+# replaces every function that would call them, so off Windows it imports the module root
+# directly and skips that check; on Windows the manifest is still what is loaded.
+$moduleFile = if ($IsWindows) { 'AdgSmbCollector.psd1' } else { 'AdgSmbCollector.psm1' }
+Import-Module (Join-Path $moduleRoot $moduleFile) -Force
 $module = Get-Module AdgSmbCollector
 
 # Redefine the acquisition layer inside the module's own session state, so the

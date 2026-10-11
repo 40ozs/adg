@@ -33,6 +33,10 @@ from tests.support.access_estate import SHARE_UNC, SUBJECT
 # Read at import time: the autouse environment-isolation fixture clears ADG_* before each
 # test, matching tests/test_database_smoke.py.
 SMOKE_ENABLED = os.getenv("ADG_RUN_SMOKE_TESTS") == "1"
+#: For the same reason: :func:`bench_database_url` derives the benchmark database from the
+#: configured one, and once the fixture has cleared ``ADG_DATABASE_URL`` that is the built-in
+#: development URL, whose credentials are not the ones CI's PostgreSQL was started with.
+DATABASE_URL = os.getenv("ADG_DATABASE_URL")
 
 #: Only the end-to-end class needs PostgreSQL; everything else here is pure.
 needs_database = pytest.mark.skipif(
@@ -162,7 +166,12 @@ class TestItStillRunsEndToEnd:
     estate through the ingestion API, then ask each of the three questions.
     """
 
-    async def test_measure_builds_an_estate_and_times_every_shape(self) -> None:
+    async def test_measure_builds_an_estate_and_times_every_shape(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        if DATABASE_URL:
+            monkeypatch.setenv("ADG_DATABASE_URL", DATABASE_URL)
+
         results = await measure(sizes=[5], repeat=1)
 
         assert {item.shape for item in results} == set(SHAPES)
