@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { clearAccessCertificateCache } from "../../cloudflare/access";
-import { StagingConfigurationError, containerEnvironment } from "../../cloudflare/environment";
-import { type RoutingDependencies, isApiPath, routeRequest } from "../../cloudflare/routing";
+import { StagingConfigurationError, apiUpstream } from "../../cloudflare/environment";
+import { type RoutingDependencies, forwardToApi, isApiPath, routeRequest } from "../../cloudflare/routing";
 import { AccessSigner } from "./signer";
 
 const TEAM = "https://adg-staging.cloudflareaccess.com";
@@ -102,7 +102,7 @@ describe("routeRequest", () => {
     expect(seen.api).toHaveLength(0);
   });
 
-  it("routes API paths to the Container and everything else to Next.js", async () => {
+  it("routes API paths to the API and everything else to Next.js", async () => {
     const { seen, dependencies } = harness();
     expect(await (await routeRequest(request("/runtime"), dependencies)).text()).toBe("api");
     expect(await (await routeRequest(request("/demo"), dependencies)).text()).toBe("web");
@@ -128,22 +128,22 @@ describe("routeRequest", () => {
   it("answers a misconfigured deployment with a named 503, never a value", async () => {
     const { seen, dependencies } = harness({
       api: async () => {
-        containerEnvironment({ ADG_RUNTIME_MODE: "production", ADG_DATABASE_URL: "postgresql+psycopg://u:hunter2@h/adg" });
+        apiUpstream({ ADG_API_ORIGIN: "https://adg.onrender.com", ADG_ORIGIN_KEY: "hunter2" });
         return new Response("unreachable");
       },
     });
     const response = await routeRequest(request("/runtime"), dependencies);
     const body = await response.text();
     expect(response.status).toBe(503);
-    expect(body).toContain("ADG_RUNTIME_MODE");
+    expect(body).toContain("ADG_ORIGIN_KEY");
     expect(body).not.toContain("hunter2");
     expect(JSON.stringify(seen.logs)).not.toContain("hunter2");
   });
 
-  it("answers 502 when the Container does not respond", async () => {
+  it("answers 502 when the API does not respond", async () => {
     const { seen, dependencies } = harness({
       api: async () => {
-        throw new Error("container exited");
+        throw new Error("connection refused");
       },
     });
     expect((await routeRequest(request("/runtime"), dependencies)).status).toBe(502);
@@ -151,6 +151,67 @@ describe("routeRequest", () => {
   });
 
   it("is the StagingConfigurationError that names the 503", () => {
-    expect(() => containerEnvironment({})).toThrow(StagingConfigurationError);
+    expect(() => apiUpstream({})).toThrow(StagingConfigurationError);
+  });
+});
+
+describe("forwardToApi", () => {
+  const UPSTREAM = { origin: "https://adg-demo-api.onrender.com", key: "o".repeat(40) };
+  const demo = (body = "{}", status = 200) =>
+    new Response(body, { status, headers: { "X-ADG-Runtime-Mode": "demo" } });
+
+  function capture(answer: () => Response = () => demo()) {
+    const sent: Request[] = [];
+    return { sent, fetcher: async (r: Request) => (sent.push(r), answer()) };
+  }
+
+  it("sends the path and query to the API origin with the origin key", async () => {
+    const { sent, fetcher } = capture();
+    await forwardToApi(new Request(`${ORIGIN}/api/v1/demo?x=1&y=2`), UPSTREAM, fetcher);
+    expect(sent[0].url).toBe("https://adg-demo-api.onrender.com/api/v1/demo?x=1&y=2");
+    expect(sent[0].headers.get("X-ADG-Origin-Key")).toBe(UPSTREAM.key);
+  });
+
+  it("forwards method, body and authorization, and nothing meant for Cloudflare or the web tier", async () => {
+    const { sent, fetcher } = capture();
+    await forwardToApi(
+      new Request(`${ORIGIN}/api/v1/scan-runs`, {
+        method: "POST",
+        body: '{"x":1}',
+        headers: {
+          Authorization: "Bearer api-token",
+          Cookie: "CF_Authorization=access-jwt; adg_session=s",
+          "CF-Access-Client-Id": "id",
+          "CF-Access-Client-Secret": "service-secret",
+          "X-ADG-Origin-Key": "a-caller-guess",
+        },
+      }),
+      UPSTREAM,
+      fetcher,
+    );
+    expect(sent[0].method).toBe("POST");
+    expect(await sent[0].text()).toBe('{"x":1}');
+    expect(sent[0].headers.get("Authorization")).toBe("Bearer api-token");
+    expect(sent[0].headers.get("Cookie")).toBeNull();
+    expect(sent[0].headers.get("CF-Access-Client-Id")).toBeNull();
+    expect(sent[0].headers.get("CF-Access-Client-Secret")).toBeNull();
+    expect(sent[0].headers.get("X-ADG-Origin-Key")).toBe(UPSTREAM.key);
+  });
+
+  it("relays a demo answer, refusals included, unchanged", async () => {
+    const { fetcher } = capture(() => demo('{"status":"demo_only"}', 403));
+    const response = await forwardToApi(new Request(`${ORIGIN}/api/v1/scan-runs`), UPSTREAM, fetcher);
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe('{"status":"demo_only"}');
+  });
+
+  it.each([
+    ["a production API", () => new Response("{}", { headers: { "X-ADG-Runtime-Mode": "production" } })],
+    ["an unmarked answer (a host's own page, the origin gate's refusal)", () => new Response("<html>waking up</html>")],
+  ])("refuses to relay %s", async (_label, answer) => {
+    const { fetcher } = capture(answer);
+    await expect(forwardToApi(new Request(`${ORIGIN}/runtime`), UPSTREAM, fetcher)).rejects.toThrow(
+      /without X-ADG-Runtime-Mode: demo/,
+    );
   });
 });

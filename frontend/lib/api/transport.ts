@@ -2,11 +2,11 @@
  * How a server-side request reaches the ADG API.
  *
  * Everywhere ADG runs today — a workstation, the Docker stack — that is the network:
- * `fetch` to `ADG_INTERNAL_API_URL`. One host has no network path between the web tier and
- * the API: the Cloudflare Worker that serves this application next to the API's Container
- * (`cloudflare/worker.ts`, `docs/deployment/cloudflare-demo.md`). There the Container is
- * reached through a Durable Object binding, so the Worker installs a transport here before
- * it serves its first request.
+ * `fetch` to `ADG_INTERNAL_API_URL`. One host adds a hop: the Cloudflare staging Worker
+ * (`cloudflare/worker.ts`, `docs/deployment/cloudflare-demo.md`) sends API calls to the API's
+ * Render origin with the key that origin requires, so neither the address nor the key is ever
+ * part of this application's configuration. The Worker installs a transport here before it
+ * serves its first request.
  *
  * A host installs a transport; nobody using the application can. It is keyed by a
  * registered symbol on `globalThis`, which only code running in the same isolate can set,

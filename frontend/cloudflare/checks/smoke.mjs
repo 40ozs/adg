@@ -8,7 +8,8 @@
  *
  * Access credentials: an Access service token (CF_ACCESS_CLIENT_ID/SECRET), which Access
  * exchanges for an assertion at the edge — or, for the local rehearsal only, an assertion
- * itself (ACCESS_JWT). Writes nothing but development sign-ins: every request is a read, a
+ * itself (ACCESS_JWT). With API_ORIGIN (the Render origin) set, it also checks that the API
+ * refuses anyone who reaches it directly, around Access. Writes nothing but development sign-ins: every request is a read, a
  * write the demo must refuse, or a sign-in. Prints one line per check and a JSON summary;
  * exits non-zero on any failure. Never prints a credential.
  */
@@ -35,7 +36,7 @@ function accessHeaders() {
 
 const ACCESS = accessHeaders();
 /** Fragments of a connection string; no answer may contain one. */
-const FORBIDDEN = ["postgresql+psycopg", "postgresql://", "postgres://", "adg_demo", ":5432", "neon.tech", "sslmode"];
+const FORBIDDEN = ["postgresql+psycopg", "postgresql://", "postgres://", "adg_demo", ":5432", "supabase", "sslmode", "onrender.com"];
 /**
  * Optional, comma-separated values the operator knows must never appear (the database host,
  * say). Reported as "a canary", never by value.
@@ -105,6 +106,26 @@ await check("unauthenticated API request is refused", async () => {
   return `HTTP ${response.status}`;
 });
 
+const API_ORIGIN = (process.env.API_ORIGIN ?? "").replace(/\/+$/, "");
+if (API_ORIGIN) {
+  await check("the API origin refuses a request that did not come through the Worker", async () => {
+    for (const path of ["/runtime", "/health/ready", "/auth/config"]) {
+      const response = await fetch(`${API_ORIGIN}${path}`, { method: "GET", redirect: "manual" });
+      const text = await response.text();
+      expect(response.status === 403 && !text.includes("runtime_mode"), `${path}: HTTP ${response.status}`);
+    }
+    const signIn = await fetch(`${API_ORIGIN}/auth/dev/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "admin" }),
+    });
+    expect(signIn.status === 403, `sign-in: HTTP ${signIn.status}`);
+    const live = await fetch(`${API_ORIGIN}/health/live`);
+    expect(live.status === 200, `/health/live: HTTP ${live.status}`);
+    return "403 without the origin key; only /health/live open";
+  });
+}
+
 await check("homepage loads with the Demo indicator before sign-in", async () => {
   const { response, text, ms } = await request("/");
   expect(response.status === 200, `HTTP ${response.status}`);
@@ -116,7 +137,7 @@ await check("homepage loads with the Demo indicator before sign-in", async () =>
 });
 
 // After a page render on purpose: Next.js (OpenNext) replaces the isolate's Request class on
-// its first request, which once broke the Container's own request handling (docs §12).
+// its first request, which once broke API requests made after it (handoff §10).
 await check("/runtime reports demo / synthetic / null-meridian-v1 and discloses nothing", async () => {
   const { response, text, ms } = await request("/runtime");
   expect(response.status === 200, `HTTP ${response.status}`);
