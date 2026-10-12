@@ -61,7 +61,7 @@ Next.js application unmodified. The deployment adds infrastructure only:
 | `frontend/render/gate.ts` | The front gate and process supervisor on Render (§5). |
 | `docker/Dockerfile.render` | One image: the Next.js standalone build, the API as `Dockerfile.backend` installs it, Node for the gate. |
 | `backend/app/origin_gate.py` | The previous API-only gate (`python -m app.origin_gate`), kept for the rollback service `adg-demo-api` (§10). |
-| `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `null_meridian_fingerprint.py`: hosted checks (§6). |
+| `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `navigation.mjs`, `null_meridian_fingerprint.py`: hosted checks (§6). |
 | `.github/workflows/cloudflare-staging.yml` | Preflight → gates → (bootstrap) → Render deploy → static files + Worker deploy → hosted checks. |
 
 ## 2. Routing
@@ -124,7 +124,7 @@ Next.js receives only `ADG_WEB_URL`, `NEXT_PUBLIC_ADG_API_URL` (= `ADG_WEB_URL`)
 
 Service settings: plan **free**, region Oregon (next to the Supabase project's `us-west-2`),
 runtime Docker, Dockerfile `./docker/Dockerfile.render`, context `.`, no start command (the
-image's `node gate.ts`), health check `/health/live`, branch `deploy/ADG-FREE-EDGE-SSR-03`,
+image's `node gate.ts`), health check `/health/live`, branch `deploy/ADG-FREE-STAGING-01`,
 auto-deploy off (the workflow deploys a given commit). Render passes the commit to the build as
 `RENDER_GIT_COMMIT`, which becomes the Next.js build ID.
 
@@ -190,7 +190,7 @@ A password that has ever been pasted into a chat, ticket or log is treated as ex
 
 ### Deploy
 
-**Actions → Free staging (ADG demo) → Run workflow**, or push to `deploy/ADG-FREE-EDGE-SSR-03`:
+**Actions → Free staging (ADG demo) → Run workflow**, or push to `deploy/ADG-FREE-STAGING-01`:
 
 1. **preflight**: every name in §4's GitHub list present; URLs https; the key ≥ 32 characters;
    the database named for the demo; a bootstrap only with the typed confirmation
@@ -202,7 +202,7 @@ A password that has ever been pasted into a chat, ticket or log is treated as ex
    `Dockerfile.render`), waited on until live.
 5. **deploy**: `docker build --target web` of the same commit, its `.next/static` →
    `npm run cf:assets`, then `wrangler deploy --secrets-file … --var ADG_RENDER_ORIGIN:…`.
-6. **checks**: read-only `verify` + logical fingerprint, then `smoke.mjs` and `browser.mjs`
+6. **checks**: read-only `verify` + logical fingerprint, then `smoke.mjs`, `browser.mjs` and `navigation.mjs`
    against the public URL.
 
 The same deploy from a workstation (wrangler logged in to the account; Docker running):
@@ -266,7 +266,13 @@ value is dataset drift until proven otherwise.
 STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev \
 RENDER_ORIGIN=https://adg-demo-web.onrender.com node frontend/cloudflare/checks/smoke.mjs
 STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/browser.mjs
+STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/navigation.mjs
 ```
+
+`navigation.mjs` (ADG-UI-UPDATE-01) signs in as `viewer` and walks Servers, Users and Groups,
+name and SID search, sorting, a principal's relationship views with Identity information
+folded, shortest-chain links with Back and Forward, a deep link and the old `?key=` address,
+failing on any full document reload.
 
 Both act as an anonymous visitor, then as the public `planner` account; `PUBLIC_ACCOUNTS`
 (default `viewer,planner`) is the account list they require development sign-in to offer, and

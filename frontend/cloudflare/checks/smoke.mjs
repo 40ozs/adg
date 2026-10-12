@@ -307,7 +307,19 @@ await check("scenario A share loads (directory page)", () =>
   page(`/resources/directory?${q({ key: scenario("A").resource })}`, ["sg-share-design-write"]));
 await check("representative principal loads (scenario F person)", () => {
   const person = scenario("F").subjects.find((s) => s.kind === "person");
-  return page(`/identities/principal?${q({ key: person.sid })}`, [person.name]);
+  return page(`/identities/principal/${encodeURIComponent(person.sid)}`, [person.name]);
+});
+await check("the old principal address redirects to the key's path", async () => {
+  const person = scenario("F").subjects.find((s) => s.kind === "person");
+  const { response } = await request(`/identities/principal?${q({ key: person.sid, tab: "shares" })}`);
+  const location = response.headers.get("location") ?? "";
+  expect([307, 308].includes(response.status), `HTTP ${response.status}`);
+  expect(location.endsWith(`/identities/principal/${person.sid}/shares`), `Location ${location}`);
+});
+await check("users and groups directories load, searched on the server", async () => {
+  const person = scenario("F").subjects.find((s) => s.kind === "person");
+  await page(`/identities/users?${q({ q: person.sid })}`, [person.name, "Users"]);
+  return page(`/identities/groups?${q({ q: "sg-share-design" })}`, ["sg-share-design-write", "Groups"]);
 });
 await check("scenario F access explanation loads", () => {
   const person = scenario("F").subjects.find((s) => s.kind === "person");

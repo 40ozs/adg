@@ -10,7 +10,7 @@
 #
 # Triggers:
 #   * workflow_dispatch: deploy (default), optionally bootstrapping the demo database first.
-#   * push to deploy/ADG-FREE-EDGE-SSR-03: deploy + checks of exactly that commit. Never a
+#   * push to deploy/ADG-FREE-STAGING-01: deploy + checks of exactly that commit. Never a
 #     bootstrap (a database reset is always a deliberate, typed request).
 #
 # Everything account-specific lives in the `cloudflare-staging` GitHub environment, never in
@@ -35,7 +35,7 @@ on:
         type: string
         default: ""
   push:
-    branches: ["deploy/ADG-FREE-EDGE-SSR-03"]
+    branches: ["deploy/ADG-FREE-STAGING-01"]
 
 permissions:
   contents: read
@@ -286,6 +286,7 @@ jobs:
           npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
           npx playwright install --with-deps chromium
           node frontend/cloudflare/checks/browser.mjs | tee browser.log
+          node frontend/cloudflare/checks/navigation.mjs | tee navigation.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -295,4 +296,5 @@ jobs:
             nm-fingerprint.json
             smoke.log
             browser.log
+            navigation.log
             screenshots/
