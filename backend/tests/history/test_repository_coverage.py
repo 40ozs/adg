@@ -35,6 +35,9 @@ CURRENT_STATE_ONLY_MEMBERSHIP = frozenset(
         "direct_members",  # likewise
         # "has anything ever described this SID" — not a question about an instant.
         "is_known",
+        # The users and groups directory: a paged live listing and its count.
+        "count_principals",
+        "list_principals",
         # Identifier-to-principal lookup at the API boundary, before any instant is known.
         "resolve",
     }
