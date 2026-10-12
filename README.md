@@ -39,6 +39,31 @@ scripts/          Windows developer commands (PowerShell 7).
   windows-test-tree/  Builds real NTFS trees to validate and benchmark the collector against.
 ```
 
+## Demo Mode
+
+The same application can run as a **demo deployment** on **Null Meridian**, a deterministic
+synthetic company (1,800 people, 205 groups, 33 file servers, three scans), with no Windows
+host, collector, domain, SMB server or PowerShell anywhere in it:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+```
+
+or, against a local PostgreSQL with a dedicated `adg_demo` database:
+
+```bash
+export ADG_RUNTIME_MODE=demo \
+       ADG_DATABASE_URL=postgresql+psycopg://adg:adg_dev_password@localhost:5432/adg_demo
+python -m app.demo_mode reset      # migrate, mark, wipe, ingest 3 scans, evaluate, validate
+python -m app.demo_mode verify     # re-check the canonical objects; changes nothing
+python -m app                      # the API, in demo mode
+```
+
+The mode is deployment configuration (`ADG_RUNTIME_MODE=production|demo`), never a switch in
+the UI. Demo Mode is the runtime and safety boundary
+([`docs/architecture/demo-mode.md`](docs/architecture/demo-mode.md)); Null Meridian is the
+dataset it runs on ([`docs/demo/null-meridian.md`](docs/demo/null-meridian.md)).
+
 Two documents are the place to start:
 [`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) to get it running, and
 [`docs/architecture/mvp-capabilities.md`](docs/architecture/mvp-capabilities.md) for what it
@@ -92,6 +117,12 @@ seeds `.env` if it is missing. It never overwrites an existing `.env`.
 .\scripts\seed-demo.ps1
 .\scripts\seed-demo.ps1 -Profile large                         # for measuring, not demonstrating
 .\scripts\seed-demo.ps1 -OutDir .\.tmp\demo                    # write the transcripts, post nothing
+
+# Demo Mode: the synthetic Null Meridian estate (1,800 people, 33 file servers, three scans).
+# Runs `python -m app.demo_mode reset`: the real API, ingestion, history and risk engine;
+# touches no AD, SMB or collector. The API must run with ADG_RUNTIME_MODE=demo against a
+# database named with 'demo' as a word. See docs\architecture\demo-mode.md.
+.\scripts\demo-reset.ps1
 
 # Collectors
 .\scripts\collector-test.ps1                                   # Pester suites

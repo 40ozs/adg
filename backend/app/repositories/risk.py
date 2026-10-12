@@ -140,6 +140,10 @@ to report a breach with, and bounded so that a pathological directory costs a fi
 round trips.
 """
 
+#: Keys per ``IN`` list when looking findings up by key. Far below PostgreSQL's limit of
+#: 65,535 bind parameters per statement, which a large estate's evaluation can exceed.
+KEY_CHUNK: Final = 5_000
+
 
 # --------------------------------------------------------------------------------------
 # Loading facts
@@ -815,14 +819,23 @@ class RiskFindingRepository:
         return None if row is None else _stored(row)
 
     async def by_keys(self, keys: Sequence[str]) -> dict[str, StoredFinding]:
-        if not keys:
-            return {}
-        rows = (
-            await self._session.execute(
-                sa.select(risk_findings).where(risk_findings.c.finding_key.in_(sorted(set(keys))))
-            )
-        ).all()
-        return {row.finding_key: _stored(row) for row in rows}
+        """The stored findings for ``keys``, in bounded statements.
+
+        Chunked because a full evaluation of a large estate can match more findings than
+        PostgreSQL accepts bind parameters in one statement (65,535); one ``IN`` list per
+        key would then fail the whole evaluation rather than merely run slowly.
+        """
+        found: dict[str, StoredFinding] = {}
+        ordered = sorted(set(keys))
+        for start in range(0, len(ordered), KEY_CHUNK):
+            chunk = ordered[start : start + KEY_CHUNK]
+            rows = (
+                await self._session.execute(
+                    sa.select(risk_findings).where(risk_findings.c.finding_key.in_(chunk))
+                )
+            ).all()
+            found.update((row.finding_key, _stored(row)) for row in rows)
+        return found
 
     async def open_findings(
         self, *, rules: Sequence[RuleId] | None = None

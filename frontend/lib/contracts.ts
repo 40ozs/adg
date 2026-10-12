@@ -48,6 +48,79 @@ export interface AuthConfig {
   roles: RoleDescription[];
 }
 
+/** A demo deployment's synthetic dataset: the fiction's public name card (`GET /runtime`). */
+export interface DemoDataset {
+  key: string;
+  company_name: string;
+  domain: string;
+  snapshot_date: string;
+  seed: string;
+  synthetic: boolean;
+  description: string;
+  facts: Record<string, string>;
+}
+
+/**
+ * What this deployment is connected to. Fixed by deployment configuration
+ * (`ADG_RUNTIME_MODE`); nothing in the UI or the API can change it.
+ */
+export interface RuntimeInfo {
+  runtime_mode: "production" | "demo";
+  data_source: "collectors" | "synthetic";
+  synthetic: boolean;
+  dataset: DemoDataset | null;
+  notice: string | null;
+}
+
+/** One step of the demo dataset's scan history (`GET /api/v1/demo`). */
+export interface DemoGeneration {
+  index: number;
+  name: string;
+  description: string;
+  applied: boolean;
+  in_baseline: boolean;
+}
+
+/** A person or group a demo scenario is about, by the dataset's own SID. */
+export interface DemoScenarioSubject {
+  kind: "person" | "group";
+  name: string;
+  sid: string;
+}
+
+/**
+ * A walkthrough the demo dataset is built to show — Null Meridian's golden scenarios A–H.
+ * Display-only: the UI links each one into the real application's pages.
+ */
+export interface DemoScenario {
+  key: string;
+  title: string;
+  summary: string;
+  resource: string;
+  subjects: DemoScenarioSubject[];
+  related_resources: string[];
+}
+
+/** What one mutating route does on a demo deployment. */
+export interface DemoPolicyEntry {
+  method: string;
+  path: string;
+  operation: string;
+  treatment: "supported" | "simulated" | "unavailable";
+  reason: string;
+}
+
+/** `GET /api/v1/demo` — served only by a demo deployment (`openapi.demo.json`). */
+export interface DemoOverview {
+  runtime_mode: "demo";
+  dataset: DemoDataset;
+  generations: DemoGeneration[];
+  baseline_generations: number;
+  next_generation: string | null;
+  scenarios: DemoScenario[];
+  mutation_policy: DemoPolicyEntry[];
+}
+
 export interface Principal {
   subject: string;
   display_name: string | null;

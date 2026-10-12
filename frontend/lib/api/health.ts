@@ -19,6 +19,8 @@ export interface DependencyStatus {
 export interface ReadinessResponse {
   status: "ready" | "not_ready";
   version: string;
+  runtime_mode: "production" | "demo";
+  data_source: "collectors" | "synthetic";
   dependencies: DependencyStatus[];
 }
 
@@ -26,6 +28,7 @@ export interface VersionResponse {
   name: string;
   version: string;
   environment: string;
+  runtime_mode: "production" | "demo";
 }
 
 export type BackendStatus =
@@ -60,6 +63,10 @@ export async function fetchBackendStatus(
       readiness: {
         status: "not_ready",
         version: version.data.version,
+        // The 503 body is not re-parsed here, so the mode is taken from /version, which
+        // answered: both report the same deployment setting.
+        runtime_mode: version.data.runtime_mode,
+        data_source: version.data.runtime_mode === "demo" ? "synthetic" : "collectors",
         dependencies: [
           {
             name: "postgresql",

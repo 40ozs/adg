@@ -51,6 +51,7 @@ from sqlalchemy import (
     Index,
     Integer,
     MetaData,
+    SmallInteger,
     String,
     Table,
     Text,
@@ -142,6 +143,7 @@ __all__ = [
     "alert_watches",
     "alerts",
     "collector_sources",
+    "deployment_marker",
     "governance_audit_events",
     "membership_edges",
     "metadata",
@@ -2706,5 +2708,35 @@ remediation_exports = Table(
     comment=(
         "A signed change plan as handed to a human administrator. Exporting twice writes two "
         "rows: the document somebody is holding is the one signed at that moment."
+    ),
+)
+
+
+deployment_marker = Table(
+    "deployment_marker",
+    metadata,
+    # One row or none. The marker describes the database as a whole, so a second row would
+    # be a contradiction about what this database is rather than a second fact about it.
+    Column("marker_id", SmallInteger, primary_key=True),
+    Column("runtime_mode", Text, nullable=False),
+    # The synthetic dataset this database holds. Present only on a demo database.
+    Column("dataset_key", Text, nullable=True),
+    Column("dataset_seed", Text, nullable=True),
+    _timestamp("marked_at"),
+    Column("marked_by", Text, nullable=False),
+    CheckConstraint("marker_id = 1", name="ck_deployment_marker_singleton"),
+    CheckConstraint(
+        "runtime_mode IN ('production', 'demo')", name="ck_deployment_marker_runtime_mode"
+    ),
+    CheckConstraint(
+        "runtime_mode <> 'demo' OR dataset_key IS NOT NULL",
+        name="ck_deployment_marker_demo_names_its_dataset",
+    ),
+    comment=(
+        "What this database is for, written by the operator command that initialized it. A "
+        "demo deployment refuses to start, and a demo reset refuses to run, against a "
+        "database that is not marked demo -- so synthetic data cannot be written over real "
+        "observations by pointing a demo at the wrong connection string. See "
+        "docs/architecture/demo-mode.md."
     ),
 )

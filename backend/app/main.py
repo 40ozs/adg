@@ -18,6 +18,10 @@ from app.api.pagination import InvalidCursor
 from app.auth.dependencies import install_auth
 from app.config import Settings, get_settings
 from app.db import Database
+from app.demo_mode.lifecycle import verify_demo_startup
+from app.demo_mode.policy import DEMO_ONLY_STATUS, SIMULATION_NOTICE, DemoOnlyRefusal, Treatment
+from app.demo_mode.policy import policy_for as demo_policy_for
+from app.demo_mode.providers import observation_source_for
 from app.domain import DomainValidationError
 from app.governance.generation import CampaignTooLarge
 from app.governance.repository import ScopeTooLarge
@@ -39,6 +43,11 @@ from app.remediation.errors import (
 logger = logging.getLogger("adg.api")
 
 REQUEST_ID_HEADER = "X-Request-ID"
+#: Set on every response of a demo deployment, so a client, a proxy log or a screenshot of
+#: the network tab can tell synthetic answers from real ones.
+RUNTIME_MODE_HEADER = "X-ADG-Runtime-Mode"
+#: Set on a demo deployment's response to a simulated (treatment B) operation.
+DEMO_NOTICE_HEADER = "X-ADG-Demo-Notice"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -60,9 +69,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.settings = resolved
         app.state.database = Database(resolved)
+        if resolved.is_demo:
+            # Before the first request, as every other startup refusal is: a demo whose dataset
+            # cannot load, or whose database is not marked demo, does not start. The exception
+            # propagates out of the lifespan and the server exits naming the reason.
+            metadata = await verify_demo_startup(resolved, app.state.database)
+            logger.warning(
+                "api.startup.demo_mode",
+                extra={"dataset": metadata.key, "organization": metadata.company_name},
+            )
         logger.info(
             "api.startup",
-            extra={"environment": resolved.environment, "version": __version__},
+            extra={
+                "environment": resolved.environment,
+                "version": __version__,
+                "runtime_mode": resolved.runtime_mode.value,
+            },
         )
         try:
             yield
@@ -77,6 +99,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = resolved
+    # Chosen once, here, from configuration. In demo mode the collector source is never built.
+    app.state.observation_source = observation_source_for(resolved)
     # Verifier and claims mapping are built once here, not per request: the OIDC
     # verifier owns the JWKS cache.
     install_auth(app, resolved)
@@ -88,7 +112,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_credentials=True,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["*"],
-            expose_headers=[REQUEST_ID_HEADER],
+            # The demo markers are readable cross-origin, so the web shell can tell a
+            # synthetic answer from a real one without a second request.
+            expose_headers=[REQUEST_ID_HEADER, RUNTIME_MODE_HEADER, DEMO_NOTICE_HEADER],
         )
 
     @app.middleware("http")
@@ -113,6 +139,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
+    if resolved.is_demo:
+
+        @app.middleware("http")
+        async def demo_markers(
+            request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        ) -> Response:
+            response = await call_next(request)
+            response.headers[RUNTIME_MODE_HEADER] = resolved.runtime_mode.value
+            route = request.scope.get("route")
+            entry = demo_policy_for(request.method, getattr(route, "path", "") or "")
+            if entry is not None and entry.treatment is Treatment.SIMULATED:
+                response.headers[DEMO_NOTICE_HEADER] = SIMULATION_NOTICE
+            return response
+
     _install_exception_handlers(app)
     app.include_router(build_api_router(resolved))
     return app
@@ -125,6 +165,27 @@ def _install_exception_handlers(app: FastAPI) -> None:
     branches on the status code: a 422 must never be retried unchanged and a 409 must never
     be retried at all, so a failure that leaked out as a 500 would be retried forever.
     """
+
+    @app.exception_handler(DemoOnlyRefusal)
+    async def _demo_only(request: Request, exc: DemoOnlyRefusal) -> JSONResponse:
+        # 403: the request may be perfectly formed and perfectly authorized elsewhere; this
+        # deployment does not offer the operation. ``detail`` stays a string, as on every
+        # other refusal, and ``status`` lets a client tell this one apart without parsing it.
+        logger.info(
+            "demo.refused",
+            extra={
+                "request_id": getattr(request.state, "request_id", None),
+                "operation": exc.entry.operation,
+            },
+        )
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "status": DEMO_ONLY_STATUS,
+                "operation": exc.entry.operation,
+                "detail": str(exc),
+            },
+        )
 
     @app.exception_handler(DomainValidationError)
     async def _domain_validation(request: Request, exc: DomainValidationError) -> JSONResponse:

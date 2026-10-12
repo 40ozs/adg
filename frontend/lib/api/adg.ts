@@ -28,6 +28,7 @@ import type {
   CollectionOperations,
   CollectionStatus,
   DecisionView,
+  DemoOverview,
   DevelopmentLogin,
   DirectGroupsResponse,
   DriftReportResponse,
@@ -50,6 +51,7 @@ import type {
   ResourcePrincipalsResponse,
   RiskRulesResponse,
   RiskSummaryResponse,
+  RuntimeInfo,
   ScanRunList,
   SearchResults,
   ServerDetail,
@@ -70,6 +72,7 @@ import type {
 /** Paths this application depends on. Asserted against the published OpenAPI document. */
 export const USED_PATHS = [
   "/auth/config",
+  "/runtime",
   "/auth/me",
   "/auth/dev/login",
   "/api/v1/collection/status",
@@ -141,6 +144,25 @@ export type PageQuery = {
 /** Public: a client has to know how to sign in before it can. */
 export function fetchAuthConfig(options: RequestOptions = {}): Promise<ApiResult<AuthConfig>> {
   return apiRequest<AuthConfig>("/auth/config", options);
+}
+
+/**
+ * Public: whether this deployment runs on real or synthetic data. Read by the shell on every
+ * page, before sign-in, so the demo indicator is never something only a signed-in user sees.
+ */
+export function fetchRuntime(options: RequestOptions = {}): Promise<ApiResult<RuntimeInfo>> {
+  return apiRequest<RuntimeInfo>("/runtime", options);
+}
+
+/**
+ * Paths only a demo deployment serves. Asserted against `docs/contracts/v1/openapi.demo.json`
+ * rather than the production document, which deliberately does not carry them.
+ */
+export const DEMO_USED_PATHS = ["/api/v1/demo"] as const;
+
+/** The demo dataset, its scan generations, its scenarios and the mutation policy. */
+export function fetchDemoOverview(token: string): Promise<ApiResult<DemoOverview>> {
+  return apiRequest<DemoOverview>("/api/v1/demo", { token });
 }
 
 export function fetchPrincipal(token: string): Promise<ApiResult<Principal>> {
