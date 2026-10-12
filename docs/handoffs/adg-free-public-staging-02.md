@@ -1,5 +1,9 @@
 # ADG-FREE-PUBLIC-STAGING-02 — public ADG demo on Workers Free + Render Free + Supabase
 
+> **Superseded architecture.** [ADG-FREE-EDGE-SSR-03](adg-free-edge-ssr-03.md) moved Next.js
+> rendering off the Worker to resolve the CPU limitation in §6 and §8. This record is kept
+> unchanged as the evidence for that decision.
+
 **Verdict:** `READY_FOR_ADG_FREE_PUBLIC_STAGING_REVIEW_WITH_LIMITATIONS`. The demo is public at
 <https://adg-demo-staging.d-walkes.workers.dev> with no Cloudflare Access. The Render API refuses
 every direct request. Null Meridian runs from `adg_demo` with both fingerprints exact, and

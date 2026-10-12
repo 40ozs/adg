@@ -1,19 +1,20 @@
 # ADG Demo Mode on Cloudflare — free public demo staging
 
-**Status:** deployed and checked — see [the handoff](../handoffs/adg-free-public-staging-02.md)
-for the measured results. · **Code:** `frontend/wrangler.jsonc`, `frontend/cloudflare/`,
-`frontend/lib/api/transport.ts`, `backend/app/origin_gate.py`,
-`.github/workflows/cloudflare-staging.yml` · **Runs on:** [Demo Mode](../architecture/demo-mode.md)
-with [Null Meridian](../demo/null-meridian.md).
+**Status:** deployed and checked — see [the handoff](../handoffs/adg-free-edge-ssr-03.md) for
+the measured results. · **Code:** `frontend/wrangler.jsonc`, `frontend/cloudflare/`,
+`frontend/render/gate.ts`, `docker/Dockerfile.render`, `.github/workflows/cloudflare-staging.yml`
+· **Runs on:** [Demo Mode](../architecture/demo-mode.md) with [Null Meridian](../demo/null-meridian.md).
 
 This is a **public demo staging** deployment of the real ADG application on synthetic data, at
 zero hosting cost. It is not a production configuration. Anyone on the internet can open it;
 ADG's own sign-in, restricted to two low-privilege accounts, decides what a visitor may do (§8).
 
+* **Next.js does NOT render on Cloudflare.** The Worker serves built static files and proxies
+  everything else; pages are rendered on Render (§7 explains why).
 * **Cloudflare Access is NOT used.** There is no Zero Trust organization, Access application or
   service token.
 * **Cloudflare Containers are NOT used.**
-* **Workers Paid is NOT used.** The Worker has no paid binding: no Container, Durable Object,
+* **Workers Paid is NOT used.** The Worker has no binding at all: no Container, Durable Object,
   cron trigger, KV, R2 or D1.
 
 ---
@@ -24,18 +25,21 @@ ADG's own sign-in, restricted to two low-privilege accounts, decides what a visi
 PUBLIC INTERNET  (no Cloudflare Access, no outer identity gate)
       │
       ▼
-Cloudflare Workers Free — Worker "adg-demo-staging"        frontend/cloudflare/worker.ts
-      │  built static files (.open-next/assets) are served before the Worker runs
-      │  routing.ts: /api/v1/…, /auth/…, /health/…, /version, /runtime ─► API
-      │              everything else ─► OpenNext (the unmodified Next.js app)
-      │                                 its server-side API calls ─► the same API path
+Cloudflare Workers Free — Worker "adg-demo-staging"           frontend/cloudflare/worker.ts
+      │  built static files (/_next/static/…, public/) are served from the edge BEFORE the
+      │  Worker runs (no invocation, no CPU)
+      │  everything else: a thin proxy (about 1–3 ms of CPU); a caller's own X-ADG-Origin-Key
+      │  is replaced; API answers must carry X-ADG-Runtime-Mode: demo
       │
       │  HTTPS, X-ADG-Origin-Key: <Worker secret ADG_ORIGIN_KEY>
-      │  (a caller's own X-ADG-Origin-Key is replaced; cookies are not forwarded)
       ▼
-Render Free — web service "adg-demo-api" (Oregon)
-      │  docker/Dockerfile.backend, unmodified, run as `python -m app.origin_gate`
-      │  403 to any request without the key, except /health/live (Render's health check)
+Render Free — ONE web service "adg-demo-web" (Oregon)          docker/Dockerfile.render
+      │  $PORT ─► front gate (node gate.ts, frontend/render/gate.ts): the only public listener
+      │           403 to any request without the key, except /health/live
+      │           ├─ /api/v1/…, /auth/…, /health/…, /version, /runtime ─► FastAPI 127.0.0.1:8000
+      │           │                                                       (python -m app, unmodified)
+      │           └─ everything else ─► Next.js 127.0.0.1:3000 (standalone server.js)
+      │                                 its server-side API calls ─► 127.0.0.1:8000
       │  ADG_RUNTIME_MODE=demo, ADG_DEMO_DATASET=null-meridian-v1
       │
       │  TLS, Supavisor session mode, port 5432
@@ -44,33 +48,40 @@ Supabase PostgreSQL — database adg_demo ONLY
          deployment_marker = demo / null-meridian-v1
 ```
 
-One codebase, one image, one schema: Render runs exactly the backend image `docker compose`
-runs, and the Worker runs the same Next.js application. The deployment adds infrastructure only:
+One codebase, one schema: Render runs the backend exactly as `docker compose` does, and the
+Next.js application unmodified. The deployment adds infrastructure only:
 
 | Piece | What it is |
 | --- | --- |
-| `frontend/wrangler.jsonc` | The Worker: OpenNext entry, static assets, a self-reference service binding, observability. No secret, no account id, no paid binding. |
-| `frontend/cloudflare/worker.ts` | Worker entry: route each request to the API or to OpenNext; install the server-side API transport. |
-| `frontend/cloudflare/routing.ts` | Which paths the API answers; `forwardToApi` sends an API request to Render with the origin key and relays only answers marked `X-ADG-Runtime-Mode: demo` (anything else is a 502). |
-| `frontend/cloudflare/environment.ts` | `ADG_API_ORIGIN` + `ADG_ORIGIN_KEY` for the API; the environment Next.js sees (neither of those). |
-| `frontend/lib/api/transport.ts` | A seam in the web tier's single API client: on this host its server-side calls go through `forwardToApi` with a 120 s timeout (§7). |
-| `backend/app/origin_gate.py` | `python -m app.origin_gate`: the unchanged `app.main:app` behind the origin key (§5). |
+| `frontend/wrangler.jsonc` | The Worker: entry, static assets (`.edge-assets/`), observability. No binding, no secret, no account id. |
+| `frontend/cloudflare/worker.ts` | Worker entry: every request reaching it goes to `routeRequest`. 4 KiB bundled; no Next.js runtime. |
+| `frontend/cloudflare/routing.ts` | `forwardToOrigin`: the request to Render with the Worker's origin key, hop-by-hop headers removed, the answer relayed unchanged. An API answer without `X-ADG-Runtime-Mode: demo` is a 502. |
+| `frontend/cloudflare/environment.ts` | `ADG_RENDER_ORIGIN` + `ADG_ORIGIN_KEY`, validated (https only; loopback http for `wrangler dev`). |
+| `frontend/cloudflare/assets.mjs` | `npm run cf:assets -- <.next/static>`: assembles `.edge-assets/` (static files + a `_headers` file marking `/_next/static/*` immutable). |
+| `frontend/render/gate.ts` | The front gate and process supervisor on Render (§5). |
+| `docker/Dockerfile.render` | One image: the Next.js standalone build, the API as `Dockerfile.backend` installs it, Node for the gate. |
+| `backend/app/origin_gate.py` | The previous API-only gate (`python -m app.origin_gate`), kept for the rollback service `adg-demo-api` (§10). |
 | `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `null_meridian_fingerprint.py`: hosted checks (§6). |
-| `.github/workflows/cloudflare-staging.yml` | Preflight → gates → (bootstrap) → Render deploy → Worker deploy → hosted checks. |
+| `.github/workflows/cloudflare-staging.yml` | Preflight → gates → (bootstrap) → Render deploy → static files + Worker deploy → hosted checks. |
 
 ## 2. Routing
 
 | Path | Served by | Note |
 | --- | --- | --- |
-| `/api/v1/…` | API (Render) | The API's own routes. Every data route needs a signed-in account (anonymous → 401). Ingestion answers `403 demo_only`. |
-| `/auth/…` | API (Render) | `/auth/config`, `/auth/me`, `/auth/dev/login` (development sign-in, public accounts only — §8). |
-| `/health/…`, `/version`, `/runtime` | API (Render) | Public metadata; no connection detail (asserted by the smoke checks). |
-| built static files | Cloudflare static assets | `/_next/static/…` and `public/` files, served without running the Worker. |
-| everything else | Next.js (OpenNext) | `/`, `/demo`, every page, the web tier's own `/api/adg`, `/api/auth`, `/api/simulations`, `/api/watches`. |
+| built static files | Cloudflare static assets | `/_next/static/…` and `public/` files, without running the Worker. A file the edge does not hold reaches the Worker and is proxied to Render, which holds every file of its own build. |
+| `/api/v1/…`, `/auth/…` | FastAPI on Render | The API's own routes. Every data route needs a signed-in account (anonymous → 401). Ingestion answers `403 demo_only`. The gate drops the web session cookie. |
+| `/health/…`, `/version`, `/runtime` | FastAPI on Render | Public metadata; no connection detail (asserted by the smoke checks). |
+| everything else | Next.js on Render | `/`, `/demo`, every page, the web tier's own `/api/adg`, `/api/auth`, `/api/simulations`, `/api/watches`. The gate tells Next.js the public host (`X-Forwarded-Host` from `ADG_WEB_URL`), so Server Actions accept the browser's `Origin`. |
 
-Next.js's server-side calls go to `ADG_INTERNAL_API_URL=http://adg-api.internal`. That name is
-never resolved: the transport hands each request to `forwardToApi`. The Render origin and its
-key are not in the environment Next.js can read.
+Next.js's server-side calls go to `ADG_INTERNAL_API_URL=http://127.0.0.1:8000`, inside the
+container. The browser only ever talks to the staging URL.
+
+**Static files and builds.** The Worker's static files must come from the same build Render
+serves, or the chunk names in Render's HTML will not match. The workflow builds the same
+Dockerfile stage (`--target web`) from the same commit for the same platform and copies its
+`.next/static`. Two Next.js builds are never byte-identical, because Server Action IDs are drawn at
+random per build. A mismatched file is therefore proxied to Render: correct, merely not
+edge-served. A Mac build, by contrast, differs from a Linux one in most chunk names.
 
 ## 3. PostgreSQL (Supabase)
 
@@ -91,7 +102,7 @@ key are not in the environment Next.js can read.
 
 ## 4. Configuration
 
-### Render service `adg-demo-api` (environment, set on the service)
+### Render service `adg-demo-web` (environment, set on the service)
 
 | Name | Value |
 | --- | --- |
@@ -99,17 +110,23 @@ key are not in the environment Next.js can read.
 | `ADG_DEMO_DATASET` | `null-meridian-v1` |
 | `ADG_DATABASE_URL` | secret (§3) |
 | `ADG_REMEDIATION_EXECUTION_MODE` | `disabled` |
-| `ADG_ORIGIN_KEY` | secret, ≥ 32 characters; the same value as the Worker's |
+| `ADG_ORIGIN_KEY` | secret, ≥ 32 characters; the same value as the Worker's. Read by the gate only; neither FastAPI nor Next.js receives it. |
+| `ADG_WEB_URL` | `https://adg-demo-staging.<subdomain>.workers.dev`: the public address (Next.js's own URL, secure cookies, forwarded host) |
 | `ADG_ENVIRONMENT` | `development` (development sign-in is refused in `production`) |
 | `ADG_AUTH_MODE` | `development` |
 | `ADG_DEV_AUTH_SECRET` | secret, ≥ 32 characters; keeps sessions valid across restarts |
 | `ADG_DEV_AUTH_USERS` | `viewer:viewer:Demo Viewer,planner:remediation_planner:Demo Remediation Planner` — **the public account list** (§8) |
 | `ADG_LOG_LEVEL` / `ADG_LOG_FORMAT` | `INFO` / `json` |
 
+Next.js receives only `ADG_WEB_URL`, `NEXT_PUBLIC_ADG_API_URL` (= `ADG_WEB_URL`),
+`ADG_INTERNAL_API_URL`, `PATH`, `HOME` and its own port settings (`webEnvironment` in
+`gate.ts`): never the database URL, the session secret or the origin key.
+
 Service settings: plan **free**, region Oregon (next to the Supabase project's `us-west-2`),
-runtime Docker, Dockerfile `./docker/Dockerfile.backend`, context `.`, start command
-`python -m app.origin_gate --host 0.0.0.0 --port 10000`, health check `/health/live`, branch
-`deploy/ADG-FREE-STAGING-01`, auto-deploy off (the workflow deploys a given commit).
+runtime Docker, Dockerfile `./docker/Dockerfile.render`, context `.`, no start command (the
+image's `node gate.ts`), health check `/health/live`, branch `deploy/ADG-FREE-EDGE-SSR-03`,
+auto-deploy off (the workflow deploys a given commit). Render passes the commit to the build as
+`RENDER_GIT_COMMIT`, which becomes the Next.js build ID.
 
 Not set, and must not be: collector API keys, OIDC settings, AD/LDAP/SMB/WinRM credentials, alert
 destinations, `ADG_REMEDIATION_SIGNING_KEY`. The demo's own startup checks refuse collector keys,
@@ -120,40 +137,46 @@ outbound alert sinks and any remediation mode but `disabled`.
 | Name | Kind | Value |
 | --- | --- | --- |
 | `ADG_ORIGIN_KEY` | Worker secret | the same value as Render's |
-| `ADG_API_ORIGIN` | var (`--var` at deploy) | `https://adg-demo-api.onrender.com` |
-| `ADG_WEB_URL` | var (`--var` at deploy) | `https://adg-demo-staging.<subdomain>.workers.dev` |
-
-`NEXT_PUBLIC_ADG_API_URL` is the staging URL itself (set at build time); the browser never sees
-the Render origin or the key.
+| `ADG_RENDER_ORIGIN` | var (`--var` at deploy) | `https://adg-demo-web.onrender.com` |
 
 ### GitHub environment `cloudflare-staging` (workflow only)
 
 Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `ADG_DATABASE_URL`, `ADG_ORIGIN_KEY`,
-`RENDER_API_KEY`. Variables: `ADG_STAGING_URL`, `ADG_API_ORIGIN`, `RENDER_SERVICE_ID`.
-Cloudflare API token: the "Edit Cloudflare Workers" template, or at least **Workers Scripts:
-Edit** and **Account Settings: Read**, scoped to the one account.
+`RENDER_API_KEY`. Variables: `ADG_STAGING_URL`, `ADG_RENDER_ORIGIN`, `RENDER_SERVICE_ID` (the
+`adg-demo-web` service id). Cloudflare API token: the "Edit Cloudflare Workers" template, or at
+least **Workers Scripts: Edit** and **Account Settings: Read**, scoped to the one account.
 
 ## 5. Origin gate
 
-Render's free tier has no private network or IP allow-list, so the API's address is public.
-`python -m app.origin_gate` wraps the unchanged application:
+Render's free tier has no private network or IP allow-list, so the service's address is public.
+The front gate (`frontend/render/gate.ts`) is its only public listener:
 
-* every HTTP or WebSocket request without `X-ADG-Origin-Key: $ADG_ORIGIN_KEY` gets `403` (or
-  WebSocket close 1008) before the application sees it; the only exception is `GET /health/live`,
-  which Render's health check calls and which reads nothing;
-* the comparison is `hmac.compare_digest`; neither the supplied nor the expected value is logged;
-* without a key of at least 32 characters it refuses to start (fail closed).
+* every request without `X-ADG-Origin-Key: $ADG_ORIGIN_KEY` gets `403 {"detail": "This service
+  answers only its staging proxy."}`, whether it is for a page, the web tier's API routes or the
+  API. The only exception is `/health/live` (exact path), which Render's health check calls. It is
+  relayed to FastAPI as exactly that path and answers `{"status", "version"}` without reading
+  anything;
+* the comparison hashes both values with SHA-256 and compares them with `timingSafeEqual`, so
+  it takes the same time whatever the supplied value's length; a repeated header is no key;
+  neither value is logged;
+* without a key of at least 32 characters it refuses to start (fail closed), before starting
+  either process;
+* it forwards no hop-by-hop header and never passes the key on; WebSocket upgrades are refused.
 
-The Worker deletes any `X-ADG-Origin-Key` the caller sent and sets its own, so a visitor cannot
-choose the value the API sees; it also drops the web session cookie, and it relays an answer only
-if the API marked it `X-ADG-Runtime-Mode: demo`. The smoke checks call the Render origin directly
-on every deploy: no key, or a guessed key, must get 403.
+The gate also supervises the two processes. It opens the public port only once both accept
+connections; Render's health check fails until then. When either process exits, the gate stops
+the other one and exits, so Render restarts the service as a whole. On `SIGTERM` it stops both
+processes and exits.
 
-**Rotating the origin key** (a short window of 502s while the two disagree):
+The Worker sets its own key on every request and replaces any key a caller sent, so a visitor
+cannot choose the value Render sees. The smoke checks call the Render origin directly on every
+deploy: with no key or a guessed one, pages, web sign-in, API and sign-in all get 403.
+
+**Rotating the origin key** (a short window of 403s while the two disagree):
 
 ```bash
 umask 077; openssl rand -base64 48 | tr -d '\n' > ~/.config/adg-staging/adg-origin-key
-# 1. Render: dashboard → adg-demo-api → Environment → ADG_ORIGIN_KEY → save (restarts the API)
+# 1. Render: dashboard → adg-demo-web → Environment → ADG_ORIGIN_KEY → save (restarts the service)
 # 2. Worker: (cd frontend && npx wrangler secret put ADG_ORIGIN_KEY < ~/.config/adg-staging/adg-origin-key)
 # 3. GitHub: gh secret set ADG_ORIGIN_KEY --env cloudflare-staging < ~/.config/adg-staging/adg-origin-key
 # 4. Run the smoke checks (§6).
@@ -167,32 +190,52 @@ A password that has ever been pasted into a chat, ticket or log is treated as ex
 
 ### Deploy
 
-**Actions → Free staging (ADG demo) → Run workflow**, or push to `deploy/ADG-FREE-STAGING-01`:
+**Actions → Free staging (ADG demo) → Run workflow**, or push to `deploy/ADG-FREE-EDGE-SSR-03`:
 
 1. **preflight**: every name in §4's GitHub list present; URLs https; the key ≥ 32 characters;
    the database named for the demo; a bootstrap only with the typed confirmation
    `reset adg_demo`. Prints names, never values.
-2. **gates**: Worker typecheck and the Cloudflare unit tests.
+2. **gates**: Worker typecheck, the Worker and gate unit tests.
 3. **bootstrap** (only when asked): `python -m app.demo_mode reset`, `--json verify`,
-   `--json status` and the Null Meridian logical fingerprint, from this commit's image.
-4. **deploy-api**: a Render deploy of exactly this commit, waited on until live.
-5. **deploy**: `opennextjs-cloudflare build`, then `wrangler deploy --secrets-file … --var …`
-   (with `OPEN_NEXT_DEPLOY=true`, so wrangler ≥ 4.149 deploys directly instead of re-running
-   the command through `opennextjs-cloudflare deploy`, which loses its quoting).
+   `--json status` and the Null Meridian logical fingerprint, from this commit's API image.
+4. **deploy-origin**: a Render deploy of exactly this commit (Render builds
+   `Dockerfile.render`), waited on until live.
+5. **deploy**: `docker build --target web` of the same commit, its `.next/static` →
+   `npm run cf:assets`, then `wrangler deploy --secrets-file … --var ADG_RENDER_ORIGIN:…`.
 6. **checks**: read-only `verify` + logical fingerprint, then `smoke.mjs` and `browser.mjs`
    against the public URL.
 
-The same deploy from a workstation (wrangler logged in to the account):
+The same deploy from a workstation (wrangler logged in to the account; Docker running):
 
 ```bash
+# 1. Render: deploy the pushed commit (dashboard → adg-demo-web → Manual Deploy → that commit,
+#    or POST /v1/services/<id>/deploys {"commitId": "<sha>"}), and wait until it is live.
+# 2. The Worker's static files, from the same Dockerfile stage and platform as Render's build:
+docker build --platform linux/amd64 -f docker/Dockerfile.render --target web \
+  --build-arg RENDER_GIT_COMMIT=<sha> -t adg-web-build .
+id=$(docker create --platform linux/amd64 adg-web-build)
+docker cp "$id:/app/frontend/.next/static" frontend/.next-static && docker rm "$id"
+(cd frontend && npm run cf:assets -- .next-static && rm -rf .next-static)
+# 3. The Worker (the secret persists across deploys once set):
 cd frontend
-NEXT_PUBLIC_ADG_API_URL=https://adg-demo-staging.<subdomain>.workers.dev npx opennextjs-cloudflare build
-OPEN_NEXT_DEPLOY=true npx wrangler deploy \
-  --var ADG_WEB_URL:https://adg-demo-staging.<subdomain>.workers.dev \
-  --var ADG_API_ORIGIN:https://adg-demo-api.onrender.com
-# the secret, once (it persists across deploys):
-npx wrangler secret put ADG_ORIGIN_KEY < ~/.config/adg-staging/adg-origin-key
+npx wrangler deploy --var ADG_RENDER_ORIGIN:https://adg-demo-web.onrender.com
+npx wrangler secret put ADG_ORIGIN_KEY < ~/.config/adg-staging/adg-origin-key   # first time only
 ```
+
+**Local rehearsal** of the whole path, without deploying anything:
+
+```bash
+docker build -f docker/Dockerfile.render -t adg-web:local .
+docker run --rm --memory=512m --cpus=0.1 --env-file <the service's settings> \
+  -e ADG_WEB_URL=http://localhost:8787 -p 127.0.0.1:10000:10000 adg-web:local
+# frontend/.dev.vars (git-ignored, mode 600): ADG_ORIGIN_KEY=<the key>
+(cd frontend && npx wrangler dev --var ADG_RENDER_ORIGIN:http://127.0.0.1:10000)
+STAGING_URL=http://127.0.0.1:8787 RENDER_ORIGIN=http://127.0.0.1:10000 node frontend/cloudflare/checks/smoke.mjs
+```
+
+`--memory=512m --cpus=0.1` matches a Render free instance. Locally, `wrangler dev` passes Next.js's
+gzip through to a client that did not ask for it; Cloudflare's edge does not (it decompresses
+for such a client).
 
 ### Bootstrap and reset
 
@@ -208,8 +251,9 @@ python -m app.demo_mode reset    # then: verify, status
 ```
 
 A reset ingests 300 scan runs; it takes about 80–90 s next to the database and much longer
-across a continent (the handoff records the measured time). It briefly empties the tables the
-API serves: do not run it while people are using the demo.
+across a continent (29 min from the US East). It briefly empties the tables the API serves: do
+not run it while people are using the demo. Moving compute (as ADG-FREE-EDGE-SSR-03 did) needs
+no reset: run `verify` instead.
 
 Expected after a reset: `verify` ok, 23/23 probes, 300 scan runs, fingerprint
 `228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0`; Null Meridian logical
@@ -220,7 +264,7 @@ value is dataset drift until proven otherwise.
 
 ```bash
 STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev \
-API_ORIGIN=https://adg-demo-api.onrender.com node frontend/cloudflare/checks/smoke.mjs
+RENDER_ORIGIN=https://adg-demo-web.onrender.com node frontend/cloudflare/checks/smoke.mjs
 STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/browser.mjs
 ```
 
@@ -228,21 +272,35 @@ Both act as an anonymous visitor, then as the public `planner` account; `PUBLIC_
 (default `viewer,planner`) is the account list they require development sign-in to offer, and
 every other default account must be refused.
 
-## 7. Free-tier behaviour: sleep, cold start, CPU
+**Worker CPU** (the reason for this architecture): `npx wrangler tail adg-demo-staging --format
+json` gives `cpuTime` and `outcome` per invocation. Cloudflare's GraphQL dataset
+`workersInvocationsAdaptive` gives CPU quantiles and the maximum per status and version (the
+wrangler OAuth token can read it; send a custom `User-Agent`, since Cloudflare refuses
+`Python-urllib`). Any `exceededCpu` status is a regression.
 
-* **Render Free** spins the service down after 15 minutes without inbound traffic; the next
-  request waits while it starts. Measured: the first page after a sleep arrived in **73 s**
-  (container start about 28 s, Demo Mode startup checks about 37 s, routing about 9 s). The
-  Worker gives every server-side API call 120 s (`API_WAKE_TIMEOUT_MS`, this host only), so a
-  sleeping API shows as slow, not down. There is no keep-warm cron: free instance hours are a
-  monthly allowance per Render workspace, and an always-awake service would spend it.
-* **Workers Free** allows 100,000 requests a day and 10 ms of CPU per request. Static files do
-  not count (they are served before the Worker runs). The API proxy path uses 1–4 ms.
-  **Server-rendered pages use about 30–140 ms at the median (up to about 480 ms)**, consistently
-  over the documented limit. Cloudflare allows a Worker to run over "infrequently" and
-  terminates one that does so "consistently" (Error 1102). In hosted tests (218 invocations,
-  including concurrent bursts) none was terminated. Watch for `exceededCpu` in
-  `wrangler tail`; the free fallbacks are in the handoff §8.
+## 7. Free-tier behaviour: CPU, sleep, cold start
+
+* **Workers Free** allows 100,000 requests a day and **10 ms of CPU per request**. Static files
+  do not count (they are served before the Worker runs). The Worker only proxies:
+  **median about 1 ms, p99 under 3 ms** (handoff §6).
+  *History:* until ADG-FREE-EDGE-SSR-03 the Worker also rendered Next.js (OpenNext), and
+  server-rendered pages used about 30–140 ms at the median (up to about 480 ms), consistently
+  over the limit. That architecture was not compliant, even though no request failed. It is
+  why rendering moved to Render. The measurements are in
+  [adg-free-public-staging-02.md](../handoffs/adg-free-public-staging-02.md) §6.
+* **Render Free** gives one instance with 512 MB and 0.1 CPU. Next.js and the API share it: about
+  275 MB in use after the full smoke run, measured locally under the same limits. Pages take
+  0.3–1.5 s warm; concurrent requests queue on the 0.1 CPU. Ten simultaneous access explanations
+  took up to about 15 s, and all answered. The standalone build loads each route on first use
+  instead of preloading them all (`next.config.mjs`), and the API's bytecode is compiled into
+  the image, both to keep the start short.
+* **Sleep and cold start**: Render spins the service down after 15 minutes without inbound
+  traffic, and the next request waits while it starts. One service wakes, not two: the first page
+  request starts Next.js and the API together, and the gate opens the port only once both
+  are ready. Measured: the first page arrived **85 s** after the request (container +10 s, Next.js
+  +14 s, API and port +74 s, page +85 s). The longest phase is the API's Demo Mode startup
+  check, which regenerates the dataset in Python. There is no keep-warm cron: free instance hours
+  are a monthly allowance per Render workspace (§11), and an always-awake service would spend it.
 * **Supabase**: the session pooler's connection limit is shared by every client of the project;
   the API holds a pool of 5.
 
@@ -276,10 +334,13 @@ Change `ADG_DEV_AUTH_USERS` on the Render service to change the public accounts.
 
 * Worker: dashboard → Workers & Pages → `adg-demo-staging` → Logs (Workers Logs, full
   sampling), or `npx wrangler tail adg-demo-staging --format json` live. Structured events:
-  `adg.staging.misconfigured` (names settings, never values) and `adg.staging.api_unavailable`.
-  An invocation that exceeds the CPU limit shows `"outcome": "exceededCpu"` in the tail.
-* API: Render dashboard → `adg-demo-api` → Logs (the API's own JSON log). The API logs no
-  `Authorization` header, and neither tier logs the origin key.
+  `adg.staging.misconfigured` (names settings, never values) and
+  `adg.staging.origin_unavailable`. An invocation over the CPU limit shows
+  `"outcome": "exceededCpu"`.
+* Render: dashboard → `adg-demo-web` → Logs. The gate logs `adg.gate.starting`,
+  `adg.gate.child_ready` (with `after_ms`), `adg.gate.listening`, `adg.gate.first_answer`,
+  `adg.gate.child_exited` and `adg.gate.upstream_unavailable`. FastAPI logs its own JSON lines;
+  Next.js logs its start. The API logs no `Authorization` header, and nothing logs the origin key.
 
 ## 10. Rollback
 
@@ -287,34 +348,40 @@ The demo database is **never** touched by a rollback.
 
 | Goal | Action |
 | --- | --- |
-| Take the site offline now | Dashboard → `adg-demo-staging` → Settings → Domains & Routes → disable the workers.dev route (or set `"workers_dev": false` and deploy). |
-| Cut the API off without touching the Worker | Render → `adg-demo-api` → Suspend; or change `ADG_ORIGIN_KEY` on Render only (the Worker then gets 403 and answers 502). |
-| Restore the previous Worker | `npx wrangler rollback` (Worker versions), or re-run the workflow on the previous good commit. |
-| Restore the previous API | Render → `adg-demo-api` → Deploys → roll back to a previous deploy, or re-run the workflow on that commit. |
-| Remove staging entirely | `npx wrangler delete adg-demo-staging`; delete the Render service; `DROP DATABASE adg_demo` only if the data is no longer wanted. |
+| Take the site offline now | Dashboard → `adg-demo-staging` → Settings → Domains & Routes → disable the workers.dev route (or set `"workers_dev": false` and deploy). Turning the route off in the dashboard can disable it entirely (error 1042); re-enable with `POST /accounts/{id}/workers/scripts/adg-demo-staging/subdomain {"enabled": true}`. |
+| Back to the previous architecture (Worker renders, API-only Render service) | Resume `adg-demo-api` on Render if it is suspended, then `npx wrangler rollback a4946d8e-69d3-4275-a304-38dfdf30258a`. That version carries its own `ADG_API_ORIGIN` and secret. Its first request waits for `adg-demo-api` to wake (about 73 s). It runs Next.js in the Worker, over the CPU limit (§7). |
+| Restore a previous thin-proxy Worker | `npx wrangler rollback <version>` (Worker versions), or re-run the workflow on that commit. |
+| Restore a previous Render build | Render → `adg-demo-web` → Deploys → roll back, or re-run the workflow on that commit. |
+| Cut the origin off without touching the Worker | Render → `adg-demo-web` → Suspend; or change `ADG_ORIGIN_KEY` on Render only (the gate then answers the Worker 403, and API paths become 502). |
+| Remove staging entirely | `npx wrangler delete adg-demo-staging`; delete the Render services; `DROP DATABASE adg_demo` only if the data is no longer wanted. |
 
 ## 11. Cost
 
 | Service | Plan | Cost |
 | --- | --- | --- |
-| Cloudflare Workers | Free | $0 within the free limits (100k requests/day, 10 ms CPU/request) |
-| Cloudflare Access / Zero Trust | not used | — |
-| Cloudflare Containers | not used | — |
-| Render web service | Free | $0 within the free limits (sleeps when idle; a monthly allowance of free instance hours per workspace) |
+| Cloudflare Workers | Free: static assets + a thin proxy | $0 within the free limits (100k requests/day, 10 ms CPU/request; static files are not requests to the Worker) |
+| Cloudflare paid products (Workers Paid, Containers, Access / Zero Trust) | not used | — |
+| Render web service `adg-demo-web` | Free (the only one that must stay enabled) | $0 |
+| Render web service `adg-demo-api` | Free, **suspended** (rollback only) | $0; a suspended service uses no instance hours |
 | Supabase | existing project | the project's existing plan; `adg_demo` is one more database in it |
 
+Render's free instance hours are a monthly allowance shared by every free service in the
+workspace (750 hours a month at the time of writing). An instance uses them only while it is
+awake. One always-awake service would use about 744 hours in a 31-day month, so a second free
+service kept awake would exhaust the allowance. When the allowance runs out, Render suspends free
+services until the next month; it does not upgrade them.
+
 Nothing here upgrades itself: Workers Free fails a request that exceeds a limit rather than
-billing for it, and a Render free service is suspended, not upgraded, when its free hours run
-out.
+billing for it, and a Render free service is suspended, not upgraded.
 
 ## 12. Known limitations
 
 * **Shared, writable demo.** Visitors share one database; planner records accumulate until a
   manual reset (§8).
-* **Worker CPU.** Server-rendered pages run consistently over the Workers Free 10 ms CPU limit
-  and work only within Cloudflare's tolerance (§7).
-* **Cold start.** The first request after 15 idle minutes waits about 73 s for Render to start
-  the API.
+* **Cold start.** The first request after 15 idle minutes waits about 85 s for the whole service
+  to start (handoff §7).
+* **0.1 CPU.** Pages render on a 0.1-CPU instance: fine for one visitor at a time, slow under
+  bursts (requests queue; none failed in testing).
 * **No identity.** Development sign-in has no password and records the account name only; it is
   a demo convenience, not authentication. A production deployment uses OIDC
   (`ADG_ENVIRONMENT=production` refuses development sign-in).
