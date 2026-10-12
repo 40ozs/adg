@@ -328,4 +328,5 @@ Linux containers only: no Windows, PowerShell, AD DS, LDAP, SMB, NTFS enumeratio
 join or collector. Before exposing one publicly, decide the visitor sign-in posture:
 development authentication is refused with `ADG_ENVIRONMENT=production`, so a public demo
 needs either OIDC or a deliberate read-only visitor mode, which this work does not add.
-Deployment itself (e.g. Cloudflare) is out of scope here.
+Deployment itself is out of scope here; the protected Cloudflare staging deployment is
+[`docs/deployment/cloudflare-demo.md`](../deployment/cloudflare-demo.md).

@@ -1,0 +1,281 @@
+# ADG Demo Mode on Cloudflare: PROTECTED STAGING ONLY.
+#
+# Builds the unmodified backend image (docker/Dockerfile.backend) and the Next.js application
+# (OpenNext), deploys both as one Worker + Container, and checks the hosted result. Nothing
+# here deploys production: there is no production Cloudflare configuration in this
+# repository, and this workflow runs only when someone asks it to.
+#
+# Triggers:
+#   * workflow_dispatch: deploy (default), optionally bootstrapping the demo database first.
+#   * push to deploy/ADG-CLOUDFLARE-DEMO-01: deploy + checks of exactly that commit. Never a
+#     bootstrap (a database reset is always a deliberate, typed request).
+#
+# Everything account-specific lives in the `cloudflare-staging` GitHub environment, never in
+# the repository. See docs/deployment/cloudflare-demo.md §5 for each name.
+#   secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ADG_DATABASE_URL,
+#              ADG_DEV_AUTH_SECRET, CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET,
+#              ADG_REMEDIATION_SIGNING_KEY (optional)
+#   variables: ADG_STAGING_URL, ACCESS_TEAM_DOMAIN, ACCESS_AUD
+name: Cloudflare staging (ADG demo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: "Reset the hosted demo database to the Null Meridian baseline before deploying"
+        type: boolean
+        default: false
+      confirm_reset:
+        description: 'Required with bootstrap: type "reset adg_demo"'
+        type: string
+        default: ""
+  push:
+    branches: ["deploy/ADG-CLOUDFLARE-DEMO-01"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging
+  cancel-in-progress: false
+
+# bash -eo pipefail: a failure anywhere in a piped command (`wrangler deploy | tee`) fails
+# the step.
+defaults:
+  run:
+    shell: bash
+
+env:
+  NODE_VERSION: "22"
+  PLAYWRIGHT_VERSION: "1.56.1"
+
+jobs:
+  preflight:
+    name: Preflight (configuration, fail closed)
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required configuration is present (names only, never values)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+          ADG_DEV_AUTH_SECRET: ${{ secrets.ADG_DEV_AUTH_SECRET }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          ADG_STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+        run: |
+          missing=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ADG_DATABASE_URL ADG_DEV_AUTH_SECRET \
+                      CF_ACCESS_CLIENT_ID CF_ACCESS_CLIENT_SECRET ADG_STAGING_URL ACCESS_TEAM_DOMAIN ACCESS_AUD; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing staging configuration:$missing (docs/deployment/cloudflare-demo.md §5)"
+            exit 1
+          fi
+          # Without Access the Worker serves nobody (503), so this is not what keeps staging
+          # private -- but a deploy that would only ever answer 503 is a configuration error.
+          case "$ACCESS_TEAM_DOMAIN" in https://*.cloudflareaccess.com) ;; *)
+            echo "::error::ACCESS_TEAM_DOMAIN must be https://<team>.cloudflareaccess.com"; exit 1;; esac
+          case "$ADG_STAGING_URL" in https://*) ;; *)
+            echo "::error::ADG_STAGING_URL must be https"; exit 1;; esac
+          if [ "${#ADG_DEV_AUTH_SECRET}" -lt 32 ]; then
+            echo "::error::ADG_DEV_AUTH_SECRET must be at least 32 characters"; exit 1
+          fi
+          # The same rule the API enforces, checked before anything is deployed: the database
+          # is named for the demo. Prints the verdict, never the URL.
+          python3 - <<'EOF'
+          import os, re, sys
+          from urllib.parse import urlsplit
+          url = os.environ["ADG_DATABASE_URL"]
+          if not url.startswith("postgresql+psycopg://"):
+              sys.exit("::error::ADG_DATABASE_URL must use postgresql+psycopg://")
+          name = urlsplit(url).path.lstrip("/").casefold()
+          if not re.search(r"(?:^|[^a-z0-9])demo(?:[^a-z0-9]|$)", name):
+              sys.exit("::error::ADG_DATABASE_URL must name a dedicated demo database (e.g. adg_demo)")
+          print("database name: demo-scoped")
+          EOF
+      - name: A database reset was asked for deliberately
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap }}
+        env:
+          CONFIRM: ${{ inputs.confirm_reset }}
+        run: |
+          if [ "$CONFIRM" != "reset adg_demo" ]; then
+            echo '::error::bootstrap=true requires confirm_reset to be exactly "reset adg_demo"'; exit 1
+          fi
+
+  gates:
+    name: Deployment code gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --no-audit --no-fund
+      - run: npm run cf:typecheck
+      - run: npx vitest run tests/cloudflare tests/transport.test.ts
+
+  bootstrap:
+    name: Bootstrap demo database (reset, verify, status)
+    needs: [preflight, gates]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the API image of this commit
+        run: docker build -f docker/Dockerfile.backend -t "adg-api:${GITHUB_SHA}" .
+      - name: python -m app.demo_mode reset / verify / status
+        env:
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          run() {
+            docker run --rm \
+              -e ADG_RUNTIME_MODE=demo -e ADG_DEMO_DATASET=null-meridian-v1 -e ADG_DATABASE_URL \
+              -e ADG_COLLECTOR_API_KEYS= -e ADG_ALERT_POLICY_PATH= \
+              -e ADG_REMEDIATION_EXECUTION_MODE=disabled -e ADG_LOG_LEVEL=WARNING \
+              "adg-api:${GITHUB_SHA}" python -m app.demo_mode "$@"
+          }
+          run reset
+          run --json verify > verify.json
+          run --json status > status.json
+          python3 -c "import json; d=json.load(open('verify.json')); print('verify ok:', d['ok'], 'fingerprint:', d['fingerprint']); assert d['ok']"
+      - name: Null Meridian logical fingerprint (expected db736602…85c28a0)
+        env:
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          docker run --rm -i -e ADG_DATABASE_URL "adg-api:${GITHUB_SHA}" \
+            python - < frontend/cloudflare/checks/null_meridian_fingerprint.py | tee nm-fingerprint.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-reports
+          path: |
+            verify.json
+            status.json
+            nm-fingerprint.json
+
+  deploy:
+    name: Deploy Worker + Container
+    needs: [preflight, gates, bootstrap]
+    # Runs after a bootstrap, or without one when none was asked for.
+    if: ${{ always() && needs.preflight.result == 'success' && needs.gates.result == 'success' && needs.bootstrap.result != 'failure' && needs.bootstrap.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --no-audit --no-fund
+      - name: Build the Next.js application (OpenNext)
+        env:
+          NEXT_PUBLIC_ADG_API_URL: ${{ vars.ADG_STAGING_URL }}
+        run: npx opennextjs-cloudflare build
+      - name: Deploy (wrangler builds and pushes the API image with this runner's Docker)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+          ADG_DEV_AUTH_SECRET: ${{ secrets.ADG_DEV_AUTH_SECRET }}
+          ADG_REMEDIATION_SIGNING_KEY: ${{ secrets.ADG_REMEDIATION_SIGNING_KEY }}
+          ADG_STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+        run: |
+          umask 077
+          secrets_file="$RUNNER_TEMP/worker-secrets.json"
+          trap 'rm -f "$secrets_file"' EXIT
+          python3 - "$secrets_file" <<'EOF'
+          import json, os, sys
+          names = ["ADG_DATABASE_URL", "ADG_DEV_AUTH_SECRET", "ADG_REMEDIATION_SIGNING_KEY"]
+          secrets = {name: os.environ[name] for name in names if os.environ.get(name)}
+          json.dump(secrets, open(sys.argv[1], "w"))
+          print("secrets uploaded with this version:", ", ".join(sorted(secrets)))
+          EOF
+          npx wrangler deploy \
+            --secrets-file "$secrets_file" \
+            --var "ADG_WEB_URL:${ADG_STAGING_URL}" \
+            --var "ACCESS_TEAM_DOMAIN:${ACCESS_TEAM_DOMAIN}" \
+            --var "ACCESS_AUD:${ACCESS_AUD}" \
+            --tag "${GITHUB_SHA::12}" \
+            --message "ADG staging ${GITHUB_SHA::12} (${GITHUB_REF_NAME})" \
+            --containers-rollout immediate | tee "$RUNNER_TEMP/deploy.log"
+      - name: Record deployment identity
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          {
+            echo "## ADG staging deployment"
+            echo "- source commit: \`${GITHUB_SHA}\` (${GITHUB_REF_NAME})"
+            echo "- Worker version tag: \`${GITHUB_SHA::12}\`"
+            echo "- Worker version: \`$(grep -oE 'Current Version ID: [0-9a-f-]+' "$RUNNER_TEMP/deploy.log" | head -1)\`"
+            echo "- API images built on this runner (repository@digest):"
+            docker image ls --digests --format '  - `{{.Repository}}:{{.Tag}}@{{.Digest}}`' | grep -i adgapicontainer || true
+          } >> "$GITHUB_STEP_SUMMARY"
+          npx wrangler containers list || true
+
+  checks:
+    name: Hosted checks (verify, smoke, browser)
+    needs: [deploy]
+    if: ${{ always() && needs.deploy.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Read-only verify of the hosted demo database
+        env:
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          docker build -q -f docker/Dockerfile.backend -t adg-api:check . >/dev/null
+          docker run --rm -e ADG_RUNTIME_MODE=demo -e ADG_DEMO_DATASET=null-meridian-v1 -e ADG_DATABASE_URL \
+            -e ADG_LOG_LEVEL=WARNING adg-api:check python -m app.demo_mode --json verify > verify.json
+          python3 -c "import json; d=json.load(open('verify.json')); print('verify ok:', d['ok'], 'fingerprint:', d['fingerprint']); assert d['ok']"
+          docker run --rm -i -e ADG_DATABASE_URL adg-api:check python - \
+            < frontend/cloudflare/checks/null_meridian_fingerprint.py > nm-fingerprint.json
+          python3 -c "import json; d=json.load(open('nm-fingerprint.json')); print('null meridian fingerprint:', d['fingerprint'], 'match:', d['match'])"
+      - name: HTTP smoke
+        env:
+          STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          # The database host is a canary no answer may contain; derived here, never printed.
+          export SMOKE_CANARIES="$(python3 -c 'import os; from urllib.parse import urlsplit; print(urlsplit(os.environ["ADG_DATABASE_URL"]).hostname or "")')"
+          unset ADG_DATABASE_URL
+          node frontend/cloudflare/checks/smoke.mjs | tee smoke.log
+      - name: Browser gate (headless Chromium)
+        env:
+          STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          SCREENSHOT_DIR: screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          npx playwright install --with-deps chromium
+          node frontend/cloudflare/checks/browser.mjs | tee browser.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hosted-checks
+          path: |
+            verify.json
+            nm-fingerprint.json
+            smoke.log
+            browser.log
+            screenshots/

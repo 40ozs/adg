@@ -9,16 +9,21 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cf:typecheck": "tsc -p cloudflare/tsconfig.json",
+    "cf:build": "opennextjs-cloudflare build"
   },
   "dependencies": {
-    "next": "^15.5.4",
+    "next": "^15.5.27",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@cloudflare/containers": "^0.3.7",
+    "@cloudflare/workers-types": "^5.20261012.1",
     "@eslint/eslintrc": "^3.2.0",
+    "@opennextjs/cloudflare": "^1.20.10",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
@@ -27,9 +32,10 @@
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9.17.0",
-    "eslint-config-next": "^15.5.4",
+    "eslint-config-next": "^15.5.27",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wrangler": "^4.149.0"
   }
 }

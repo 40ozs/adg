@@ -62,7 +62,9 @@ python -m app                      # the API, in demo mode
 The mode is deployment configuration (`ADG_RUNTIME_MODE=production|demo`), never a switch in
 the UI. Demo Mode is the runtime and safety boundary
 ([`docs/architecture/demo-mode.md`](docs/architecture/demo-mode.md)); Null Meridian is the
-dataset it runs on ([`docs/demo/null-meridian.md`](docs/demo/null-meridian.md)).
+dataset it runs on ([`docs/demo/null-meridian.md`](docs/demo/null-meridian.md)). A protected
+Cloudflare staging deployment of it (Worker + Container + managed PostgreSQL, behind Cloudflare
+Access) is described in [`docs/deployment/cloudflare-demo.md`](docs/deployment/cloudflare-demo.md).
 
 Two documents are the place to start:
 [`docs/operations/mvp-runbook.md`](docs/operations/mvp-runbook.md) to get it running, and

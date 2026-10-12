@@ -1,0 +1,69 @@
+// ADG Demo Mode on Cloudflare — PROTECTED STAGING ONLY. Not a production configuration.
+//
+// One Worker serves the Next.js application (OpenNext) and fronts the ADG API, which runs
+// unmodified from docker/Dockerfile.backend in a Cloudflare Container. Every request must
+// carry a valid Cloudflare Access assertion (cloudflare/access.ts); without the Access
+// settings the Worker answers 503 to everyone. See docs/deployment/cloudflare-demo.md.
+//
+// Nothing secret is in this file. Secrets (names only): ADG_DATABASE_URL,
+// ADG_DEV_AUTH_SECRET, and optionally ADG_REMEDIATION_SIGNING_KEY — `wrangler secret put`.
+// Account-specific values (ADG_WEB_URL, ACCESS_TEAM_DOMAIN, ACCESS_AUD) are passed at deploy
+// time with --var by .github/workflows/cloudflare-staging.yml.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "adg-demo-staging",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  // The generated *.workers.dev hostname is the staging URL. Preview and version URLs are
+  // off: each would be one more hostname for Access to cover.
+  "workers_dev": true,
+  "preview_urls": false,
+
+  // run_worker_first: static assets also pass the Access check in the Worker.
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "adg-demo-staging" }],
+
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+
+  // Keep-warm: a readiness probe to the API Container every 5 minutes (cloudflare/worker.ts
+  // `scheduled`). A cold `basic` instance needs 24-28 s to become ready. Remove to let the
+  // Container sleep after ADG_CONTAINER_SLEEP_AFTER of inactivity instead.
+  "triggers": { "crons": ["*/5 * * * *"] },
+
+  "containers": [
+    {
+      "class_name": "AdgApiContainer",
+      // The repository's own backend image, built from the repository root like
+      // docker-compose.yml builds it. linux/amd64, no secret baked in.
+      "image": "../docker/Dockerfile.backend",
+      "image_build_context": "..",
+      // 1/4 vCPU, 1 GiB, 4 GB disk. Serves reads, risk results, access paths and simulation;
+      // the one-time reset runs outside Cloudflare (docs §6) and does not size this.
+      "instance_type": "basic",
+      // One named instance serves traffic; the second slot is headroom for a rollout.
+      "max_instances": 2
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "ADG_API", "class_name": "AdgApiContainer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AdgApiContainer"] }],
+
+  "vars": {
+    "ADG_RUNTIME_MODE": "demo",
+    "ADG_DEMO_DATASET": "null-meridian-v1",
+    // Staging review uses ADG's development sign-in behind Access. A public demo needs a
+    // separate sign-in decision (docs §11); ADG_ENVIRONMENT=production refuses this mode.
+    "ADG_ENVIRONMENT": "development",
+    "ADG_AUTH_MODE": "development",
+    "ADG_LOG_LEVEL": "INFO",
+    "ADG_LOG_FORMAT": "json",
+    "ADG_CONTAINER_SLEEP_AFTER": "15m"
+  }
+}

@@ -15,6 +15,7 @@
 
 import "server-only";
 
+import { sendApiRequest } from "@/lib/api/transport";
 import { resolveServerApiUrl } from "@/lib/config";
 
 /** Why a request did not produce data. */
@@ -83,7 +84,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await sendApiRequest(url, {
       method: options.method ?? "GET",
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
