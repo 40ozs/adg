@@ -12,9 +12,10 @@ import type {
   TokenView,
 } from "@/lib/contracts";
 import { explainHref } from "@/lib/explanation";
-import { ambiguousLabels } from "@/lib/identity";
+import { ambiguousLabels, chainPrincipals, principalLabel } from "@/lib/identity";
 import { directoryHref, shareHref } from "@/lib/resources";
-import { PrincipalName } from "@/components/Identity";
+import { PrincipalChain, PrincipalName } from "@/components/Identity";
+import { SortableTable } from "@/components/SortableTable";
 
 /**
  * The verdict cell.
@@ -76,54 +77,59 @@ export function ResourceAccessTable({
   explainFor?: string;
 }): JSX.Element {
   return (
-    <div className="table-scroll">
-      <table className="access-table">
-        <thead>
-          <tr>
-            <th scope="col">{subject === "share" ? "Share" : "Directory"}</th>
-            <th scope="col">Access</th>
-            <th scope="col">Rights</th>
-            <th scope="col">Narrower layer</th>
-            {explainFor !== undefined && <th scope="col">Why</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={`${item.resource.key}|${item.share?.key ?? ""}`}>
-              <th scope="row">
-                {subject === "share" && item.share ? (
-                  <Link href={shareHref(item.share.key)}>{item.share.name ?? item.share.key}</Link>
-                ) : (
-                  <Link href={directoryHref(item.resource.key)}>
-                    {item.resource.path ?? item.resource.key}
-                  </Link>
-                )}
-                {!item.resource.observed && (
-                  <div className="ace-notes status-warn">
-                    no run has read this directory&apos;s descriptor
-                  </div>
-                )}
-                {item.conditions.length > 0 && (
-                  <div className="ace-notes">{item.conditions.join(" · ")}</div>
-                )}
-              </th>
-              <td>
-                <Verdict access={item.access} certainty={item.certainty} />
-              </td>
-              <td>
-                <Rights rights={item.rights} />
-              </td>
-              <td className="muted">{limitingLayerLabel(item.limiting_layer)}</td>
-              {explainFor !== undefined && (
-                <td>
-                  <Link href={explainHref(explainFor, item.resource.key)}>Explain</Link>
-                </td>
+    <SortableTable
+      className="access-table"
+      caption="Sorting orders the rows on this page."
+      columns={[
+        { label: subject === "share" ? "Share" : "Directory" },
+        { label: "Access" },
+        { label: "Rights" },
+        { label: "Narrower layer", className: "muted" },
+        ...(explainFor !== undefined ? [{ label: "Why", sortable: false }] : []),
+      ]}
+      rows={items.map((item) => {
+        const name =
+          subject === "share" && item.share
+            ? (item.share.name ?? item.share.key)
+            : (item.resource.path ?? item.resource.key);
+        return {
+          key: `${item.resource.key}|${item.share?.key ?? ""}`,
+          sort: [
+            name,
+            accessVerdict(item.access, item.certainty).word,
+            item.rights.label,
+            limitingLayerLabel(item.limiting_layer),
+          ],
+          cells: [
+            <>
+              {subject === "share" && item.share ? (
+                <Link href={shareHref(item.share.key)}>{name}</Link>
+              ) : (
+                <Link href={directoryHref(item.resource.key)}>{name}</Link>
               )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              {!item.resource.observed && (
+                <div className="ace-notes status-warn">
+                  no run has read this directory&apos;s descriptor
+                </div>
+              )}
+              {item.conditions.length > 0 && (
+                <div className="ace-notes">{item.conditions.join(" · ")}</div>
+              )}
+            </>,
+            <Verdict key="access" access={item.access} certainty={item.certainty} />,
+            <Rights key="rights" rights={item.rights} />,
+            limitingLayerLabel(item.limiting_layer),
+            ...(explainFor !== undefined
+              ? [
+                  <Link key="explain" href={explainHref(explainFor, item.resource.key)}>
+                    Explain
+                  </Link>,
+                ]
+              : []),
+          ],
+        };
+      })}
+    />
   );
 }
 
@@ -151,59 +157,61 @@ export function PrincipalAccessTable({
 }): JSX.Element {
   const ambiguous = ambiguousLabels(items.map((item) => item.principal));
   return (
-    <div className="table-scroll">
-      <table className="access-table">
-        <thead>
-          <tr>
-            <th scope="col">Principal</th>
-            <th scope="col">Access</th>
-            <th scope="col">Rights</th>
-            <th scope="col">Reaches it through</th>
-            {explainOn !== undefined && <th scope="col">Why</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.principal.key}>
-              <th scope="row">
-                <PrincipalName principal={item.principal} ambiguous={ambiguous} />
-              </th>
-              <td>
-                <Verdict access={item.access} certainty={item.certainty} />
-                {item.conditions.length > 0 && (
-                  <div className="ace-notes">{item.conditions.join(" · ")}</div>
-                )}
-              </td>
-              <td>
-                <Rights rights={item.rights} />
-              </td>
-              <td>
-                {item.via.length === 0 ? (
-                  <span className="muted">the ACL names this principal directly</span>
-                ) : (
-                  <ul className="via-list">
-                    {item.via.map((entry) => (
-                      <li key={entry.principal.key}>
-                        <PrincipalName principal={entry.principal} />
-                        <span className="muted">
-                          {entry.path.length > 1 ? ` — ${entry.path.join(" → ")}` : ""}
-                          {entry.assumed ? " (assumed, not observed)" : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </td>
-              {explainOn !== undefined && (
-                <td>
-                  <Link href={explainHref(item.principal.key, explainOn)}>Explain</Link>
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="access-table"
+      caption="Sorting orders the rows on this page."
+      columns={[
+        { label: "Principal" },
+        { label: "Access" },
+        { label: "Rights" },
+        { label: "Reaches it through" },
+        ...(explainOn !== undefined ? [{ label: "Why", sortable: false }] : []),
+      ]}
+      rows={items.map((item) => ({
+        key: item.principal.key,
+        sort: [
+          principalLabel(item.principal),
+          accessVerdict(item.access, item.certainty).word,
+          item.rights.label,
+          item.via.map((entry) => principalLabel(entry.principal)).join(", ") || null,
+        ],
+        cells: [
+          <PrincipalName key="principal" principal={item.principal} ambiguous={ambiguous} />,
+          <>
+            <Verdict access={item.access} certainty={item.certainty} />
+            {item.conditions.length > 0 && (
+              <div className="ace-notes">{item.conditions.join(" · ")}</div>
+            )}
+          </>,
+          <Rights key="rights" rights={item.rights} />,
+          item.via.length === 0 ? (
+            <span className="muted">the ACL names this principal directly</span>
+          ) : (
+            <ul className="via-list">
+              {item.via.map((entry) => (
+                <li key={entry.principal.key}>
+                  <PrincipalName principal={entry.principal} />
+                  {entry.path.length > 1 && (
+                    <span className="muted">
+                      {" — "}
+                      <PrincipalChain principals={chainPrincipals(entry.path, entry.path_principals)} />
+                    </span>
+                  )}
+                  {entry.assumed && <span className="muted"> (assumed, not observed)</span>}
+                </li>
+              ))}
+            </ul>
+          ),
+          ...(explainOn !== undefined
+            ? [
+                <Link key="explain" href={explainHref(item.principal.key, explainOn)}>
+                  Explain
+                </Link>,
+              ]
+            : []),
+        ],
+      }))}
+    />
   );
 }
 

@@ -19,6 +19,7 @@
  */
 
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApiResult } from "@/lib/api/client";
@@ -31,8 +32,18 @@ import type {
 } from "@/lib/contracts";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -382,6 +393,33 @@ describe("the error summary", () => {
     expect(within(rows[0]).getByText("access_denied")).toBeTruthy();
     expect(within(rows[0]).getByText("widespread")).toBeTruthy();
     expect(within(rows[1]).getByText("path_too_long")).toBeTruthy();
+  });
+
+  it("sorts by count as a number, so 9 comes before 10", async () => {
+    const group = (code: string, count: number) => ({
+      code,
+      count,
+      collectors: ["ntfs"],
+      latest_occurred_at: "2026-09-14T08:00:00Z",
+      sample_targets: [],
+      is_widespread: false,
+    });
+    await renderPage(
+      report({ total_errors: 19, errors: [group("ten_of_them", 10), group("nine_of_them", 9)] }),
+    );
+    const table = screen.getByRole("table", { name: /grouped by code/ });
+    const codes = () =>
+      within(table)
+        .getAllByRole("rowheader")
+        .map((cell) => cell.textContent);
+
+    expect(codes()).toEqual(["ten_of_them", "nine_of_them"]);
+    await userEvent.setup().click(within(table).getByRole("button", { name: /Count/ }));
+    expect(codes()).toEqual(["nine_of_them", "ten_of_them"]);
+    expect(within(table).getByRole("columnheader", { name: /Count/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
   });
 
   it("does not present an absence of errors as complete coverage", async () => {

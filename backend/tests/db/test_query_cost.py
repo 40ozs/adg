@@ -281,6 +281,7 @@ PAGED = [
     pytest.param("/api/v1/shares/fs01%7Cfinance/root-acl?limit={n}", id="share-root-acl"),
     pytest.param(f"/api/v1/resources/{encoded(FINANCE_UNC)}/acl?limit={{n}}", id="resource-acl"),
     pytest.param("/api/v1/principals/S-1-5-11/shares?limit={n}", id="trustee-shares"),
+    pytest.param("/api/v1/principals?kind=users&limit={n}", id="user-directory"),
 ]
 
 

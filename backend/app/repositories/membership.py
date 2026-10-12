@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, TypeAlias, TypeVar
 from uuid import UUID
 
-from sqlalchemy import RowMapping, Select, Text, any_, bindparam, func, or_, select
+from sqlalchemy import RowMapping, Select, Text, and_, any_, bindparam, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,11 +47,13 @@ from app.domain import (
 )
 from app.models.current import current_membership_edges, current_principals
 from app.models.schema import principal_aliases
+from app.repositories.search import escape_like
 
 __all__ = [
     "EDGE_FETCH_CEILING",
     "AliasRecord",
     "DirectEdgeRecord",
+    "ListedPrincipal",
     "MembershipRepository",
     "Page",
     "PrincipalRecord",
@@ -183,6 +185,15 @@ class DirectEdgeRecord:
     first_observed_at: dt.datetime
     last_observed_at: dt.datetime
     last_observed_run_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class ListedPrincipal:
+    """One row of a principal directory, with its direct degree on both sides."""
+
+    record: PrincipalRecord
+    direct_member_count: int
+    direct_group_count: int
 
 
 _EDGE_COLUMNS = (
@@ -375,6 +386,73 @@ class MembershipRepository:
                 last_observed_at=row["last_observed_at"],
             )
             for row in rows
+        )
+
+    async def list_principals(
+        self,
+        kinds: Sequence[PrincipalKind],
+        *,
+        term: str | None = None,
+        limit: int = DEFAULT_PAGE_SIZE,
+        after: str | None = None,
+    ) -> Page[ListedPrincipal]:
+        """Principals of the given kinds, ordered by key, optionally narrowed by ``term``.
+
+        Keyset on the primary key, so page forty costs what page one does. The two degree
+        columns are correlated counts over indexed edge columns, one pair per row on the
+        page, never a traversal: an effective count would be a bounded graph walk per row.
+        """
+        page_size = max(1, min(limit, MAX_PAGE_SIZE))
+        edges = current_membership_edges
+        statement: Select[Any] = (
+            select(
+                current_principals,
+                select(func.count())
+                .select_from(edges)
+                .where(edges.c.group_key == current_principals.c.principal_key)
+                .scalar_subquery()
+                .label("direct_member_count"),
+                select(func.count())
+                .select_from(edges)
+                .where(edges.c.member_key == current_principals.c.principal_key)
+                .scalar_subquery()
+                .label("direct_group_count"),
+            )
+            .where(_listing_filter(kinds, term))
+            .order_by(current_principals.c.principal_key)
+            .limit(page_size + 1)
+        )
+        if after is not None:
+            statement = statement.where(current_principals.c.principal_key > after)
+
+        rows = (await self._session.execute(statement)).mappings().all()
+        items = tuple(
+            ListedPrincipal(
+                record=principal_record(row),
+                direct_member_count=int(row["direct_member_count"]),
+                direct_group_count=int(row["direct_group_count"]),
+            )
+            for row in rows[:page_size]
+        )
+        has_more = len(rows) > page_size
+        return Page(
+            items=items,
+            has_more=has_more,
+            next_key=items[-1].record.principal_key if has_more and items else None,
+        )
+
+    async def count_principals(
+        self, kinds: Sequence[PrincipalKind], *, term: str | None = None
+    ) -> int:
+        """Exact size of the set :meth:`list_principals` pages through."""
+        return int(
+            (
+                await self._session.execute(
+                    select(func.count())
+                    .select_from(current_principals)
+                    .where(_listing_filter(kinds, term))
+                )
+            ).scalar_one()
         )
 
     async def is_known(self, key: str) -> bool:
@@ -570,6 +648,33 @@ def principal_record(row: RowLike) -> PrincipalRecord:
         last_observed_at=row["last_observed_at"],
         last_observed_run_id=row["last_observed_run_id"],
     )
+
+
+def _listing_filter(kinds: Sequence[PrincipalKind], term: str | None) -> Any:
+    """The directory's WHERE clause: these kinds, and a prefix of a SID or of a name.
+
+    Prefix only, for the reason :mod:`app.repositories.search` gives. A term that starts
+    like a SID (``S-1-``) is matched against the SID, so a whole SID and a domain prefix
+    both work.
+    ``DOMAIN\\name`` is matched on the part after the backslash: ADG stores the account
+    name, not the NetBIOS domain in front of it.
+    """
+    clauses: list[Any] = [current_principals.c.principal_kind.in_([kind.value for kind in kinds])]
+    text = (term or "").strip()
+    if text.upper().startswith("S-1-"):
+        clauses.append(current_principals.c.sid.like(f"{escape_like(text.upper())}%", escape="\\"))
+    elif text:
+        name = text.rsplit("\\", 1)[-1]
+        pattern = f"{escape_like(name)}%"
+        clauses.append(
+            or_(
+                current_principals.c.display_name.ilike(pattern, escape="\\"),
+                current_principals.c.sam_account_name.ilike(pattern, escape="\\"),
+                current_principals.c.user_principal_name.ilike(pattern, escape="\\"),
+                current_principals.c.last_known_name.ilike(pattern, escape="\\"),
+            )
+        )
+    return and_(*clauses)
 
 
 def _chunks(values: list[str], size: int) -> Iterator[list[str]]:

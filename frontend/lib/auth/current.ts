@@ -10,6 +10,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { fetchPrincipal } from "@/lib/api/adg";
 import type { ApiFailure } from "@/lib/api/client";
@@ -37,8 +38,11 @@ export type Viewer =
  * Three outcomes, not two. "Signed out" and "the API is down" must not be the same screen:
  * bouncing somebody to a login page because the database is unreachable sends them round a
  * loop that signing in cannot break.
+ *
+ * Asked once per server request: the shell, a layout and a page rendered together share one
+ * `/auth/me` answer. The next request asks again.
  */
-export async function currentViewer(): Promise<Viewer> {
+export const currentViewer = cache(async function currentViewer(): Promise<Viewer> {
   const state = await currentSessionState();
   if (state.status === "absent") {
     return { status: "signed-out", reason: "no-session" };
@@ -58,4 +62,4 @@ export async function currentViewer(): Promise<Viewer> {
     return { status: "signed-out", reason: "rejected", detail: result.failure.detail };
   }
   return { status: "unavailable", failure: result.failure };
-}
+});

@@ -19,8 +19,18 @@ import { currentViewer } from "@/lib/auth/current";
 import type { DemoOverview, DemoScenario, RuntimeInfo } from "@/lib/contracts";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -105,8 +115,8 @@ describe("the scenario list", () => {
   it("links people and groups to their principal pages, by SID", () => {
     render(<DemoScenarioList scenarios={[scenarioF]} />);
 
-    expect(hrefOf("Brianna Reddy")).toBe(`/identities/principal?key=${encodeURIComponent(MOVER)}`);
-    expect(hrefOf("Sales-Ops")).toBe(`/identities/principal?key=${encodeURIComponent(SALES_OPS)}`);
+    expect(hrefOf("Brianna Reddy")).toBe(`/identities/principal/${encodeURIComponent(MOVER)}`);
+    expect(hrefOf("Sales-Ops")).toBe(`/identities/principal/${encodeURIComponent(SALES_OPS)}`);
   });
 
   it("offers each person an explanation of their access to the folder", () => {

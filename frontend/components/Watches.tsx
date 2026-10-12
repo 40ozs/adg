@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import type { WatchKindView, WatchView } from "@/lib/contracts";
 import { cooldownWording, triggerWording, triggersFor, watchKindWording } from "@/lib/alerts";
+import { SortableTable } from "@/components/SortableTable";
 
 /**
  * Configuring what ADG watches.
@@ -90,40 +91,48 @@ export function WatchManager({
           risk findings still raise alerts on their own — they do not need a watch.
         </p>
       ) : (
-        <div className="table-scroll">
-          <table className="acl-table">
-            <caption className="visually-hidden">Configured watches</caption>
-            <thead>
-              <tr>
-                <th scope="col">Label</th>
-                <th scope="col">What</th>
-                <th scope="col">Tell me about</th>
-                <th scope="col">Quiet for</th>
-                <th scope="col">State</th>
-                {canManage && <th scope="col">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {watches.map((watch) => (
-                <tr key={watch.watch_id}>
-                  <td>{watch.label}</td>
-                  <td>
-                    <span className="badge">{watchKindWording(watch.kind)}</span>{" "}
-                    <code>{watch.key}</code>
-                  </td>
-                  <td>
-                    {watch.triggers.map((trigger) => (
-                      <span key={trigger} className="badge">
-                        {triggerWording(trigger)}
-                      </span>
-                    ))}
-                  </td>
-                  <td>{cooldownWording(watch.cooldown_seconds)}</td>
-                  <td className={watch.enabled ? "status-ok" : "status-warn"}>
-                    {watch.enabled ? "on" : "off"}
-                  </td>
-                  {canManage && (
-                    <td>
+        <SortableTable
+          className="acl-table"
+          caption="Configured watches"
+          captionClassName="visually-hidden"
+          rowHeader={null}
+          columns={[
+            { label: "Label" },
+            { label: "What" },
+            { label: "Tell me about" },
+            { label: "Quiet for", type: "number" },
+            { label: "State" },
+            ...(canManage ? [{ label: "Actions", sortable: false }] : []),
+          ]}
+          rows={watches.map((watch) => ({
+            key: watch.watch_id,
+            sort: [
+              watch.label,
+              `${watchKindWording(watch.kind)} ${watch.key}`,
+              watch.triggers.map(triggerWording).join(", "),
+              watch.cooldown_seconds,
+              watch.enabled,
+            ],
+            cells: [
+              watch.label,
+              <>
+                <span className="badge">{watchKindWording(watch.kind)}</span>{" "}
+                <code>{watch.key}</code>
+              </>,
+              <>
+                {watch.triggers.map((trigger) => (
+                  <span key={trigger} className="badge">
+                    {triggerWording(trigger)}
+                  </span>
+                ))}
+              </>,
+              cooldownWording(watch.cooldown_seconds),
+              <span key="state" className={watch.enabled ? "status-ok" : "status-warn"}>
+                {watch.enabled ? "on" : "off"}
+              </span>,
+              ...(canManage
+                ? [
+                    <>
                       <button
                         type="button"
                         className="button"
@@ -155,13 +164,12 @@ export function WatchManager({
                       >
                         Delete
                       </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </>,
+                  ]
+                : []),
+            ],
+          }))}
+        />
       )}
 
       {canManage ? (

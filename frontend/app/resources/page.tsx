@@ -3,7 +3,9 @@ import Link from "next/link";
 import { fetchCollectionStatus, fetchServers } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
+import { DirectoryTabs } from "@/components/DirectoryTabs";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable } from "@/components/SortableTable";
 import { serverHref } from "@/lib/resources";
 import { classify } from "@/lib/state";
 
@@ -38,6 +40,7 @@ export default async function ResourcesPage() {
   return (
     <>
       <h1>Resources</h1>
+      <DirectoryTabs current="servers" />
       <p className="muted">
         Servers ADG has observed, and the shares they publish. A share is a publication of a
         directory, not the directory — the two carry separate permissions and ADG keeps them
@@ -48,37 +51,40 @@ export default async function ResourcesPage() {
       <StateMessage state={state} />
 
       {state.kind === "ready" && (
-        <div className="table-scroll">
-          <table>
-            <caption>
+        <SortableTable
+          caption={
+            <>
               {state.data.page.total ?? state.data.items.length} server(s).
-              {state.data.page.has_more && " More pages are available through the API."}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Server</th>
-                <th scope="col">DNS name</th>
-                <th scope="col">Operating system</th>
-                <th scope="col">Domain member</th>
-                <th scope="col">Shares</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.data.items.map((server) => (
-                <tr key={server.key}>
-                  <th scope="row">
-                    <Link href={serverHref(server.key)}>{server.name}</Link>
-                  </th>
-                  <td className="muted">{server.dns_host_name ?? "—"}</td>
-                  <td className="muted">{server.operating_system ?? "—"}</td>
-                  {/* Null is "no run established this", never a guessed false. */}
-                  <td>{server.is_domain_member === null ? "unknown" : String(server.is_domain_member)}</td>
-                  <td>{server.share_count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              {state.data.page.has_more && " More pages are available through the API."} Sorting
+              orders the rows shown.
+            </>
+          }
+          columns={[
+            { label: "Server" },
+            { label: "DNS name", className: "muted" },
+            { label: "Operating system", className: "muted" },
+            { label: "Domain member" },
+            { label: "Shares", type: "number" },
+          ]}
+          rows={state.data.items.map((server) => ({
+            key: server.key,
+            sort: [
+              server.name,
+              server.dns_host_name,
+              server.operating_system,
+              server.is_domain_member,
+              server.share_count,
+            ],
+            cells: [
+              <Link key="server" href={serverHref(server.key)}>{server.name}</Link>,
+              server.dns_host_name ?? "—",
+              server.operating_system ?? "—",
+              // Null is "no run established this", never a guessed false.
+              server.is_domain_member === null ? "unknown" : String(server.is_domain_member),
+              server.share_count,
+            ],
+          }))}
+        />
       )}
     </>
   );

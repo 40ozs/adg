@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { Fragment } from "react";
 import Link from "next/link";
 
 import type { PrincipalDetail, PrincipalSummary } from "@/lib/contracts";
@@ -48,7 +49,14 @@ export function PrincipalName({
   return (
     <span className="principal">
       <span className="principal-name">
-        {link ? <Link href={principalHref(principal)}>{label}</Link> : label}
+        {/* No prefetch: a page of principals would otherwise ask for every one of them. */}
+        {link ? (
+          <Link href={principalHref(principal)} prefetch={false}>
+            {label}
+          </Link>
+        ) : (
+          label
+        )}
         {needsQualifier && qualifier && (
           <span className="principal-qualifier"> ({qualifier})</span>
         )}
@@ -81,5 +89,37 @@ export function PrincipalCell({
       <PrincipalName principal={principal} ambiguous={ambiguous} />
       <span className="principal-kind">{principalKindLabel(principal)}</span>
     </>
+  );
+}
+
+/**
+ * A membership chain, as names that open the principal they name.
+ *
+ * Each link is built from the node's storage key, never from its name: two principals can
+ * share a name, and only the key opens the right one. A node no run has described has no
+ * page worth opening, so it stays text — its SID, or the name an ACE last carried — and is
+ * never a link that leads nowhere. Prefetching is off: a page of chains is hundreds of
+ * links, and prefetching each one would ask the server for hundreds of pages nobody opened.
+ */
+export function PrincipalChain({
+  principals,
+}: {
+  principals: readonly PrincipalSummary[];
+}): JSX.Element {
+  return (
+    <span className="principal-chain">
+      {principals.map((principal, index) => (
+        <Fragment key={`${index}:${principal.key}`}>
+          {index > 0 && " → "}
+          {principal.resolved ? (
+            <Link href={principalHref(principal)} prefetch={false} title={principal.key}>
+              {principalLabel(principal)}
+            </Link>
+          ) : (
+            <code title="No run has described this SID">{principalLabel(principal)}</code>
+          )}
+        </Fragment>
+      ))}
+    </span>
   );
 }

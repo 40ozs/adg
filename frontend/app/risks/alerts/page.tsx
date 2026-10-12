@@ -18,6 +18,7 @@ import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
 import { PagePosition, Pager } from "@/components/Pager";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable } from "@/components/SortableTable";
 import { WatchManager } from "@/components/Watches";
 
 const PATH = "/risks/alerts";
@@ -179,35 +180,38 @@ export default async function AlertsPage({
             Including the ones that were not delivered. A cooldown that left no record would
             be indistinguishable afterwards from a pipeline that dropped them.
           </p>
-          <div className="table-scroll">
-            <table className="acl-table">
-              <caption className="visually-hidden">Occurrences of this alert</caption>
-              <thead>
-                <tr>
-                  <th scope="col">What happened</th>
-                  <th scope="col">When</th>
-                  <th scope="col">Delivered</th>
-                  <th scope="col">Stands for</th>
-                  <th scope="col">Why not</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.data.events.map((event) => (
-                  <tr key={event.event_id}>
-                    <td>{event.transition}</td>
-                    <td className="muted">{event.occurred_at}</td>
-                    <td className={event.notified ? "status-ok" : "status-warn"}>
-                      {event.notified ? "yes" : "no"}
-                    </td>
-                    <td>{event.folds}</td>
-                    <td className="muted">
-                      {suppressionReasonWording(event.suppression_reason) ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            className="acl-table"
+            caption="Occurrences of this alert"
+            captionClassName="visually-hidden"
+            rowHeader={null}
+            columns={[
+              { label: "What happened" },
+              { label: "When", type: "date", className: "muted" },
+              { label: "Delivered" },
+              { label: "Stands for", type: "number" },
+              { label: "Why not", className: "muted" },
+            ]}
+            rows={detail.data.events.map((event) => ({
+              key: event.event_id,
+              sort: [
+                event.transition,
+                event.occurred_at,
+                event.notified,
+                event.folds,
+                suppressionReasonWording(event.suppression_reason),
+              ],
+              cells: [
+                event.transition,
+                event.occurred_at,
+                <span key="delivered" className={event.notified ? "status-ok" : "status-warn"}>
+                  {event.notified ? "yes" : "no"}
+                </span>,
+                event.folds,
+                suppressionReasonWording(event.suppression_reason) ?? "—",
+              ],
+            }))}
+          />
 
           <h3>Where it went</h3>
           {detail.data.deliveries.length === 0 ? (
@@ -244,52 +248,55 @@ function AlertTable({
   detailHref: (alert: AlertView) => string;
 }): JSX.Element {
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption className="visually-hidden">Alerts, newest first</caption>
-        <thead>
-          <tr>
-            <th scope="col">State</th>
-            <th scope="col">What</th>
-            <th scope="col">Watch</th>
-            <th scope="col">Last raised</th>
-            <th scope="col">Occurrences</th>
-          </tr>
-        </thead>
-        <tbody>
-          {alerts.map((alert) => {
-            const held = suppressionNotice(alert);
-            return (
-              <tr key={alert.alert_key}>
-                <td>
-                  <span className={`badge status-${statusTone(alert)}`}>
-                    {statusWording(alert)}
-                  </span>
-                </td>
-                <td>
-                  <Link href={detailHref(alert)}>{alert.summary}</Link>
+    <SortableTable
+      className="acl-table"
+      caption="Alerts, newest first. Sorting orders the rows on this page."
+      captionClassName="visually-hidden"
+      rowHeader={null}
+      columns={[
+        { label: "State" },
+        { label: "What" },
+        { label: "Watch", className: "muted" },
+        { label: "Last raised", type: "date", className: "muted" },
+        { label: "Occurrences", type: "number" },
+      ]}
+      rows={alerts.map((alert) => {
+        const held = suppressionNotice(alert);
+        return {
+          key: alert.alert_key,
+          sort: [
+            statusWording(alert),
+            alert.summary,
+            alert.watch_label ?? "estate-wide",
+            alert.last_raised_at,
+            alert.occurrence_count,
+          ],
+          cells: [
+            <span key="state" className={`badge status-${statusTone(alert)}`}>
+              {statusWording(alert)}
+            </span>,
+            <>
+              <Link href={detailHref(alert)}>{alert.summary}</Link>
+              <br />
+              <span className="muted">{triggerWording(alert.trigger)}</span>
+            </>,
+            alert.watch_label ?? "estate-wide",
+            alert.last_raised_at,
+            <>
+              {alert.occurrence_count}
+              {held !== null && (
+                <>
                   <br />
-                  <span className="muted">{triggerWording(alert.trigger)}</span>
-                </td>
-                <td className="muted">{alert.watch_label ?? "estate-wide"}</td>
-                <td className="muted">{alert.last_raised_at}</td>
-                <td>
-                  {alert.occurrence_count}
-                  {held !== null && (
-                    <>
-                      <br />
-                      <span className="status-warn" title={held}>
-                        {alert.suppressed_total} not delivered
-                      </span>
-                    </>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  <span className="status-warn" title={held}>
+                    {alert.suppressed_total} not delivered
+                  </span>
+                </>
+              )}
+            </>,
+          ],
+        };
+      })}
+    />
   );
 }
 

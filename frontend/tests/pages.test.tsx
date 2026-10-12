@@ -13,7 +13,7 @@
  * attribution and its wiring, without a network or a database.
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApiResult } from "@/lib/api/client";
@@ -32,8 +32,18 @@ import {
 } from "./factories";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -42,6 +52,10 @@ vi.mock("next/link", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
   usePathname: () => "/identities/principal",
+  notFound: vi.fn(() => {
+    throw new Error("NEXT_NOT_FOUND");
+  }),
+  redirect: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/current", () => ({
@@ -71,7 +85,10 @@ vi.mock("@/lib/api/adg", () => ({
 import * as adg from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import DirectoryPage from "@/app/resources/directory/page";
-import PrincipalPage from "@/app/identities/principal/page";
+import LegacyPrincipalPage from "@/app/identities/principal/page";
+import { notFound, redirect } from "next/navigation";
+import PrincipalLayout from "@/app/identities/principal/[key]/layout";
+import PrincipalViewPage from "@/app/identities/principal/[key]/[[...view]]/page";
 import SharePage from "@/app/resources/share/page";
 
 const ok = <T,>(data: T): ApiResult<T> => ({ ok: true, data });
@@ -110,6 +127,18 @@ beforeEach(() => {
 
 const params = (values: Record<string, string>) => Promise.resolve(values);
 
+/**
+ * A principal's page as Next.js renders it on first load: its layout, with the view page as
+ * the layout's child, both from the path `/identities/principal/{key}/{view}`.
+ */
+async function principalPage(key: string, view?: string, search: Record<string, string> = {}) {
+  const route = Promise.resolve({ key: encodeURIComponent(key), view: view ? [view] : undefined });
+  return PrincipalLayout({
+    params: route,
+    children: await PrincipalViewPage({ params: route, searchParams: params(search) }),
+  });
+}
+
 /** The value beside a term in a `dl.facts`. */
 const factValue = (term: string): string =>
   screen.getByText(term).nextElementSibling?.textContent ?? "";
@@ -137,7 +166,7 @@ describe("a user's page", () => {
       ok({ principal: ADA, items: [], page: page() }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: ADA.key }) }));
+    render(await principalPage(ADA.key));
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Ada Lovelace");
     // The SID appears twice on purpose: once as the identity, once as the storage key.
@@ -151,7 +180,7 @@ describe("a user's page", () => {
       ok({ principal: ADA, items: [], page: page() }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: ADA.key }) }));
+    render(await principalPage(ADA.key));
 
     expect(screen.queryByRole("link", { name: "Direct members" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Direct groups" })).toBeInTheDocument();
@@ -194,7 +223,7 @@ describe("a user's page", () => {
       }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: ADA.key, tab: "shares" }) }));
+    render(await principalPage(ADA.key, "shares"));
 
     const link = screen.getByRole("link", { name: "Finance" });
     expect(link).toHaveAttribute("href", "/resources/share?key=fs01%7Cfinance");
@@ -237,7 +266,7 @@ describe("a user's page", () => {
       }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: ADA.key, tab: "directories" }) }));
+    render(await principalPage(ADA.key, "directories"));
 
     expect(screen.getByText(/directories on this page/)).toBeInTheDocument();
     expect(screen.getByText(/not a total for the estate/)).toBeInTheDocument();
@@ -263,7 +292,7 @@ describe("a user's page", () => {
       }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: ADA.key, tab: "groups" }) }));
+    render(await principalPage(ADA.key, "groups"));
 
     expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute(
       "href",
@@ -284,7 +313,7 @@ describe("a user's page", () => {
       ok({ principal: ADA, items: [], page: page() }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: ADA.key, tab: "groups" }) }));
+    render(await principalPage(ADA.key, "groups"));
 
     expect(screen.getByText(/but a collector failed/)).toBeInTheDocument();
   });
@@ -309,7 +338,7 @@ describe("a group's page", () => {
       ok({ group: FINANCE, items: [], page: page() }),
     );
 
-    render(await PrincipalPage({ searchParams: params({ key: FINANCE.key }) }));
+    render(await principalPage(FINANCE.key));
 
     expect(screen.getByRole("link", { name: "Direct members" })).toHaveAttribute(
       "aria-current",
@@ -331,6 +360,8 @@ describe("a group's page", () => {
       }),
       depth: 1,
       path: [FINANCE.key, `${host}|S-1-5-32-544`],
+      // Unlabelled on purpose: the chain falls back to keys rather than failing.
+      path_principals: [],
       edge_kinds: ["member"],
       via_foreign_security_principal: false,
     });
@@ -353,7 +384,7 @@ describe("a group's page", () => {
     );
 
     const { container } = render(
-      await PrincipalPage({ searchParams: params({ key: FINANCE.key, tab: "effective-groups" }) }),
+      await principalPage(FINANCE.key, "effective-groups"),
     );
 
     expect(container.textContent).toContain("(on fs01)");
@@ -382,7 +413,7 @@ describe("a group's page", () => {
     );
 
     render(
-      await PrincipalPage({ searchParams: params({ key: FINANCE.key, tab: "effective-members" }) }),
+      await principalPage(FINANCE.key, "effective-members"),
     );
 
     // Empty page, so the traversal notice is not rendered; the empty state must still not
@@ -408,7 +439,7 @@ describe("a group's page", () => {
     );
 
     render(
-      await PrincipalPage({ searchParams: params({ key: FINANCE.key, tab: "acl-references" }) }),
+      await principalPage(FINANCE.key, "acl-references"),
     );
 
     expect(screen.getByText("Raw SMB share ACL — as collected")).toBeInTheDocument();
@@ -483,7 +514,7 @@ describe("a share's page", () => {
 
     expect(screen.getByRole("link", { name: "Ada Lovelace" })).toHaveAttribute(
       "href",
-      "/identities/principal?key=S-1-5-21-1-2-3-1104",
+      "/identities/principal/S-1-5-21-1-2-3-1104",
     );
     expect(screen.getByText("Effective access — computed answer")).toBeInTheDocument();
   });
@@ -600,5 +631,166 @@ describe("a directory's page", () => {
       "href",
       "/resources/share?key=%5C%5CFS01%5CFinance",
     );
+  });
+});
+
+/* ------------------------------------------------- moving through a principal */
+
+describe("a principal's shortest chains", () => {
+  const ADA = principal({ key: "S-1-5-21-1-2-3-1104", display_name: "Ada Lovelace", is_group: false });
+  const TEAM = principal({ key: "S-1-5-21-1-2-3-1201", display_name: "Finance-Team", is_group: true });
+  const RW = principal({ key: "S-1-5-21-1-2-3-1202", display_name: "Finance-RW", is_group: true });
+  const ORPHAN = principal({ key: "S-1-5-21-1-2-3-7777", sid: "S-1-5-21-1-2-3-7777", resolved: false });
+  const TRAVERSAL = {
+    complete: true,
+    limits: { max_depth: 10, max_nodes: 100, max_edges: 100, max_paths: 100 },
+    depth_reached: 3,
+    nodes_visited: 3,
+    edges_read: 3,
+    truncation: [],
+  };
+
+  beforeEach(() => {
+    vi.mocked(adg.fetchPrincipalDetail).mockResolvedValue(ok(principalDetail({ ...ADA, kind: "user" })));
+    vi.mocked(adg.fetchEffectiveGroups).mockResolvedValue(
+      ok({
+        principal: principalDetail(ADA),
+        items: [
+          {
+            principal: TEAM,
+            depth: 1,
+            path: [ADA.key, TEAM.key],
+            path_principals: [ADA, TEAM],
+            edge_kinds: ["member"],
+            via_foreign_security_principal: false,
+          },
+          {
+            principal: RW,
+            depth: 3,
+            path: [ADA.key, TEAM.key, ORPHAN.key, RW.key],
+            path_principals: [ADA, TEAM, ORPHAN, RW],
+            edge_kinds: ["member", "member", "member"],
+            via_foreign_security_principal: false,
+          },
+        ],
+        page: page(),
+        traversal: TRAVERSAL,
+        cycles: [],
+      }),
+    );
+  });
+
+  it("shows names, in order, where the API sent SIDs", async () => {
+    const { container } = render(await principalPage(ADA.key, "effective-groups"));
+
+    const chains = [...container.querySelectorAll(".principal-chain")].map((chain) => chain.textContent);
+    expect(chains).toEqual([
+      "Ada Lovelace → Finance-Team",
+      "Ada Lovelace → Finance-Team → S-1-5-21-1-2-3-7777 → Finance-RW",
+    ]);
+  });
+
+  it("links every described hop to its principal by key, and leaves an undescribed one as text", async () => {
+    const { container } = render(await principalPage(ADA.key, "effective-groups"));
+
+    const chain = container.querySelectorAll(".principal-chain")[1] as HTMLElement;
+    const links = within(chain).getAllByRole("link");
+    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Ada Lovelace", `/identities/principal/${ADA.key}`],
+      ["Finance-Team", `/identities/principal/${TEAM.key}`],
+      ["Finance-RW", `/identities/principal/${RW.key}`],
+    ]);
+    // The same identity on two chains is the same link.
+    const first = container.querySelectorAll(".principal-chain")[0] as HTMLElement;
+    expect(within(first).getByRole("link", { name: "Finance-Team" })).toHaveAttribute(
+      "href",
+      `/identities/principal/${TEAM.key}`,
+    );
+    const orphan = within(chain).getByText("S-1-5-21-1-2-3-7777");
+    expect(orphan.tagName).toBe("CODE");
+    expect(orphan.closest("a")).toBeNull();
+  });
+});
+
+describe("a principal's identity information", () => {
+  const ADA = principalDetail({ key: "S-1-5-21-1-2-3-1104", display_name: "Ada", is_group: false });
+
+  beforeEach(() => {
+    vi.mocked(adg.fetchPrincipalDetail).mockResolvedValue(ok(ADA));
+    vi.mocked(adg.fetchDirectGroups).mockResolvedValue(ok({ principal: ADA, items: [], page: page() }));
+  });
+
+  it("is a disclosure, open at first, that the reader can fold away", async () => {
+    render(await principalPage(ADA.key));
+
+    const heading = screen.getByRole("heading", { name: "Identity information" });
+    const details = heading.closest("details") as HTMLDetailsElement;
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(true);
+    expect(heading.closest("summary")).not.toBeNull();
+
+    // The browser toggles a <details> from its <summary>; the content is the facts list.
+    details.open = false;
+    fireEvent(details, new Event("toggle"));
+    expect(details.open).toBe(false);
+    expect(within(details).getByText("SID")).toBeInTheDocument();
+  });
+
+  it("is in the layout, so moving to another view reads neither the identity nor renders it", async () => {
+    // A view change renders the view page alone; the layout above it, with the disclosure
+    // as the reader left it, is not rendered again.
+    vi.mocked(adg.fetchEffectiveGroups).mockResolvedValue(
+      ok({
+        principal: ADA,
+        items: [],
+        page: page(),
+        traversal: {
+          complete: true,
+          limits: { max_depth: 1, max_nodes: 1, max_edges: 1, max_paths: 1 },
+          depth_reached: 0,
+          nodes_visited: 0,
+          edges_read: 0,
+          truncation: [],
+        },
+        cycles: [],
+      }),
+    );
+    const route = Promise.resolve({ key: ADA.key, view: ["effective-groups"] });
+
+    render(await PrincipalViewPage({ params: route, searchParams: params({}) }));
+
+    expect(adg.fetchPrincipalDetail).not.toHaveBeenCalled();
+    expect(adg.fetchEffectiveGroups).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("heading", { name: "Identity information" })).not.toBeInTheDocument();
+  });
+
+  it("refuses a view that does not exist", async () => {
+    const route = Promise.resolve({ key: ADA.key, view: ["everything"] });
+
+    await expect(PrincipalViewPage({ params: route, searchParams: params({}) })).rejects.toThrow(
+      "NEXT_NOT_FOUND",
+    );
+    expect(notFound).toHaveBeenCalled();
+  });
+
+  it("keeps the old ?key= address working by redirecting to the key's path", async () => {
+    await LegacyPrincipalPage({
+      searchParams: params({ key: "fs01|S-1-5-32-544", tab: "effective-members", include: "all", p: "abc" }),
+    });
+
+    expect(redirect).toHaveBeenCalledWith(
+      "/identities/principal/fs01%7CS-1-5-32-544/effective-members?p=abc&include=all",
+    );
+  });
+
+  it("resolves the old ?host= form to the storage key before redirecting", async () => {
+    vi.mocked(adg.fetchPrincipalDetail).mockResolvedValue(
+      ok(principalDetail({ key: "fs01|S-1-5-32-544", sid: "S-1-5-32-544", host_key: "fs01" })),
+    );
+
+    await LegacyPrincipalPage({ searchParams: params({ key: "S-1-5-32-544", host: "FS01" }) });
+
+    expect(adg.fetchPrincipalDetail).toHaveBeenCalledWith("token", "S-1-5-32-544", { host: "FS01" });
+    expect(redirect).toHaveBeenCalledWith("/identities/principal/fs01%7CS-1-5-32-544");
   });
 });

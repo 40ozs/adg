@@ -34,6 +34,7 @@ import {
   commentRequired,
   decisionOption,
 } from "@/lib/governance";
+import { SortableTable } from "@/components/SortableTable";
 
 function Outcome({ result }: { result: ActionResult | null }): JSX.Element | null {
   if (result === null) {
@@ -269,74 +270,82 @@ export function SelectableItems({
           commentRequirement={commentRequirement}
         />
       ) : null}
-      <div className="table-scroll">
-        <table className="acl-table">
-          <caption className="muted">
+      <SortableTable
+        className="acl-table"
+        caption={
+          <>
             {items.length.toLocaleString()} items. Each is one grant — a principal and a
-            target — with every entry that creates it.
-          </caption>
-          <thead>
-            <tr>
-              {canDecide ? <th scope="col">Select</th> : null}
-              <th scope="col">Principal</th>
-              <th scope="col">Target</th>
-              <th scope="col">Entries</th>
-              <th scope="col">Certainty</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.item_id}>
-                {canDecide ? (
-                  <td>
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${item.principal_display_name ?? item.principal_sid}`}
-                      checked={selected.includes(item.item_id)}
-                      onChange={(event) =>
-                        setSelected((current) =>
-                          event.target.checked
-                            ? [...current, item.item_id]
-                            : current.filter((id) => id !== item.item_id),
-                        )
-                      }
-                    />
-                  </td>
-                ) : null}
-                <th scope="row">
-                  <a href={`/governance/items/${item.item_id}`}>
-                    {item.principal_display_name ?? item.principal_sid}
-                  </a>
-                  {" "}
-                  <a
-                    className="muted"
-                    href={`/governance/campaigns/${campaignId}?principal=${encodeURIComponent(
-                      item.principal_key,
-                    )}`}
-                    title="Every grant this principal has in this campaign"
-                  >
-                    (all theirs)
-                  </a>
-                </th>
-                <td>
-                  <a
-                    href={`/governance/campaigns/${campaignId}?target=${encodeURIComponent(
-                      item.target_key,
-                    )}`}
-                    title="Everyone named on this target in this campaign"
-                  >
-                    {item.target_path ?? item.target_key}
-                  </a>
-                </td>
-                <td>{item.grants.length}</td>
-                <td>{item.certainty}</td>
-                <td>{item.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            target — with every entry that creates it. Sorting orders the rows on this page.
+          </>
+        }
+        captionClassName="muted"
+        rowHeader={canDecide ? 1 : 0}
+        columns={[
+          ...(canDecide ? [{ label: "Select", sortable: false }] : []),
+          { label: "Principal" },
+          { label: "Target" },
+          { label: "Entries", type: "number" },
+          { label: "Certainty" },
+          { label: "Status" },
+        ]}
+        rows={items.map((item) => ({
+          key: item.item_id,
+          sort: [
+            ...(canDecide ? [null] : []),
+            item.principal_display_name ?? item.principal_sid,
+            item.target_path ?? item.target_key,
+            item.grants.length,
+            item.certainty,
+            item.status,
+          ],
+          cells: [
+            ...(canDecide
+              ? [
+                  <input
+                    key="select"
+                    type="checkbox"
+                    aria-label={`Select ${item.principal_display_name ?? item.principal_sid}`}
+                    checked={selected.includes(item.item_id)}
+                    onChange={(event) =>
+                      setSelected((current) =>
+                        event.target.checked
+                          ? [...current, item.item_id]
+                          : current.filter((id) => id !== item.item_id),
+                      )
+                    }
+                  />,
+                ]
+              : []),
+            <>
+              <a href={`/governance/items/${item.item_id}`}>
+                {item.principal_display_name ?? item.principal_sid}
+              </a>
+              {" "}
+              <a
+                className="muted"
+                href={`/governance/campaigns/${campaignId}?principal=${encodeURIComponent(
+                  item.principal_key,
+                )}`}
+                title="Every grant this principal has in this campaign"
+              >
+                (all theirs)
+              </a>
+            </>,
+            <a
+              key="target"
+              href={`/governance/campaigns/${campaignId}?target=${encodeURIComponent(
+                item.target_key,
+              )}`}
+              title="Everyone named on this target in this campaign"
+            >
+              {item.target_path ?? item.target_key}
+            </a>,
+            item.grants.length,
+            item.certainty,
+            item.status,
+          ],
+        }))}
+      />
     </>
   );
 }

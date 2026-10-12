@@ -9,6 +9,8 @@ import type {
   StoredSimulationView,
 } from "@/lib/contracts";
 import { principalLabel } from "@/lib/identity";
+import { PrincipalChain } from "@/components/Identity";
+import { SortableTable, type SortableRow } from "@/components/SortableTable";
 import { impactHeadline, orderedDeltas, summaryLine } from "@/lib/simulation";
 
 /**
@@ -233,42 +235,41 @@ export function DeltaTable({ report }: { report: SimulationReportView }): JSX.El
         Every pair evaluated, unchanged ones included. A pair that is not listed was not
         evaluated.
       </p>
-      <div className="table-scroll">
-        <table className="access-table">
-          <thead>
-            <tr>
-              <th scope="col">Principal</th>
-              <th scope="col">Directory</th>
-              <th scope="col">Today</th>
-              <th scope="col">Would be</th>
-              <th scope="col">Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {deltas.map((delta) => (
-              <DeltaRow
-                key={`${delta.subject.key}|${delta.resource.resource_key}|${delta.access_path}`}
-                delta={delta}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SortableTable
+        className="access-table"
+        rowHeader={null}
+        columns={[
+          { label: "Principal" },
+          { label: "Directory" },
+          { label: "Today", type: "number" },
+          { label: "Would be", type: "number" },
+          { label: "Change" },
+        ]}
+        rows={deltas.map(deltaRow)}
+      />
     </div>
   );
 }
 
-function DeltaRow({ delta }: { delta: SimulationDeltaView }): JSX.Element {
+function deltaRow(delta: SimulationDeltaView): SortableRow {
   const toneClass =
     delta.direction === "lost_access" || delta.direction === "reduced"
       ? "status-bad"
       : delta.direction === "gained_access" || delta.direction === "expanded"
         ? "status-warn"
         : "muted";
-  return (
-    <tr>
-      <td>{principalLabel(delta.subject)}</td>
-      <td>
+  return {
+    key: `${delta.subject.key}|${delta.resource.resource_key}|${delta.access_path}`,
+    sort: [
+      principalLabel(delta.subject),
+      delta.resource.path ?? delta.resource.resource_key,
+      delta.rights_before.value,
+      delta.rights_after.value,
+      delta.direction,
+    ],
+    cells: [
+      principalLabel(delta.subject),
+      <>
         <code>{delta.resource.path ?? delta.resource.resource_key}</code>
         {delta.resource.sensitive && (
           <>
@@ -285,16 +286,16 @@ function DeltaRow({ delta }: { delta: SimulationDeltaView }): JSX.Element {
         {delta.resource.sensitivity_labels.length > 0 && (
           <p className="muted">{delta.resource.sensitivity_labels.join("; ")}</p>
         )}
-      </td>
-      <td>
+      </>,
+      <>
         <code>{delta.rights_before.mask}</code>
         <p className="muted">{delta.rights_before.label}</p>
-      </td>
-      <td>
+      </>,
+      <>
         <code>{delta.rights_after.mask}</code>
         <p className="muted">{delta.rights_after.label}</p>
-      </td>
-      <td>
+      </>,
+      <>
         <p className={toneClass}>{delta.direction}</p>
         <p className="muted">{delta.direction_description}</p>
         {delta.caveats.map((caveat) => (
@@ -308,7 +309,7 @@ function DeltaRow({ delta }: { delta: SimulationDeltaView }): JSX.Element {
             <ul>
               {delta.retained_routes.map((route, index) => (
                 <li key={`${route.ace_key ?? "route"}-${index}`}>
-                  {route.chain.map((item) => principalLabel(item)).join(" → ")}{" "}
+                  <PrincipalChain principals={route.chain} />{" "}
                   <span className="muted">
                     ({route.layer}
                     {route.inherited ? ", inherited" : ""}
@@ -319,9 +320,9 @@ function DeltaRow({ delta }: { delta: SimulationDeltaView }): JSX.Element {
             </ul>
           </div>
         )}
-      </td>
-    </tr>
-  );
+      </>,
+    ],
+  };
 }
 
 export function CostFooter({ report }: { report: SimulationReportView }): JSX.Element {
@@ -371,43 +372,40 @@ export function StoredSimulationsTable({
   simulations: readonly StoredSimulationView[];
 }): JSX.Element {
   return (
-    <div className="table-scroll">
-      <table className="access-table">
-        <thead>
-          <tr>
-            <th scope="col">Proposal</th>
-            <th scope="col">Changes</th>
-            <th scope="col">Written</th>
-            <th scope="col">Baseline</th>
-          </tr>
-        </thead>
-        <tbody>
-          {simulations.map((item) => (
-            <tr key={item.simulation_id}>
-              <td>
-                <Link href={`/simulations/${item.simulation_id}`}>{item.name}</Link>
-                {item.description && <p className="muted">{item.description}</p>}
-              </td>
-              <td>
-                {item.change_count}
-                <p className="muted">{item.changes[0]?.description}</p>
-              </td>
-              <td>
-                {item.created_at}
-                {item.created_by && <p className="muted">{item.created_by}</p>}
-              </td>
-              <td>
-                {item.baseline.stale ? (
-                  <span className="status-warn">the estate has moved since</span>
-                ) : (
-                  <span className="muted">current</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="access-table"
+      caption="Sorting orders the rows on this page."
+      rowHeader={null}
+      columns={[
+        { label: "Proposal" },
+        { label: "Changes", type: "number" },
+        { label: "Written", type: "date" },
+        { label: "Baseline" },
+      ]}
+      rows={simulations.map((item) => ({
+        key: item.simulation_id,
+        sort: [item.name, item.change_count, item.created_at, item.baseline.stale],
+        cells: [
+          <>
+            <Link href={`/simulations/${item.simulation_id}`}>{item.name}</Link>
+            {item.description && <p className="muted">{item.description}</p>}
+          </>,
+          <>
+            {item.change_count}
+            <p className="muted">{item.changes[0]?.description}</p>
+          </>,
+          <>
+            {item.created_at}
+            {item.created_by && <p className="muted">{item.created_by}</p>}
+          </>,
+          item.baseline.stale ? (
+            <span key="baseline" className="status-warn">the estate has moved since</span>
+          ) : (
+            <span key="baseline" className="muted">current</span>
+          ),
+        ],
+      }))}
+    />
   );
 }
 

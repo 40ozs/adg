@@ -19,15 +19,15 @@
  */
 
 import type { PrincipalDetail, PrincipalSummary } from "@/lib/contracts";
-import { hrefWith } from "@/lib/paging";
 
-/** The route a principal's detail page lives at. */
+/** The route a principal's detail page lives at: `PRINCIPAL_PATH/{key}/{view}`. */
 export const PRINCIPAL_PATH = "/identities/principal";
 
 type AnyPrincipal = PrincipalSummary | PrincipalDetail;
 
 /**
- * What to call this principal.
+ * What to call this principal: display name, account name, qualified (UPN) name, the name
+ * an ACE last carried, then the SID.
  *
  * The SID is the last resort rather than an error: an unresolved trustee is a real entry
  * on a real ACL, and rendering it as "(unknown)" would hide the one identifier that can
@@ -37,6 +37,7 @@ export function principalLabel(principal: AnyPrincipal): string {
   return (
     principal.display_name ??
     principal.sam_account_name ??
+    principal.user_principal_name ??
     principal.last_known_name ??
     principal.sid
   );
@@ -139,12 +140,130 @@ export function principalNotes(principal: AnyPrincipal): string[] {
   return notes;
 }
 
-/** The detail page for a principal, keyed by the storage key the API issued. */
-export function principalHref(principal: AnyPrincipal, extra: Record<string, string> = {}): string {
-  return hrefWith(PRINCIPAL_PATH, { key: principal.key, ...extra });
+/**
+ * The detail page for a principal, keyed by the storage key the API issued — never by a
+ * name, which two principals can share.
+ *
+ * The key is a path segment so that every view of one principal shares one layout: moving
+ * between views re-renders the view alone, and the identity above it stays as it was.
+ */
+export function principalHref(principal: AnyPrincipal, view?: string): string {
+  return principalHrefForKey(principal.key, view);
 }
 
 /** The same, from a bare key — for a search hit, which carries no principal object. */
-export function principalHrefForKey(key: string, extra: Record<string, string> = {}): string {
-  return hrefWith(PRINCIPAL_PATH, { key, ...extra });
+export function principalHrefForKey(key: string, view?: string): string {
+  const base = `${PRINCIPAL_PATH}/${encodeURIComponent(key)}`;
+  return view ? `${base}/${view}` : base;
 }
+
+/**
+ * The principals along a chain of keys, as the API labelled them.
+ *
+ * An answer that did not label its chain (an older API, or one that lost a label) still
+ * renders: each key becomes an unresolved principal, which shows its SID and links nowhere.
+ */
+export function chainPrincipals(
+  path: readonly string[],
+  labelled: readonly PrincipalSummary[] | undefined,
+): PrincipalSummary[] {
+  if (labelled && labelled.length === path.length) {
+    return [...labelled];
+  }
+  return path.map((key) => unresolvedPrincipal(key));
+}
+
+function unresolvedPrincipal(key: string): PrincipalSummary {
+  const separator = key.indexOf("|");
+  return {
+    key,
+    sid: separator === -1 ? key : key.slice(separator + 1),
+    host_key: separator === -1 ? null : key.slice(0, separator),
+    resolved: false,
+    kind: null,
+    is_group: null,
+    display_name: null,
+    sam_account_name: null,
+    user_principal_name: null,
+    distinguished_name: null,
+    last_known_name: null,
+    enabled: null,
+    is_deleted: false,
+    group_scope: null,
+    group_type: null,
+    unresolved_reason: null,
+  };
+}
+
+/** One relationship view of a principal: a section of its page, and a path segment. */
+export interface PrincipalView {
+  id: string;
+  label: string;
+  /** One line explaining what the view is. */
+  hint: string;
+}
+
+/**
+ * The relationship views that mean something for this principal, the default first.
+ *
+ * Member views exist only where the principal can have members: "Direct members: 0" beside
+ * an account invites reading it as a group. A principal of unknown kind is offered every
+ * view, because ADG cannot rule one out, and its page says why it does not know.
+ */
+export function principalViews(principal: AnyPrincipal): PrincipalView[] {
+  const group = isGroup(principal);
+  const members: PrincipalView[] =
+    group === false
+      ? []
+      : [
+          {
+            id: "members",
+            label: "Direct members",
+            hint: "What this group's own membership list names.",
+          },
+          {
+            id: "effective-members",
+            label: "Effective members",
+            hint: "Everything reached through nesting, with the chain that puts it there.",
+          },
+        ];
+  return [
+    ...members,
+    {
+      id: "groups",
+      label: group === true ? "Parent groups" : "Direct groups",
+      hint: "Groups whose membership list names this principal directly.",
+    },
+    {
+      id: "effective-groups",
+      label: "Effective groups",
+      hint: "Every group reached through nesting — the set that becomes token SIDs.",
+    },
+    {
+      id: "shares",
+      label: "Reachable shares",
+      hint: "Engine answers: the share ACL crossed with the NTFS ACL of the directory it publishes.",
+    },
+    {
+      id: "directories",
+      label: "Reachable directories",
+      hint: "Engine answers for directories whose ACLs could involve this principal.",
+    },
+    {
+      id: "acl-references",
+      label: "Named on share ACLs",
+      hint: "Raw entries that name this SID. Being named is not the same as having access.",
+    },
+  ];
+}
+
+/** Every view id any principal can have, for validating a URL segment. */
+export const PRINCIPAL_VIEW_IDS: readonly string[] = [
+  "members",
+  "effective-members",
+  "groups",
+  "effective-groups",
+  "shares",
+  "directories",
+  "acl-references",
+];

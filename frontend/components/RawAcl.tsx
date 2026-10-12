@@ -2,9 +2,13 @@ import type { JSX } from "react";
 
 import { aceNotes, aceOrigin, formatMask } from "@/lib/acl";
 import type { NtfsAceView, ShareAceView } from "@/lib/contracts";
-import { ambiguousLabels } from "@/lib/identity";
+import { ambiguousLabels, principalLabel } from "@/lib/identity";
 import { PrincipalName } from "@/components/Identity";
 import { SimulateAction } from "@/components/SimulateLink";
+import { SortableTable } from "@/components/SortableTable";
+
+/** Sorting reorders the display; the evaluation order stays the # column. */
+const ORDER_CAPTION = "Sorting orders the rows on this page. # is the order Windows evaluates them in.";
 
 /**
  * A share-level ACL, entry by entry.
@@ -33,58 +37,52 @@ export function ShareAceTable({
 }): JSX.Element {
   const ambiguous = ambiguousLabels(entries.map((entry) => entry.trustee));
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Type</th>
-            <th scope="col">Trustee</th>
-            <th scope="col">Right</th>
-            <th scope="col">Last observed</th>
-            {shareKey && <th scope="col">What if</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.ace_key} className={entry.ace_type === "deny" ? "ace-deny" : undefined}>
-              <td>{entry.order_index === null ? <span className="muted">unordered</span> : entry.order_index}</td>
-              <td>
-                <span className={entry.ace_type === "deny" ? "badge badge-deny" : "badge badge-allow"}>
-                  {entry.ace_type}
-                </span>
-              </td>
-              <th scope="row">
-                <PrincipalName principal={entry.trustee} ambiguous={ambiguous} />
-              </th>
-              <td>
-                <code>{entry.right}</code>
-                {entry.permission && entry.access_mask !== null && (
-                  <span className="muted"> (level and mask both reported)</span>
-                )}
-              </td>
-              <td className="muted">
-                <time dateTime={entry.provenance.last_observed_at}>
-                  {entry.provenance.last_observed_at}
-                </time>
-              </td>
-              {shareKey && (
-                <td>
-                  <SimulateAction
-                    seed={{
-                      kind: "remove_share_ace",
-                      share_key: shareKey,
-                      ace_key: entry.ace_key,
-                    }}
-                    title={`Measure what removing this entry would do. Nothing is applied.`}
-                  />
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="acl-table"
+      caption={ORDER_CAPTION}
+      rowHeader={2}
+      columns={[
+        { label: "#", type: "number" },
+        { label: "Type" },
+        { label: "Trustee" },
+        { label: "Right" },
+        { label: "Last observed", type: "date", className: "muted" },
+        ...(shareKey ? [{ label: "What if", sortable: false }] : []),
+      ]}
+      rows={entries.map((entry) => ({
+        key: entry.ace_key,
+        className: entry.ace_type === "deny" ? "ace-deny" : undefined,
+        sort: [
+          entry.order_index,
+          entry.ace_type,
+          principalLabel(entry.trustee),
+          entry.right,
+          entry.provenance.last_observed_at,
+        ],
+        cells: [
+          entry.order_index === null ? <span className="muted">unordered</span> : entry.order_index,
+          <TypeBadge key="type" type={entry.ace_type} />,
+          <PrincipalName key="trustee" principal={entry.trustee} ambiguous={ambiguous} />,
+          <>
+            <code>{entry.right}</code>
+            {entry.permission && entry.access_mask !== null && (
+              <span className="muted"> (level and mask both reported)</span>
+            )}
+          </>,
+          <time key="seen" dateTime={entry.provenance.last_observed_at}>
+            {entry.provenance.last_observed_at}
+          </time>,
+          ...(shareKey
+            ? [
+                <SimulateAction key="simulate"
+                  seed={{ kind: "remove_share_ace", share_key: shareKey, ace_key: entry.ace_key }}
+                  title="Measure what removing this entry would do. Nothing is applied."
+                />,
+              ]
+            : []),
+        ],
+      }))}
+    />
   );
 }
 
@@ -111,80 +109,75 @@ export function NtfsAceTable({
 }): JSX.Element {
   const ambiguous = ambiguousLabels(entries.map((entry) => entry.trustee));
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Type</th>
-            <th scope="col">Trustee</th>
-            <th scope="col">Rights</th>
-            <th scope="col">Mask</th>
-            <th scope="col">Source</th>
-            <th scope="col">Applies here</th>
-            {resourceKey && <th scope="col">What if</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => {
-            const notes = aceNotes(entry);
-            return (
-              <tr key={entry.ace_key} className={entry.ace_type === "deny" ? "ace-deny" : undefined}>
-                <td>
-                  {entry.order_index === null ? <span className="muted">unordered</span> : entry.order_index}
-                </td>
-                <td>
-                  <span className={entry.ace_type === "deny" ? "badge badge-deny" : "badge badge-allow"}>
-                    {entry.ace_type}
-                  </span>
-                </td>
-                <th scope="row">
-                  <PrincipalName principal={entry.trustee} ambiguous={ambiguous} />
-                </th>
-                <td>
-                  {entry.rights.length === 0 ? (
-                    <span className="muted">no named right in this mask</span>
-                  ) : (
-                    entry.rights.join(", ")
-                  )}
-                  {notes.length > 0 && <div className="ace-notes">{notes.join(" · ")}</div>}
-                </td>
-                <td>
-                  <code>{formatMask(entry.access_mask)}</code>
-                </td>
-                <td>
-                  <span
-                    className={
-                      aceOrigin(entry) === "inherited" ? "badge badge-inherited" : "badge badge-explicit"
-                    }
-                  >
-                    {aceOrigin(entry)}
-                  </span>
-                </td>
-                <td>
-                  {entry.applies_to_this_object ? (
-                    "yes"
-                  ) : (
-                    <span className="status-warn">no — inherit-only</span>
-                  )}
-                </td>
-                {resourceKey && (
-                  <td>
-                    <SimulateAction
-                      seed={{
-                        kind: "remove_ntfs_ace",
-                        resource_key: resourceKey,
-                        ace_key: entry.ace_key,
-                      }}
-                      title="Measure what removing this entry would do. Nothing is applied."
-                    />
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="acl-table"
+      caption={ORDER_CAPTION}
+      rowHeader={2}
+      columns={[
+        { label: "#", type: "number" },
+        { label: "Type" },
+        { label: "Trustee" },
+        { label: "Rights" },
+        { label: "Mask" },
+        { label: "Source" },
+        { label: "Applies here" },
+        ...(resourceKey ? [{ label: "What if", sortable: false }] : []),
+      ]}
+      rows={entries.map((entry) => {
+        const notes = aceNotes(entry);
+        return {
+          key: entry.ace_key,
+          className: entry.ace_type === "deny" ? "ace-deny" : undefined,
+          sort: [
+            entry.order_index,
+            entry.ace_type,
+            principalLabel(entry.trustee),
+            entry.rights.join(", ") || null,
+            entry.access_mask,
+            aceOrigin(entry),
+            entry.applies_to_this_object,
+          ],
+          cells: [
+            entry.order_index === null ? <span className="muted">unordered</span> : entry.order_index,
+            <TypeBadge key="type" type={entry.ace_type} />,
+            <PrincipalName key="trustee" principal={entry.trustee} ambiguous={ambiguous} />,
+            <>
+              {entry.rights.length === 0 ? (
+                <span className="muted">no named right in this mask</span>
+              ) : (
+                entry.rights.join(", ")
+              )}
+              {notes.length > 0 && <div className="ace-notes">{notes.join(" · ")}</div>}
+            </>,
+            <code key="mask">{formatMask(entry.access_mask)}</code>,
+            <span key="source"
+              className={
+                aceOrigin(entry) === "inherited" ? "badge badge-inherited" : "badge badge-explicit"
+              }
+            >
+              {aceOrigin(entry)}
+            </span>,
+            entry.applies_to_this_object ? (
+              "yes"
+            ) : (
+              <span className="status-warn">no — inherit-only</span>
+            ),
+            ...(resourceKey
+              ? [
+                  <SimulateAction key="simulate"
+                    seed={{ kind: "remove_ntfs_ace", resource_key: resourceKey, ace_key: entry.ace_key }}
+                    title="Measure what removing this entry would do. Nothing is applied."
+                  />,
+                ]
+              : []),
+          ],
+        };
+      })}
+    />
   );
+}
+
+/** Allow or deny, as a badge. */
+function TypeBadge({ type }: { type: string }): JSX.Element {
+  return <span className={type === "deny" ? "badge badge-deny" : "badge badge-allow"}>{type}</span>;
 }

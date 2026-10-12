@@ -13,6 +13,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { FactSection } from "@/components/Layer";
 import { PagePosition, Pager } from "@/components/Pager";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable } from "@/components/SortableTable";
 
 const PATH = "/resources/server";
 
@@ -103,44 +104,36 @@ export default async function ServerPage({
         <StateMessage state={shareState} />
         {shareState.kind === "ready" && (
           <>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Share</th>
-                    <th scope="col">UNC path</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Publishes</th>
-                    <th scope="col">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shareState.data.items.map((share) => (
-                    <tr key={share.key}>
-                      <th scope="row">
-                        <Link href={shareHref(share.key)}>{share.name}</Link>
-                      </th>
-                      <td>
-                        <code>{share.unc_path}</code>
-                      </td>
-                      <td>{share.share_type}</td>
-                      <td className="muted">
-                        <Maybe value={share.local_path} />
-                      </td>
-                      <td className="muted">
-                        {[
-                          share.is_administrative ? "administrative" : null,
-                          share.is_hidden ? "hidden" : null,
-                          share.carries_file_permissions ? null : "no NTFS layer beneath it",
-                        ]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <SortableTable
+              caption="Sorting orders the rows on this page."
+              columns={[
+                { label: "Share" },
+                { label: "UNC path" },
+                { label: "Type" },
+                { label: "Publishes", className: "muted" },
+                { label: "Notes", className: "muted" },
+              ]}
+              rows={shareState.data.items.map((share) => {
+                const notes = [
+                  share.is_administrative ? "administrative" : null,
+                  share.is_hidden ? "hidden" : null,
+                  share.carries_file_permissions ? null : "no NTFS layer beneath it",
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+                return {
+                  key: share.key,
+                  sort: [share.name, share.unc_path, share.share_type, share.local_path, notes],
+                  cells: [
+                    <Link key="share" href={shareHref(share.key)}>{share.name}</Link>,
+                    <code key="unc">{share.unc_path}</code>,
+                    share.share_type,
+                    <Maybe key="publishes" value={share.local_path} />,
+                    notes || "—",
+                  ],
+                };
+              })}
+            />
             <Pager
               navigation={pageNavigation({
                 basePath: PATH,

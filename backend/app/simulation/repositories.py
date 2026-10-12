@@ -179,6 +179,12 @@ class OverlayMembershipRepository(MembershipRepository):
     async def count_direct(self, *args: Any, **kwargs: Any) -> int:
         _refuse("count_direct")
 
+    async def list_principals(self, *args: Any, **kwargs: Any) -> Any:
+        _refuse("list_principals")
+
+    async def count_principals(self, *args: Any, **kwargs: Any) -> int:
+        _refuse("count_principals")
+
 
 class OverlayResourceRepository(ResourceRepository):
     """Shares and directories as they would stand if the overlay's ACL changes were real."""

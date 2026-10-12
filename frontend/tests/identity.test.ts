@@ -11,13 +11,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   ambiguousLabels,
+  chainPrincipals,
   isAmbiguous,
   isGroup,
   principalHref,
+  principalHrefForKey,
   principalKindLabel,
   principalLabel,
   principalNotes,
   principalQualifier,
+  principalViews,
   sidDomain,
 } from "@/lib/identity";
 import { principal } from "./factories";
@@ -131,7 +134,72 @@ describe("notes beside a name", () => {
 describe("the link to a principal", () => {
   it("carries the storage key, encoded", () => {
     expect(principalHref(principal({ key: "fs01|S-1-5-32-544" }))).toBe(
-      "/identities/principal?key=fs01%7CS-1-5-32-544",
+      "/identities/principal/fs01%7CS-1-5-32-544",
+    );
+  });
+});
+
+describe("naming a principal", () => {
+  it("prefers the display name, then the account, the UPN, the last known name, the SID", () => {
+    const sid = "S-1-5-21-1-2-3-1104";
+    expect(principalLabel(principal({ sid, display_name: "Ada", sam_account_name: "ada" }))).toBe("Ada");
+    expect(principalLabel(principal({ sid, sam_account_name: "ada", user_principal_name: "ada@corp" }))).toBe("ada");
+    expect(principalLabel(principal({ sid, user_principal_name: "ada@corp", last_known_name: "OLD\\ada" }))).toBe(
+      "ada@corp",
+    );
+    expect(principalLabel(principal({ sid, last_known_name: "OLD\\ada" }))).toBe("OLD\\ada");
+    expect(principalLabel(principal({ sid }))).toBe(sid);
+  });
+});
+
+describe("a shortest chain", () => {
+  const ada = principal({ key: "S-1-5-21-1-2-3-1104", display_name: "Ada" });
+  const finance = principal({ key: "S-1-5-21-1-2-3-1200", display_name: "Finance" });
+
+  it("uses the API's labels, in the path's order", () => {
+    expect(chainPrincipals([ada.key, finance.key], [ada, finance]).map(principalLabel)).toEqual([
+      "Ada",
+      "Finance",
+    ]);
+  });
+
+  it("falls back to unresolved keys when the labels do not match the path", () => {
+    const chain = chainPrincipals(["fs01|S-1-5-32-544", finance.key], undefined);
+    expect(chain.map((hop) => [hop.key, hop.sid, hop.host_key, hop.resolved])).toEqual([
+      ["fs01|S-1-5-32-544", "S-1-5-32-544", "fs01", false],
+      [finance.key, finance.key, null, false],
+    ]);
+    expect(chain.map(principalLabel)).toEqual(["S-1-5-32-544", finance.key]);
+  });
+});
+
+describe("a principal's relationship views", () => {
+  it("offers a group its members first", () => {
+    expect(principalViews(principal({ is_group: true })).map((view) => view.label)).toEqual([
+      "Direct members",
+      "Effective members",
+      "Parent groups",
+      "Effective groups",
+      "Reachable shares",
+      "Reachable directories",
+      "Named on share ACLs",
+    ]);
+  });
+
+  it("offers an account no member views", () => {
+    const views = principalViews(principal({ is_group: false })).map((view) => view.id);
+    expect(views[0]).toBe("groups");
+    expect(views).not.toContain("members");
+    expect(views).not.toContain("effective-members");
+  });
+
+  it("offers a principal of unknown kind everything", () => {
+    expect(principalViews(principal({ is_group: null }))).toHaveLength(7);
+  });
+
+  it("addresses each view under the key", () => {
+    expect(principalHrefForKey("fs01|S-1-5-32-544", "effective-members")).toBe(
+      "/identities/principal/fs01%7CS-1-5-32-544/effective-members",
     );
   });
 });

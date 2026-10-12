@@ -31,6 +31,7 @@ import type {
   DemoOverview,
   DevelopmentLogin,
   DirectGroupsResponse,
+  DirectoryKind,
   DriftReportResponse,
   DirectMembersResponse,
   FindingDetailView,
@@ -44,6 +45,7 @@ import type {
   NtfsResourceDetailView,
   Principal,
   PrincipalDetail,
+  PrincipalListResponse,
   PrincipalResourcesResponse,
   QueueResponse,
   RawNtfsAclResponse,
@@ -87,6 +89,7 @@ export const USED_PATHS = [
   "/api/v1/shares/{share}/root-acl",
   "/api/v1/resources/{resource}",
   "/api/v1/resources/{resource}/acl",
+  "/api/v1/principals",
   "/api/v1/principals/{identifier}",
   "/api/v1/principals/{identifier}/groups",
   "/api/v1/principals/{trustee}/shares",
@@ -268,6 +271,18 @@ export function fetchResourceAcl(
 }
 
 /* ------------------------------------------------------------------ identities */
+
+/** The users or the groups directory: one keyset page, narrowed by a SID or name prefix. */
+export function fetchPrincipals(
+  token: string,
+  kind: DirectoryKind,
+  query: PageQuery & { q?: string } = {},
+): Promise<ApiResult<PrincipalListResponse>> {
+  return apiRequest<PrincipalListResponse>("/api/v1/principals", {
+    token,
+    query: { ...query, kind },
+  });
+}
 
 export function fetchPrincipalDetail(
   token: string,
