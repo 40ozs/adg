@@ -48,6 +48,9 @@ REQUEST_ID_HEADER = "X-Request-ID"
 RUNTIME_MODE_HEADER = "X-ADG-Runtime-Mode"
 #: Set on a demo deployment's response to a simulated (treatment B) operation.
 DEMO_NOTICE_HEADER = "X-ADG-Demo-Notice"
+#: The notice as a header can carry it: header values are latin-1, and the notice's em dash is
+#: not. The response body and the runbook keep the notice as written.
+DEMO_NOTICE_HEADER_VALUE = SIMULATION_NOTICE.replace("—", "-")
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -150,7 +153,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             route = request.scope.get("route")
             entry = demo_policy_for(request.method, getattr(route, "path", "") or "")
             if entry is not None and entry.treatment is Treatment.SIMULATED:
-                response.headers[DEMO_NOTICE_HEADER] = SIMULATION_NOTICE
+                response.headers[DEMO_NOTICE_HEADER] = DEMO_NOTICE_HEADER_VALUE
             return response
 
     _install_exception_handlers(app)

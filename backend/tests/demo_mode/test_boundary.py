@@ -254,6 +254,29 @@ class TestTheRuntimeSurface:
         response = await demo_client.get("/health/live")
         assert response.headers[RUNTIME_MODE_HEADER] == "demo"
 
+    @pytest.mark.parametrize("roles", [(), (Role.REMEDIATION_PLANNER,)])
+    async def test_a_simulated_route_carries_the_notice_whatever_it_answers(
+        self, demo_settings: Settings, roles: tuple[Role, ...]
+    ) -> None:
+        """The notice header is sent on refusals too, and a header holds latin-1 only.
+
+        The export is the one simulated route. Its notice once crashed every answer from it
+        (HTTP 500, unmarked) because the em dash in :data:`SIMULATION_NOTICE` cannot be sent
+        in a header.
+        """
+        token = token_for_roles(demo_settings, *roles)
+        headers = {"Authorization": f"Bearer {token}"} if roles else {}
+        async with await _client(demo_settings, **headers) as client:
+            response = await client.post(
+                "/api/v1/remediation/00000000-0000-0000-0000-000000000000/exports", json={}
+            )
+
+        assert response.status_code == (403 if roles else 401)
+        assert response.headers[RUNTIME_MODE_HEADER] == "demo"
+        notice = response.headers[DEMO_NOTICE_HEADER]
+        assert notice.isascii()
+        assert notice == SIMULATION_NOTICE.replace("—", "-")
+
     async def test_production_responses_are_not_marked(
         self, production_client: AsyncClient
     ) -> None:
