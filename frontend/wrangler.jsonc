@@ -1,14 +1,14 @@
-// ADG Demo Mode on Cloudflare — PROTECTED STAGING ONLY. Not a production configuration.
+// ADG Demo Mode on Cloudflare — PUBLIC DEMO STAGING. Not a production configuration.
 //
 // One Worker serves the Next.js application (OpenNext) and proxies the ADG API, which runs
-// unmodified from docker/Dockerfile.backend on Render's free tier. Every request must carry
-// a valid Cloudflare Access assertion (cloudflare/access.ts); without the Access settings the
-// Worker answers 503 to everyone. Workers Free only: no Container, Durable Object, cron or
-// other paid binding. See docs/deployment/cloudflare-demo.md.
+// unmodified from docker/Dockerfile.backend on Render's free tier behind its origin gate
+// (python -m app.origin_gate). Public: no Cloudflare Access; ADG's own sign-in decides what a
+// visitor may do. Workers Free only: no Container, Durable Object, cron or other paid
+// binding. See docs/deployment/cloudflare-demo.md.
 //
 // Nothing secret is in this file. Secret (name only): ADG_ORIGIN_KEY, uploaded with the
 // version by .github/workflows/cloudflare-staging.yml. Account-specific values (ADG_WEB_URL,
-// ADG_API_ORIGIN, ACCESS_TEAM_DOMAIN, ACCESS_AUD) are passed at deploy time with --var.
+// ADG_API_ORIGIN) are passed at deploy time with --var.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "adg-demo-staging",
@@ -17,15 +17,16 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 
   // The generated *.workers.dev hostname is the staging URL. Preview and version URLs are
-  // off: each would be one more hostname for Access to cover.
+  // off: one public hostname, so every version a visitor can reach is the deployed one.
   "workers_dev": true,
   "preview_urls": false,
 
-  // run_worker_first: static assets also pass the Access check in the Worker.
+  // A request for a built static file is served before the Worker runs: free, and outside the
+  // Workers Free daily request allowance and CPU limit. Every other path runs the Worker.
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
-    "run_worker_first": true
+    "run_worker_first": false
   },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "adg-demo-staging" }],
 

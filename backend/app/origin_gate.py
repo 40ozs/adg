@@ -3,8 +3,8 @@
 For a host whose address is public but which exactly one caller may reach: the free Render
 web service behind the Cloudflare staging Worker (docs/deployment/cloudflare-demo.md).
 Render's free tier offers no private network or IP allow-list, so without this anyone who
-found the ``onrender.com`` address would reach the API around Cloudflare Access, and
-development sign-in would make them an administrator of the demo.
+found the ``onrender.com`` address would reach the API directly, around the Worker, and could
+sign in as any development account the Render service lists.
 
 The application is unchanged: the gate wraps ``app.main:app`` and refuses every request that
 does not carry ``X-ADG-Origin-Key: $ADG_ORIGIN_KEY``, except ``/health/live``, which the host's

@@ -50,7 +50,7 @@ describe("apiUpstream", () => {
 describe("frontendEnvironment", () => {
   it("gives Next.js the bindings and addresses it reads, and neither the API origin nor its key", () => {
     const assets = { fetch: () => undefined };
-    const environment = frontendEnvironment({ ...VALID, ASSETS: assets, ACCESS_AUD: "aud" });
+    const environment = frontendEnvironment({ ...VALID, ASSETS: assets, UNRELATED: "x" });
     expect(environment).toEqual({
       ASSETS: assets,
       ADG_INTERNAL_API_URL: INTERNAL_API_URL,

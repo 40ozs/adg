@@ -1,10 +1,11 @@
-# ADG Demo Mode on Cloudflare: PROTECTED STAGING ONLY.
+# ADG Demo Mode on Cloudflare: PUBLIC DEMO STAGING. Not production.
 #
 # Zero-cost hosting: the Next.js application (OpenNext) and the API proxy on Cloudflare Workers
-# Free behind Cloudflare Access; the unmodified backend image (docker/Dockerfile.backend) on a
-# free Render web service; PostgreSQL on Supabase (database adg_demo). Deploys this commit to
-# both, then checks the hosted result. No Cloudflare Container or other paid product is used.
-# Nothing here deploys production, and this workflow runs only when someone asks it to.
+# Free, public (no Cloudflare Access); the unmodified backend image (docker/Dockerfile.backend)
+# on a free Render web service behind its origin gate, which answers only the Worker; PostgreSQL
+# on Supabase (database adg_demo). Deploys this commit to both, then checks the hosted result.
+# No Cloudflare Container, Access or other paid product is used. Nothing here deploys
+# production, and this workflow runs only when someone asks it to.
 #
 # Triggers:
 #   * workflow_dispatch: deploy (default), optionally bootstrapping the demo database first.
@@ -14,10 +15,11 @@
 # Everything account-specific lives in the `cloudflare-staging` GitHub environment, never in
 # the repository. See docs/deployment/cloudflare-demo.md §5 for each name. The API's own
 # secrets (database URL, development-session secret, origin key) are set on the Render
-# service; this workflow holds the database URL only to bootstrap and verify.
+# service; this workflow holds the database URL only to bootstrap and verify, and the origin
+# key only to give it to the Worker.
 #   secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ADG_DATABASE_URL, ADG_ORIGIN_KEY,
-#              RENDER_API_KEY, CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET
-#   variables: ADG_STAGING_URL, ADG_API_ORIGIN, RENDER_SERVICE_ID, ACCESS_TEAM_DOMAIN, ACCESS_AUD
+#              RENDER_API_KEY
+#   variables: ADG_STAGING_URL, ADG_API_ORIGIN, RENDER_SERVICE_ID
 name: Free staging (ADG demo)
 
 on:
@@ -65,28 +67,19 @@ jobs:
           ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
           ADG_ORIGIN_KEY: ${{ secrets.ADG_ORIGIN_KEY }}
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           ADG_STAGING_URL: ${{ vars.ADG_STAGING_URL }}
           ADG_API_ORIGIN: ${{ vars.ADG_API_ORIGIN }}
           RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
-          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
-          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
         run: |
           missing=""
           for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ADG_DATABASE_URL ADG_ORIGIN_KEY RENDER_API_KEY \
-                      CF_ACCESS_CLIENT_ID CF_ACCESS_CLIENT_SECRET ADG_STAGING_URL ADG_API_ORIGIN RENDER_SERVICE_ID \
-                      ACCESS_TEAM_DOMAIN ACCESS_AUD; do
+                      ADG_STAGING_URL ADG_API_ORIGIN RENDER_SERVICE_ID; do
             if [ -z "${!name}" ]; then missing="$missing $name"; fi
           done
           if [ -n "$missing" ]; then
             echo "::error::Missing staging configuration:$missing (docs/deployment/cloudflare-demo.md §5)"
             exit 1
           fi
-          # Without Access the Worker serves nobody (503), so this is not what keeps staging
-          # private -- but a deploy that would only ever answer 503 is a configuration error.
-          case "$ACCESS_TEAM_DOMAIN" in https://*.cloudflareaccess.com) ;; *)
-            echo "::error::ACCESS_TEAM_DOMAIN must be https://<team>.cloudflareaccess.com"; exit 1;; esac
           case "$ADG_STAGING_URL" in https://*) ;; *)
             echo "::error::ADG_STAGING_URL must be https"; exit 1;; esac
           case "$ADG_API_ORIGIN" in https://*) ;; *)
@@ -225,8 +218,6 @@ jobs:
           ADG_ORIGIN_KEY: ${{ secrets.ADG_ORIGIN_KEY }}
           ADG_STAGING_URL: ${{ vars.ADG_STAGING_URL }}
           ADG_API_ORIGIN: ${{ vars.ADG_API_ORIGIN }}
-          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
-          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
           # wrangler >= 4.149 otherwise hands an OpenNext project to `opennextjs-cloudflare
           # deploy`, which re-runs this command through a shell unquoted (the message breaks).
           # This project has no incremental cache for OpenNext to populate.
@@ -240,8 +231,6 @@ jobs:
             --secrets-file "$secrets_file" \
             --var "ADG_WEB_URL:${ADG_STAGING_URL}" \
             --var "ADG_API_ORIGIN:${ADG_API_ORIGIN}" \
-            --var "ACCESS_TEAM_DOMAIN:${ACCESS_TEAM_DOMAIN}" \
-            --var "ACCESS_AUD:${ACCESS_AUD}" \
             --tag "${GITHUB_SHA::12}" \
             --message "ADG staging ${GITHUB_SHA::12} (${GITHUB_REF_NAME})" | tee "$RUNNER_TEMP/deploy.log"
           {
@@ -276,8 +265,6 @@ jobs:
       - name: HTTP smoke
         env:
           STAGING_URL: ${{ vars.ADG_STAGING_URL }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
           API_ORIGIN: ${{ vars.ADG_API_ORIGIN }}
         run: |
@@ -289,8 +276,6 @@ jobs:
       - name: Browser gate (headless Chromium)
         env:
           STAGING_URL: ${{ vars.ADG_STAGING_URL }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           SCREENSHOT_DIR: screenshots
         run: |
           npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"

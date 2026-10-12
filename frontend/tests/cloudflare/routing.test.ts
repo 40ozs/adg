@@ -1,28 +1,13 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { clearAccessCertificateCache } from "../../cloudflare/access";
 import { StagingConfigurationError, apiUpstream } from "../../cloudflare/environment";
 import { type RoutingDependencies, forwardToApi, isApiPath, routeRequest } from "../../cloudflare/routing";
-import { AccessSigner } from "./signer";
 
-const TEAM = "https://adg-staging.cloudflareaccess.com";
-const AUD = "aud-tag";
 const ORIGIN = "https://adg-demo-staging.example.workers.dev";
-
-let signer: AccessSigner;
-let token: string;
-
-beforeEach(async () => {
-  clearAccessCertificateCache();
-  signer = await AccessSigner.create("k");
-  const now = Math.floor(Date.now() / 1000);
-  token = await signer.sign({ aud: [AUD], iss: TEAM, email: "r@example.com", exp: now + 600, nbf: now - 5 });
-});
 
 function harness(overrides: Partial<RoutingDependencies> = {}) {
   const seen = { api: [] as Request[], frontend: [] as Request[], logs: [] as Record<string, unknown>[] };
   const dependencies: RoutingDependencies = {
-    access: { teamDomain: TEAM, audience: AUD },
     api: async (request) => {
       seen.api.push(request);
       return new Response("api");
@@ -31,20 +16,14 @@ function harness(overrides: Partial<RoutingDependencies> = {}) {
       seen.frontend.push(request);
       return new Response("web");
     },
-    fetchCertificates: signer.fetcher(),
     log: (entry) => seen.logs.push(entry),
     ...overrides,
   };
   return { seen, dependencies };
 }
 
-function request(path: string, init: RequestInit & { assertion?: string | null } = {}): Request {
-  const headers = new Headers(init.headers);
-  const assertion = init.assertion === undefined ? token : init.assertion;
-  if (assertion !== null) {
-    headers.set("Cf-Access-Jwt-Assertion", assertion);
-  }
-  return new Request(`${ORIGIN}${path}`, { ...init, headers });
+function request(path: string, init: RequestInit = {}): Request {
+  return new Request(`${ORIGIN}${path}`, init);
 }
 
 describe("isApiPath", () => {
@@ -76,30 +55,13 @@ describe("isApiPath", () => {
 });
 
 describe("routeRequest", () => {
-  it("refuses everything with 503 when Access is not configured, reaching neither tier", async () => {
-    const { seen, dependencies } = harness({ access: null });
-    for (const path of ["/", "/runtime", "/_next/static/a.js"]) {
-      const response = await routeRequest(request(path), dependencies);
-      expect(response.status).toBe(503);
+  it("serves a visitor with no credential of any kind: the deployment is public", async () => {
+    const { seen, dependencies } = harness();
+    for (const path of ["/", "/demo", "/_next/static/a.js", "/runtime"]) {
+      expect((await routeRequest(request(path), dependencies)).status).toBe(200);
     }
-    expect(seen.api).toHaveLength(0);
-    expect(seen.frontend).toHaveLength(0);
-  });
-
-  it("refuses a request without an Access assertion", async () => {
-    const { seen, dependencies } = harness();
-    const response = await routeRequest(request("/demo", { assertion: null }), dependencies);
-    expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ detail: "Access denied." });
-    expect(seen.frontend).toHaveLength(0);
-  });
-
-  it("refuses a forged assertion", async () => {
-    const forger = await AccessSigner.create("k");
-    const forged = await forger.sign({ aud: [AUD], iss: TEAM, exp: Math.floor(Date.now() / 1000) + 60 });
-    const { seen, dependencies } = harness();
-    expect((await routeRequest(request("/runtime", { assertion: forged }), dependencies)).status).toBe(403);
-    expect(seen.api).toHaveLength(0);
+    expect(seen.frontend).toHaveLength(3);
+    expect(seen.api).toHaveLength(1);
   });
 
   it("routes API paths to the API and everything else to Next.js", async () => {
@@ -108,14 +70,6 @@ describe("routeRequest", () => {
     expect(await (await routeRequest(request("/demo"), dependencies)).text()).toBe("web");
     expect(seen.api.map((r) => new URL(r.url).pathname)).toEqual(["/runtime"]);
     expect(seen.frontend.map((r) => new URL(r.url).pathname)).toEqual(["/demo"]);
-  });
-
-  it("does not forward the Access assertion to either tier", async () => {
-    const { seen, dependencies } = harness();
-    await routeRequest(request("/runtime"), dependencies);
-    await routeRequest(request("/"), dependencies);
-    expect(seen.api[0].headers.get("Cf-Access-Jwt-Assertion")).toBeNull();
-    expect(seen.frontend[0].headers.get("Cf-Access-Jwt-Assertion")).toBeNull();
   });
 
   it("forwards method and body unchanged, so the API's own demo guard decides", async () => {
@@ -172,7 +126,7 @@ describe("forwardToApi", () => {
     expect(sent[0].headers.get("X-ADG-Origin-Key")).toBe(UPSTREAM.key);
   });
 
-  it("forwards method, body and authorization, and nothing meant for Cloudflare or the web tier", async () => {
+  it("forwards method, body and authorization, and nothing meant for the web tier", async () => {
     const { sent, fetcher } = capture();
     await forwardToApi(
       new Request(`${ORIGIN}/api/v1/scan-runs`, {
@@ -180,9 +134,7 @@ describe("forwardToApi", () => {
         body: '{"x":1}',
         headers: {
           Authorization: "Bearer api-token",
-          Cookie: "CF_Authorization=access-jwt; adg_session=s",
-          "CF-Access-Client-Id": "id",
-          "CF-Access-Client-Secret": "service-secret",
+          Cookie: "adg_session=s",
           "X-ADG-Origin-Key": "a-caller-guess",
         },
       }),
@@ -193,8 +145,6 @@ describe("forwardToApi", () => {
     expect(await sent[0].text()).toBe('{"x":1}');
     expect(sent[0].headers.get("Authorization")).toBe("Bearer api-token");
     expect(sent[0].headers.get("Cookie")).toBeNull();
-    expect(sent[0].headers.get("CF-Access-Client-Id")).toBeNull();
-    expect(sent[0].headers.get("CF-Access-Client-Secret")).toBeNull();
     expect(sent[0].headers.get("X-ADG-Origin-Key")).toBe(UPSTREAM.key);
   });
 
@@ -213,5 +163,29 @@ describe("forwardToApi", () => {
     await expect(forwardToApi(new Request(`${ORIGIN}/runtime`), UPSTREAM, fetcher)).rejects.toThrow(
       /without X-ADG-Runtime-Mode: demo/,
     );
+  });
+
+  it("gives a visitor's own X-ADG-Origin-Key no say: the Worker's key replaces it on the whole path", async () => {
+    for (const guess of ["a-caller-guess", UPSTREAM.key.slice(1), ""]) {
+      const { sent, fetcher } = capture();
+      const { dependencies } = harness({ api: (forwarded) => forwardToApi(forwarded, UPSTREAM, fetcher) });
+      await routeRequest(request("/auth/dev/login", { method: "POST", headers: { "X-ADG-Origin-Key": guess } }), dependencies);
+      expect(sent).toHaveLength(1);
+      expect(sent[0].headers.get("X-ADG-Origin-Key")).toBe(UPSTREAM.key);
+    }
+  });
+
+  it("does not reach the API at all when the Worker has no key of its own", async () => {
+    const { sent, fetcher } = capture();
+    const { seen, dependencies } = harness({
+      api: (forwarded) => forwardToApi(forwarded, apiUpstream({ ADG_API_ORIGIN: UPSTREAM.origin }), fetcher),
+    });
+    const response = await routeRequest(
+      request("/runtime", { headers: { "X-ADG-Origin-Key": UPSTREAM.key } }),
+      dependencies,
+    );
+    expect(response.status).toBe(503);
+    expect(sent).toHaveLength(0);
+    expect(JSON.stringify(seen.logs)).not.toContain(UPSTREAM.key);
   });
 });

@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 /**
- * Hosted HTTP smoke checks for the ADG Cloudflare staging deployment.
+ * Hosted HTTP smoke checks for the ADG public demo staging deployment.
  *
  *   STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev \
- *   CF_ACCESS_CLIENT_ID=… CF_ACCESS_CLIENT_SECRET=… \
+ *   API_ORIGIN=https://<service>.onrender.com \
  *   node cloudflare/checks/smoke.mjs
  *
- * Access credentials: an Access service token (CF_ACCESS_CLIENT_ID/SECRET), which Access
- * exchanges for an assertion at the edge — or, for the local rehearsal only, an assertion
- * itself (ACCESS_JWT). With API_ORIGIN (the Render origin) set, it also checks that the API
- * refuses anyone who reaches it directly, around Access. Writes nothing but development sign-ins: every request is a read, a
- * write the demo must refuse, or a sign-in. Prints one line per check and a JSON summary;
- * exits non-zero on any failure. Never prints a credential.
+ * The deployment is public, so every request is made as an anonymous visitor would make it,
+ * then as the public demo account (SIGN_IN_AS, default `planner`). PUBLIC_ACCOUNTS (default
+ * `viewer,planner`) is the whole list of accounts development sign-in may offer; every other
+ * account must be refused. With API_ORIGIN (the Render origin) set, it also checks that the
+ * API refuses anyone who reaches it directly, around the Worker. Writes nothing but
+ * development sign-ins: every request is a read, a write the demo must refuse, or a sign-in.
+ * Prints one line per check and a JSON summary; exits non-zero on any failure. Never prints a
+ * credential.
  */
 
 const BASE = (process.env.STAGING_URL ?? "").replace(/\/+$/, "");
@@ -20,21 +22,14 @@ if (!BASE) {
   process.exit(2);
 }
 
-function accessHeaders() {
-  if (process.env.CF_ACCESS_CLIENT_ID && process.env.CF_ACCESS_CLIENT_SECRET) {
-    return {
-      "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID,
-      "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET,
-    };
-  }
-  if (process.env.ACCESS_JWT) {
-    return { "Cf-Access-Jwt-Assertion": process.env.ACCESS_JWT };
-  }
-  console.error("Set CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET (or ACCESS_JWT for the local rehearsal).");
-  process.exit(2);
-}
-
-const ACCESS = accessHeaders();
+const list = (value) => value.split(",").map((v) => v.trim()).filter(Boolean);
+/** The only accounts a visitor may sign in as (the Render service's ADG_DEV_AUTH_USERS). */
+const PUBLIC_ACCOUNTS = list(process.env.PUBLIC_ACCOUNTS ?? "viewer,planner");
+const SIGN_IN_AS = process.env.SIGN_IN_AS ?? "planner";
+/** The default development accounts that must not be public: each holds a write a visitor must not. */
+const PRIVILEGED_ACCOUNTS = ["admin", "auditor", "reviewer", "governance", "approver"].filter(
+  (account) => !PUBLIC_ACCOUNTS.includes(account),
+);
 /** Fragments of a connection string; no answer may contain one. */
 const FORBIDDEN = ["postgresql+psycopg", "postgresql://", "postgres://", "adg_demo", ":5432", "supabase", "sslmode", "onrender.com"];
 /**
@@ -47,13 +42,12 @@ const results = [];
 let cookie = "";
 let apiToken = "";
 
-async function request(path, { method = "GET", body, headers = {}, access = true, json } = {}) {
+async function request(path, { method = "GET", body, headers = {}, json } = {}) {
   const started = performance.now();
   const response = await fetch(`${BASE}${path}`, {
     method,
     redirect: "manual",
     headers: {
-      ...(access ? ACCESS : {}),
       ...(cookie ? { Cookie: cookie } : {}),
       ...(json !== undefined || body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...headers,
@@ -91,24 +85,35 @@ function noSecrets(text, where) {
   }
 }
 
-await check("unauthenticated request is refused before ADG answers", async () => {
-  const { response, text } = await request("/", { access: false });
-  // At the edge Access redirects to its login (302) or refuses (401/403); the Worker's own
-  // check answers 401. Anything but ADG's page is acceptable; ADG's page is not.
-  expect(response.status !== 200, `got 200`);
-  expect(!text.includes("Null Meridian"), "ADG content served without Access");
-  return `HTTP ${response.status}`;
+await check("an anonymous visitor reads no ADG data from the API", async () => {
+  for (const path of ["/api/v1/demo", "/api/v1/risks/summary", "/api/v1/simulations", "/api/v1/remediation", "/auth/me"]) {
+    const { response } = await request(path);
+    expect(response.status === 401, `${path}: HTTP ${response.status}`);
+  }
+  return "5 routes → 401";
 });
 
-await check("unauthenticated API request is refused", async () => {
-  const { response, text } = await request("/runtime", { access: false });
-  expect(response.status !== 200 && !text.includes("runtime_mode"), `got ${response.status}`);
-  return `HTTP ${response.status}`;
+await check(`development sign-in offers only ${PUBLIC_ACCOUNTS.join(", ")}; every other account is refused`, async () => {
+  const { response, text } = await request("/auth/config");
+  expect(response.status === 200, `/auth/config: HTTP ${response.status}`);
+  const offered = JSON.parse(text).development_accounts ?? [];
+  expect(
+    [...offered].sort().join(",") === [...PUBLIC_ACCOUNTS].sort().join(","),
+    `offered ${offered.join(",") || "none"}`,
+  );
+  for (const account of PRIVILEGED_ACCOUNTS) {
+    const refused = await request("/auth/dev/login", { method: "POST", json: { username: account } });
+    expect(refused.response.status === 404, `${account}: HTTP ${refused.response.status}`);
+  }
+  return `${PRIVILEGED_ACCOUNTS.join(", ")} → 404`;
 });
 
 const API_ORIGIN = (process.env.API_ORIGIN ?? "").replace(/\/+$/, "");
 if (API_ORIGIN) {
   await check("the API origin refuses a request that did not come through the Worker", async () => {
+    // A guessed key is no key: only the Worker's own reaches the API.
+    const guessed = await fetch(`${API_ORIGIN}/runtime`, { headers: { "X-ADG-Origin-Key": "x".repeat(64) } });
+    expect(guessed.status === 403, `guessed key: HTTP ${guessed.status}`);
     for (const path of ["/runtime", "/health/ready", "/auth/config"]) {
       const response = await fetch(`${API_ORIGIN}${path}`, { method: "GET", redirect: "manual" });
       const text = await response.text();
@@ -122,7 +127,7 @@ if (API_ORIGIN) {
     expect(signIn.status === 403, `sign-in: HTTP ${signIn.status}`);
     const live = await fetch(`${API_ORIGIN}/health/live`);
     expect(live.status === 200, `/health/live: HTTP ${live.status}`);
-    return "403 without the origin key; only /health/live open";
+    return "403 without the origin key or with a guessed one; only /health/live open";
   });
 }
 
@@ -184,15 +189,17 @@ await check("external collector ingestion is refused (anonymous)", async () => {
   return "403 demo_only";
 });
 
-await check("development sign-in through the API", async () => {
-  const { response, text } = await request("/auth/dev/login", { method: "POST", json: { username: "admin" } });
+await check(`development sign-in through the API (${SIGN_IN_AS})`, async () => {
+  const { response, text } = await request("/auth/dev/login", { method: "POST", json: { username: SIGN_IN_AS } });
   expect(response.status === 200, `HTTP ${response.status}`);
-  apiToken = JSON.parse(text).access_token;
+  const body = JSON.parse(text);
+  apiToken = body.access_token;
   expect(typeof apiToken === "string" && apiToken.length > 20, "no token");
-  return "admin";
+  expect(!body.principal?.roles?.includes("admin"), `roles ${body.principal?.roles}`);
+  return `${SIGN_IN_AS}: ${body.principal?.roles?.join(", ")}`;
 });
 
-await check("external collector ingestion is refused (administrator)", async () => {
+await check(`external collector ingestion is refused (${SIGN_IN_AS})`, async () => {
   for (const path of ["/api/v1/scan-runs", "/api/v1/scan-runs/00000000-0000-0000-0000-000000000000/batches", "/api/v1/scan-runs/00000000-0000-0000-0000-000000000000/completion"]) {
     const { response, text } = await request(path, {
       method: "POST",
@@ -202,6 +209,25 @@ await check("external collector ingestion is refused (administrator)", async () 
     expect(response.status === 403 && JSON.parse(text).status === "demo_only", `${path}: ${response.status}`);
   }
   return "3 ingestion routes → 403 demo_only";
+});
+
+await check(`the public account cannot approve, export, alert or run governance (${SIGN_IN_AS})`, async () => {
+  const id = "00000000-0000-0000-0000-000000000000";
+  const writes = [
+    ["POST", `/api/v1/remediation/${id}/approval`],
+    ["POST", `/api/v1/remediation/${id}/exports`],
+    ["POST", "/api/v1/alerts/watches"],
+    ["POST", "/api/v1/alerts/deliveries/drain"],
+    ["POST", "/api/v1/governance/campaigns"],
+    ["POST", "/api/v1/governance/owners"],
+    ["POST", `/api/v1/governance/items/${id}/decisions`],
+    ["POST", "/api/v1/demo/scans"],
+  ];
+  for (const [method, path] of writes) {
+    const { response } = await request(path, { method, json: {}, headers: { Authorization: `Bearer ${apiToken}` } });
+    expect(response.status === 403, `${method} ${path}: HTTP ${response.status}`);
+  }
+  return `${writes.length} privileged writes → 403`;
 });
 
 await check("remediation execution does not exist", async () => {
@@ -227,7 +253,7 @@ await check("/api/v1/demo: Null Meridian, three generations applied, scenarios A
 });
 
 await check("web sign-in sets a session", async () => {
-  const { response } = await request("/api/auth/dev-login", { method: "POST", json: { username: "admin" } });
+  const { response } = await request("/api/auth/dev-login", { method: "POST", json: { username: SIGN_IN_AS } });
   expect(response.status === 200, `HTTP ${response.status}`);
   const setCookie = response.headers.getSetCookie?.() ?? [response.headers.get("set-cookie")];
   cookie = setCookie.filter(Boolean).map((c) => c.split(";")[0]).join("; ");

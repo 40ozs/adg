@@ -21,8 +21,6 @@ export const ORIGIN_KEY_HEADER = "X-ADG-Origin-Key";
 export interface StagingVariables {
   ADG_WEB_URL?: string;
   ADG_API_ORIGIN?: string;
-  ACCESS_TEAM_DOMAIN?: string;
-  ACCESS_AUD?: string;
   // Secret.
   ADG_ORIGIN_KEY?: string;
 }

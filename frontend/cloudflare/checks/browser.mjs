@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 /**
- * Hosted browser gate for the ADG Cloudflare staging deployment: the integration's 22-check
+ * Hosted browser gate for the ADG public demo staging deployment: the integration's 22-check
  * browser gate (docs/handoffs/adg-demo-integration-01.md §8), driven against the staging URL
- * with headless Chromium.
+ * with headless Chromium as an anonymous visitor who then signs in as the public demo account.
  *
- *   STAGING_URL=… CF_ACCESS_CLIENT_ID=… CF_ACCESS_CLIENT_SECRET=… \
- *   SCREENSHOT_DIR=./screens node cloudflare/checks/browser.mjs
+ *   STAGING_URL=… SCREENSHOT_DIR=./screens node cloudflare/checks/browser.mjs
  *
  * Needs the `playwright` package (CI installs it; locally `NODE_PATH` may point at a global
- * install). Access credentials as in smoke.mjs. Writes only development sign-ins and one
- * unsaved simulation preview. Exits non-zero on any failed check or page error.
+ * install). PUBLIC_ACCOUNTS and SIGN_IN_AS as in smoke.mjs. Writes only development sign-ins
+ * and one unsaved simulation preview. Exits non-zero on any failed check or page error.
  */
 
 import { mkdirSync } from "node:fs";
@@ -24,19 +23,8 @@ if (!BASE) {
   console.error("Set STAGING_URL.");
   process.exit(2);
 }
-const ACCESS =
-  process.env.CF_ACCESS_CLIENT_ID && process.env.CF_ACCESS_CLIENT_SECRET
-    ? {
-        "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID,
-        "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET,
-      }
-    : process.env.ACCESS_JWT
-      ? { "Cf-Access-Jwt-Assertion": process.env.ACCESS_JWT }
-      : null;
-if (ACCESS === null) {
-  console.error("Set CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET (or ACCESS_JWT for the local rehearsal).");
-  process.exit(2);
-}
+const PUBLIC_ACCOUNTS = (process.env.PUBLIC_ACCOUNTS ?? "viewer,planner").split(",").map((v) => v.trim()).filter(Boolean);
+const SIGN_IN_AS = process.env.SIGN_IN_AS ?? "planner";
 const SCREENSHOTS = process.env.SCREENSHOT_DIR ?? "";
 if (SCREENSHOTS) {
   mkdirSync(SCREENSHOTS, { recursive: true });
@@ -46,7 +34,7 @@ const TIMEOUT = Number(process.env.CHECK_TIMEOUT_MS ?? 60_000);
 const browser = await chromium.launch(
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
 );
-const context = await browser.newContext({ extraHTTPHeaders: ACCESS, viewport: { width: 1360, height: 900 } });
+const context = await browser.newContext({ viewport: { width: 1360, height: 900 } });
 context.setDefaultTimeout(TIMEOUT);
 const page = await context.newPage();
 
@@ -121,12 +109,17 @@ await check("footer: organization and data fictional", async () => {
   expect(/fictional/i.test(footer), footer.slice(0, 200));
 });
 
-await check("development sign-in (admin)", async () => {
+await check(`development sign-in offers only ${PUBLIC_ACCOUNTS.join(", ")}; signs in as ${SIGN_IN_AS}`, async () => {
   await go("/login");
-  await page.getByRole("button", { name: "Sign in as admin" }).click();
+  const offered = (await page.getByRole("button", { name: /^Sign in as / }).allInnerTexts()).map((label) =>
+    label.replace(/^Sign in as /, "").trim(),
+  );
+  expect(offered.sort().join(",") === [...PUBLIC_ACCOUNTS].sort().join(","), `offered ${offered.join(",") || "none"}`);
+  await page.getByRole("button", { name: `Sign in as ${SIGN_IN_AS}` }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/login"));
   const body = await text(page.locator("body"));
-  expect(!body.includes("Sign in as admin"), "still on the sign-in page");
+  expect(!body.includes(`Sign in as ${SIGN_IN_AS}`), "still on the sign-in page");
+  return `offered ${offered.join(", ")}`;
 });
 
 let scenarios = [];
@@ -222,8 +215,8 @@ await check("no production operation: web tier POST /api/adg/api/v1/scan-runs �
   expect(status === 405, `HTTP ${status}`);
 });
 
-await check("no production operation: API POST /api/v1/scan-runs as administrator → 403 demo_only", async () => {
-  const login = await page.request.post(`${BASE}/auth/dev/login`, { data: { username: "admin" } });
+await check(`no production operation: API POST /api/v1/scan-runs as ${SIGN_IN_AS} → 403 demo_only`, async () => {
+  const login = await page.request.post(`${BASE}/auth/dev/login`, { data: { username: SIGN_IN_AS } });
   const token = (await login.json()).access_token;
   const response = await page.request.post(`${BASE}/api/v1/scan-runs`, {
     data: {},
