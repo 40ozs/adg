@@ -227,6 +227,10 @@ jobs:
           ADG_API_ORIGIN: ${{ vars.ADG_API_ORIGIN }}
           ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
           ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+          # wrangler >= 4.149 otherwise hands an OpenNext project to `opennextjs-cloudflare
+          # deploy`, which re-runs this command through a shell unquoted (the message breaks).
+          # This project has no incremental cache for OpenNext to populate.
+          OPEN_NEXT_DEPLOY: "true"
         run: |
           umask 077
           secrets_file="$RUNNER_TEMP/worker-secrets.json"
