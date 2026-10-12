@@ -41,6 +41,10 @@ WORKDIR /app
 COPY backend /app/backend
 COPY database /app/database
 RUN python -m pip install --upgrade pip && python -m pip install /app/backend
+# The service runs from /app/backend, so it imports this source tree, not the installed copy.
+# Compile it now: PYTHONDONTWRITEBYTECODE stops the service writing bytecode, so it would
+# otherwise compile every module again on each cold start, on a 0.1-CPU instance.
+RUN python -m compileall -q /app/backend/app
 
 COPY --from=web /app/frontend/.next/standalone /app/web
 COPY --from=web /app/frontend/.next/static /app/web/.next/static
