@@ -11,9 +11,11 @@ import {
   systemMapping,
 } from "@/lib/explanation";
 import { limitingLayerLabel } from "@/lib/access";
+import { principalLabel } from "@/lib/identity";
 import { Rights } from "@/components/EffectiveAccess";
 import { PrincipalName } from "@/components/Identity";
 import { SimulateAction } from "@/components/SimulateLink";
+import { SortableTable } from "@/components/SortableTable";
 import styles from "@/components/explanation.module.css";
 
 /**
@@ -181,59 +183,63 @@ export function AceTable({
     return null;
   }
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption>
+    <SortableTable
+      className="acl-table"
+      caption={
+        <>
           {caption}
           {hint !== undefined && <span className="muted"> — {hint}</span>}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Trustee</th>
-            <th scope="col">Type</th>
-            <th scope="col">Contributed</th>
-            <th scope="col">Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => (
-            <tr
-              key={`${entry.layer}-${entry.position}-${entry.ace_key ?? "owner"}`}
-              className={entry.ace_type === "deny" ? "ace-deny" : undefined}
+        </>
+      }
+      rowHeader={1}
+      columns={[
+        { label: "#", type: "number" },
+        { label: "Trustee" },
+        { label: "Type" },
+        // A mask, as a hex string ("0x001301BF"), which Number() reads.
+        { label: "Contributed", type: "number" },
+        { label: "Source" },
+      ]}
+      rows={entries.map((entry) => ({
+        key: `${entry.layer}-${entry.position}-${entry.ace_key ?? "owner"}`,
+        className: entry.ace_type === "deny" ? "ace-deny" : undefined,
+        sort: [
+          entry.position,
+          principalLabel(entry.trustee),
+          entry.ace_type,
+          entry.contributed,
+          entry.source,
+        ],
+        cells: [
+          entry.position === -1 ? "owner" : entry.position,
+          <>
+            <PrincipalName principal={entry.trustee} />
+            {entry.via_group && (
+              <div className="ace-notes muted">reached through a group, not named directly</div>
+            )}
+          </>,
+          <span
+            key="type"
+            className={entry.ace_type === "deny" ? "badge badge-deny" : "badge badge-allow"}
+          >
+            {entry.ace_type}
+          </span>,
+          <code key="contributed">{entry.contributed}</code>,
+          <>
+            <span
+              className={
+                entry.source === "inherited" ? "badge badge-inherited" : "badge badge-explicit"
+              }
             >
-              <td>{entry.position === -1 ? "owner" : entry.position}</td>
-              <th scope="row">
-                <PrincipalName principal={entry.trustee} />
-                {entry.via_group && (
-                  <div className="ace-notes muted">reached through a group, not named directly</div>
-                )}
-              </th>
-              <td>
-                <span className={entry.ace_type === "deny" ? "badge badge-deny" : "badge badge-allow"}>
-                  {entry.ace_type}
-                </span>
-              </td>
-              <td>
-                <code>{entry.contributed}</code>
-              </td>
-              <td>
-                <span
-                  className={
-                    entry.source === "inherited" ? "badge badge-inherited" : "badge badge-explicit"
-                  }
-                >
-                  {entry.source}
-                </span>
-                {entry.inherited_from !== null && (
-                  <div className="ace-notes muted">set on {entry.inherited_from}</div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              {entry.source}
+            </span>
+            {entry.inherited_from !== null && (
+              <div className="ace-notes muted">set on {entry.inherited_from}</div>
+            )}
+          </>,
+        ],
+      }))}
+    />
   );
 }
 
@@ -276,50 +282,46 @@ export function RemovalPanel({
               ? "No single removal ends access here. That is the common case on a real estate, and it means more than one change is needed."
               : `${sufficient.length} of ${explanation.removal_targets.length} single removals end access here.`}
           </p>
-          <div className="table-scroll">
-            <table className="access-table">
-              <caption>Each row was measured by re-running the access check without that relationship.</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Relationship</th>
-                  <th scope="col">Effect</th>
-                  <th scope="col">Rights afterwards</th>
-                  <th scope="col">Routes that survive</th>
-                  <th scope="col">What if</th>
-                </tr>
-              </thead>
-              <tbody>
-                {explanation.removal_targets.map((target) => {
-                  const note = describeRemoval(explanation, target);
-                  return (
-                    <tr key={target.edge_id}>
-                      <th scope="row">
-                        <code>{target.source}</code> → <code>{target.target}</code>
-                        <div className="ace-notes muted">{target.kind}</div>
-                      </th>
-                      <td>
-                        <span className={`verdict verdict-${note.tone}`}>{note.headline}</span>
-                        <span className="verdict-note">{note.detail}</span>
-                      </td>
-                      <td>
-                        <Rights rights={target.rights_after} />
-                      </td>
-                      <td>
-                        {note.alternates.length === 0 ? (
-                          <span className="muted">none</span>
-                        ) : (
-                          note.alternates.map((path) => path.id).join(", ")
-                        )}
-                      </td>
-                      <td>
-                        <RemovalSimulateAction explanation={explanation} target={target} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            className="access-table"
+            caption="Each row was measured by re-running the access check without that relationship."
+            columns={[
+              { label: "Relationship" },
+              { label: "Effect" },
+              { label: "Rights afterwards" },
+              { label: "Routes that survive", type: "number" },
+              { label: "What if", sortable: false },
+            ]}
+            rows={explanation.removal_targets.map((target) => {
+              const note = describeRemoval(explanation, target);
+              return {
+                key: target.edge_id,
+                sort: [
+                  `${target.source} → ${target.target}`,
+                  note.headline,
+                  target.rights_after.label,
+                  note.alternates.length,
+                ],
+                cells: [
+                  <>
+                    <code>{target.source}</code> → <code>{target.target}</code>
+                    <div className="ace-notes muted">{target.kind}</div>
+                  </>,
+                  <>
+                    <span className={`verdict verdict-${note.tone}`}>{note.headline}</span>
+                    <span className="verdict-note">{note.detail}</span>
+                  </>,
+                  <Rights key="rights" rights={target.rights_after} />,
+                  note.alternates.length === 0 ? (
+                    <span key="routes" className="muted">none</span>
+                  ) : (
+                    note.alternates.map((path) => path.id).join(", ")
+                  ),
+                  <RemovalSimulateAction key="simulate" explanation={explanation} target={target} />,
+                ],
+              };
+            })}
+          />
         </>
       )}
     </div>

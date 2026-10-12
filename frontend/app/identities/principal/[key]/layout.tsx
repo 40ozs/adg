@@ -16,6 +16,7 @@ import { FactList, Maybe, NotReported, TriState } from "@/components/Facts";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { PrincipalViewTabs } from "@/components/PrincipalViewTabs";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable } from "@/components/SortableTable";
 
 import { collectionStatus, keyFromSegment, principalDetail } from "./data";
 
@@ -219,28 +220,30 @@ function IdentityInformation({ principal }: { principal: PrincipalDetail }): JSX
             A SID keeps its identity when its name changes. An ACE written under an old name
             still names this principal.
           </p>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Kind</th>
-                  <th scope="col">Value</th>
-                  <th scope="col">First seen</th>
-                  <th scope="col">Last seen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {principal.aliases.map((alias) => (
-                  <tr key={`${alias.alias_kind}:${alias.value}`}>
-                    <td>{alias.alias_kind}</td>
-                    <th scope="row">{alias.value}</th>
-                    <td className="muted">{alias.first_observed_at}</td>
-                    <td className="muted">{alias.last_observed_at}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            rowHeader={1}
+            columns={[
+              { label: "Kind" },
+              { label: "Value" },
+              { label: "First seen", type: "date", className: "muted" },
+              { label: "Last seen", type: "date", className: "muted" },
+            ]}
+            rows={principal.aliases.map((alias) => ({
+              key: `${alias.alias_kind}:${alias.value}`,
+              sort: [
+                alias.alias_kind,
+                alias.value,
+                alias.first_observed_at,
+                alias.last_observed_at,
+              ],
+              cells: [
+                alias.alias_kind,
+                alias.value,
+                alias.first_observed_at,
+                alias.last_observed_at,
+              ],
+            }))}
+          />
         </>
       )}
     </details>

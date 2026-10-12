@@ -41,6 +41,7 @@ import {
   targetLabel,
   type Tone,
 } from "@/lib/governance";
+import { SortableTable } from "@/components/SortableTable";
 
 const TONE_CLASS: Record<Tone, string> = {
   ok: "status-ok",
@@ -57,42 +58,47 @@ function instant(value: string): string {
 
 export function CampaignTable({ campaigns }: { campaigns: readonly CampaignView[] }): JSX.Element {
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption className="muted">
+    <SortableTable
+      className="acl-table"
+      caption={
+        <>
           Campaigns, newest first. A campaign is frozen against an instant, so what a
           reviewer certifies is what was true then, whatever the estate does afterwards.
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Campaign</th>
-            <th scope="col">Status</th>
-            <th scope="col">Frozen against</th>
-            <th scope="col">Due</th>
-            <th scope="col">Items</th>
-          </tr>
-        </thead>
-        <tbody>
-          {campaigns.map((campaign) => (
-            <tr key={campaign.campaign_id}>
-              <th scope="row">
-                <Link href={`/governance/campaigns/${campaign.campaign_id}`}>
-                  {campaign.name}
-                </Link>
-                <div className="muted">
-                  {campaign.focus === "principal" ? "By principal" : "By resource"} ·{" "}
-                  {campaign.scopes.map((scope) => `${scope.kind}:${scope.key}`).join(", ")}
-                </div>
-              </th>
-              <td>{campaign.status}</td>
-              <td>{instant(campaign.baseline_at)}</td>
-              <td>{campaign.due_at === null ? "—" : instant(campaign.due_at)}</td>
-              <td>{campaign.item_count.toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          Sorting orders the rows on this page.
+        </>
+      }
+      captionClassName="muted"
+      columns={[
+        { label: "Campaign" },
+        { label: "Status" },
+        { label: "Frozen against", type: "date" },
+        { label: "Due", type: "date" },
+        { label: "Items", type: "number" },
+      ]}
+      rows={campaigns.map((campaign) => ({
+        key: campaign.campaign_id,
+        sort: [
+          campaign.name,
+          campaign.status,
+          campaign.baseline_at,
+          campaign.due_at,
+          campaign.item_count,
+        ],
+        cells: [
+          <>
+            <Link href={`/governance/campaigns/${campaign.campaign_id}`}>{campaign.name}</Link>
+            <div className="muted">
+              {campaign.focus === "principal" ? "By principal" : "By resource"} ·{" "}
+              {campaign.scopes.map((scope) => `${scope.kind}:${scope.key}`).join(", ")}
+            </div>
+          </>,
+          campaign.status,
+          instant(campaign.baseline_at),
+          campaign.due_at === null ? "—" : instant(campaign.due_at),
+          campaign.item_count.toLocaleString(),
+        ],
+      }))}
+    />
   );
 }
 
@@ -172,46 +178,49 @@ export function ReviewerProgressTable({
     );
   }
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption className="muted">Reviewers, those behind first.</caption>
-        <thead>
-          <tr>
-            <th scope="col">Reviewer</th>
-            <th scope="col">Scope</th>
-            <th scope="col">Decided</th>
-            <th scope="col">Left</th>
-            <th scope="col">Due</th>
-            <th scope="col">Late</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ordered.map((reviewer) => (
-            <tr key={reviewer.assignment_id}>
-              <th scope="row">
-                {reviewer.reviewer_display_name ?? reviewer.reviewer_subject}
-                {reviewer.overdue ? (
-                  <span className="badge status-bad"> overdue</span>
-                ) : null}
-              </th>
-              <td>
-                {reviewer.scope === null
-                  ? "the whole campaign"
-                  : `${reviewer.scope.kind}:${reviewer.scope.key}`}
-              </td>
-              <td>
-                {reviewer.decided.toLocaleString()} / {reviewer.assigned.toLocaleString()}
-              </td>
-              <td>{reviewer.pending.toLocaleString()}</td>
-              <td>{dueWording(reviewer.due_at, reviewer.overdue)}</td>
-              <td>
-                {reviewer.late_decisions === 0 ? "—" : reviewer.late_decisions.toLocaleString()}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="acl-table"
+      caption="Reviewers, those behind first."
+      captionClassName="muted"
+      columns={[
+        { label: "Reviewer" },
+        { label: "Scope" },
+        { label: "Decided", type: "number" },
+        { label: "Left", type: "number" },
+        { label: "Due", type: "date" },
+        { label: "Late", type: "number" },
+      ]}
+      rows={ordered.map((reviewer) => {
+        const scope =
+          reviewer.scope === null
+            ? "the whole campaign"
+            : `${reviewer.scope.kind}:${reviewer.scope.key}`;
+        return {
+          key: reviewer.assignment_id,
+          sort: [
+            reviewer.reviewer_display_name ?? reviewer.reviewer_subject,
+            scope,
+            reviewer.decided,
+            reviewer.pending,
+            reviewer.due_at,
+            reviewer.late_decisions,
+          ],
+          cells: [
+            <>
+              {reviewer.reviewer_display_name ?? reviewer.reviewer_subject}
+              {reviewer.overdue ? <span className="badge status-bad"> overdue</span> : null}
+            </>,
+            scope,
+            <>
+              {reviewer.decided.toLocaleString()} / {reviewer.assigned.toLocaleString()}
+            </>,
+            reviewer.pending.toLocaleString(),
+            dueWording(reviewer.due_at, reviewer.overdue),
+            reviewer.late_decisions === 0 ? "—" : reviewer.late_decisions.toLocaleString(),
+          ],
+        };
+      })}
+    />
   );
 }
 
@@ -261,32 +270,30 @@ export function DriftNotice({ drift }: { drift: DriftView }): JSX.Element {
       </h2>
       <p>{drift.summary}</p>
       {drift.changes.length > 0 ? (
-        <table className="acl-table">
-          <caption className="muted">
-            Compared against the estate at {instant(drift.compared_at)}. The frozen evidence
-            above is unchanged and is what you are deciding.
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Change</th>
-              <th scope="col">What moved</th>
-              <th scope="col">Entry</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drift.changes.map((change) => (
-              <tr key={`${change.kind}-${change.ace_key}`}>
-                <th scope="row">{change.kind}</th>
-                <td>
-                  {change.field_labels.length === 0
-                    ? "the whole entry"
-                    : change.field_labels.join(", ")}
-                </td>
-                <td className="principal-sid">{change.ace_key}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SortableTable
+          className="acl-table"
+          caption={
+            <>
+              Compared against the estate at {instant(drift.compared_at)}. The frozen evidence
+              above is unchanged and is what you are deciding.
+            </>
+          }
+          captionClassName="muted"
+          columns={[
+            { label: "Change" },
+            { label: "What moved" },
+            { label: "Entry", className: "principal-sid" },
+          ]}
+          rows={drift.changes.map((change) => {
+            const moved =
+              change.field_labels.length === 0 ? "the whole entry" : change.field_labels.join(", ");
+            return {
+              key: `${change.kind}-${change.ace_key}`,
+              sort: [change.kind, moved, change.ace_key],
+              cells: [change.kind, moved, change.ace_key],
+            };
+          })}
+        />
       ) : null}
       {drift.target_certainty !== null && drift.target_certainty !== "observed" ? (
         <p className="muted">
@@ -347,48 +354,52 @@ export function GrantEvidenceTable({
   caption: string;
 }): JSX.Element {
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption className="muted">{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Type</th>
-            <th scope="col">Rights</th>
-            <th scope="col">Set here</th>
-            <th scope="col">Observed</th>
-            <th scope="col">Certainty</th>
-          </tr>
-        </thead>
-        <tbody>
-          {grants.map((grant) => (
-            <tr key={grant.ace_key} className={grant.deny ? "ace-deny" : undefined}>
-              <th scope="row">
-                <span className={grant.deny ? "badge badge-deny" : "badge badge-allow"}>
-                  {grant.ace_type}
-                </span>
-              </th>
-              <td>
-                {grant.permission ??
-                  (grant.access_mask === null
-                    ? "—"
-                    : `0x${grant.access_mask.toString(16).padStart(8, "0")}`)}
-              </td>
-              <td>
-                <span
-                  className={grant.inherited ? "badge badge-inherited" : "badge badge-explicit"}
-                >
-                  {grant.inherited ? "inherited" : "explicit"}
-                </span>
-              </td>
-              <td>
-                {instant(grant.observed_from)} – {instant(grant.last_confirmed_at)}
-              </td>
-              <td>{grant.certainty}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="acl-table"
+      caption={caption}
+      captionClassName="muted"
+      columns={[
+        { label: "Type" },
+        { label: "Rights" },
+        { label: "Set here" },
+        { label: "Observed", type: "date" },
+        { label: "Certainty" },
+      ]}
+      rows={grants.map((grant) => {
+        const rights =
+          grant.permission ??
+          (grant.access_mask === null
+            ? "—"
+            : `0x${grant.access_mask.toString(16).padStart(8, "0")}`);
+        return {
+          key: grant.ace_key,
+          className: grant.deny ? "ace-deny" : undefined,
+          sort: [
+            grant.ace_type,
+            rights,
+            grant.inherited,
+            grant.observed_from,
+            grant.certainty,
+          ],
+          cells: [
+            <span key="type" className={grant.deny ? "badge badge-deny" : "badge badge-allow"}>
+              {grant.ace_type}
+            </span>,
+            rights,
+            <span
+              key="source"
+              className={grant.inherited ? "badge badge-inherited" : "badge badge-explicit"}
+            >
+              {grant.inherited ? "inherited" : "explicit"}
+            </span>,
+            <>
+              {instant(grant.observed_from)} – {instant(grant.last_confirmed_at)}
+            </>,
+            grant.certainty,
+          ],
+        };
+      })}
+    />
   );
 }
 
@@ -496,73 +507,68 @@ export function ReachPanel({ context }: { context: ItemContextResponse }): JSX.E
         </p>
       ) : null}
       {reach.routes.length > 0 ? (
-        <div className="table-scroll">
-          <table className="acl-table">
-            <caption className="muted">
-              Other routes to this target. Removing the reviewed entry does not touch these.
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Through</th>
-                <th scope="col">Layer</th>
-                <th scope="col">Rights it contributes</th>
-                <th scope="col">Steps</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reach.routes.map((route) => (
-                <tr key={`${route.principal.key}-${route.layer}`}>
-                  <th scope="row">
-                    {route.principal.display_name ?? route.principal.sid ?? route.principal.key}
-                  </th>
-                  <td>{route.layer}</td>
-                  <td>
-                    <Rights rights={route.rights} />
-                  </td>
-                  <td>{route.depth}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SortableTable
+          className="acl-table"
+          caption="Other routes to this target. Removing the reviewed entry does not touch these."
+          captionClassName="muted"
+          columns={[
+            { label: "Through" },
+            { label: "Layer" },
+            { label: "Rights it contributes" },
+            { label: "Steps", type: "number" },
+          ]}
+          rows={reach.routes.map((route) => {
+            const through =
+              route.principal.display_name ?? route.principal.sid ?? route.principal.key;
+            return {
+              key: `${route.principal.key}-${route.layer}`,
+              sort: [through, route.layer, route.rights.label, route.depth],
+              cells: [
+                through,
+                route.layer,
+                <Rights key="rights" rights={route.rights} />,
+                route.depth,
+              ],
+            };
+          })}
+        />
       ) : null}
       {reach.removals.length > 0 ? (
-        <div className="table-scroll">
-          <table className="acl-table">
-            <caption className="muted">
+        <SortableTable
+          className="acl-table"
+          caption={
+            <>
               What removing each reviewed entry would do, evaluated one entry at a time. An
               item carrying two entries reports two independent answers; neither describes
               removing both.
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Entry</th>
-                <th scope="col">Rights lost</th>
-                <th scope="col">Rights left</th>
-                <th scope="col">Ends all access</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reach.removals.map((removal) => (
-                <tr key={removal.ace_key}>
-                  <th scope="row" className="principal-sid">
-                    {removal.ace_key}
-                  </th>
-                  <td>
-                    <Rights rights={removal.rights_removed} />
-                  </td>
-                  <td>
-                    <Rights rights={removal.rights_after} />
-                  </td>
-                  <td className={removal.revokes_all_access ? "status-ok" : "status-warn"}>
-                    {removal.revokes_all_access ? "yes" : "no"}
-                    {removal.changes_nothing ? " — this entry settles nothing today" : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            </>
+          }
+          captionClassName="muted"
+          columns={[
+            { label: "Entry", className: "principal-sid" },
+            { label: "Rights lost" },
+            { label: "Rights left" },
+            { label: "Ends all access" },
+          ]}
+          rows={reach.removals.map((removal) => ({
+            key: removal.ace_key,
+            sort: [
+              removal.ace_key,
+              removal.rights_removed.label,
+              removal.rights_after.label,
+              removal.revokes_all_access,
+            ],
+            cells: [
+              removal.ace_key,
+              <Rights key="lost" rights={removal.rights_removed} />,
+              <Rights key="left" rights={removal.rights_after} />,
+              <span key="ends" className={removal.revokes_all_access ? "status-ok" : "status-warn"}>
+                {removal.revokes_all_access ? "yes" : "no"}
+                {removal.changes_nothing ? " — this entry settles nothing today" : ""}
+              </span>,
+            ],
+          }))}
+        />
       ) : null}
       {reach.truncated ? (
         <p className="muted">

@@ -18,10 +18,12 @@ import {
   hiddenByStatus,
   recurrenceNotice,
   ruleTallies,
+  SEVERITIES,
   severityTiles,
   severityTone,
   subjectLabel,
 } from "@/lib/risks";
+import { SortableTable } from "@/components/SortableTable";
 
 /**
  * Rendering a risk report so that an empty one cannot be mistaken for a clean estate.
@@ -128,6 +130,15 @@ export function RiskSummaryStrip({
   );
 }
 
+/** Confidence, strongest first, so that a sort by it is not alphabetical. */
+const CONFIDENCES = ["confirmed", "probable", "possible"];
+
+/** A word's place in a ranked list, as a sort value; a word not on it is blank. */
+function rank(ranked: readonly string[], word: string): number | null {
+  const index = ranked.indexOf(word);
+  return index === -1 ? null : index;
+}
+
 /** One page of findings, most consequential first. */
 export function FindingTable({
   findings,
@@ -140,65 +151,70 @@ export function FindingTable({
 }): JSX.Element {
   const now = new Date();
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption className="visually-hidden">
+    <SortableTable
+      className="acl-table"
+      caption={
+        <>
           Risk findings, most consequential first. Each row links to the records it was
-          matched on.
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Severity</th>
-            <th scope="col">Finding</th>
-            <th scope="col">Where</th>
-            <th scope="col">Confidence</th>
-            <th scope="col">Seen</th>
-            <th scope="col">Evidence</th>
-          </tr>
-        </thead>
-        <tbody>
-          {findings.map((finding) => (
-            <tr key={finding.key}>
-              <td>
-                <SeverityBadge severity={finding.severity} />
-              </td>
-              <td>
-                {finding.title}
+          matched on. Sorting orders the rows on this page.
+        </>
+      }
+      captionClassName="visually-hidden"
+      rowHeader={null}
+      columns={[
+        { label: "Severity", type: "number" },
+        { label: "Finding" },
+        { label: "Where" },
+        { label: "Confidence", type: "number" },
+        { label: "Seen", type: "date", className: "muted" },
+        { label: "Evidence", type: "number" },
+      ]}
+      rows={findings.map((finding) => ({
+        key: finding.key,
+        sort: [
+          rank(SEVERITIES, finding.severity),
+          finding.title,
+          subjectLabel(finding),
+          rank(CONFIDENCES, finding.confidence),
+          finding.first_detected_at,
+          finding.evidence_count,
+        ],
+        cells: [
+          <SeverityBadge key="severity" severity={finding.severity} />,
+          <>
+            {finding.title}
+            <br />
+            <span className="muted">{finding.rule_id}</span>
+            {finding.status === "resolved" && (
+              <>
+                {" "}
+                <span className="badge status-ok">resolved</span>
+              </>
+            )}
+          </>,
+          <>
+            <code>{subjectLabel(finding)}</code>
+            {finding.subject.principal_key !== null && finding.subject.resource_key !== null && (
+              <>
                 <br />
-                <span className="muted">{finding.rule_id}</span>
-                {finding.status === "resolved" && (
-                  <>
-                    {" "}
-                    <span className="badge status-ok">resolved</span>
-                  </>
-                )}
-              </td>
-              <td>
-                <code>{subjectLabel(finding)}</code>
-                {finding.subject.principal_key !== null &&
-                  finding.subject.resource_key !== null && (
-                    <>
-                      <br />
-                      <span className="muted">for {finding.subject.principal_key}</span>
-                    </>
-                  )}
-              </td>
-              <td title={confidenceWording(finding.confidence)}>{finding.confidence}</td>
-              <td className="muted">{ageWording(finding, now)}</td>
-              <td>
-                {openKey === finding.key ? (
-                  <strong>shown below</strong>
-                ) : (
-                  <Link href={drawerHref(finding)}>
-                    {finding.evidence_count} record(s)
-                  </Link>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                <span className="muted">for {finding.subject.principal_key}</span>
+              </>
+            )}
+          </>,
+          <span key="confidence" title={confidenceWording(finding.confidence)}>
+            {finding.confidence}
+          </span>,
+          ageWording(finding, now),
+          openKey === finding.key ? (
+            <strong key="evidence">shown below</strong>
+          ) : (
+            <Link key="evidence" href={drawerHref(finding)}>
+              {finding.evidence_count} record(s)
+            </Link>
+          ),
+        ],
+      }))}
+    />
   );
 }
 

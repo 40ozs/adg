@@ -41,12 +41,15 @@ export function SortableTable({
   columns,
   rows,
   caption,
+  captionClassName,
   className,
   rowHeader = 0,
 }: {
   columns: readonly SortableColumn[];
   rows: readonly SortableRow[];
   caption?: ReactNode;
+  /** `visually-hidden` for a caption only a screen reader needs, for instance. */
+  captionClassName?: string;
   className?: string;
   /** The column whose cell names the row (`<th scope="row">`), or null for none. */
   rowHeader?: number | null;
@@ -63,7 +66,7 @@ export function SortableTable({
   return (
     <div className="table-scroll">
       <table className={className}>
-        {caption !== undefined && <caption>{caption}</caption>}
+        {caption !== undefined && <caption className={captionClassName}>{caption}</caption>}
         <thead>
           <tr>
             {columns.map((column, index) => {

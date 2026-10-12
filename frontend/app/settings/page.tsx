@@ -1,6 +1,7 @@
 import { fetchAuthConfig } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable } from "@/components/SortableTable";
 
 /**
  * Settings.
@@ -83,31 +84,21 @@ export default async function SettingsPage() {
               Published by the API. This is the authorization model itself, not a description
               of it — the same table the backend enforces with.
             </p>
-            <div className="table-scroll">
-              <table>
-                <caption>A reserved role is provisioned for a future capability and grants nothing.</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Role</th>
-                    <th scope="col">State</th>
-                    <th scope="col">Capabilities</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {config.data.roles.map((role) => (
-                    <tr key={role.role}>
-                      <th scope="row">{role.role}</th>
-                      <td className={role.active ? "status-ok" : "muted"}>
-                        {role.active ? "active" : "reserved"}
-                      </td>
-                      <td>
-                        {role.capabilities.length > 0 ? role.capabilities.join(", ") : "none"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <SortableTable
+              caption="A reserved role is provisioned for a future capability and grants nothing."
+              columns={[{ label: "Role" }, { label: "State" }, { label: "Capabilities" }]}
+              rows={config.data.roles.map((role) => ({
+                key: role.role,
+                sort: [role.role, role.active, role.capabilities.join(", ") || null],
+                cells: [
+                  role.role,
+                  <span key="state" className={role.active ? "status-ok" : "muted"}>
+                    {role.active ? "active" : "reserved"}
+                  </span>,
+                  role.capabilities.length > 0 ? role.capabilities.join(", ") : "none",
+                ],
+              }))}
+            />
           </div>
         </>
       )}
