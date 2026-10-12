@@ -47,7 +47,16 @@ MEMBERSHIP_OVERLAY_AWARE = frozenset({"neighbors"})
 MEMBERSHIP_DELEGATED = frozenset({"get_principal", "principals_by_keys", "keys_with_members"})
 
 MEMBERSHIP_REFUSED = frozenset(
-    {"resolve", "aliases_for", "is_known", "direct_members", "direct_groups", "count_direct"}
+    {
+        "resolve",
+        "aliases_for",
+        "is_known",
+        "direct_members",
+        "direct_groups",
+        "count_direct",
+        "list_principals",
+        "count_principals",
+    }
 )
 
 RESOURCE_OVERLAY_AWARE = frozenset(
