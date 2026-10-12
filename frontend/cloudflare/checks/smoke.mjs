@@ -3,14 +3,14 @@
  * Hosted HTTP smoke checks for the ADG public demo staging deployment.
  *
  *   STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev \
- *   API_ORIGIN=https://<service>.onrender.com \
+ *   RENDER_ORIGIN=https://<service>.onrender.com \
  *   node cloudflare/checks/smoke.mjs
  *
  * The deployment is public, so every request is made as an anonymous visitor would make it,
  * then as the public demo account (SIGN_IN_AS, default `planner`). PUBLIC_ACCOUNTS (default
  * `viewer,planner`) is the whole list of accounts development sign-in may offer; every other
- * account must be refused. With API_ORIGIN (the Render origin) set, it also checks that the
- * API refuses anyone who reaches it directly, around the Worker. Writes nothing but
+ * account must be refused. With RENDER_ORIGIN (the Render service) set, it also checks that the
+ * service refuses anyone who reaches it directly, around the Worker: its pages and its API. Writes nothing but
  * development sign-ins: every request is a read, a write the demo must refuse, or a sign-in.
  * Prints one line per check and a JSON summary; exits non-zero on any failure. Never prints a
  * credential.
@@ -108,26 +108,40 @@ await check(`development sign-in offers only ${PUBLIC_ACCOUNTS.join(", ")}; ever
   return `${PRIVILEGED_ACCOUNTS.join(", ")} → 404`;
 });
 
-const API_ORIGIN = (process.env.API_ORIGIN ?? "").replace(/\/+$/, "");
-if (API_ORIGIN) {
-  await check("the API origin refuses a request that did not come through the Worker", async () => {
-    // A guessed key is no key: only the Worker's own reaches the API.
-    const guessed = await fetch(`${API_ORIGIN}/runtime`, { headers: { "X-ADG-Origin-Key": "x".repeat(64) } });
-    expect(guessed.status === 403, `guessed key: HTTP ${guessed.status}`);
-    for (const path of ["/runtime", "/health/ready", "/auth/config"]) {
-      const response = await fetch(`${API_ORIGIN}${path}`, { method: "GET", redirect: "manual" });
-      const text = await response.text();
-      expect(response.status === 403 && !text.includes("runtime_mode"), `${path}: HTTP ${response.status}`);
+const RENDER_ORIGIN = (process.env.RENDER_ORIGIN ?? "").replace(/\/+$/, "");
+if (RENDER_ORIGIN) {
+  await check("the Render origin refuses a request that did not come through the Worker", async () => {
+    // A guessed key is no key: only the Worker's own reaches the service.
+    for (const path of ["/runtime", "/demo"]) {
+      const guessed = await fetch(`${RENDER_ORIGIN}${path}`, { headers: { "X-ADG-Origin-Key": "x".repeat(64) } });
+      expect(guessed.status === 403, `${path} with a guessed key: HTTP ${guessed.status}`);
     }
-    const signIn = await fetch(`${API_ORIGIN}/auth/dev/login`, {
+    // The API and the pages alike: nothing the application serves is served directly.
+    const direct = ["/runtime", "/health/ready", "/auth/config", "/api/v1/demo", "/", "/demo", "/risks", "/api/adg/api/v1/demo"];
+    for (const path of direct) {
+      const response = await fetch(`${RENDER_ORIGIN}${path}`, { method: "GET", redirect: "manual" });
+      const text = await response.text();
+      expect(
+        response.status === 403 && !text.includes("runtime_mode") && !text.includes("Null Meridian"),
+        `${path}: HTTP ${response.status}`,
+      );
+    }
+    const signIn = await fetch(`${RENDER_ORIGIN}/auth/dev/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "admin" }),
     });
     expect(signIn.status === 403, `sign-in: HTTP ${signIn.status}`);
-    const live = await fetch(`${API_ORIGIN}/health/live`);
-    expect(live.status === 200, `/health/live: HTTP ${live.status}`);
-    return "403 without the origin key or with a guessed one; only /health/live open";
+    const webSignIn = await fetch(`${RENDER_ORIGIN}/api/auth/dev-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "planner" }),
+    });
+    expect(webSignIn.status === 403, `web sign-in: HTTP ${webSignIn.status}`);
+    const live = await fetch(`${RENDER_ORIGIN}/health/live`);
+    const liveBody = await live.json();
+    expect(live.status === 200 && Object.keys(liveBody).sort().join() === "status,version", `/health/live: HTTP ${live.status}`);
+    return `${direct.length + 4} requests → 403 without the origin key or with a guessed one; only /health/live open`;
   });
 }
 
@@ -141,8 +155,9 @@ await check("homepage loads with the Demo indicator before sign-in", async () =>
   return `${ms} ms`;
 });
 
-// After a page render on purpose: Next.js (OpenNext) replaces the isolate's Request class on
-// its first request, which once broke API requests made after it (handoff §10).
+// After a page render on purpose: under the earlier Worker-rendered architecture, Next.js
+// replaced the isolate's Request class on its first request, which once broke API requests made
+// after it (adg-cloudflare-demo-01 handoff §10). Kept as an ordering regression check.
 await check("/runtime reports demo / synthetic / null-meridian-v1 and discloses nothing", async () => {
   const { response, text, ms } = await request("/runtime");
   expect(response.status === 200, `HTTP ${response.status}`);

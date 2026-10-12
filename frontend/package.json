@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "cf:typecheck": "tsc -p cloudflare/tsconfig.json",
-    "cf:build": "opennextjs-cloudflare build"
+    "cf:assets": "node cloudflare/assets.mjs"
   },
   "dependencies": {
     "next": "^15.5.27",
@@ -22,7 +22,6 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261012.1",
     "@eslint/eslintrc": "^3.2.0",
-    "@opennextjs/cloudflare": "^1.20.10",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

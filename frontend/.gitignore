@@ -4,6 +4,6 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 .env.local
-.open-next/
+.edge-assets/
 .wrangler/
 .dev.vars
