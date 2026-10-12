@@ -1,5 +1,9 @@
 # ADG-CLOUDFLARE-DEMO-01 — ADG Demo Mode + Null Meridian on Cloudflare (protected staging)
 
+> **Superseded.** The Container and Access architecture below was replaced by Workers Free +
+> Render Free + Supabase, public with no Cloudflare Access: see
+> [`adg-free-public-staging-02.md`](adg-free-public-staging-02.md).
+
 **Verdict:** `BLOCKED_ON_CLOUDFLARE_CONFIGURATION` — the deployment path is built, validated and
 rehearsed end to end (Worker + Container + PostgreSQL + Access check, 21/21 smoke, 22/22
 browser, both fingerprints exact, lifecycle survived), but **nothing is deployed**: this

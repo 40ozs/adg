@@ -327,6 +327,7 @@ Browser → ADG web (Next.js) → ADG API (ADG_RUNTIME_MODE=demo) → PostgreSQL
 Linux containers only: no Windows, PowerShell, AD DS, LDAP, SMB, NTFS enumeration, domain
 join or collector. Before exposing one publicly, decide the visitor sign-in posture:
 development authentication is refused with `ADG_ENVIRONMENT=production`, so a public demo
-needs either OIDC or a deliberate read-only visitor mode, which this work does not add.
-Deployment itself is out of scope here; the protected Cloudflare staging deployment is
+needs either OIDC or development sign-in restricted, through `ADG_DEV_AUTH_USERS`, to accounts
+a stranger may hold. Deployment itself is out of scope here; the free public demo staging
+deployment, and the account policy it uses, is
 [`docs/deployment/cloudflare-demo.md`](../deployment/cloudflare-demo.md).
