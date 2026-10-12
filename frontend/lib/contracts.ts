@@ -439,8 +439,25 @@ export interface EffectiveMemberView {
   principal: PrincipalSummary;
   depth: number;
   path: string[];
+  /** The principal at each key of `path`, in order. Unresolved keys come back unresolved. */
+  path_principals: PrincipalSummary[];
   edge_kinds: string[];
   via_foreign_security_principal: boolean;
+}
+
+/** One row of the users or groups directory. */
+export interface ListedPrincipalView extends PrincipalSummary {
+  direct_member_count: number;
+  direct_group_count: number;
+}
+
+export type DirectoryKind = "users" | "groups";
+
+export interface PrincipalListResponse {
+  kind: DirectoryKind;
+  query: string | null;
+  items: ListedPrincipalView[];
+  page: PageInfo;
 }
 
 export interface DirectMembersResponse {
@@ -682,6 +699,7 @@ export interface TokenEntryView {
   assumed: boolean;
   depth: number;
   path: string[];
+  path_principals: PrincipalSummary[];
 }
 
 export interface TokenView {

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { currentViewer } from "@/lib/auth/current";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
@@ -5,9 +7,9 @@ import { SignedOutNotice } from "@/components/SignedOutNotice";
 /**
  * Identities.
  *
- * Deliberately a lookup rather than a listing. A domain's principal table is hundreds of
- * thousands of rows and scrolling it answers nothing; every real question here starts from a
- * name or a SID somebody already has, usually pasted out of an ACE.
+ * A lookup first. Most questions here start from a name or a SID somebody already has,
+ * usually pasted out of an ACE. The Users and Groups directories are the listings, paged on
+ * the server, because a domain's principal table is hundreds of thousands of rows.
  */
 export default async function IdentitiesPage() {
   const viewer = await currentViewer();
@@ -23,6 +25,15 @@ export default async function IdentitiesPage() {
         names are metadata, and a SID that no longer resolves still has the name the ACE
         carried.
       </p>
+
+      <div className="card">
+        <h2>Browse</h2>
+        <p>
+          <Link href="/identities/users">Users</Link> and{" "}
+          <Link href="/identities/groups">Groups</Link>: every one ADG has observed, paged on
+          the server and searchable by name or SID.
+        </p>
+      </div>
 
       <div className="card">
         <h2>Look up an identity</h2>

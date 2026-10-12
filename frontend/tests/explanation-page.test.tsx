@@ -27,8 +27,18 @@ import type { CollectionStatus } from "@/lib/contracts";
 import type { AccessExplanationResponse } from "@/lib/derived";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -123,7 +133,13 @@ describe("the explanation screen against a captured response", () => {
     render(await AccessExplanationPage({ searchParams: params(ASKED) }));
 
     const routes = screen.getByRole("table", { name: /Select a route/ });
-    expect(within(routes).getByText(/Alice Smith → Finance-Team → Finance-RW/)).toBeInTheDocument();
+    expect(routes.querySelector(".principal-chain")?.textContent).toBe(
+      "Alice Smith → Finance-Team → Finance-RW",
+    );
+    // Each hop opens its principal, by storage key rather than by name.
+    expect(within(routes).getByRole("link", { name: "Finance-Team" }).getAttribute("href")).toMatch(
+      /^\/identities\/principal\/S-1-5-21-/,
+    );
   });
 
   it("shows both layers, so the fix goes to the right ACL", async () => {

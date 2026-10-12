@@ -823,3 +823,35 @@ dl.facts dd {
 .breadcrumb [aria-current="page"] {
   color: var(--muted);
 }
+
+/* A sortable column header: the header's own text, made a button. */
+.sort-button {
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  padding: 0;
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.sort-button:hover {
+  color: var(--text);
+}
+
+.sort-indicator {
+  font-size: 0.75em;
+  opacity: 0.7;
+}
+
+th[aria-sort] .sort-button {
+  color: var(--text);
+}
+
+th[aria-sort] .sort-indicator {
+  opacity: 1;
+}
