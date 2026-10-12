@@ -7,6 +7,7 @@ import type { StoredReportDocument } from "@/lib/simulation";
 import { summaryLine } from "@/lib/simulation";
 import { SimulationReport } from "@/components/Simulation";
 import { SimulationExport } from "@/components/SimulationExport";
+import { SortableTable } from "@/components/SortableTable";
 import styles from "@/components/simulation.module.css";
 
 /**
@@ -75,51 +76,48 @@ export function StoredResultPanel({
       )}
 
       {report.deltas && report.deltas.length > 0 && (
-        <div className="table-scroll">
-          <table className="access-table">
-            <thead>
-              <tr>
-                <th scope="col">Principal</th>
-                <th scope="col">Directory</th>
-                <th scope="col">Today</th>
-                <th scope="col">Would be</th>
-                <th scope="col">Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.deltas.map((delta) => (
-                <tr key={`${delta.subject_key}|${delta.resource_key}|${delta.path}`}>
-                  <td>
-                    <code>{delta.subject_key}</code>
-                  </td>
-                  <td>
-                    <code>{delta.resource_key}</code>
-                  </td>
-                  <td>
-                    <code>{delta.rights_before}</code>
-                  </td>
-                  <td>
-                    <code>{delta.rights_after}</code>
-                  </td>
-                  <td>
-                    {delta.direction}
-                    {delta.caveats.map((code) => (
-                      <p key={code} className="status-warn" role="note">
-                        {code}
-                      </p>
-                    ))}
-                    {delta.retained_path_count > 0 && (
-                      <p className="muted">
-                        {delta.retained_path_count} route
-                        {delta.retained_path_count === 1 ? "" : "s"} survive this change
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SortableTable
+          className="access-table"
+          rowHeader={null}
+          columns={[
+            { label: "Principal" },
+            { label: "Directory" },
+            // Masks, as hex strings ("0x001301BF"), which Number() reads.
+            { label: "Today", type: "number" },
+            { label: "Would be", type: "number" },
+            { label: "Change" },
+          ]}
+          rows={report.deltas.map((delta) => ({
+            key: `${delta.subject_key}|${delta.resource_key}|${delta.path}`,
+            sort: [
+              delta.subject_key,
+              delta.resource_key,
+              delta.rights_before,
+              delta.rights_after,
+              delta.direction,
+            ],
+            cells: [
+              <code key="principal">{delta.subject_key}</code>,
+              <code key="directory">{delta.resource_key}</code>,
+              <code key="before">{delta.rights_before}</code>,
+              <code key="after">{delta.rights_after}</code>,
+              <>
+                {delta.direction}
+                {delta.caveats.map((code) => (
+                  <p key={code} className="status-warn" role="note">
+                    {code}
+                  </p>
+                ))}
+                {delta.retained_path_count > 0 && (
+                  <p className="muted">
+                    {delta.retained_path_count} route
+                    {delta.retained_path_count === 1 ? "" : "s"} survive this change
+                  </p>
+                )}
+              </>,
+            ],
+          }))}
+        />
       )}
 
       <p className="muted">

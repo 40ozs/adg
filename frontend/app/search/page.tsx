@@ -6,6 +6,7 @@ import { currentViewer } from "@/lib/auth/current";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable } from "@/components/SortableTable";
 import type { SearchResults } from "@/lib/contracts";
 import { principalHrefForKey } from "@/lib/identity";
 import { directoryHref, serverHref, shareHref } from "@/lib/resources";
@@ -183,30 +184,23 @@ function Category({
           More than {limit} matched. Only the first {limit} are shown — narrow the term.
         </p>
       )}
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Identifier</th>
-              <th scope="col">Detail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.key}>
-                <th scope="row">
-                  <Link href={row.href}>{row.primary}</Link>
-                </th>
-                <td>
-                  <code>{row.secondary}</code>
-                </td>
-                <td className="muted">{row.note || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SortableTable
+        caption={truncated ? "Sorting orders the rows shown." : undefined}
+        columns={[
+          { label: "Name" },
+          { label: "Identifier" },
+          { label: "Detail", className: "muted" },
+        ]}
+        rows={rows.map((row) => ({
+          key: row.key,
+          sort: [row.primary, row.secondary, row.note],
+          cells: [
+            <Link key="name" href={row.href}>{row.primary}</Link>,
+            <code key="identifier">{row.secondary}</code>,
+            row.note || "—",
+          ],
+        }))}
+      />
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { fetchCollectionOperations, fetchScanRuns } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { StateMessage } from "@/components/Banners";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { SortableTable, type SortableRow } from "@/components/SortableTable";
 import { classify } from "@/lib/state";
 import type { RunOutcome, ScopeOperations } from "@/lib/contracts";
 import {
@@ -120,33 +121,23 @@ export default async function CollectorsPage() {
           because nothing is there.
         </p>
       ) : (
-        <div className="table-scroll">
-          <table>
-            <caption>
+        <SortableTable
+          caption={
+            <>
               One row per collector and target. A collector kind that scans four servers
               appears four times, and a failure on one of them is not hidden by a success on
               another.
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Scope</th>
-                <th scope="col">Completeness</th>
-                <th scope="col">Last successful scan</th>
-                <th scope="col">Last failed scan</th>
-                <th scope="col">Delivered</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.scopes.map((scope) => (
-                <ScopeRow
-                  key={`${scope.collector}|${scope.target ?? ""}`}
-                  scope={scope}
-                  now={now}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+            </>
+          }
+          columns={[
+            { label: "Scope" },
+            { label: "Completeness" },
+            { label: "Last successful scan", type: "date" },
+            { label: "Last failed scan", type: "date" },
+            { label: "Delivered", type: "number", className: "muted" },
+          ]}
+          rows={report.scopes.map((scope) => scopeRow(scope, now))}
+        />
       )}
 
       <h2>What is stored</h2>
@@ -182,129 +173,150 @@ export default async function CollectorsPage() {
           scope that has never run reports nothing at all.
         </p>
       ) : (
-        <div className="table-scroll">
-          <table>
-            <caption>
+        <SortableTable
+          caption={
+            <>
               {report.total_errors} reported failure(s), grouped by code. Widespread codes
               come first: the same failure on many targets is rarely a problem with one
               object.
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Code</th>
-                <th scope="col">Count</th>
-                <th scope="col">Collectors</th>
-                <th scope="col">Most recent</th>
-                <th scope="col">Examples</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orderedErrors(report.errors).map((group) => (
-                <tr key={group.code}>
-                  <th scope="row">
-                    <code>{group.code}</code>
-                    {group.is_widespread && <div className="badge badge-deny">widespread</div>}
-                  </th>
-                  <td>{group.count}</td>
-                  <td>{group.collectors.join(", ")}</td>
-                  <td>{formatUtc(group.latest_occurred_at)}</td>
-                  <td className="muted">
-                    {group.sample_targets.length === 0 ? (
-                      "—"
-                    ) : (
-                      <ul className="via-list">
-                        {group.sample_targets.map((target) => (
-                          <li key={target}>
-                            <code>{target}</code>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            </>
+          }
+          columns={[
+            { label: "Code" },
+            { label: "Count", type: "number" },
+            { label: "Collectors" },
+            { label: "Most recent", type: "date" },
+            { label: "Examples", className: "muted" },
+          ]}
+          rows={orderedErrors(report.errors).map((group) => ({
+            key: group.code,
+            sort: [
+              group.code,
+              group.count,
+              group.collectors.join(", "),
+              group.latest_occurred_at,
+              group.sample_targets.join(", ") || null,
+            ],
+            cells: [
+              <>
+                <code>{group.code}</code>
+                {group.is_widespread && <div className="badge badge-deny">widespread</div>}
+              </>,
+              group.count,
+              group.collectors.join(", "),
+              formatUtc(group.latest_occurred_at),
+              group.sample_targets.length === 0 ? (
+                "—"
+              ) : (
+                <ul key="examples" className="via-list">
+                  {group.sample_targets.map((target) => (
+                    <li key={target}>
+                      <code>{target}</code>
+                    </li>
+                  ))}
+                </ul>
+              ),
+            ],
+          }))}
+        />
       )}
 
       <h2>Run history</h2>
       <StateMessage state={runState} />
 
       {runState.kind === "ready" && (
-        <div className="table-scroll">
-          <table>
-            <caption>
+        <SortableTable
+          caption={
+            <>
               {runState.data.page.total ?? runState.data.items.length} run(s), newest first.
-              {runState.data.page.has_more && " More pages are available through the API."}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Started</th>
-                <th scope="col">Collector</th>
-                <th scope="col">Host</th>
-                <th scope="col">Status</th>
-                <th scope="col">Observations</th>
-                <th scope="col">Errors</th>
-                <th scope="col">Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runState.data.items.map((run) => (
-                <tr key={run.run_id}>
-                  <td>{formatUtc(run.started_at)}</td>
-                  <td>{run.collector}</td>
-                  <td>{run.collector_host}</td>
-                  <td className={statusClass(run.status)}>
-                    {run.status}
-                    {run.downgrade_reason && (
-                      <>
-                        {" "}
-                        <span className="muted">({run.downgrade_reason})</span>
-                      </>
-                    )}
-                  </td>
-                  <td>{run.observation_count_applied}</td>
-                  <td>{run.error_count}</td>
-                  <td className="muted">{run.target ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              {runState.data.page.has_more && " More pages are available through the API."}{" "}
+              Sorting orders the rows on this page.
+            </>
+          }
+          rowHeader={null}
+          columns={[
+            { label: "Started", type: "date" },
+            { label: "Collector" },
+            { label: "Host" },
+            { label: "Status" },
+            { label: "Observations", type: "number" },
+            { label: "Errors", type: "number" },
+            { label: "Target", className: "muted" },
+          ]}
+          rows={runState.data.items.map((run) => ({
+            key: run.run_id,
+            sort: [
+              run.started_at,
+              run.collector,
+              run.collector_host,
+              run.status,
+              run.observation_count_applied,
+              run.error_count,
+              run.target,
+            ],
+            cells: [
+              formatUtc(run.started_at),
+              run.collector,
+              run.collector_host,
+              <span key="status" className={statusClass(run.status)}>
+                {run.status}
+                {run.downgrade_reason && (
+                  <>
+                    {" "}
+                    <span className="muted">({run.downgrade_reason})</span>
+                  </>
+                )}
+              </span>,
+              run.observation_count_applied,
+              run.error_count,
+              run.target ?? "—",
+            ],
+          }))}
+        />
       )}
     </>
   );
 }
 
-function ScopeRow({ scope, now }: { scope: ScopeOperations; now: Date }): JSX.Element {
+function scopeRow(scope: ScopeOperations, now: Date): SortableRow {
   const tone = completenessTone(scope.completeness);
-  return (
-    <tr>
-      <th scope="row">
+  return {
+    key: `${scope.collector}|${scope.target ?? ""}`,
+    sort: [
+      scope.label,
+      tone.label,
+      ranAt(scope.last_success),
+      ranAt(scope.last_failure),
+      scope.latest.observations_applied,
+    ],
+    cells: [
+      <>
         {scope.label}
         <div className="ace-notes muted">{scopeSentence(scope, now)}</div>
-      </th>
-      <td className={tone.className}>
-        {tone.label}
+      </>,
+      <>
+        <span className={tone.className}>{tone.label}</span>
         {scope.latest.shortfall && (
           <div className="ace-notes status-warn">{scope.latest.shortfall}</div>
         )}
-      </td>
-      <td>
+      </>,
+      <>
         <RunCell run={scope.last_success} absent="never" />
         {scope.stale_success && (
           <div className="ace-notes status-warn">
             Not the latest attempt — the data on screen is from this run.
           </div>
         )}
-      </td>
-      <td>
-        <RunCell run={scope.last_failure} absent="none" />
-      </td>
-      <td className="muted">{delivery(scope.latest)}</td>
-    </tr>
-  );
+      </>,
+      <RunCell key="failure" run={scope.last_failure} absent="none" />,
+      delivery(scope.latest),
+    ],
+  };
+}
+
+/** The instant a run cell shows, as its sort value. */
+function ranAt(run: RunOutcome | null): string | null {
+  return run === null ? null : (run.completed_at ?? run.started_at);
 }
 
 /**

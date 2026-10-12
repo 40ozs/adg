@@ -1,5 +1,6 @@
 import { fetchBackendStatus } from "@/lib/api/health";
 import { resolveApiUrl, resolveServerApiUrl } from "@/lib/config";
+import { SortableTable } from "@/components/SortableTable";
 
 // Always render on request: a cached health page would be worse than no health page.
 export const dynamic = "force-dynamic";
@@ -51,28 +52,27 @@ export default async function StatusPage() {
 
           <div className="card">
             <h2>Dependencies</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Dependency</th>
-                  <th>State</th>
-                  <th>Latency</th>
-                  <th>Detail</th>
-                </tr>
-              </thead>
-              <tbody>
-                {status.readiness.dependencies.map((dependency) => (
-                  <tr key={dependency.name}>
-                    <td>{dependency.name}</td>
-                    <td className={dependency.ok ? "status-ok" : "status-bad"}>
-                      {dependency.ok ? "up" : "down"}
-                    </td>
-                    <td>{dependency.latency_ms} ms</td>
-                    <td className="muted">{dependency.error ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <SortableTable
+              rowHeader={null}
+              columns={[
+                { label: "Dependency" },
+                { label: "State" },
+                { label: "Latency", type: "number" },
+                { label: "Detail", className: "muted" },
+              ]}
+              rows={status.readiness.dependencies.map((dependency) => ({
+                key: dependency.name,
+                sort: [dependency.name, dependency.ok, dependency.latency_ms, dependency.error],
+                cells: [
+                  dependency.name,
+                  <span key="state" className={dependency.ok ? "status-ok" : "status-bad"}>
+                    {dependency.ok ? "up" : "down"}
+                  </span>,
+                  <>{dependency.latency_ms} ms</>,
+                  dependency.error ?? "—",
+                ],
+              }))}
+            />
           </div>
         </>
       )}

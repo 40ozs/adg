@@ -1,5 +1,6 @@
 import { fetchAuthConfig } from "@/lib/api/adg";
 import { DevelopmentLoginForm } from "@/app/login/LoginForm";
+import { SortableTable } from "@/components/SortableTable";
 
 /**
  * Sign in.
@@ -73,29 +74,21 @@ export default async function LoginPage({
             Published by the API, so this list is the authorization model itself rather than
             a description of it.
           </p>
-          <div className="table-scroll">
-            <table>
-              <caption>Roles and the capabilities they grant.</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Role</th>
-                  <th scope="col">State</th>
-                  <th scope="col">Capabilities</th>
-                </tr>
-              </thead>
-              <tbody>
-                {config.data.roles.map((role) => (
-                  <tr key={role.role}>
-                    <th scope="row">{role.role}</th>
-                    <td className={role.active ? "status-ok" : "muted"}>
-                      {role.active ? "active" : "reserved"}
-                    </td>
-                    <td>{role.capabilities.length > 0 ? role.capabilities.join(", ") : "none"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            caption="Roles and the capabilities they grant."
+            columns={[{ label: "Role" }, { label: "State" }, { label: "Capabilities" }]}
+            rows={config.data.roles.map((role) => ({
+              key: role.role,
+              sort: [role.role, role.active, role.capabilities.join(", ") || null],
+              cells: [
+                role.role,
+                <span key="state" className={role.active ? "status-ok" : "muted"}>
+                  {role.active ? "active" : "reserved"}
+                </span>,
+                role.capabilities.length > 0 ? role.capabilities.join(", ") : "none",
+              ],
+            }))}
+          />
         </div>
       )}
     </>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/explanation";
 import { Rights } from "@/components/EffectiveAccess";
 import { PrincipalChain } from "@/components/Identity";
+import { SortableTable } from "@/components/SortableTable";
 import { AccessGraph } from "@/components/AccessGraph";
 import styles from "@/components/explanation.module.css";
 
@@ -120,77 +121,78 @@ export function PathTable({
   onSelect: (pathId: string) => void;
 }): JSX.Element {
   return (
-    <div className="table-scroll">
-      <table className="access-table">
-        <caption>Select a route to inspect every hop, the exact entry, and where it was set.</caption>
-        <thead>
-          <tr>
-            <th scope="col">Route</th>
-            <th scope="col">Reaches the entry through</th>
-            <th scope="col">Entry</th>
-            <th scope="col">Says</th>
-            <th scope="col">Worth</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paths.map((path) => {
-            const selected = path.id === selectedPathId;
-            const effect = effectWording(path.effect);
-            const chain = chainLabels(path.chain);
-            return (
-              <tr key={path.id} className={selected ? styles.selectedRow : undefined}>
-                <th scope="row">
-                  <button
-                    type="button"
-                    className={`${styles.pathButton} ${selected ? styles.pathSelected : ""}`}
-                    aria-pressed={selected}
-                    onClick={() => onSelect(path.id)}
-                  >
-                    <span className={styles.marker} aria-hidden="true">
-                      {selected ? "▸" : ""}
-                    </span>
-                    {path.id}
-                  </button>
-                </th>
-                <td>
-                  {chain.length <= 1 ? (
-                    <span className="muted">named directly on the ACL</span>
-                  ) : (
-                    <PrincipalChain principals={path.chain} />
-                  )}
-                  {path.assumed && (
-                    <div className="ace-notes status-warn">
-                      through an assumed token SID, not an observed membership
-                    </div>
-                  )}
-                </td>
-                <td>
-                  <code>{path.layer}</code> #{path.ace_position === -1 ? "owner" : path.ace_position}
-                  {path.inherited && <div className="ace-notes muted">inherited</div>}
-                </td>
-                <td>
-                  <span
-                    className={path.relation === "deny" ? "badge badge-deny" : "badge badge-allow"}
-                  >
-                    {relationLabel(path.relation)}
-                  </span>
-                  <div className="ace-notes">
-                    <Rights rights={path.ace_rights} />
-                  </div>
-                </td>
-                <td>
-                  <span className={`verdict verdict-${effect.tone}`}>{effect.label}</span>
-                  <span className="verdict-note">{effect.detail}</span>
-                  <div className="ace-notes">
-                    <Rights rights={path.effective_rights} />
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="access-table"
+      caption="Select a route to inspect every hop, the exact entry, and where it was set."
+      columns={[
+        { label: "Route" },
+        { label: "Reaches the entry through" },
+        { label: "Entry", type: "number" },
+        { label: "Says" },
+        { label: "Worth" },
+      ]}
+      rows={paths.map((path) => {
+        const selected = path.id === selectedPathId;
+        const effect = effectWording(path.effect);
+        const chain = chainLabels(path.chain);
+        return {
+          key: path.id,
+          className: selected ? styles.selectedRow : undefined,
+          sort: [
+            path.id,
+            chain.join(" → "),
+            path.ace_position,
+            relationLabel(path.relation),
+            effect.label,
+          ],
+          cells: [
+            <button
+              key="route"
+              type="button"
+              className={`${styles.pathButton} ${selected ? styles.pathSelected : ""}`}
+              aria-pressed={selected}
+              onClick={() => onSelect(path.id)}
+            >
+              <span className={styles.marker} aria-hidden="true">
+                {selected ? "▸" : ""}
+              </span>
+              {path.id}
+            </button>,
+            <>
+              {chain.length <= 1 ? (
+                <span className="muted">named directly on the ACL</span>
+              ) : (
+                <PrincipalChain principals={path.chain} />
+              )}
+              {path.assumed && (
+                <div className="ace-notes status-warn">
+                  through an assumed token SID, not an observed membership
+                </div>
+              )}
+            </>,
+            <>
+              <code>{path.layer}</code> #{path.ace_position === -1 ? "owner" : path.ace_position}
+              {path.inherited && <div className="ace-notes muted">inherited</div>}
+            </>,
+            <>
+              <span className={path.relation === "deny" ? "badge badge-deny" : "badge badge-allow"}>
+                {relationLabel(path.relation)}
+              </span>
+              <div className="ace-notes">
+                <Rights rights={path.ace_rights} />
+              </div>
+            </>,
+            <>
+              <span className={`verdict verdict-${effect.tone}`}>{effect.label}</span>
+              <span className="verdict-note">{effect.detail}</span>
+              <div className="ace-notes">
+                <Rights rights={path.effective_rights} />
+              </div>
+            </>,
+          ],
+        };
+      })}
+    />
   );
 }
 
@@ -288,35 +290,35 @@ export function StructureTable({
 }): JSX.Element {
   const rows = structureRows(explanation);
   return (
-    <div className="table-scroll">
-      <table className="acl-table">
-        <caption>Every node and relationship the diagram draws, in text.</caption>
-        <thead>
-          <tr>
-            <th scope="col">Relationship</th>
-            <th scope="col">Kind</th>
-            <th scope="col">Removable</th>
-            <th scope="col">On routes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.edgeId}
-              className={
-                selectedPathId !== null && row.paths.includes(selectedPathId)
-                  ? styles.selectedRow
-                  : undefined
-              }
-            >
-              <th scope="row">{row.description}</th>
-              <td>{row.kind.replace("_", " ")}</td>
-              <td className={row.removable ? undefined : "muted"}>{row.removable ? "yes" : "no"}</td>
-              <td>{row.paths.length === 0 ? <span className="muted">none</span> : row.paths.join(", ")}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableTable
+      className="acl-table"
+      caption="Every node and relationship the diagram draws, in text."
+      columns={[
+        { label: "Relationship" },
+        { label: "Kind" },
+        { label: "Removable" },
+        { label: "On routes", type: "number" },
+      ]}
+      rows={rows.map((row) => ({
+        key: row.edgeId,
+        className:
+          selectedPathId !== null && row.paths.includes(selectedPathId)
+            ? styles.selectedRow
+            : undefined,
+        sort: [row.description, row.kind.replace("_", " "), row.removable, row.paths.length],
+        cells: [
+          row.description,
+          row.kind.replace("_", " "),
+          <span key="removable" className={row.removable ? undefined : "muted"}>
+            {row.removable ? "yes" : "no"}
+          </span>,
+          row.paths.length === 0 ? (
+            <span key="routes" className="muted">none</span>
+          ) : (
+            row.paths.join(", ")
+          ),
+        ],
+      }))}
+    />
   );
 }
