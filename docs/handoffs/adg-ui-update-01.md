@@ -289,9 +289,11 @@ not offered for users. Mutation check: removing the submit or the API parameter 
 
 ### Open
 
-* Not deployed; validated locally against the hosted database, read only.
+* Not deployed; validated locally against the hosted database, read only. *Deployed on
+  Next.js 16 on 2026-10-13: `adg-next16-ui-integration-02.md`.*
 * An end ellipsis hides a SID's distinguishing tail (the RID): domain SIDs in one column share
-  their prefix. Truncating the start instead is a possible follow-up.
+  their prefix. Truncating the start instead is a possible follow-up. *Done for SIDs in
+  `adg-next16-ui-integration-02.md` §3; paths and keys keep the end ellipsis.*
 * At 1360 px the Groups directory (7 columns) is wider than the content area and scrolls inside
   its own container; no single column is the cause any more.
 * The principal Shares view keeps two pre-existing notes per row (`assumed_token_sids` under the

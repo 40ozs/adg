@@ -147,6 +147,8 @@ the Worker, measured from this Mac with 10 requests each:
 * **Deployment branch:** Render tracks `fix/ADG-NEXT16-REACT418-01` while
   `deploy/ADG-FREE-STAGING-01`, the workflow and the guide still name the accepted `6b69fe3`.
   Fast-forwarding the deploy branch (and pointing Render back at it) is the owner's call.
+  *Done 2026-10-13 in ADG-NEXT16-UI-INTEGRATION-02 (`adg-next16-ui-integration-02.md` §8),
+  together with the compact-identity work: Render tracks `deploy/ADG-FREE-STAGING-01` again.*
 * **Turbopack** is not used. Moving to it means re-checking the chunk layout `cf:assets` and the
   edge/origin split depend on.
 * The harnesses (instrumented gate, reload loop) are not committed; their method is in
