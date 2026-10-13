@@ -260,7 +260,7 @@ changes only `frontend/package*.json`, `eslint.config.mjs` and `tsconfig.json`).
 | --- | --- |
 | backend DB tests, principal directory + exclude local (`ADG_RUN_SMOKE_TESTS=1`, Python 3.13) | 22 passed (9 new) |
 | OpenAPI snapshot | regenerated (`exclude_local` only); test passes |
-| backend `ruff check` / `ruff format --check` / `mypy app` | clean / 400 files formatted / no issues |
+| backend `ruff check` / `ruff format --check` / `mypy app tests` | clean / 400 files formatted / no issues in 399 files |
 | frontend `eslint` / `tsc` | clean / clean |
 | frontend `vitest` | 39 files, 1,306 passed (8 new for the filter, 3 for compact identity) |
 | frontend `next build` | ok |
