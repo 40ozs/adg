@@ -276,7 +276,7 @@ export function fetchResourceAcl(
 export function fetchPrincipals(
   token: string,
   kind: DirectoryKind,
-  query: PageQuery & { q?: string } = {},
+  query: PageQuery & { q?: string; exclude_local?: "true" } = {},
 ): Promise<ApiResult<PrincipalListResponse>> {
   return apiRequest<PrincipalListResponse>("/api/v1/principals", {
     token,

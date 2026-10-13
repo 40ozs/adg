@@ -189,6 +189,12 @@ a:hover {
   max-width: 28rem;
 }
 
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 input[type="search"],
 input[type="text"] {
   flex: 1;
@@ -568,6 +574,13 @@ dl.facts dd {
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: bottom;
+}
+
+/* A code value in a table (an access mask, a SID) is one token: it never breaks mid-value. */
+td code,
+th code,
+.nowrap {
+  white-space: nowrap;
 }
 
 tr:focus-within .identifier {
