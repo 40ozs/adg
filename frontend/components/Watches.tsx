@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import type { WatchKindView, WatchView } from "@/lib/contracts";
 import { cooldownWording, triggerWording, triggersFor, watchKindWording } from "@/lib/alerts";
+import { Identifier } from "@/components/Facts";
 import { SortableTable } from "@/components/SortableTable";
 
 /**
@@ -117,7 +118,7 @@ export function WatchManager({
               watch.label,
               <>
                 <span className="badge">{watchKindWording(watch.kind)}</span>{" "}
-                <code>{watch.key}</code>
+                <Identifier value={watch.key} />
               </>,
               <>
                 {watch.triggers.map((trigger) => (

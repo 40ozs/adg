@@ -41,6 +41,7 @@ import {
   targetLabel,
   type Tone,
 } from "@/lib/governance";
+import { Identifier } from "@/components/Facts";
 import { SortableTable } from "@/components/SortableTable";
 
 const TONE_CLASS: Record<Tone, string> = {
@@ -282,7 +283,7 @@ export function DriftNotice({ drift }: { drift: DriftView }): JSX.Element {
           columns={[
             { label: "Change" },
             { label: "What moved" },
-            { label: "Entry", className: "principal-sid" },
+            { label: "Entry" },
           ]}
           rows={drift.changes.map((change) => {
             const moved =
@@ -290,7 +291,7 @@ export function DriftNotice({ drift }: { drift: DriftView }): JSX.Element {
             return {
               key: `${change.kind}-${change.ace_key}`,
               sort: [change.kind, moved, change.ace_key],
-              cells: [change.kind, moved, change.ace_key],
+              cells: [change.kind, moved, <Identifier key="entry" value={change.ace_key} />],
             };
           })}
         />
@@ -545,7 +546,7 @@ export function ReachPanel({ context }: { context: ItemContextResponse }): JSX.E
           }
           captionClassName="muted"
           columns={[
-            { label: "Entry", className: "principal-sid" },
+            { label: "Entry" },
             { label: "Rights lost" },
             { label: "Rights left" },
             { label: "Ends all access" },
@@ -559,7 +560,7 @@ export function ReachPanel({ context }: { context: ItemContextResponse }): JSX.E
               removal.revokes_all_access,
             ],
             cells: [
-              removal.ace_key,
+              <Identifier key="entry" value={removal.ace_key} />,
               <Rights key="lost" rights={removal.rights_removed} />,
               <Rights key="left" rights={removal.rights_after} />,
               <span key="ends" className={removal.revokes_all_access ? "status-ok" : "status-warn"}>
@@ -692,7 +693,6 @@ export function ItemHeading({ item }: { item: ItemView }): JSX.Element {
   return (
     <span className="principal">
       <span className="principal-name">{principalLabel(item)}</span>
-      <span className="principal-sid">{item.principal_sid}</span>
       <span className="muted"> on {targetLabel(item)}</span>
     </span>
   );

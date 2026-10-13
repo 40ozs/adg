@@ -5,6 +5,7 @@ import { useState, type JSX } from "react";
 import type { SimulationReportView } from "@/lib/contracts";
 import type { StoredReportDocument } from "@/lib/simulation";
 import { summaryLine } from "@/lib/simulation";
+import { Identifier } from "@/components/Facts";
 import { SimulationReport } from "@/components/Simulation";
 import { SimulationExport } from "@/components/SimulationExport";
 import { SortableTable } from "@/components/SortableTable";
@@ -97,8 +98,8 @@ export function StoredResultPanel({
               delta.direction,
             ],
             cells: [
-              <code key="principal">{delta.subject_key}</code>,
-              <code key="directory">{delta.resource_key}</code>,
+              <Identifier key="principal" value={delta.subject_key} />,
+              <Identifier key="directory" value={delta.resource_key} />,
               <code key="before">{delta.rights_before}</code>,
               <code key="after">{delta.rights_after}</code>,
               <>

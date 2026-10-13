@@ -2,8 +2,8 @@
 /**
  * The components a detail page is built from.
  *
- * These assert the behavior an auditor depends on rather than the markup: that a SID is on
- * screen beside every name, that an inherit-only entry says it grants nothing, that a raw
+ * These assert the behavior an auditor depends on rather than the markup: that a name is
+ * shown alone with its key behind it, that an inherit-only entry says it grants nothing, that a raw
  * ACL and an engine answer are labelled as different kinds of statement, and that a pager
  * never offers a page it cannot reach.
  */
@@ -56,11 +56,21 @@ const FS02 = principal({
 });
 
 describe("a principal on screen", () => {
-  it("shows the key beside the name, always", () => {
-    render(<PrincipalName principal={FS01} />);
+  it("shows the name alone, with the key behind it rather than under it", () => {
+    const { container } = render(<PrincipalName principal={FS01} />);
 
-    expect(screen.getByText("Administrators")).toBeInTheDocument();
-    expect(screen.getByText("fs01|S-1-5-32-544")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Administrators" });
+    expect(link).toHaveAttribute("href", "/identities/principal/fs01%7CS-1-5-32-544");
+    expect(link).toHaveAttribute("title", "fs01|S-1-5-32-544");
+    expect(container.textContent).toBe("Administrators");
+  });
+
+  it("does not put a group's scope under its name", () => {
+    const { container } = render(
+      <PrincipalName principal={{ ...FS01, group_scope: "domain_local" }} />,
+    );
+
+    expect(container.textContent).toBe("Administrators");
   });
 
   it("promotes the host when two rows share a name", () => {
@@ -98,6 +108,8 @@ describe("a principal on screen", () => {
     render(<PrincipalName principal={orphan} />);
 
     expect(screen.getAllByText("S-1-1-0")).toHaveLength(1);
+    // A SID for a name is held to one line like any identifier, its whole value kept.
+    expect(screen.getByRole("link", { name: "S-1-1-0" })).toHaveClass("identifier");
   });
 });
 

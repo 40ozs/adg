@@ -215,7 +215,9 @@ describe("the ACL layers", () => {
     render(<LayerPanel title="The NTFS ACL" explanation={twoRoutes()} layer="ntfs" />);
 
     const table = screen.getByRole("table", { name: /granted/i });
-    expect(within(table).getByText(/set on \\\\FS01\\Finance/)).toBeInTheDocument();
+    expect(table.textContent).toMatch(/set on \\\\FS01\\Finance/);
+    // The path is an identifier: one line, the whole of it in the text and the tooltip.
+    expect(within(table).getByTitle("\\\\FS01\\Finance")).toHaveClass("identifier");
     expect(within(table).getAllByText("inherited").length).toBeGreaterThan(0);
   });
 

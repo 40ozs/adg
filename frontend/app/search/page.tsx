@@ -4,6 +4,7 @@ import Link from "next/link";
 import { fetchCollectionStatus, search } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
+import { Identifier } from "@/components/Facts";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { SortableTable } from "@/components/SortableTable";
@@ -195,8 +196,11 @@ function Category({
           key: row.key,
           sort: [row.primary, row.secondary, row.note],
           cells: [
-            <Link key="name" href={row.href}>{row.primary}</Link>,
-            <code key="identifier">{row.secondary}</code>,
+            // A directory's name is its path, and a nameless identity's is its SID.
+            <Link key="name" href={row.href} className="identifier" title={row.primary}>
+              {row.primary}
+            </Link>,
+            <Identifier key="identifier" value={row.secondary} />,
             row.note || "—",
           ],
         }))}

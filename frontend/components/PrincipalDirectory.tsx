@@ -9,7 +9,7 @@ import { cursorFor, decodeTrail, pageNavigation } from "@/lib/paging";
 import { classify } from "@/lib/state";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
 import { DirectoryTabs } from "@/components/DirectoryTabs";
-import { Maybe, TriState } from "@/components/Facts";
+import { Identifier, Maybe, TriState } from "@/components/Facts";
 import { PrincipalName } from "@/components/Identity";
 import { Pager } from "@/components/Pager";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
@@ -134,7 +134,7 @@ function directoryRows(kind: DirectoryKind, items: readonly ListedPrincipalView[
   const ambiguous = ambiguousLabels(items);
   return items.map((item) => {
     const name = <PrincipalName principal={item} ambiguous={ambiguous} />;
-    const sid = <code>{item.sid}</code>;
+    const sid = <Identifier value={item.sid} />;
     return kind === "users"
       ? {
           key: item.key,

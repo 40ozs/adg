@@ -23,6 +23,7 @@ import {
   severityTone,
   subjectLabel,
 } from "@/lib/risks";
+import { Identifier } from "@/components/Facts";
 import { SortableTable } from "@/components/SortableTable";
 
 /**
@@ -193,11 +194,13 @@ export function FindingTable({
             )}
           </>,
           <>
-            <code>{subjectLabel(finding)}</code>
+            <Identifier value={subjectLabel(finding)} />
             {finding.subject.principal_key !== null && finding.subject.resource_key !== null && (
               <>
                 <br />
-                <span className="muted">for {finding.subject.principal_key}</span>
+                <span className="muted">
+                  for <Identifier value={finding.subject.principal_key} />
+                </span>
               </>
             )}
           </>,
