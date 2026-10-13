@@ -24590,6 +24590,18 @@
             }
           },
           {
+            "description": "groups: leave out machine-local groups, the ones that exist on one computer (BUILTIN\\Administrators on a file server). Active Directory groups of every scope stay, Domain Local included: that is a domain group's scope, not a local group.",
+            "in": "query",
+            "name": "exclude_local",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "groups: leave out machine-local groups, the ones that exist on one computer (BUILTIN\\Administrators on a file server). Active Directory groups of every scope stay, Domain Local included: that is a domain group's scope, not a local group.",
+              "title": "Exclude Local",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Items per page (default 100).",
             "in": "query",
             "name": "limit",

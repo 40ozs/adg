@@ -292,11 +292,24 @@ async def list_principals(
         str | None,
         Query(max_length=256, description="A SID prefix (S-1-...) or the start of a name."),
     ] = None,
+    exclude_local: Annotated[
+        bool,
+        Query(
+            description=(
+                "groups: leave out machine-local groups, the ones that exist on one computer "
+                "(BUILTIN\\Administrators on a file server). Active Directory groups of every "
+                "scope stay, Domain Local included: that is a domain group's scope, not a "
+                "local group."
+            )
+        ),
+    ] = False,
     limit: LimitQuery = None,
     cursor: CursorQuery = None,
 ) -> PrincipalListResponse:
     repository = MembershipRepository(session)
     kinds = _DIRECTORY_KINDS[kind]
+    if exclude_local:
+        kinds = tuple(k for k in kinds if k is not PrincipalKind.LOCAL_GROUP)
     term = q.strip() if q and q.strip() else None
     page_size = normalize_limit(limit)
     page = await repository.list_principals(
