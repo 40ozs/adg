@@ -135,7 +135,8 @@ describe("the users directory", () => {
     const row = bodyRows()[0];
     expect(within(row).getByRole("rowheader").textContent).toBe("Ada Lovelace");
     const sid = within(row).getByText("S-1-5-21-1-2-3-1104");
-    expect(sid).toHaveClass("identifier");
+    // Cut at its start, so the RID that tells it from its neighbours stays on screen.
+    expect(sid).toHaveClass("identifier", "sid");
     expect(sid).toHaveAttribute("title", "S-1-5-21-1-2-3-1104");
     expect(within(row).getAllByRole("cell")[2]).toBe(sid.closest("td"));
   });

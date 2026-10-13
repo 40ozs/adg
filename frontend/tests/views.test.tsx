@@ -109,7 +109,7 @@ describe("a principal on screen", () => {
 
     expect(screen.getAllByText("S-1-1-0")).toHaveLength(1);
     // A SID for a name is held to one line like any identifier, its whole value kept.
-    expect(screen.getByRole("link", { name: "S-1-1-0" })).toHaveClass("identifier");
+    expect(screen.getByRole("link", { name: "S-1-1-0" })).toHaveClass("identifier", "sid");
   });
 });
 

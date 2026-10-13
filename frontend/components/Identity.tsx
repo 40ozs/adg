@@ -45,8 +45,8 @@ export function PrincipalName({
   const qualifier = principalQualifier(principal);
   const needsQualifier = ambiguous !== undefined && isAmbiguous(principal, ambiguous);
   const notes = principalNotes(principal);
-  // An undescribed trustee can have no name but its SID, held to one line like any identifier.
-  const labelClass = label === principal.sid ? "identifier" : undefined;
+  // An undescribed trustee can have no name but its SID, held to one line and keeping its end.
+  const labelClass = label === principal.sid ? "identifier sid" : undefined;
 
   return (
     <span className="principal">
@@ -123,7 +123,10 @@ export function PrincipalChain({
               {principalLabel(principal)}
             </Link>
           ) : (
-            <code className="identifier" title={`${principal.key}: no run has described this SID`}>
+            <code
+              className={principalLabel(principal) === principal.sid ? "identifier sid" : "identifier"}
+              title={`${principal.key}: no run has described this SID`}
+            >
               {principalLabel(principal)}
             </code>
           )}
