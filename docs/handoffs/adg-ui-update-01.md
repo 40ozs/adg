@@ -1,7 +1,8 @@
 # ADG-UI-UPDATE-01 — Users and Groups directories, navigable shortest chains, sortable tables
 
 Implementation handoff. Integration with ADG-FREE-EDGE-SSR-03, the merge, the deployment and
-the hosted results are in [`adg-ui-edge-integration-01.md`](adg-ui-edge-integration-01.md).
+the hosted results are in [`adg-ui-edge-01.md`](adg-ui-edge-01.md). The 2026-10-13 addendum
+(Exclude local groups, compact identity in tables, Shortest Chains labels) is §7.
 
 ## 1. Git
 
@@ -189,14 +190,110 @@ kinds, degree, name/SID/`DOMAIN\name`/wildcard search and keyset paging, `path_p
 ## 6. Limitations
 
 * **React #418, pre-existing** (ADG-FREE-EDGE-SSR-03 §11): reproduced on local `next start`
-  in 3 of 10 full `browser.mjs` runs (once attributed to `/demo`), and in 0 of 36 plain page
-  loads of `/demo`, `/status` and `/`. The client components render nothing time- or
-  locale-dependent. It looks like a timing artefact of the gate's back-to-back navigations.
-  It is not introduced by this work: the EDGE task saw it at `df6556f`, before this branch was
-  merged.
+  in 3 of 10 full `browser.mjs` runs. Not introduced by this work. Its cause was later found in
+  the React that Next.js 15.5.27 bundles (a hydration replay that does not restore its cursor;
+  `adg-ui-edge-01.md` §5), and it does not reproduce on Next.js 16.4.0
+  (`adg-next16-react418-01.md`, staging only).
 * Sorting orders the page in hand. The directories page by key, and a reader who wants every
   user by name searches by a name prefix.
 * The demo dataset has no unresolved hop and no computer account in any membership chain
   (all 238 groups scanned). Those two cases are covered by unit and DB tests, not hosted.
 * The directories match prefixes, as global search does: an infix (`Smith` in `Ada Smith`) does
   not match.
+
+## 7. Addendum (2026-10-13): Exclude local groups, compact identity, Shortest Chains
+
+Continues this task on the integrated tree, not on the task branch: branch
+`fix/ADG-UI-COMPACT-IDENTITY-01` from `6b69fe3` (the deployed integration of this work with
+ADG-FREE-EDGE-SSR-03), worktree `../adg-UI-COMPACT-IDENTITY-01`. `fix/ADG-UI-UPDATE-01` stays at
+`a5cdf88` so it does not take in the EDGE-SSR history; the EDGE-SSR worktree was not touched.
+No file here is also changed by the parallel Next.js 16 upgrade (`fix/ADG-NEXT16-REACT418-01`
+changes only `frontend/package*.json`, `eslint.config.mjs` and `tsconfig.json`).
+
+| Commit | What |
+| --- | --- |
+| `4f33e08` | Compact identity: name-only Name cells, the `Identifier` treatment for SIDs, keys and paths, Shortest Chains labels (a subagent's work, reviewed). |
+| `98a9a79` | Exclude local groups (API, UI, tests, browser check); one-line directory rows. |
+
+### Exclude local groups
+
+* **Semantics, from the data model, never from names.** A machine-local group is
+  `PrincipalKind.LOCAL_GROUP`: it exists on one computer and its key is host-scoped
+  (`principal|<host>|<sid>`, so `BUILTIN\Administrators` on FS01 and on FS02 are two groups).
+  An Active Directory **Domain Local** group is `domain_group` with `group_scope: domain_local`:
+  a domain group whose scope says where it can be used. The filter removes the first kind only.
+  Null Meridian: 238 groups, 33 local (an `Administrators` on each server), 130 global,
+  37 Domain Local; the filter leaves 205.
+* **Server side.** `GET /api/v1/principals?kind=groups&exclude_local=true` drops `LOCAL_GROUP`
+  from the kinds the repository lists and counts, so the search, the keyset pages and
+  `page.total` all see the filter. Default `false`.
+* **UI** (`components/FilterToggle.tsx`, `PrincipalDirectory.tsx`). No toggle component existed;
+  this is a native, labelled checkbox, off by default, tied by id (`form=`) to the directory's
+  `next/form` GET search form. A change submits that form: a client-side navigation, no document
+  reload, the search term kept, the page position reset (a page of the unfiltered list is not a
+  page of the filtered one). The URL carries `exclude_local=1`; the pager and a new search keep
+  it; Back and Forward restore the box. The table stays mounted, so the reader's column sort
+  survives a filter change. Without JavaScript the Search button applies it. A short note
+  beside it says what a local group is and that Domain Local groups stay.
+
+### Compact identity and Shortest Chains
+
+* Name cells hold the name alone; the SID no longer stacks under it. The link opens by storage
+  key and carries it as `title`; Identity information shows SID and key in full.
+* Users and Groups directories and search results keep a dedicated SID / Identifier column
+  (search matches SID prefixes; pages follow SID order). Relationship tables (direct and
+  effective groups and members, ACLs, access, explanation trustees) drop it.
+* `Identifier` / `.identifier`: one line, at most 16rem, ellipsis, the whole value in the text
+  (read by a screen reader, taken by a copy) and in `title`, shown in full while keyboard focus
+  is in the row. Used for SIDs, storage and ACE keys, UNC and local paths, risk subjects.
+* Code values in table cells (access masks, SIDs) never break mid-value; the Groups directory's
+  short label columns (Account name, Kind, Scope) stay on one line.
+* Shortest Chains: a resolved hop is its name as a link (key as `title`); an unresolved hop shows
+  its SID or last known name as truncated text with the full key in `title`.
+* Kept two-line on purpose: status notes for unresolved, disabled or deleted principals (a
+  warning, not metadata), and the Risks "Where" cell (subject, then "for <principal>"; findings
+  carry keys only).
+
+### Validation
+
+| Gate | Result |
+| --- | --- |
+| backend DB tests, principal directory + exclude local (`ADG_RUN_SMOKE_TESTS=1`, Python 3.13) | 22 passed (9 new) |
+| OpenAPI snapshot | regenerated (`exclude_local` only); test passes |
+| backend `ruff check` / `ruff format --check` / `mypy app` | clean / 400 files formatted / no issues |
+| frontend `eslint` / `tsc` | clean / clean |
+| frontend `vitest` | 39 files, 1,306 passed (8 new for the filter, 3 for compact identity) |
+| frontend `next build` | ok |
+| `navigation.mjs` (19 checks, 1 new) against local `next start` + API + Null Meridian (`adg_demo`, read only) | 19/19 three times, 0 console errors |
+| `browser.mjs` locally | 19/22: the same three checks that need the Worker or gate in front (§5) |
+| row height, Groups directory (1360 × 900) | 62.6 px → 39.8 px, every row |
+
+The new tests: off by default, on, off again; the API filters by kind (Domain Local kept,
+machine-local dropped); search + filter; paging + filter (`total` and the walk); sort kept across
+a filter change; no document reload (the change is a form submission next/form handles, and the
+browser check's window marker survives); a labelled checkbox that Space toggles; Back/Forward;
+not offered for users. Mutation check: removing the submit or the API parameter fails 3 tests.
+
+### Acceptance
+
+- [x] Groups has an `Exclude local groups` toggle.
+- [x] Correct local-group semantics are used (`PrincipalKind.LOCAL_GROUP`, host-scoped).
+- [x] AD Domain Local groups are not filtered.
+- [x] Filter works with search, sorting and pagination (applied in the query, not on the page).
+- [x] Filter changes do not reload the page.
+- [x] Object names are no longer rendered with SIDs stacked underneath.
+- [x] Long SIDs no longer create tall or wide cells.
+- [x] Dedicated SID presentation is compact and accessible.
+- [x] Resolved Shortest Chains show linked names without SID text.
+- [x] Tests and this report are updated.
+
+### Open
+
+* Not deployed; validated locally against the hosted database, read only.
+* An end ellipsis hides a SID's distinguishing tail (the RID): domain SIDs in one column share
+  their prefix. Truncating the start instead is a possible follow-up.
+* At 1360 px the Groups directory (7 columns) is wider than the content area and scrolls inside
+  its own container; no single column is the cause any more.
+* The principal Shares view keeps two pre-existing notes per row (`assumed_token_sids` under the
+  share name, "Measured against the ACLs ADG holds." under the verdict): three lines a row.
+  They are not identity metadata and were left as they are.
