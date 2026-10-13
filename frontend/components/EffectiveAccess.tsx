@@ -102,10 +102,15 @@ export function ResourceAccessTable({
           ],
           cells: [
             <>
+              {/* A directory's name is its path, held to one line like any identifier. */}
               {subject === "share" && item.share ? (
-                <Link href={shareHref(item.share.key)}>{name}</Link>
+                <Link href={shareHref(item.share.key)} className="identifier" title={name}>
+                  {name}
+                </Link>
               ) : (
-                <Link href={directoryHref(item.resource.key)}>{name}</Link>
+                <Link href={directoryHref(item.resource.key)} className="identifier" title={name}>
+                  {name}
+                </Link>
               )}
               {!item.resource.observed && (
                 <div className="ace-notes status-warn">

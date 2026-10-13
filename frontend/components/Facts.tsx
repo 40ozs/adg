@@ -44,6 +44,21 @@ export function TriState({ value }: { value: boolean | null | undefined }): JSX.
   return <>{value ? "yes" : "no"}</>;
 }
 
+/**
+ * A machine identifier in a table cell: a SID, a storage key, a path.
+ *
+ * One line at a bounded width, the rest behind an ellipsis, so that it never sizes the table
+ * or stretches a row. The whole value stays in the text — a screen reader reads it and a copy
+ * takes it — and is shown on hover by `title`, and on screen while keyboard focus is in the row.
+ */
+export function Identifier({ value }: { value: string }): JSX.Element {
+  return (
+    <code className="identifier" title={value}>
+      {value}
+    </code>
+  );
+}
+
 export function Maybe({ value }: { value: string | number | null | undefined }): JSX.Element {
   return value === null || value === undefined || value === "" ? (
     <NotReported />

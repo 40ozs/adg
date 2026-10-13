@@ -12,7 +12,7 @@
  * - **An ACE can name a SID no run has described.** There is no name at all, only the SID,
  *   and that is a finding rather than a blank cell.
  *
- * So the SID is always available beside the name, and when a name is ambiguous *within the
+ * So the SID is always available behind the name, and when a name is ambiguous *within the
  * list being shown* the qualifier is promoted next to it rather than left to be hunted for.
  * Nothing here decides access, and nothing here resolves a SID: this module reads what the
  * API sent and never fills a gap in it.
@@ -129,7 +129,8 @@ export function isUnresolved(principal: AnyPrincipal): boolean {
  *
  * A disabled account still appears on ACLs and still shows in an effective-access answer,
  * because the ACL has not changed; the account state is the reason the answer is not the
- * risk it looks like. Same for a deleted one.
+ * risk it looks like. Same for a deleted one. Account metadata such as a group's scope is
+ * not a note: it is a column where a table needs it, and in the Identity information.
  */
 export function principalNotes(principal: AnyPrincipal): string[] {
   const notes: string[] = [];
@@ -145,9 +146,6 @@ export function principalNotes(principal: AnyPrincipal): string[] {
   }
   if (principal.is_deleted) {
     notes.push("deleted");
-  }
-  if (principal.group_scope) {
-    notes.push(principal.group_scope.replace(/_/g, " "));
   }
   return notes;
 }

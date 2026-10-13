@@ -28,7 +28,7 @@ export interface SortableRow {
  * The application's one table, ordered by any column the reader picks.
  *
  * Cells arrive rendered, from server components, together with the value each sorts by:
- * a cell's text is a poor key (a principal's cell carries its name, its SID and its notes),
+ * a cell's text is a poor key (a principal's cell carries its name and its notes),
  * and a page that sorted by it would put "10 hops" before "9 hops".
  *
  * Each sortable header is a real button, so it is reachable by Tab and works on Enter and

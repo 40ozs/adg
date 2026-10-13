@@ -129,6 +129,17 @@ describe("the users directory", () => {
     );
   });
 
+  it("names a user alone, and gives the SID a column of its own, one line and whole", async () => {
+    render(await UsersDirectoryPage({ searchParams: params({}) }));
+
+    const row = bodyRows()[0];
+    expect(within(row).getByRole("rowheader").textContent).toBe("Ada Lovelace");
+    const sid = within(row).getByText("S-1-5-21-1-2-3-1104");
+    expect(sid).toHaveClass("identifier");
+    expect(sid).toHaveAttribute("title", "S-1-5-21-1-2-3-1104");
+    expect(within(row).getAllByRole("cell")[2]).toBe(sid.closest("td"));
+  });
+
   it("sorts the page by name and by a count, numerically", async () => {
     render(await UsersDirectoryPage({ searchParams: params({}) }));
     const user = userEvent.setup();
@@ -197,6 +208,14 @@ describe("the groups directory", () => {
       "href",
       "/identities/principal/fs01%7CS-1-5-32-544",
     );
+  });
+
+  it("shows a group's scope in the Scope column, not under its name", async () => {
+    render(await GroupsDirectoryPage({ searchParams: params({ q: "fin" }) }));
+
+    const row = bodyRows()[0];
+    expect(within(row).getByRole("rowheader").textContent).toBe("Finance");
+    expect(within(row).getAllByRole("cell")[2]).toHaveTextContent("global");
   });
 
   it("sorts members numerically, most first on the second activation", async () => {
