@@ -15,18 +15,20 @@ import {
 type AnyPrincipal = PrincipalSummary | PrincipalDetail;
 
 /**
- * How a principal appears everywhere in this application.
+ * How a principal appears everywhere in this application: by its name, on one line.
  *
- * The SID is always on screen, under the name, because the name is the part that can be
- * wrong. Two "Administrators" rows in one table are the normal case in a Windows estate,
- * not an error, and the only thing that tells them apart is the key: `fs01|S-1-5-32-544`
- * and `fs02|S-1-5-32-544` are two different groups on two different servers.
+ * The SID is not printed under the name. It stays behind it — the link opens the principal
+ * by its key and carries that key as its `title`, and the principal's Identity information
+ * shows SID and key in full — and a table that needs it on screen gives it a column of its
+ * own (`Identifier`).
  *
- * When the same label appears more than once in the list being rendered, the qualifier —
- * the host for a host-scoped principal, the domain SID otherwise — is promoted next to the
- * name rather than left to be worked out from the SID underneath. `ambiguous` is computed
- * once per list by the caller (`ambiguousLabels`), because whether a name is ambiguous is a
- * property of the list, not of the principal.
+ * Two "Administrators" rows in one table are the normal case in a Windows estate, not an
+ * error: `fs01|S-1-5-32-544` and `fs02|S-1-5-32-544` are two different groups on two
+ * different servers. When the same label appears more than once in the list being rendered,
+ * the qualifier — the host for a host-scoped principal, the domain SID otherwise — is
+ * promoted next to the name. `ambiguous` is computed once per list by the caller
+ * (`ambiguousLabels`), because whether a name is ambiguous is a property of the list, not
+ * of the principal.
  */
 export function PrincipalName({
   principal,
@@ -42,16 +44,20 @@ export function PrincipalName({
   const qualifier = principalQualifier(principal);
   const needsQualifier = ambiguous !== undefined && isAmbiguous(principal, ambiguous);
   const notes = principalNotes(principal);
-  // An undescribed trustee has no name, so its label already *is* the key. Printing it
-  // twice adds a line and no information.
-  const keyIsTheName = label === principal.key;
+  // An undescribed trustee can have no name but its SID, held to one line like any identifier.
+  const labelClass = label === principal.sid ? "identifier" : undefined;
 
   return (
     <span className="principal">
       <span className="principal-name">
         {/* No prefetch: a page of principals would otherwise ask for every one of them. */}
         {link ? (
-          <Link href={principalHref(principal)} prefetch={false}>
+          <Link
+            href={principalHref(principal)}
+            prefetch={false}
+            title={principal.key}
+            className={labelClass}
+          >
             {label}
           </Link>
         ) : (
@@ -61,7 +67,6 @@ export function PrincipalName({
           <span className="principal-qualifier"> ({qualifier})</span>
         )}
       </span>
-      {!keyIsTheName && <code className="principal-sid">{principal.key}</code>}
       {notes.length > 0 && (
         <span className={principal.resolved ? "principal-notes" : "principal-notes status-warn"}>
           {notes.join(" · ")}
@@ -96,10 +101,11 @@ export function PrincipalCell({
  * A membership chain, as names that open the principal they name.
  *
  * Each link is built from the node's storage key, never from its name: two principals can
- * share a name, and only the key opens the right one. A node no run has described has no
- * page worth opening, so it stays text — its SID, or the name an ACE last carried — and is
- * never a link that leads nowhere. Prefetching is off: a page of chains is hundreds of
- * links, and prefetching each one would ask the server for hundreds of pages nobody opened.
+ * share a name, and only the key opens the right one; the key is the link's `title`, never
+ * text in the chain. A node no run has described has no page worth opening, so it stays
+ * text — its SID, or the name an ACE last carried — and is never a link that leads nowhere.
+ * Prefetching is off: a page of chains is hundreds of links, and prefetching each one would
+ * ask the server for hundreds of pages nobody opened.
  */
 export function PrincipalChain({
   principals,
@@ -116,7 +122,9 @@ export function PrincipalChain({
               {principalLabel(principal)}
             </Link>
           ) : (
-            <code title="No run has described this SID">{principalLabel(principal)}</code>
+            <code className="identifier" title={`${principal.key}: no run has described this SID`}>
+              {principalLabel(principal)}
+            </code>
           )}
         </Fragment>
       ))}

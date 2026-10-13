@@ -336,7 +336,8 @@ export function SelectableItems({
               href={`/governance/campaigns/${campaignId}?target=${encodeURIComponent(
                 item.target_key,
               )}`}
-              title="Everyone named on this target in this campaign"
+              title={`Everyone named on ${item.target_path ?? item.target_key} in this campaign`}
+              className="identifier"
             >
               {item.target_path ?? item.target_key}
             </a>,

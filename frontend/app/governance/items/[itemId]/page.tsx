@@ -83,9 +83,9 @@ export default async function ReviewItemPage({
         {principalLabel(item)} on {targetLabel(item)}
       </h1>
       <p className="muted">
-        <span className="principal-sid">{item.principal_sid}</span> ·{" "}
+        <code>{item.principal_sid}</code> ·{" "}
         {item.target_kind === "share" ? "share permissions" : "file-system permissions"} ·{" "}
-        evidence digest <span className="principal-sid">{item.evidence_digest.slice(0, 16)}…</span>
+        evidence digest <code>{item.evidence_digest.slice(0, 16)}…</code>
       </p>
 
       <section className="card" aria-labelledby="evidence">

@@ -9,6 +9,7 @@ import type {
   StoredSimulationView,
 } from "@/lib/contracts";
 import { principalLabel } from "@/lib/identity";
+import { Identifier } from "@/components/Facts";
 import { PrincipalChain } from "@/components/Identity";
 import { SortableTable, type SortableRow } from "@/components/SortableTable";
 import { impactHeadline, orderedDeltas, summaryLine } from "@/lib/simulation";
@@ -270,7 +271,7 @@ function deltaRow(delta: SimulationDeltaView): SortableRow {
     cells: [
       principalLabel(delta.subject),
       <>
-        <code>{delta.resource.path ?? delta.resource.resource_key}</code>
+        <Identifier value={delta.resource.path ?? delta.resource.resource_key} />
         {delta.resource.sensitive && (
           <>
             {" "}

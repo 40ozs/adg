@@ -8,7 +8,7 @@ import { cursorFor, decodeTrail, hrefWith, pageNavigation } from "@/lib/paging";
 import { shareHref } from "@/lib/resources";
 import { classify, coverageCaveat } from "@/lib/state";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
-import { FactList, Maybe, NotReported, Provenance, TriState } from "@/components/Facts";
+import { FactList, Identifier, Maybe, NotReported, Provenance, TriState } from "@/components/Facts";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FactSection } from "@/components/Layer";
 import { PagePosition, Pager } from "@/components/Pager";
@@ -126,9 +126,13 @@ export default async function ServerPage({
                   sort: [share.name, share.unc_path, share.share_type, share.local_path, notes],
                   cells: [
                     <Link key="share" href={shareHref(share.key)}>{share.name}</Link>,
-                    <code key="unc">{share.unc_path}</code>,
+                    <Identifier key="unc" value={share.unc_path} />,
                     share.share_type,
-                    <Maybe key="publishes" value={share.local_path} />,
+                    share.local_path ? (
+                      <Identifier key="publishes" value={share.local_path} />
+                    ) : (
+                      <NotReported key="publishes" />
+                    ),
                     notes || "—",
                   ],
                 };

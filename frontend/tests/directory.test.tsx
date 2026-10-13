@@ -129,6 +129,17 @@ describe("the users directory", () => {
     );
   });
 
+  it("names a user alone, and gives the SID a column of its own, one line and whole", async () => {
+    render(await UsersDirectoryPage({ searchParams: params({}) }));
+
+    const row = bodyRows()[0];
+    expect(within(row).getByRole("rowheader").textContent).toBe("Ada Lovelace");
+    const sid = within(row).getByText("S-1-5-21-1-2-3-1104");
+    expect(sid).toHaveClass("identifier");
+    expect(sid).toHaveAttribute("title", "S-1-5-21-1-2-3-1104");
+    expect(within(row).getAllByRole("cell")[2]).toBe(sid.closest("td"));
+  });
+
   it("sorts the page by name and by a count, numerically", async () => {
     render(await UsersDirectoryPage({ searchParams: params({}) }));
     const user = userEvent.setup();
@@ -199,6 +210,14 @@ describe("the groups directory", () => {
     );
   });
 
+  it("shows a group's scope in the Scope column, not under its name", async () => {
+    render(await GroupsDirectoryPage({ searchParams: params({ q: "fin" }) }));
+
+    const row = bodyRows()[0];
+    expect(within(row).getByRole("rowheader").textContent).toBe("Finance");
+    expect(within(row).getAllByRole("cell")[2]).toHaveTextContent("global");
+  });
+
   it("sorts members numerically, most first on the second activation", async () => {
     render(await GroupsDirectoryPage({ searchParams: params({ q: "fin" }) }));
     const user = userEvent.setup();
@@ -215,5 +234,148 @@ describe("the groups directory", () => {
     render(await GroupsDirectoryPage({ searchParams: params({ q: "zzz" }) }));
 
     expect(document.body.textContent).toContain('groups matching "zzz"');
+  });
+
+  describe("Exclude local groups", () => {
+    // A Domain Local group: an Active Directory group, whatever its scope says.
+    const FINANCE_RW = listed({
+      key: "S-1-5-21-1-2-3-1202",
+      sid: "S-1-5-21-1-2-3-1202",
+      kind: "domain_group",
+      is_group: true,
+      display_name: "Finance-RW",
+      group_scope: "domain_local",
+      direct_member_count: 7,
+    });
+    const toggle = () => screen.getByRole("checkbox", { name: "Exclude local groups" });
+    // What next/form turns into a client-side navigation: the submit event and its fields.
+    const submissions = (): Record<string, string>[] => {
+      const seen: Record<string, string>[] = [];
+      screen.getByRole("search").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const form = event.target as HTMLFormElement;
+        seen.push(Object.fromEntries(new FormData(form)) as Record<string, string>);
+      });
+      return seen;
+    };
+
+    it("is off by default, and the server is asked for every group", async () => {
+      render(await GroupsDirectoryPage({ searchParams: params({ q: "fin" }) }));
+
+      expect(toggle()).not.toBeChecked();
+      expect(adg.fetchPrincipals).toHaveBeenCalledWith("token", "groups", {
+        q: "fin",
+        exclude_local: undefined,
+        limit: 50,
+        cursor: undefined,
+      });
+    });
+
+    it("when on, has the server filter by kind, with the search kept", async () => {
+      render(
+        await GroupsDirectoryPage({ searchParams: params({ q: "fin", exclude_local: "1" }) }),
+      );
+
+      expect(toggle()).toBeChecked();
+      expect(adg.fetchPrincipals).toHaveBeenCalledWith("token", "groups", {
+        q: "fin",
+        exclude_local: "true",
+        limit: 50,
+        cursor: undefined,
+      });
+      expect(screen.getByRole("searchbox")).toHaveValue("fin");
+    });
+
+    it("applies on change through the search form, keeping the search and dropping the page", async () => {
+      render(
+        await GroupsDirectoryPage({
+          searchParams: params({ q: "fin", p: "c1", exclude_local: "1" }),
+        }),
+      );
+      const seen = submissions();
+      const href = window.location.href;
+
+      await userEvent.setup().click(toggle());
+      expect(seen).toEqual([{ q: "fin" }]);
+      await userEvent.setup().click(toggle());
+      expect(seen[1]).toEqual({ q: "fin", exclude_local: "1" });
+      expect(window.location.href).toBe(href);
+    });
+
+    it("is a labelled checkbox that Space toggles", async () => {
+      render(await GroupsDirectoryPage({ searchParams: params({}) }));
+      const seen = submissions();
+      const user = userEvent.setup();
+
+      toggle().focus();
+      await user.keyboard(" ");
+      expect(seen).toEqual([{ q: "", exclude_local: "1" }]);
+      expect(toggle()).toHaveAttribute("form", "directory-search-form");
+      expect(screen.getByRole("search")).toHaveAttribute("id", "directory-search-form");
+    });
+
+    it("keeps the filter on the next page", async () => {
+      vi.mocked(adg.fetchPrincipals).mockResolvedValue(
+        ok({
+          kind: "groups",
+          query: "fin",
+          items: [FINANCE, FINANCE_RW],
+          page: page({ total: 120, has_more: true, next_cursor: "c2" }),
+        }),
+      );
+      render(
+        await GroupsDirectoryPage({ searchParams: params({ q: "fin", exclude_local: "1" }) }),
+      );
+
+      const next = new URL(screen.getByRole("link", { name: /Next/ }).getAttribute("href")!, "http://x");
+      expect(next.searchParams.get("q")).toBe("fin");
+      expect(next.searchParams.get("exclude_local")).toBe("1");
+      expect(next.searchParams.get("p")).toBeTruthy();
+    });
+
+    it("keeps the reader's sort when the filter changes the rows", async () => {
+      const { rerender } = render(await GroupsDirectoryPage({ searchParams: params({}) }));
+      const user = userEvent.setup();
+      const first = () => within(bodyRows()[0]).getByRole("rowheader").textContent;
+      await user.click(screen.getByRole("button", { name: /Direct members/ }));
+      await user.click(screen.getByRole("button", { name: /Direct members/ }));
+      expect(first()).toContain("Administrators");
+
+      vi.mocked(adg.fetchPrincipals).mockResolvedValue(
+        ok({ kind: "groups", query: null, items: [FINANCE, FINANCE_RW], page: page({ total: 2 }) }),
+      );
+      rerender(await GroupsDirectoryPage({ searchParams: params({ exclude_local: "1" }) }));
+
+      expect(first()).toBe("Finance-RW");
+      expect(screen.getByRole("columnheader", { name: /Direct members/ })).toHaveAttribute(
+        "aria-sort",
+        "descending",
+      );
+    });
+
+    it("follows Back and Forward: the box shows the filter the page was rendered with", async () => {
+      const { rerender } = render(
+        await GroupsDirectoryPage({ searchParams: params({ exclude_local: "1" }) }),
+      );
+      expect(toggle()).toBeChecked();
+
+      rerender(await GroupsDirectoryPage({ searchParams: params({}) }));
+      expect(toggle()).not.toBeChecked();
+    });
+
+    it("is not offered for users, and is not passed for them", async () => {
+      vi.mocked(adg.fetchPrincipals).mockResolvedValue(
+        ok({ kind: "users", query: null, items: [ADA], page: page({ total: 1 }) }),
+      );
+      render(await UsersDirectoryPage({ searchParams: params({ exclude_local: "1" }) }));
+
+      expect(screen.queryByRole("checkbox")).toBeNull();
+      expect(adg.fetchPrincipals).toHaveBeenCalledWith("token", "users", {
+        q: undefined,
+        exclude_local: undefined,
+        limit: 50,
+        cursor: undefined,
+      });
+    });
   });
 });

@@ -292,6 +292,48 @@ await check("Groups: search, sort by members, open a group, switch its views", a
   return path();
 });
 
+await check("Groups: Exclude local groups filters on the server, keeps search and sort, no reload", async () => {
+  await navigate(page.getByRole("link", { name: "Identities" }), "/identities");
+  await navigate(page.getByRole("link", { name: "Groups" }).first(), "/identities/groups");
+  await mark();
+  const table = page.locator("table").first();
+  const column = async (index) => bodyRows(table).locator(`td:nth-of-type(${index})`).allInnerTexts();
+  const toggle = page.getByRole("checkbox", { name: "Exclude local groups" });
+  const settled = async (test) => {
+    await page.waitForURL((url) => test(url.searchParams));
+    await page.waitForLoadState("networkidle");
+  };
+  expect(!(await toggle.isChecked()), "on by default");
+
+  await search("Finance");
+  await settled((p) => p.get("q") === "Finance");
+  const header = table.getByRole("columnheader", { name: /^Direct members/ });
+  await header.getByRole("button").click();
+  await header.getByRole("button").click();
+  const before = await bodyRows(table).count();
+
+  await toggle.focus();
+  await page.keyboard.press("Space");
+  await settled((p) => p.get("exclude_local") === "1" && p.get("q") === "Finance" && !p.has("p"));
+  expect(await toggle.isChecked(), "not checked after Space");
+  const kinds = await column(2);
+  expect(!kinds.includes("local group"), `a local group is listed: ${kinds.join(", ")}`);
+  expect((await column(3)).includes("domain local"), "the Domain Local groups were dropped");
+  expect((await bodyRows(table).count()) === before, `Finance groups ${before} → ${await bodyRows(table).count()}`);
+  expect((await header.getAttribute("aria-sort")) === "descending", "the sort was lost");
+
+  await search("Administrators");
+  await settled((p) => p.get("q") === "Administrators" && p.get("exclude_local") === "1");
+  expect((await page.locator("main").innerText()).includes('matching "Administrators"'), "local groups still listed");
+
+  await toggle.click();
+  await settled((p) => p.get("q") === "Administrators" && !p.has("exclude_local"));
+  const locals = await column(2);
+  expect(locals.length > 0 && locals.every((kind) => kind === "local group"), `kinds ${locals.join(", ")}`);
+  await noReload("groups filter");
+  return `${locals.length} local Administrators groups; ${before} Finance groups kept`;
+});
+
 await check("Groups → Servers without a reload", async () => {
   await mark();
   await navigate(page.getByRole("link", { name: "Resources" }), "/resources");

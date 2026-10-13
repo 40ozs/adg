@@ -189,6 +189,12 @@ a:hover {
   max-width: 28rem;
 }
 
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 input[type="search"],
 input[type="text"] {
   flex: 1;
@@ -557,13 +563,29 @@ dl.facts dd {
   color: var(--muted);
 }
 
-/* Always on screen. The name is the part that can be wrong; this is the identity. */
-.principal-sid {
-  display: block;
-  font-size: 0.78rem;
-  background: none;
-  padding: 0;
-  color: var(--muted);
+/*
+ * A SID, key or path in a table: one line, a bounded width, never what sizes the table.
+ * The whole value is in the text and the `title`, and on screen while the row has focus.
+ */
+.identifier {
+  display: inline-block;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+/* A code value in a table (an access mask, a SID) is one token: it never breaks mid-value. */
+td code,
+th code,
+.nowrap {
+  white-space: nowrap;
+}
+
+tr:focus-within .identifier {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .principal-notes,

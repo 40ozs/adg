@@ -9,7 +9,8 @@ import { cursorFor, decodeTrail, pageNavigation } from "@/lib/paging";
 import { classify } from "@/lib/state";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
 import { DirectoryTabs } from "@/components/DirectoryTabs";
-import { Maybe, TriState } from "@/components/Facts";
+import { Identifier, Maybe, TriState } from "@/components/Facts";
+import { FilterToggle } from "@/components/FilterToggle";
 import { PrincipalName } from "@/components/Identity";
 import { Pager } from "@/components/Pager";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
@@ -30,6 +31,10 @@ const PATHS: Record<DirectoryKind, string> = {
  * The search box is a GET form handled by Next.js, so a search is a client-side navigation
  * with the term in the URL, and the page position travels in `p` as it does everywhere
  * else. A row opens its principal by storage key.
+ *
+ * Groups can leave out local groups: those on one computer, by kind, filtered by the API so
+ * that the total and the pages count only what is shown. A Domain Local group is an Active
+ * Directory group and stays.
  */
 export async function PrincipalDirectory({
   kind,
@@ -44,12 +49,14 @@ export async function PrincipalDirectory({
   }
 
   const q = single(params.q)?.trim() ?? "";
+  const excludeLocal = kind === "groups" && single(params.exclude_local) === "1";
   const trail = decodeTrail(single(params.p));
   const token = viewer.session.accessToken;
   const [coverage, result] = await Promise.all([
     fetchCollectionStatus(token),
     fetchPrincipals(token, kind, {
       q: q || undefined,
+      exclude_local: excludeLocal ? "true" : undefined,
       limit: PAGE_SIZE,
       cursor: cursorFor(trail),
     }),
@@ -66,7 +73,7 @@ export async function PrincipalDirectory({
       <h1>{title}</h1>
       <DirectoryTabs current={kind} />
 
-      <Form action={PATHS[kind]} className="search-form" role="search">
+      <Form id="directory-search-form" action={PATHS[kind]} className="search-form" role="search">
         <label htmlFor="directory-search" className="visually-hidden">
           Search {kind} by name or SID
         </label>
@@ -84,6 +91,17 @@ export async function PrincipalDirectory({
         Matches the start of a display, account or UPN name, case-insensitively, or the start
         of a SID. <code>DOMAIN\name</code> matches on the account name.
       </p>
+      {kind === "groups" && (
+        <p>
+          <FilterToggle form="directory-search-form" name="exclude_local" checked={excludeLocal}>
+            Exclude local groups
+          </FilterToggle>{" "}
+          <span className="muted">
+            Local groups exist on one computer, such as BUILTIN\Administrators on a file server.
+            Domain Local groups are Active Directory groups and stay.
+          </span>
+        </p>
+      )}
 
       {state.kind === "ready" && <CoverageCaveat caveat={state.caveat} />}
       <StateMessage state={state} />
@@ -97,7 +115,7 @@ export async function PrincipalDirectory({
           <Pager
             navigation={pageNavigation({
               basePath: PATHS[kind],
-              params: { q: q || null },
+              params: { q: q || null, exclude_local: excludeLocal ? "1" : null },
               trailParam: "p",
               trail,
               nextCursor: state.data.page.next_cursor,
@@ -120,11 +138,12 @@ const USER_COLUMNS: SortableColumn[] = [
   { label: "Direct groups", type: "number" },
 ];
 
+// Short labels stay on one line, so a row is one line high however narrow the page.
 const GROUP_COLUMNS: SortableColumn[] = [
   { label: "Name" },
-  { label: "Account name" },
-  { label: "Kind" },
-  { label: "Scope" },
+  { label: "Account name", className: "nowrap" },
+  { label: "Kind", className: "nowrap" },
+  { label: "Scope", className: "nowrap" },
   { label: "SID" },
   { label: "Direct members", type: "number" },
   { label: "Parent groups", type: "number" },
@@ -134,7 +153,7 @@ function directoryRows(kind: DirectoryKind, items: readonly ListedPrincipalView[
   const ambiguous = ambiguousLabels(items);
   return items.map((item) => {
     const name = <PrincipalName principal={item} ambiguous={ambiguous} />;
-    const sid = <code>{item.sid}</code>;
+    const sid = <Identifier value={item.sid} />;
     return kind === "users"
       ? {
           key: item.key,

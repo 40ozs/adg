@@ -12,6 +12,7 @@ import {
 import { limitingLayerLabel } from "@/lib/access";
 import { principalLabel } from "@/lib/identity";
 import { Rights } from "@/components/EffectiveAccess";
+import { Identifier } from "@/components/Facts";
 import { PrincipalName } from "@/components/Identity";
 import { SimulateAction } from "@/components/SimulateLink";
 import { SortableTable } from "@/components/SortableTable";
@@ -223,7 +224,9 @@ export function AceTable({
               {entry.source}
             </span>
             {entry.inherited_from !== null && (
-              <div className="ace-notes muted">set on {entry.inherited_from}</div>
+              <div className="ace-notes muted">
+                set on <Identifier value={entry.inherited_from} />
+              </div>
             )}
           </>,
         ],

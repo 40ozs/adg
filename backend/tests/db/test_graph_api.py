@@ -608,6 +608,85 @@ class TestPrincipalDirectory:
         assert response.status_code == 422
 
 
+class TestExcludeLocalGroups:
+    """`exclude_local` leaves out machine-local groups, by kind, and never a Domain Local group.
+
+    Scenario 09 holds one of each: BUILTIN\\Administrators on FS01 (a local group, its key
+    scoped to the host) and Finance-RW (an Active Directory group whose scope is domain local).
+    """
+
+    @staticmethod
+    async def groups(client: AsyncClient, **params: Any) -> dict[str, Any]:
+        response = await client.get("/api/v1/principals", params={"kind": "groups", **params})
+        assert response.status_code == 200, response.text
+        body: dict[str, Any] = response.json()
+        return body
+
+    async def test_off_by_default_and_when_false(self, client: AsyncClient) -> None:
+        await ingest_scenario(client, "09-broken-inheritance")
+
+        default = await self.groups(client)
+        off = await self.groups(client, exclude_local="false")
+
+        assert {item["kind"] for item in default["items"]} == {"domain_group", "local_group"}
+        assert default["page"]["total"] == 2
+        assert off == default
+
+    async def test_on_keeps_the_domain_local_group(self, client: AsyncClient) -> None:
+        await ingest_scenario(client, "09-broken-inheritance")
+
+        body = await self.groups(client, exclude_local="true")
+
+        assert [item["key"] for item in body["items"]] == [FINANCE_RW]
+        assert (body["items"][0]["kind"], body["items"][0]["group_scope"]) == (
+            "domain_group",
+            "domain_local",
+        )
+        assert body["page"]["total"] == 1
+
+    @pytest.mark.parametrize(
+        ("q", "exclude_local", "expected"),
+        [
+            ("BUILTIN", "false", ["local_group"]),
+            ("BUILTIN", "true", []),
+            ("S-1-5-32", "true", []),
+            ("fin", "true", ["domain_group"]),
+            ("fin", "false", ["domain_group"]),
+        ],
+    )
+    async def test_with_search(
+        self, client: AsyncClient, q: str, exclude_local: str, expected: list[str]
+    ) -> None:
+        await ingest_scenario(client, "09-broken-inheritance")
+
+        body = await self.groups(client, q=q, exclude_local=exclude_local)
+
+        assert [item["kind"] for item in body["items"]] == expected
+        assert body["page"]["total"] == len(expected)
+
+    @pytest.mark.parametrize(("exclude_local", "total"), [("false", 2), ("true", 1)])
+    async def test_paging_counts_and_walks_only_what_the_filter_keeps(
+        self, client: AsyncClient, exclude_local: str, total: int
+    ) -> None:
+        await ingest_scenario(client, "09-broken-inheritance")
+
+        seen: list[str] = []
+        cursor: str | None = None
+        while True:
+            params: dict[str, Any] = {"limit": 1, "exclude_local": exclude_local}
+            if cursor:
+                params["cursor"] = cursor
+            body = await self.groups(client, **params)
+            seen.extend(item["kind"] for item in body["items"])
+            assert body["page"]["total"] == total
+            cursor = body["page"]["next_cursor"]
+            if cursor is None:
+                break
+
+        assert len(seen) == total
+        assert ("local_group" in seen) is (exclude_local == "false")
+
+
 class TestPrincipalGroups:
     async def test_direct_groups_are_the_default(self, client: AsyncClient) -> None:
         await ingest_scenario(client, "03-nested-group-grant")

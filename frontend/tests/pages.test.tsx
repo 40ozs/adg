@@ -389,8 +389,12 @@ describe("a group's page", () => {
 
     expect(container.textContent).toContain("(on fs01)");
     expect(container.textContent).toContain("(on fs02)");
-    expect(screen.getByText("fs01|S-1-5-32-544")).toBeInTheDocument();
-    expect(screen.getByText("fs02|S-1-5-32-544")).toBeInTheDocument();
+    // The key is behind the name, not under it: each row opens its own group.
+    expect(screen.getAllByRole("link", { name: "Administrators" }).map((link) => link.getAttribute("href"))).toEqual([
+      "/identities/principal/fs01%7CS-1-5-32-544",
+      "/identities/principal/fs02%7CS-1-5-32-544",
+    ]);
+    expect(container.textContent).not.toContain("fs01|S-1-5-32-544");
   });
 
   it("warns that an incomplete traversal is a lower bound, not a list", async () => {
@@ -709,6 +713,11 @@ describe("a principal's shortest chains", () => {
     const orphan = within(chain).getByText("S-1-5-21-1-2-3-7777");
     expect(orphan.tagName).toBe("CODE");
     expect(orphan.closest("a")).toBeNull();
+    // Shown because it did not resolve, held to one line, its key in full behind it.
+    expect(orphan).toHaveClass("identifier");
+    expect(orphan.getAttribute("title")).toContain(ORPHAN.key);
+    // A described hop shows only its name; its key is the link's title.
+    expect(links[1]).toHaveAttribute("title", TEAM.key);
   });
 });
 
