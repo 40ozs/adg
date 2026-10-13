@@ -59,6 +59,18 @@ export function Identifier({ value }: { value: string }): JSX.Element {
   );
 }
 
+/**
+ * A SID in a table cell: an `Identifier` cut at its start rather than its end. SIDs from one
+ * domain share their start and differ at the end (the RID), so the end stays on screen.
+ */
+export function Sid({ value }: { value: string }): JSX.Element {
+  return (
+    <code className="identifier sid" title={value}>
+      {value}
+    </code>
+  );
+}
+
 export function Maybe({ value }: { value: string | number | null | undefined }): JSX.Element {
   return value === null || value === undefined || value === "" ? (
     <NotReported />

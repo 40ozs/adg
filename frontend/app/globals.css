@@ -576,6 +576,15 @@ dl.facts dd {
   vertical-align: bottom;
 }
 
+/*
+ * A SID loses its start, not its distinguishing end: right-to-left puts the ellipsis on the
+ * left. Only for SIDs — all left-to-right characters, so they still read in order; a UNC
+ * path's leading backslashes would not.
+ */
+.identifier.sid {
+  direction: rtl;
+}
+
 /* A code value in a table (an access mask, a SID) is one token: it never breaks mid-value. */
 td code,
 th code,
@@ -584,6 +593,7 @@ th code,
 }
 
 tr:focus-within .identifier {
+  direction: ltr;
   white-space: normal;
   overflow-wrap: anywhere;
 }

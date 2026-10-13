@@ -218,6 +218,8 @@ describe("the ACL layers", () => {
     expect(table.textContent).toMatch(/set on \\\\FS01\\Finance/);
     // The path is an identifier: one line, the whole of it in the text and the tooltip.
     expect(within(table).getByTitle("\\\\FS01\\Finance")).toHaveClass("identifier");
+    // A path keeps its start: only a SID is cut from the left.
+    expect(within(table).getByTitle("\\\\FS01\\Finance")).not.toHaveClass("sid");
     expect(within(table).getAllByText("inherited").length).toBeGreaterThan(0);
   });
 

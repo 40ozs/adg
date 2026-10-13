@@ -714,7 +714,7 @@ describe("a principal's shortest chains", () => {
     expect(orphan.tagName).toBe("CODE");
     expect(orphan.closest("a")).toBeNull();
     // Shown because it did not resolve, held to one line, its key in full behind it.
-    expect(orphan).toHaveClass("identifier");
+    expect(orphan).toHaveClass("identifier", "sid");
     expect(orphan.getAttribute("title")).toContain(ORPHAN.key);
     // A described hop shows only its name; its key is the link's title.
     expect(links[1]).toHaveAttribute("title", TEAM.key);

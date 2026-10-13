@@ -4,7 +4,7 @@ import Link from "next/link";
 import { fetchCollectionStatus, search } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
-import { Identifier } from "@/components/Facts";
+import { Identifier, Sid } from "@/components/Facts";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { SortableTable } from "@/components/SortableTable";
@@ -102,6 +102,7 @@ export default async function SearchPage({
               href: principalHrefForKey(hit.principal_key),
               primary: hit.display_name ?? hit.sam_account_name ?? hit.sid,
               secondary: hit.sid,
+              sid: true,
               note: [
                 hit.kind,
                 hit.host_key ? `on ${hit.host_key}` : null,
@@ -160,6 +161,8 @@ interface Row {
   href: string;
   primary: string;
   secondary: string;
+  /** `secondary` is a SID, so it keeps its end (`Sid`). */
+  sid?: boolean;
   note: string;
 }
 
@@ -200,7 +203,11 @@ function Category({
             <Link key="name" href={row.href} className="identifier" title={row.primary}>
               {row.primary}
             </Link>,
-            <Identifier key="identifier" value={row.secondary} />,
+            row.sid ? (
+              <Sid key="identifier" value={row.secondary} />
+            ) : (
+              <Identifier key="identifier" value={row.secondary} />
+            ),
             row.note || "—",
           ],
         }))}
