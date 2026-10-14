@@ -7011,6 +7011,11 @@
           "exploration": {
             "$ref": "#/components/schemas/GraphExplorationView"
           },
+          "frontier": {
+            "description": "Nodes at the last level whose own relationships were not listed: what a deeper request would expand. Not a truncation; it is outside the depth asked for.",
+            "title": "Frontier",
+            "type": "integer"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/GraphNeighborView"
@@ -7055,6 +7060,7 @@
           "types",
           "items",
           "nodes",
+          "frontier",
           "page",
           "completeness",
           "limits",
