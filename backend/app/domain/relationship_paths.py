@@ -266,9 +266,7 @@ class NeighborResult:
     diagnostics: TraversalDiagnostics
 
 
-def relationship_sort_key(
-    relationship: StoredRelationship,
-) -> tuple[str, str, str, str, str, str, str, str]:
+def relationship_sort_key(relationship: StoredRelationship) -> tuple[str, ...]:
     scope_kind = "" if relationship.scope is None else relationship.scope.kind.value
     scope_key = "" if relationship.scope is None else relationship.scope.key
     return (
@@ -416,7 +414,7 @@ async def shortest_path(
         candidates.sort(key=lambda item: (item[0], item[1], node_sort_key(item[3])))
 
         next_frontier: list[NodeRef] = []
-        for prefix, edge_key, origin, next_node, relationship in candidates:
+        for prefix, path_edge_key, origin, next_node, relationship in candidates:
             if next_node in visited:
                 diagnostics.cycle_edges_skipped += 1
                 continue
@@ -425,7 +423,7 @@ async def shortest_path(
                 break
             visited.add(next_node)
             parents[next_node] = (origin, relationship)
-            path_keys[next_node] = (*prefix, edge_key)
+            path_keys[next_node] = (*prefix, path_edge_key)
             if next_node == target:
                 diagnostics.depth_reached = depth + 1
                 diagnostics.nodes_reached = len(visited)
@@ -589,7 +587,7 @@ async def reverse_reachability(
         candidates.sort(key=lambda item: (item[0], item[1], node_sort_key(item[3])))
 
         next_frontier: list[NodeRef] = []
-        for suffix, edge_key, closer, source, relationship in candidates:
+        for suffix, path_edge_key, closer, source, relationship in candidates:
             if source in visited:
                 diagnostics.cycle_edges_skipped += 1
                 continue
@@ -598,7 +596,7 @@ async def reverse_reachability(
                 break
             visited.add(source)
             toward_target[source] = (closer, relationship)
-            path_keys[source] = (edge_key, *suffix)
+            path_keys[source] = (path_edge_key, *suffix)
             reached_depth[source] = depth + 1
             next_frontier.append(source)
 
