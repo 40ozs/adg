@@ -86,7 +86,7 @@ which every token built for `S-1-5-18` carries together with exactly one finding
 
 | State | When | Finding | Directions |
 | --- | --- | --- | --- |
-| `confirmed` | local access, and a collector described `S-1-5-18` as `well_known` | `system_mapping_confirmed` (cites the describing run) | neither |
+| `confirmed` | local access, and a collector described `S-1-5-18` as `well_known` | `system_mapping_confirmed` (cites the describing run) | understates only |
 | `ambiguous` | any access over a share | `system_mapping_ambiguous` | both |
 | `missing` | local access, and no description, or one of kind `unresolved` | `system_mapping_missing` | both |
 | `conflicting` | a collector described `S-1-5-18` as any other kind | `system_mapping_conflicting` | both |
@@ -106,8 +106,12 @@ What follows from the state, and nowhere else:
 * **SYSTEM always defaults to `sids_only`**, whatever a collector said it is: a missing or
   disputed description is not licence to invent `Everyone`, `Authenticated Users` and a
   logon SID for it.
-* **Only `confirmed` can be conclusive about SYSTEM.** The other three are in both
-  direction sets, so an empty answer is `indeterminate`, never `no_grant` or `denied`.
+* **No SYSTEM answer is a conclusive negative.** The three unsettled states are in both
+  direction sets. `confirmed` settles the identity but understates: the token holds
+  `S-1-5-18`, not the groups LocalSystem's real token carries (`BUILTIN\Administrators`
+  among them), so an ACL granting only the server's administrators would otherwise come
+  back a certain `no_grant`. An empty SYSTEM answer is `indeterminate`, never `no_grant` or
+  `denied`, and only `confirmed` may be worded as a resolved identity.
 * **The verdict sentence is derived from the state** (`describe_verdict`), as is the
   `no_grant` sentence when one layer granted and the other gave nothing.
 

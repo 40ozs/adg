@@ -1,0 +1,278 @@
+{
+ "schema_version": "1.0",
+ "basis": {
+  "token": "ad217fe4ec6ab8afd5d83a5aa37a7678",
+  "runs": 300,
+  "latest_run_id": "c3757d3f-1bc1-5e76-92cf-8b5431a65884",
+  "latest_activity_at": "2026-10-14T18:54:51.171665Z",
+  "observations_applied": 41756,
+  "batches_received": 322,
+  "is_empty": false
+ },
+ "subject": {
+  "key": "S-1-5-18",
+  "sid": "S-1-5-18",
+  "host_key": null,
+  "kind": "well_known",
+  "resolved": true,
+  "is_group": false,
+  "display_name": "SYSTEM",
+  "sam_account_name": null,
+  "user_principal_name": null,
+  "distinguished_name": null,
+  "group_scope": null,
+  "group_type": null,
+  "enabled": null,
+  "is_deleted": false,
+  "unresolved_reason": null,
+  "last_known_name": null
+ },
+ "resource": {
+  "key": "\\\\nm-fs-01\\shared",
+  "path": "\\\\NM-FS-01\\Shared",
+  "share_key": "nm-fs-01|shared",
+  "observed": true,
+  "dacl_present": true,
+  "dacl_protected": false,
+  "is_acl_boundary": true,
+  "owner_sid": "S-1-5-32-544"
+ },
+ "share": {
+  "key": "nm-fs-01|shared",
+  "name": "Shared",
+  "server_key": "nm-fs-01",
+  "observed": true
+ },
+ "access_path": "remote_smb",
+ "verdict": {
+  "outcome": "indeterminate",
+  "reason": "No rights were established, and this is not a finding of no access. Over a share SYSTEM is the computer account of whichever machine it runs on, and nothing in this question says which.",
+  "certainty": "uncertain",
+  "conclusive": false,
+  "may_overstate": true,
+  "may_understate": true,
+  "denials": []
+ },
+ "token": {
+  "subject": {
+   "key": "S-1-5-18",
+   "sid": "S-1-5-18",
+   "host_key": null,
+   "kind": "well_known",
+   "resolved": true,
+   "is_group": false,
+   "display_name": "SYSTEM",
+   "sam_account_name": null,
+   "user_principal_name": null,
+   "distinguished_name": null,
+   "group_scope": null,
+   "group_type": null,
+   "enabled": null,
+   "is_deleted": false,
+   "unresolved_reason": null,
+   "last_known_name": null
+  },
+  "assumption": "sids_only",
+  "access_path": "remote_smb",
+  "membership_complete": true,
+  "entries": [
+   {
+    "principal": {
+     "key": "S-1-5-18",
+     "sid": "S-1-5-18",
+     "host_key": null,
+     "kind": "well_known",
+     "resolved": true,
+     "is_group": false,
+     "display_name": "SYSTEM",
+     "sam_account_name": null,
+     "user_principal_name": null,
+     "distinguished_name": null,
+     "group_scope": null,
+     "group_type": null,
+     "enabled": null,
+     "is_deleted": false,
+     "unresolved_reason": null,
+     "last_known_name": null
+    },
+    "origin": "subject",
+    "assumed": false,
+    "depth": 0,
+    "path": []
+   }
+  ]
+ },
+ "effective": {
+  "resource_key": "\\\\nm-fs-01\\shared",
+  "share_key": "nm-fs-01|shared",
+  "access_path": "remote_smb",
+  "access": false,
+  "rights": {
+   "mask": "0x00000000",
+   "value": 0,
+   "layer": "effective",
+   "label": "No access",
+   "primary": "No access",
+   "categories": [],
+   "is_exact": true,
+   "extra_rights": [],
+   "escalation_rights": [],
+   "unrecognized_bits": null,
+   "indeterminate": false
+  },
+  "certainty": "uncertain",
+  "limiting_layer": "none",
+  "acl_provenance": "observed",
+  "ntfs": {
+   "layer": "ntfs",
+   "rights": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "ntfs",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "granted_by": [],
+   "denied_by": [],
+   "superseded": [],
+   "owner_rights": null,
+   "canonical_rights": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "ntfs",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "order_dependent": false,
+   "entries_supplied": 4,
+   "entries_evaluated": 0
+  },
+  "share": {
+   "layer": "smb_share",
+   "rights": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "smb_share",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "granted_by": [],
+   "denied_by": [],
+   "superseded": [],
+   "owner_rights": null,
+   "canonical_rights": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "smb_share",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "order_dependent": false,
+   "entries_supplied": 1,
+   "entries_evaluated": 0
+  },
+  "conditions": [
+   "system_mapping_ambiguous"
+  ],
+  "findings": [
+   {
+    "condition": "system_mapping_ambiguous",
+    "message": "SYSTEM (S-1-5-18) is ambiguous over a share. No network logon carries S-1-5-18: a SYSTEM process arrives as the computer account of the machine it runs on, and nothing in this question says which machine. Entries naming SYSTEM were not applied; ask about that computer account instead.",
+    "may_overstate": true,
+    "may_understate": true,
+    "detail": {
+     "state": "ambiguous",
+     "subject_sid": "S-1-5-18",
+     "subject_key": "S-1-5-18",
+     "access_path": "remote_smb",
+     "presented": false,
+     "described_as": "well_known",
+     "described_name": "SYSTEM",
+     "expected_kind": "well_known",
+     "last_observed_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+     "last_observed_at": "2026-10-01T02:00:42+00:00",
+     "withheld_groups": []
+    }
+   }
+  ]
+ },
+ "graph": {
+  "nodes": [
+   {
+    "id": "principal:S-1-5-18",
+    "kind": "principal",
+    "key": "S-1-5-18",
+    "sid": "S-1-5-18",
+    "display_name": "SYSTEM",
+    "layer": null,
+    "position": null
+   },
+   {
+    "id": "resource:\\\\nm-fs-01\\shared",
+    "kind": "resource",
+    "key": "\\\\nm-fs-01\\shared",
+    "sid": null,
+    "display_name": null,
+    "layer": null,
+    "position": null
+   }
+  ],
+  "edges": []
+ },
+ "paths": [],
+ "removal_targets": [],
+ "cycles": [],
+ "warnings": [
+  {
+   "condition": "system_mapping_ambiguous",
+   "message": "SYSTEM (S-1-5-18) is ambiguous over a share. No network logon carries S-1-5-18: a SYSTEM process arrives as the computer account of the machine it runs on, and nothing in this question says which machine. Entries naming SYSTEM were not applied; ask about that computer account instead.",
+   "may_overstate": true,
+   "may_understate": true,
+   "detail": {
+    "state": "ambiguous",
+    "subject_sid": "S-1-5-18",
+    "subject_key": "S-1-5-18",
+    "access_path": "remote_smb",
+    "presented": false,
+    "described_as": "well_known",
+    "described_name": "SYSTEM",
+    "expected_kind": "well_known",
+    "last_observed_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+    "last_observed_at": "2026-10-01T02:00:42+00:00",
+    "withheld_groups": []
+   }
+  }
+ ],
+ "limits": {
+  "max_paths": 200,
+  "max_paths_per_trustee": 100,
+  "max_depth": 32,
+  "max_removal_targets": 64
+ },
+ "complete": true,
+ "truncation": []
+}

@@ -1,0 +1,306 @@
+# The final tests/access_engine/test_system_explanation_regression.py, run against the
+# unmodified starting SHA 1ab01a2058a8cb6d090bf5abeb6971b4b2ee33af (separate worktree).
+# Same module on the implementation head b949735: 52 passed.
+
+tests/access_engine/test_system_explanation_regression.py:174: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:188: AssertionError
+E       AssertionError: assert <AccessCondition.OWNER_IMPLICIT_RIGHTS: 'owner_implicit_rights'> not in (<AccessCondition.OWNER_IMPLICIT_RIGHTS: 'owner_implicit_rights'>,)
+E        +  where <AccessCondition.OWNER_IMPLICIT_RIGHTS: 'owner_implicit_rights'> = AccessCondition.OWNER_IMPLICIT_RIGHTS
+E        +  and   (<AccessCondition.OWNER_IMPLICIT_RIGHTS: 'owner_implicit_rights'>,) = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.WELL_KNOWN...RIGHTS: 'owner_implicit_rights'>, detail={'owner_sid': 'S-1-5-18', 'owner_key': 'S-1-5-18', 'rights': '0x00060000'}),)).conditions
+tests/access_engine/test_system_explanation_regression.py:197: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+E       AssertionError: assert ['ntfs:S-1-5-18'] == []
+E         
+E         Left contains one more item: 'ntfs:S-1-5-18'
+E         Use -v to get more diff
+tests/access_engine/test_system_explanation_regression.py:219: AssertionError
+tests/access_engine/test_system_explanation_regression.py:218: 
+E           AssertionError: the verdict says nothing names the subject while [<RightsLayer.NTFS: 'ntfs'>] granted it rights
+E           assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E             
+E             'No entry on either ACL names it' is contained here:
+E               nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:145: AssertionError
+E       AssertionError: no SYSTEM token is complete
+E       assert <AccessCertainty.CERTAIN: 'certain'> is not <AccessCertainty.CERTAIN: 'certain'>
+E        +  where <AccessCertainty.CERTAIN: 'certain'> = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.USER: 'use...ondition=<AccessCondition.ESCALATION_RIGHTS: 'escalation_rights'>, detail={'rights': '786432', 'mask': '0x001F01FF'}))).certainty
+E        +  and   <AccessCertainty.CERTAIN: 'certain'> = AccessCertainty.CERTAIN
+tests/access_engine/test_system_explanation_regression.py:232: AssertionError
+E       AssertionError: no SYSTEM token is complete
+E       assert <AccessCertainty.CERTAIN: 'certain'> is not <AccessCertainty.CERTAIN: 'certain'>
+E        +  where <AccessCertainty.CERTAIN: 'certain'> = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.WELL_KNOWN...ondition=<AccessCondition.ESCALATION_RIGHTS: 'escalation_rights'>, detail={'rights': '786432', 'mask': '0x001F01FF'}))).certainty
+E        +  and   <AccessCertainty.CERTAIN: 'certain'> = AccessCertainty.CERTAIN
+tests/access_engine/test_system_explanation_regression.py:232: AssertionError
+E       AssertionError: no SYSTEM token is complete
+E       assert <AccessCertainty.CERTAIN: 'certain'> is not <AccessCertainty.CERTAIN: 'certain'>
+E        +  where <AccessCertainty.CERTAIN: 'certain'> = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.USER: 'use...ondition=<AccessCondition.ESCALATION_RIGHTS: 'escalation_rights'>, detail={'rights': '786432', 'mask': '0x001F01FF'}))).certainty
+E        +  and   <AccessCertainty.CERTAIN: 'certain'> = AccessCertainty.CERTAIN
+tests/access_engine/test_system_explanation_regression.py:232: AssertionError
+E       AssertionError: no SYSTEM token is complete
+E       assert <AccessCertainty.CERTAIN: 'certain'> is not <AccessCertainty.CERTAIN: 'certain'>
+E        +  where <AccessCertainty.CERTAIN: 'certain'> = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.WELL_KNOWN...ondition=<AccessCondition.ESCALATION_RIGHTS: 'escalation_rights'>, detail={'rights': '786432', 'mask': '0x001F01FF'}))).certainty
+E        +  and   <AccessCertainty.CERTAIN: 'certain'> = AccessCertainty.CERTAIN
+tests/access_engine/test_system_explanation_regression.py:232: AssertionError
+E       AssertionError: no SYSTEM token is complete
+E       assert <AccessCertainty.CERTAIN: 'certain'> is not <AccessCertainty.CERTAIN: 'certain'>
+E        +  where <AccessCertainty.CERTAIN: 'certain'> = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.USER: 'use...ondition=<AccessCondition.ESCALATION_RIGHTS: 'escalation_rights'>, detail={'rights': '786432', 'mask': '0x001F01FF'}))).certainty
+E        +  and   <AccessCertainty.CERTAIN: 'certain'> = AccessCertainty.CERTAIN
+tests/access_engine/test_system_explanation_regression.py:232: AssertionError
+E       AssertionError: no SYSTEM token is complete
+E       assert <AccessCertainty.CERTAIN: 'certain'> is not <AccessCertainty.CERTAIN: 'certain'>
+E        +  where <AccessCertainty.CERTAIN: 'certain'> = EffectiveAccess(token=SubjectToken(subject=SubjectFacts(key='S-1-5-18', sid='S-1-5-18', kind=<PrincipalKind.WELL_KNOWN...ondition=<AccessCondition.ESCALATION_RIGHTS: 'escalation_rights'>, detail={'rights': '786432', 'mask': '0x001F01FF'}))).certainty
+E        +  and   <AccessCertainty.CERTAIN: 'certain'> = AccessCertainty.CERTAIN
+tests/access_engine/test_system_explanation_regression.py:232: AssertionError
+E       AssertionError: assert 'No entry on...ACL names it' not in 'This princi...ing to give.'
+E         
+E         'No entry on either ACL names it' is contained here:
+E           nied any. No entry on either ACL names it with anything to give.
+tests/access_engine/test_system_explanation_regression.py:263: AssertionError
+FAILED tests/access_engine/test_system_explanation_regression.py::TestTheOriginalContradiction::test_the_demo_question_no_longer_contradicts_itself
+FAILED tests/access_engine/test_system_explanation_regression.py::TestTheOriginalContradiction::test_the_authenticated_variant_no_longer_grants_full_control_with_certainty
+FAILED tests/access_engine/test_system_explanation_regression.py::TestTheOriginalContradiction::test_owning_the_directory_gives_a_network_session_nothing
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-default-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-default-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-default-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-default-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-sids_only-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-sids_only-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-sids_only-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-sids_only-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-authenticated_user-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-authenticated_user-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-authenticated_user-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[authenticated-authenticated_user-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-default-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-default-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-default-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-default-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-sids_only-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-sids_only-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-sids_only-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-sids_only-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-authenticated_user-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-authenticated_user-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-authenticated_user-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[everyone-authenticated_user-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-default-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-default-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-default-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-default-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-sids_only-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-sids_only-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-sids_only-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-sids_only-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-authenticated_user-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-authenticated_user-undescribed]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-authenticated_user-unresolved]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_over_smb[mirror-authenticated_user-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_locally[default-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_locally[default-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_locally[sids_only-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_locally[sids_only-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_locally[authenticated_user-described_as_a_user]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix::test_locally[authenticated_user-well_known]
+FAILED tests/access_engine/test_system_explanation_regression.py::TestTheVerdictSentenceFollowsTheLayers::test_ntfs_grants_and_the_share_names_nobody
+46 failed, 6 passed in 0.27s

@@ -1,0 +1,460 @@
+{
+ "schema_version": "1.0",
+ "basis": {
+  "token": "ad217fe4ec6ab8afd5d83a5aa37a7678",
+  "runs": 300,
+  "latest_run_id": "c3757d3f-1bc1-5e76-92cf-8b5431a65884",
+  "latest_activity_at": "2026-10-14T18:54:51.171665Z",
+  "observations_applied": 41756,
+  "batches_received": 322,
+  "is_empty": false
+ },
+ "subject": {
+  "key": "S-1-5-18",
+  "sid": "S-1-5-18",
+  "host_key": null,
+  "kind": "well_known",
+  "resolved": true,
+  "is_group": false,
+  "display_name": "SYSTEM",
+  "sam_account_name": null,
+  "user_principal_name": null,
+  "distinguished_name": null,
+  "group_scope": null,
+  "group_type": null,
+  "enabled": null,
+  "is_deleted": false,
+  "unresolved_reason": null,
+  "last_known_name": null
+ },
+ "resource": {
+  "key": "\\\\nm-fs-01\\shared",
+  "path": "\\\\NM-FS-01\\Shared",
+  "share_key": "nm-fs-01|shared",
+  "observed": true,
+  "dacl_present": true,
+  "dacl_protected": false,
+  "is_acl_boundary": true,
+  "owner_sid": "S-1-5-32-544"
+ },
+ "share": null,
+ "access_path": "local",
+ "verdict": {
+  "outcome": "granted",
+  "reason": "This principal holds rights on this object.",
+  "certainty": "certain",
+  "conclusive": true,
+  "may_overstate": false,
+  "may_understate": false,
+  "denials": []
+ },
+ "token": {
+  "subject": {
+   "key": "S-1-5-18",
+   "sid": "S-1-5-18",
+   "host_key": null,
+   "kind": "well_known",
+   "resolved": true,
+   "is_group": false,
+   "display_name": "SYSTEM",
+   "sam_account_name": null,
+   "user_principal_name": null,
+   "distinguished_name": null,
+   "group_scope": null,
+   "group_type": null,
+   "enabled": null,
+   "is_deleted": false,
+   "unresolved_reason": null,
+   "last_known_name": null
+  },
+  "assumption": "sids_only",
+  "access_path": "local",
+  "membership_complete": true,
+  "entries": [
+   {
+    "principal": {
+     "key": "S-1-5-18",
+     "sid": "S-1-5-18",
+     "host_key": null,
+     "kind": "well_known",
+     "resolved": true,
+     "is_group": false,
+     "display_name": "SYSTEM",
+     "sam_account_name": null,
+     "user_principal_name": null,
+     "distinguished_name": null,
+     "group_scope": null,
+     "group_type": null,
+     "enabled": null,
+     "is_deleted": false,
+     "unresolved_reason": null,
+     "last_known_name": null
+    },
+    "origin": "subject",
+    "assumed": false,
+    "depth": 0,
+    "path": []
+   }
+  ]
+ },
+ "effective": {
+  "resource_key": "\\\\nm-fs-01\\shared",
+  "share_key": null,
+  "access_path": "local",
+  "access": true,
+  "rights": {
+   "mask": "0x001F01FF",
+   "value": 2032127,
+   "layer": "effective",
+   "label": "Full Control",
+   "primary": "Full Control",
+   "categories": [
+    "Full Control"
+   ],
+   "is_exact": true,
+   "extra_rights": [],
+   "escalation_rights": [
+    "WRITE_DAC",
+    "WRITE_OWNER"
+   ],
+   "unrecognized_bits": null,
+   "indeterminate": false
+  },
+  "certainty": "certain",
+  "limiting_layer": "ntfs",
+  "acl_provenance": "observed",
+  "ntfs": {
+   "layer": "ntfs",
+   "rights": {
+    "mask": "0x001F01FF",
+    "value": 2032127,
+    "layer": "ntfs",
+    "label": "Full Control",
+    "primary": "Full Control",
+    "categories": [
+     "Full Control"
+    ],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [
+     "WRITE_DAC",
+     "WRITE_OWNER"
+    ],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "granted_by": [
+    {
+     "ace_key": "\\\\nm-fs-01\\shared|S-1-5-18|allow|0x001f01ff|0x03",
+     "layer": "ntfs",
+     "position": 0,
+     "trustee": {
+      "key": "S-1-5-18",
+      "sid": "S-1-5-18",
+      "host_key": null,
+      "kind": "well_known",
+      "resolved": true,
+      "is_group": false,
+      "display_name": "SYSTEM",
+      "sam_account_name": null,
+      "user_principal_name": null,
+      "distinguished_name": null,
+      "group_scope": null,
+      "group_type": null,
+      "enabled": null,
+      "is_deleted": false,
+      "unresolved_reason": null,
+      "last_known_name": null
+     },
+     "ace_type": "allow",
+     "access_mask": "0x001F01FF",
+     "contributed": "0x001F01FF",
+     "flags": 3,
+     "source": "explicit",
+     "inherited_from": null,
+     "matched_key": "S-1-5-18",
+     "via_group": false
+    }
+   ],
+   "denied_by": [],
+   "superseded": [],
+   "owner_rights": null,
+   "canonical_rights": {
+    "mask": "0x001F01FF",
+    "value": 2032127,
+    "layer": "ntfs",
+    "label": "Full Control",
+    "primary": "Full Control",
+    "categories": [
+     "Full Control"
+    ],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [
+     "WRITE_DAC",
+     "WRITE_OWNER"
+    ],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "order_dependent": false,
+   "entries_supplied": 4,
+   "entries_evaluated": 1
+  },
+  "share": null,
+  "conditions": [
+   "escalation_rights"
+  ],
+  "findings": [
+   {
+    "condition": "escalation_rights",
+    "message": "The result includes WRITE_DAC or WRITE_OWNER. Whatever the label reads, the holder can grant themselves any other right.",
+    "may_overstate": false,
+    "may_understate": false,
+    "detail": {
+     "rights": "786432",
+     "mask": "0x001F01FF"
+    }
+   }
+  ]
+ },
+ "graph": {
+  "nodes": [
+   {
+    "id": "ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "kind": "ntfs_ace",
+    "key": "\\\\nm-fs-01\\shared|S-1-5-18|allow|0x001f01ff|0x03",
+    "sid": "S-1-5-18",
+    "display_name": null,
+    "layer": "ntfs",
+    "position": 0
+   },
+   {
+    "id": "principal:S-1-5-18",
+    "kind": "principal",
+    "key": "S-1-5-18",
+    "sid": "S-1-5-18",
+    "display_name": "SYSTEM",
+    "layer": null,
+    "position": null
+   },
+   {
+    "id": "resource:\\\\nm-fs-01\\shared",
+    "kind": "resource",
+    "key": "\\\\nm-fs-01\\shared",
+    "sid": null,
+    "display_name": null,
+    "layer": null,
+    "position": null
+   }
+  ],
+  "edges": [
+   {
+    "id": "grant:ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "kind": "grant",
+    "source": "ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "target": "resource:\\\\nm-fs-01\\shared",
+    "membership_edge_key": null,
+    "ace_key": "\\\\nm-fs-01\\shared|S-1-5-18|allow|0x001f01ff|0x03",
+    "removable": false
+   },
+   {
+    "id": "trustee:principal:S-1-5-18->ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "kind": "trustee",
+    "source": "principal:S-1-5-18",
+    "target": "ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "membership_edge_key": null,
+    "ace_key": "\\\\nm-fs-01\\shared|S-1-5-18|allow|0x001f01ff|0x03",
+    "removable": true
+   }
+  ]
+ },
+ "paths": [
+  {
+   "id": "p0000",
+   "layer": "ntfs",
+   "relation": "grant",
+   "effect": "contributes",
+   "chain": [
+    {
+     "key": "S-1-5-18",
+     "sid": "S-1-5-18",
+     "host_key": null,
+     "kind": "well_known",
+     "resolved": true,
+     "is_group": false,
+     "display_name": "SYSTEM",
+     "sam_account_name": null,
+     "user_principal_name": null,
+     "distinguished_name": null,
+     "group_scope": null,
+     "group_type": null,
+     "enabled": null,
+     "is_deleted": false,
+     "unresolved_reason": null,
+     "last_known_name": null
+    }
+   ],
+   "nodes": [
+    "principal:S-1-5-18",
+    "ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "resource:\\\\nm-fs-01\\shared"
+   ],
+   "edges": [
+    "trustee:principal:S-1-5-18->ntfs-ace:\\\\nm-fs-01\\shared:0000",
+    "grant:ntfs-ace:\\\\nm-fs-01\\shared:0000"
+   ],
+   "ace_position": 0,
+   "ace_key": "\\\\nm-fs-01\\shared|S-1-5-18|allow|0x001f01ff|0x03",
+   "ace_rights": {
+    "mask": "0x001F01FF",
+    "value": 2032127,
+    "layer": "ntfs",
+    "label": "Full Control",
+    "primary": "Full Control",
+    "categories": [
+     "Full Control"
+    ],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [
+     "WRITE_DAC",
+     "WRITE_OWNER"
+    ],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "layer_rights": {
+    "mask": "0x001F01FF",
+    "value": 2032127,
+    "layer": "ntfs",
+    "label": "Full Control",
+    "primary": "Full Control",
+    "categories": [
+     "Full Control"
+    ],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [
+     "WRITE_DAC",
+     "WRITE_OWNER"
+    ],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "effective_rights": {
+    "mask": "0x001F01FF",
+    "value": 2032127,
+    "layer": "effective",
+    "label": "Full Control",
+    "primary": "Full Control",
+    "categories": [
+     "Full Control"
+    ],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [
+     "WRITE_DAC",
+     "WRITE_OWNER"
+    ],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "constrained_rights": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "effective",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "assumed": false,
+   "via_group": false,
+   "inherited": false
+  }
+ ],
+ "removal_targets": [
+  {
+   "edge_id": "trustee:principal:S-1-5-18->ntfs-ace:\\\\nm-fs-01\\shared:0000",
+   "kind": "trustee",
+   "source": "principal:S-1-5-18",
+   "target": "ntfs-ace:\\\\nm-fs-01\\shared:0000",
+   "rights_removed": {
+    "mask": "0x001F01FF",
+    "value": 2032127,
+    "layer": "effective",
+    "label": "Full Control",
+    "primary": "Full Control",
+    "categories": [
+     "Full Control"
+    ],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [
+     "WRITE_DAC",
+     "WRITE_OWNER"
+    ],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "rights_added": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "effective",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "rights_after": {
+    "mask": "0x00000000",
+    "value": 0,
+    "layer": "effective",
+    "label": "No access",
+    "primary": "No access",
+    "categories": [],
+    "is_exact": true,
+    "extra_rights": [],
+    "escalation_rights": [],
+    "unrecognized_bits": null,
+    "indeterminate": false
+   },
+   "revokes_all_access": true,
+   "changes_nothing": false,
+   "alternate_paths": [],
+   "paths_removed": [
+    "p0000"
+   ]
+  }
+ ],
+ "cycles": [],
+ "warnings": [
+  {
+   "condition": "escalation_rights",
+   "message": "The result includes WRITE_DAC or WRITE_OWNER. Whatever the label reads, the holder can grant themselves any other right.",
+   "may_overstate": false,
+   "may_understate": false,
+   "detail": {
+    "rights": "786432",
+    "mask": "0x001F01FF"
+   }
+  }
+ ],
+ "limits": {
+  "max_paths": 200,
+  "max_paths_per_trustee": 100,
+  "max_depth": 32,
+  "max_removal_targets": 64
+ },
+ "complete": true,
+ "truncation": []
+}
