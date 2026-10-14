@@ -564,6 +564,8 @@ an absence.
 Measured on Null Meridian (6,274 edges, 827 resources, 4,124 entries, 300 runs): 15,267
 relationships and 16,077 supports. Derivation inside the 300 completions took 15.2 s in total,
 the largest pass 3.1 s. A clean rebuild took 9.1 s.
+A rebuild over 400 memberships and 60 descriptors of seven entries each issues 32 statements for
+1,120 supports. The test asserts fewer than one statement per ten supports.
 
 ### 9.11 For the path engine (GRAPH-01C)
 
