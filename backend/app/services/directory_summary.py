@@ -83,6 +83,12 @@ class ExceptionReason(StrEnum):
     """Not reachable as far as the evidence goes, and the evidence is incomplete in a
     direction that could hide a grant (``indeterminate``). Not a finding of no access."""
 
+    OWNER_ONLY = "owner_only"
+    """Nothing on the ACL names the principal or its groups, yet the engine grants rights:
+    the principal owns the folder (Windows gives an owner ``READ_CONTROL`` and ``WRITE_DAC``
+    whatever the DACL says, or an ``OWNER RIGHTS`` entry applies). Reported, not counted as
+    reachable: the candidate index the listing pages through does not index ownership."""
+
     NOT_OBSERVED = "not_observed"
     """No run read this directory, though something below it was read. Whether access
     continues through it is unknown, so the run stops here rather than claiming it does."""
@@ -150,10 +156,14 @@ class DirectoryVerdict:
     outcome: AccessOutcome
     limiting_layer: LimitingLayer
     conditions: tuple[str, ...] = ()
+    named: bool = True
+    """Whether the directory was a candidate: its ACL names a token SID or has no DACL.
+    False for a folder evaluated only because access stops at it."""
 
     @property
     def reachable(self) -> bool:
-        return self.outcome is AccessOutcome.GRANTED
+        """Reachable as the listing counts it: granted, and among the candidates."""
+        return self.outcome is AccessOutcome.GRANTED and self.named
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,6 +287,8 @@ def _unreachable_reason(facts: DirectoryFacts, verdict: DirectoryVerdict | None)
         return ExceptionReason.NOT_OBSERVED
     if verdict is None:
         return ExceptionReason.ACCESS_ENDS
+    if verdict.outcome is AccessOutcome.GRANTED:
+        return ExceptionReason.OWNER_ONLY
     if verdict.outcome is AccessOutcome.DENIED:
         return ExceptionReason.ACCESS_DENIED
     if verdict.outcome is AccessOutcome.INDETERMINATE:
@@ -416,7 +428,9 @@ def summarize_directory_access(
             for key, items in exceptions.items()
         },
         reachable_directories=len(root_of),
-        unreachable_named=sum(1 for verdict in verdicts.values() if not verdict.reachable),
+        unreachable_named=sum(
+            1 for verdict in verdicts.values() if verdict.named and not verdict.reachable
+        ),
         observed_directories=observed,
         _nodes=nodes,
         _children=children,

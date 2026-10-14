@@ -76,7 +76,7 @@
             "$ref": "#/components/schemas/DirectoryView"
           },
           "named": {
-            "description": "False when nothing on this ACL names the principal or its groups, so the engine had nothing to evaluate. verdict is then null.",
+            "description": "False when nothing on this ACL names the principal or its groups. The engine still evaluated it (verdict); it is null only for a folder no scan read.",
             "title": "Named",
             "type": "boolean"
           },
@@ -6009,6 +6009,7 @@
           "access_denied",
           "access_ends",
           "access_unknown",
+          "owner_only",
           "not_observed"
         ],
         "title": "ExceptionReason",

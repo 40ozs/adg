@@ -118,7 +118,7 @@ class DirectoryAccess:
         return reasons
 
 
-def verdict_of(item: ResolvedAccess) -> DirectoryVerdict:
+def verdict_of(item: ResolvedAccess, *, named: bool = True) -> DirectoryVerdict:
     """The engine's answer for one directory, reduced to what the summary compares."""
     access = item.access
     return DirectoryVerdict(
@@ -127,6 +127,7 @@ def verdict_of(item: ResolvedAccess) -> DirectoryVerdict:
         outcome=classify_access(access).outcome,
         limiting_layer=access.limiting_layer,
         conditions=tuple(condition.value for condition in access.conditions),
+        named=named,
     )
 
 
@@ -236,6 +237,18 @@ class DirectoryAccessService:
             )
             for row in outline
         ]
+        # Where access stops at a folder the reference index did not offer, ask the engine
+        # anyway: "nothing names you here" is its verdict to give (no grant, a Deny, or not
+        # established from what was collected), not the summary's to assume. A bounded set
+        # — only the children of reachable folders — evaluated in the listing's own chunks.
+        reachable = {key for key, verdict in verdicts.items() if verdict.reachable}
+        stops = [
+            item.key
+            for item in directories
+            if item.parent_key in reachable and item.key not in verdicts
+        ]
+        for resolved in await self._access.evaluate_resources(evaluated.token, stops, path):
+            verdicts[resolved.access.resource_key] = verdict_of(resolved, named=False)
         summary = summarize_directory_access(directories, verdicts)
         return DirectoryAccess(
             subject_key=subject_key,

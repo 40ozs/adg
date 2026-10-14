@@ -101,6 +101,7 @@ REASON_LABELS: dict[ExceptionReason, str] = {
     ExceptionReason.ACCESS_DENIED: "Denied",
     ExceptionReason.ACCESS_ENDS: "Access ends",
     ExceptionReason.ACCESS_UNKNOWN: "Not established",
+    ExceptionReason.OWNER_ONLY: "Owner rights only",
     ExceptionReason.NOT_OBSERVED: "Not scanned",
 }
 
@@ -248,8 +249,8 @@ class AccessExceptionView(BaseModel):
     reasons: list[ReasonView]
     reachable: bool
     named: bool = Field(
-        description="False when nothing on this ACL names the principal or its groups, so "
-        "the engine had nothing to evaluate. verdict is then null."
+        description="False when nothing on this ACL names the principal or its groups. The "
+        "engine still evaluated it (verdict); it is null only for a folder no scan read."
     )
     verdict: DirectoryVerdictView | None = None
     parent_key: str
@@ -728,7 +729,7 @@ def _directory_view(facts: DirectoryFacts) -> DirectoryView:
 
 def _verdict_view(verdict: DirectoryVerdict) -> DirectoryVerdictView:
     return DirectoryVerdictView(
-        access=verdict.reachable,
+        access=verdict.outcome is AccessOutcome.GRANTED,
         outcome=verdict.outcome,
         rights=render_rights(verdict.rights),
         certainty=verdict.certainty,
@@ -768,7 +769,7 @@ def _exception_view(item: AccessException) -> AccessExceptionView:
         directory=_directory_view(item.facts),
         reasons=_reasons(item.reasons),
         reachable=item.reachable,
-        named=item.verdict is not None,
+        named=item.verdict is not None and item.verdict.named,
         verdict=_verdict_view(item.verdict) if item.verdict is not None else None,
         parent_key=item.parent_key,
         parent_verdict=_verdict_view(item.parent_verdict),
@@ -779,7 +780,7 @@ def _node_view(node: TreeNode) -> DirectoryTreeNodeView:
     return DirectoryTreeNodeView(
         directory=_directory_view(node.facts),
         reachable=node.reachable,
-        named=node.verdict is not None,
+        named=node.verdict is not None and node.verdict.named,
         verdict=_verdict_view(node.verdict) if node.verdict is not None else None,
         is_root=node.is_root,
         root_key=node.root_key,

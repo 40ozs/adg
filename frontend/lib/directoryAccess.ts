@@ -85,14 +85,18 @@ export function reasonTone(reason: ExceptionReason): "change" | "stop" {
     : "change";
 }
 
-/** One word for an engine verdict, never colour alone. */
+/**
+ * One word for an engine verdict, never colour alone. `named` is false for a folder the
+ * engine evaluated only because access stops at it.
+ */
 export function verdictWord(verdict: DirectoryVerdictView | null, named: boolean): string {
   if (verdict === null) {
     return named ? "Not evaluated" : "No access";
   }
   switch (verdict.outcome) {
     case "granted":
-      return verdict.rights.primary || verdict.rights.label;
+      // Granted where nothing names the principal: only ownership does that.
+      return named ? verdict.rights.primary || verdict.rights.label : "Owner rights only";
     case "denied":
       return "Denied";
     case "indeterminate":

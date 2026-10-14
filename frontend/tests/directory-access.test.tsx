@@ -23,7 +23,14 @@ import type {
   DirectoryTreeResponse,
   DirectoryView,
 } from "@/lib/contracts";
-import { BranchLoader, type BranchResult, directoryAccessHref, treeUrl } from "@/lib/directoryAccess";
+import {
+  BranchLoader,
+  type BranchResult,
+  directoryAccessHref,
+  reasonTone,
+  treeUrl,
+  verdictWord,
+} from "@/lib/directoryAccess";
 
 import { page, principal, principalDetail, rights } from "./factories";
 
@@ -562,6 +569,20 @@ describe("the tree", () => {
 
     expect(window.location.href).toBe(before);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
+  });
+});
+
+describe("verdict words", () => {
+  it("say what the engine answered, and name ownership for what it is", () => {
+    const granted = { ...BUDGETS.verdict };
+    expect(verdictWord(granted, true)).toBe("Modify");
+    expect(verdictWord(granted, false)).toBe("Owner rights only");
+    expect(verdictWord({ ...granted, outcome: "denied" }, false)).toBe("Denied");
+    expect(verdictWord({ ...granted, outcome: "indeterminate" }, true)).toBe("Not established");
+    expect(verdictWord({ ...granted, outcome: "no_grant" }, false)).toBe("No access");
+    expect(verdictWord(null, false)).toBe("No access");
+    expect(reasonTone("owner_only")).toBe("change");
+    expect(reasonTone("not_observed")).toBe("stop");
   });
 });
 

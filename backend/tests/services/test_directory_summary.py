@@ -275,6 +275,52 @@ class TestPermissionBoundaries:
         assert all(item.verdict is None for item in exceptions)
         assert all(item.reasons == (ExceptionReason.ACCESS_ENDS,) for item in exceptions)
 
+    def test_a_stop_the_index_did_not_offer_carries_the_engines_own_outcome(self) -> None:
+        """The service evaluates the folders where access stops even when their ACL names
+        nobody in the token. Their verdict is the engine's, marked as not named."""
+        verdicts = {key(r"\\FS01\Finance\Budgets"): granted()}
+        unnamed = DirectoryVerdict(
+            rights=mask(0),
+            certainty=AccessCertainty.AT_LEAST,
+            outcome=AccessOutcome.INDETERMINATE,
+            limiting_layer=LimitingLayer.UNKNOWN,
+            named=False,
+        )
+        verdicts[key(r"\\FS01\Finance\Budgets\FY2026")] = unnamed
+        summary = summarize_directory_access(tree(*FINANCE), verdicts)
+
+        reasons = {
+            item.facts.key: item.reasons
+            for item in summary.exceptions[key(r"\\FS01\Finance\Budgets")]
+        }
+        assert reasons[key(r"\\FS01\Finance\Budgets\FY2026")] == (ExceptionReason.ACCESS_UNKNOWN,)
+        assert summary.unreachable_named == 0  # not a candidate, so not counted as one
+
+    def test_ownership_alone_is_reported_and_never_counted_as_reachable(self) -> None:
+        """Rights on a folder no entry names come from ownership. The listing's candidate
+        index cannot see that, so the summary reports it without counting it, and the two
+        never disagree about what is reachable."""
+        verdicts = {key(r"\\FS01\Finance\Budgets"): granted()}
+        verdicts[key(r"\\FS01\Finance\Budgets\FY2025")] = DirectoryVerdict(
+            rights=mask(0x00060000),  # READ_CONTROL | WRITE_DAC
+            certainty=AccessCertainty.CERTAIN,
+            outcome=AccessOutcome.GRANTED,
+            limiting_layer=LimitingLayer.NONE,
+            named=False,
+        )
+        summary = summarize_directory_access(tree(*FINANCE), verdicts)
+
+        root = summary.roots[0]
+        assert root.reachable_descendants == 0
+        assert summary.reachable_directories == 1
+        owned = next(
+            item
+            for item in summary.exceptions[root.key]
+            if item.facts.key == key(r"\\FS01\Finance\Budgets\FY2025")
+        )
+        assert owned.reasons == (ExceptionReason.OWNER_ONLY,)
+        assert not owned.reachable
+
     def test_a_deny_and_an_indeterminate_answer_are_named_as_such(self) -> None:
         verdicts = {key(path): granted() for path in FINANCE[1:4]}
         verdicts[key(r"\\FS01\Finance\Budgets\FY2025")] = refused(AccessOutcome.DENIED)

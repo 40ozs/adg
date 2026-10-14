@@ -193,6 +193,8 @@ class TestBoundaries:
             item = exceptions[key]
             assert item["reachable"] is False
             assert item["named"] is False  # nothing on its ACL names the subject
+            # ...and the engine was still asked: its verdict, not the summary's assumption.
+            assert item["verdict"]["outcome"] == "no_grant"
             assert [reason["reason"] for reason in item["reasons"]] == ["access_ends"]
         reachable_keys = set(estate.expected)
         assert not reachable_keys & estate.protected_without_subject

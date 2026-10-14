@@ -757,6 +757,7 @@ export type ExceptionReason =
   | "access_denied"
   | "access_ends"
   | "access_unknown"
+  | "owner_only"
   | "not_observed";
 
 export type RootParent = "share_root" | "no_access" | "not_observed";

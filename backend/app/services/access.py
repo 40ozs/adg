@@ -560,11 +560,7 @@ class AccessService:
         keys, truncated = await self._resources.all_resources_named_by(
             sorted(token.keys), limit=max_candidates
         )
-        items: list[ResolvedAccess] = []
-        for start in range(0, len(keys), EVALUATION_CHUNK):
-            items.extend(
-                await self._resource_page(token, keys[start : start + EVALUATION_CHUNK], path)
-            )
+        items = await self.evaluate_resources(token, keys, path)
         return SubjectAccessSet(
             subject_key=subject_key,
             subject=subject_record,
@@ -574,6 +570,23 @@ class AccessService:
             token=token,
             principals=token_labels,
         )
+
+    async def evaluate_resources(
+        self, token: SubjectToken, keys: Sequence[str], path: AccessPath
+    ) -> tuple[ResolvedAccess, ...]:
+        """Evaluate named directories for an already built token, in fixed-size chunks.
+
+        The listing's own page body, so a directory evaluated here gets the same answer it
+        gets on a page of ``/resources``. Used for whole candidate sets, and for the folders
+        a directory-access summary finds where access stops — directories the reference
+        index did not offer, which still deserve the engine's verdict rather than a guess.
+        """
+        items: list[ResolvedAccess] = []
+        for start in range(0, len(keys), EVALUATION_CHUNK):
+            items.extend(
+                await self._resource_page(token, keys[start : start + EVALUATION_CHUNK], path)
+            )
+        return tuple(items)
 
     # ---------------------------------------------------------------- page bodies
 

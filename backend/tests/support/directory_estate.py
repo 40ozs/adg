@@ -212,13 +212,18 @@ def _tree(
         _expect(estate, path, dacl, protected)
 
         depth = path.count("\\") - 3
-        if depth >= (5 if deep else 2):
+        if depth >= (8 if deep else 2):
             continue
-        handed_down = [
-            Entry(item.trustee, item.ace_type, item.mask, INHERITED | INHERIT)
-            for item in dacl
-            if item.flags & INHERIT
-        ]
+        # An explicit entry and the same entry inherited from higher up become one copy on
+        # the child: two identical entries would be one ACE key twice, which the contract
+        # refuses (and which Windows would not write).
+        handed_down = list(
+            dict.fromkeys(
+                Entry(item.trustee, item.ace_type, item.mask, INHERITED | INHERIT)
+                for item in dacl
+                if item.flags & INHERIT
+            )
+        )
         width = 4 if depth == 0 else rng.randint(1, 4)
         prefix = "Team" if depth == 0 else "Sub"
         for index in range(width):
