@@ -92,6 +92,7 @@ from app.models.schema import (
     smb_share_aces,
     smb_shares,
 )
+from app.relationships.projector import ProjectionOutcome, project_completed_run
 from app.sql_compat import distinct_on
 
 __all__ = [
@@ -328,6 +329,10 @@ class CompletionOutcome:
 
     checkpoint: CheckpointAdvance | None = None
     """The job cursor this completion moved, when it carried one."""
+
+    projection: ProjectionOutcome | None = None
+    """The relationship derivation this completion ran over the run's facts (ADG-GRAPH-01B).
+    ``None`` on a replayed completion whose run was already derived."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1445,6 +1450,12 @@ class IngestionService:
             )
             drift = await self._record_drift(run_id, closures, completion.completed_at)
 
+        # The privilege graph converges with the run: every fact it touched is re-derived
+        # here, after its reconciliation, so a relationship never outlives a completion that
+        # changed what it rests on. In a savepoint that cannot cost the completion anything:
+        # a derivation failure rolls back only the derivation, and is recorded.
+        projection = await project_completed_run(session, run_id, now=now)
+
         await session.commit()
         return CompletionOutcome(
             run_id=run_id,
@@ -1455,6 +1466,7 @@ class IngestionService:
             closures=closures,
             drift=drift,
             checkpoint=advance,
+            projection=projection,
         )
 
     async def _collector_of(self, source_id: int) -> CollectorKind:
@@ -1606,6 +1618,11 @@ class IngestionService:
                 f"claims {status.value}. A finished run's outcome is not revisable — start a "
                 "new run instead."
             )
+        # A collector re-sends a completion when it did not see the first answer. If that
+        # completion's derivation failed, this is the retry; if it succeeded, nothing runs.
+        projection = await project_completed_run(
+            self._session, run_id, now=dt.datetime.now(tz=dt.UTC), unless_derived=True
+        )
         await self._session.commit()
         return CompletionOutcome(
             run_id=run_id,
@@ -1613,6 +1630,7 @@ class IngestionService:
             already_completed=True,
             reconciled_scopes=len(requested),
             downgrade_reason=run["downgrade_reason"],
+            projection=projection,
         )
 
     # ------------------------------------------------------------- inspection

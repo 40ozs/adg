@@ -1,7 +1,8 @@
-"""``python -m app.operations`` — the two things an operator runs on a schedule.
+"""``python -m app.operations`` — the things an operator runs on a schedule or by hand.
 
     python -m app.operations evaluate-risks
     python -m app.operations drain-alerts [--loop --interval 60]
+    python -m app.operations rebuild-graph [--discard-existing]
 
 Both connect with ``ADG_DATABASE_URL`` from the environment, the same setting the API uses,
 and both read the same risk configuration and alert policy the API reads. There is no
@@ -16,9 +17,9 @@ The exit code is what a scheduler branches on:
     It failed. The message says what.
 ``2``
     It succeeded and something needs a person: a risk pass that could not cover the estate,
-    or a drain that abandoned a delivery. Both are cases where the normal reading of "exit 0"
-    — *this is fine* — would be wrong, and both are invisible in the output of a job nobody
-    reads unless the exit code says otherwise.
+    a drain that abandoned a delivery, or a graph rebuild that could not read some facts. All
+    are cases where the normal reading of "exit 0" — *this is fine* — would be wrong, and all
+    are invisible in the output of a job nobody reads unless the exit code says otherwise.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ from app import __version__
 from app.config import get_settings
 from app.db import Database
 from app.logging_config import configure_logging
-from app.operations.commands import drain_alerts, evaluate_risks
+from app.operations.commands import drain_alerts, evaluate_risks, rebuild_graph
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -42,7 +43,10 @@ EXIT_NEEDS_ATTENTION = 2
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m app.operations",
-        description="ADG operator commands: evaluate the risk rules, drain the alert queue.",
+        description=(
+            "ADG operator commands: evaluate the risk rules, drain the alert queue, rebuild the "
+            "privilege relationship graph."
+        ),
     )
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -69,7 +73,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=20,
         help="Bounded passes per run (default: %(default)s).",
     )
+    rebuild = commands.add_parser(
+        "rebuild-graph",
+        help="Re-derive every privilege relationship from the facts stored now.",
+    )
+    rebuild.add_argument(
+        "--discard-existing",
+        action="store_true",
+        help=(
+            "Delete every derived relationship first (a clean recomputation). Collected facts "
+            "are never touched; the record of retired supports is lost."
+        ),
+    )
     return parser
+
+
+async def _rebuild(*, discard_existing: bool) -> int:
+    settings = get_settings()
+    database = Database(settings)
+    try:
+        summary = await rebuild_graph(database, discard_existing=discard_existing)
+    finally:
+        await database.dispose()
+    for line in summary.lines:
+        print(line)
+    return EXIT_NEEDS_ATTENTION if summary.needs_attention else EXIT_OK
 
 
 async def _evaluate() -> int:
@@ -122,6 +150,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "evaluate-risks":
             return asyncio.run(_evaluate())
+        if args.command == "rebuild-graph":
+            return asyncio.run(_rebuild(discard_existing=args.discard_existing))
         return asyncio.run(
             _drain(loop=args.loop, interval=args.interval, max_passes=args.max_passes)
         )

@@ -107,6 +107,8 @@ from app.domain.relationships import (
     EvidenceRole,
     Materialization,
     NodeKind,
+    ProjectionStatus,
+    ProjectionTrigger,
     RelationshipCondition,
     RelationshipQualifier,
     RelationshipScopeKind,
@@ -161,6 +163,7 @@ __all__ = [
     "collector_sources",
     "deployment_marker",
     "governance_audit_events",
+    "graph_derivation_passes",
     "graph_relationship_evidence",
     "graph_relationship_supports",
     "graph_relationships",
@@ -2937,6 +2940,9 @@ graph_relationship_supports = Table(
     ),
     _timestamp("created_at"),
     _timestamp("updated_at"),
+    # ADG-GRAPH-01B: retirement (see the checks below and app.relationships.projector).
+    _timestamp("retired_at", nullable=True),
+    Column("retired_basis_token", String(BASIS_TOKEN_LENGTH), nullable=True),
     _enum_check("derivation_class", DerivationClass),
     CheckConstraint(
         f"qualifiers <@ ARRAY[{_relationship_value_list(q.value for q in RelationshipQualifier)}]"
@@ -2979,6 +2985,18 @@ graph_relationship_supports = Table(
     CheckConstraint(
         "last_observed_at >= first_observed_at",
         name="ck_graph_relationship_supports_window",
+    ),
+    # ADG-GRAPH-01B. A support retired by a derivation that read its facts, all still stored,
+    # and no longer produced it. Both or neither: a retirement nobody can attribute to the
+    # collection state it read cannot be audited.
+    CheckConstraint(
+        "(retired_at IS NULL) = (retired_basis_token IS NULL)",
+        name="ck_graph_relationship_supports_retirement_is_whole",
+    ),
+    CheckConstraint(
+        "retired_basis_token IS NULL OR "
+        f"retired_basis_token ~ '^[0-9a-f]{{{BASIS_TOKEN_LENGTH}}}$'",
+        name="ck_graph_relationship_supports_retired_basis_token_shape",
     ),
     Index("ix_graph_relationship_supports_last_observed_run", "last_observed_run_id"),
     Index("ix_graph_relationship_supports_first_observed_run", "first_observed_run_id"),
@@ -3054,5 +3072,70 @@ graph_relationship_evidence = Table(
     comment=(
         "The stored facts each relationship support rests on, with the runs that observed "
         "them. A relationship is traceable to its observations through these rows."
+    ),
+)
+
+
+graph_derivation_passes = Table(
+    "graph_derivation_passes",
+    metadata,
+    # ADG-GRAPH-01B. One row per projector pass, written in the pass's own transaction when it
+    # succeeds and in a separate savepoint when it fails, so a pass that wrote nothing is
+    # still on record. "Is the graph derived from everything collected?" is a question about
+    # these rows (app.relationships.projector), never a flag on a relationship.
+    Column("pass_id", PgUUID(as_uuid=True), primary_key=True),
+    Column("trigger", Text, nullable=False),
+    # The run whose completion started the pass; NULL for a rebuild. SET NULL rather than
+    # CASCADE: the record that a derivation ran outlives the run it read.
+    Column(
+        "source_run_id",
+        PgUUID(as_uuid=True),
+        ForeignKey("scan_runs.run_id", ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("status", Text, nullable=False),
+    Column("basis_token", String(BASIS_TOKEN_LENGTH), nullable=False),
+    # Every rule the pass ran, as 'rule_id@version': which derivation a support came from is
+    # on the support; which rules a pass *could* have produced is here.
+    Column("rules", ARRAY(Text), nullable=False, server_default="{}"),
+    Column("units_examined", Integer, nullable=False, server_default="0"),
+    Column("units_skipped", Integer, nullable=False, server_default="0"),
+    Column("relationships_created", Integer, nullable=False, server_default="0"),
+    Column("supports_created", Integer, nullable=False, server_default="0"),
+    Column("supports_extended", Integer, nullable=False, server_default="0"),
+    Column("supports_rederived", Integer, nullable=False, server_default="0"),
+    Column("supports_backdated", Integer, nullable=False, server_default="0"),
+    Column("supports_replayed", Integer, nullable=False, server_default="0"),
+    Column("supports_stale", Integer, nullable=False, server_default="0"),
+    Column("supports_reinstated", Integer, nullable=False, server_default="0"),
+    Column("supports_retired", Integer, nullable=False, server_default="0"),
+    Column("error", Text, nullable=True),
+    _timestamp("started_at"),
+    _timestamp("completed_at"),
+    _enum_check("trigger", ProjectionTrigger),
+    _enum_check("status", ProjectionStatus),
+    CheckConstraint(
+        "(status = 'failed') = (error IS NOT NULL)",
+        name="ck_graph_derivation_passes_failure_has_error",
+    ),
+    CheckConstraint(
+        f"basis_token ~ '^[0-9a-f]{{{BASIS_TOKEN_LENGTH}}}$'",
+        name="ck_graph_derivation_passes_basis_token_shape",
+    ),
+    CheckConstraint(
+        "completed_at >= started_at", name="ck_graph_derivation_passes_completed_after_started"
+    ),
+    CheckConstraint(
+        "least(units_examined, units_skipped, relationships_created, supports_created, "
+        "supports_extended, supports_rederived, supports_backdated, supports_replayed, "
+        "supports_stale, supports_reinstated, supports_retired) >= 0",
+        name="ck_graph_derivation_passes_counts_non_negative",
+    ),
+    Index("ix_graph_derivation_passes_source_run", "source_run_id"),
+    Index("ix_graph_derivation_passes_completed_at", "completed_at"),
+    comment=(
+        "Each projector pass that derived privilege relationships: what started it, the "
+        "collection basis it read, the rules it ran and what it changed. A failed pass "
+        "changed nothing and is recorded anyway."
     ),
 )

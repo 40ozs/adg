@@ -15,11 +15,20 @@ from typing import Any
 from app.alerts import DrainReport
 from app.config import Settings
 from app.db import Database
+from app.relationships.projector import ProjectionOutcome, RelationshipProjector
+from app.repositories.relationships import RecordOutcome
 from app.repositories.risk import RiskFactsRepository, RiskFindingRepository
 from app.services.alerts import AlertService
 from app.services.risk import RiskService
 
-__all__ = ["DrainSummary", "EvaluationSummary", "drain_alerts", "evaluate_risks"]
+__all__ = [
+    "DrainSummary",
+    "EvaluationSummary",
+    "GraphRebuildSummary",
+    "drain_alerts",
+    "evaluate_risks",
+    "rebuild_graph",
+]
 
 logger = logging.getLogger("adg.operations")
 
@@ -175,3 +184,68 @@ async def drain_alerts(
         if not report.has_more:
             break
     return DrainSummary(passes=tuple(reports))
+
+
+@dataclass(frozen=True, slots=True)
+class GraphRebuildSummary:
+    """What one rebuild of the privilege graph derived, and whether the graph is now current."""
+
+    outcome: ProjectionOutcome
+    discarded_existing: bool
+    underived_runs: int
+    runs_in_progress: int
+
+    @property
+    def needs_attention(self) -> bool:
+        """Units the rules could not read are a defect somewhere upstream, worth a look."""
+        return bool(self.outcome.skipped)
+
+    @property
+    def lines(self) -> tuple[str, ...]:
+        outcome = self.outcome
+        head = (
+            f"Graph pass {outcome.pass_id}: {outcome.units_examined} units, "
+            f"{outcome.relationships_created} relationships created, "
+            f"{outcome.count(RecordOutcome.CREATED)} supports created, "
+            f"{outcome.count(RecordOutcome.EXTENDED)} extended, "
+            f"{outcome.count(RecordOutcome.REPLAYED)} unchanged, "
+            f"{outcome.count(RecordOutcome.REINSTATED)} reinstated, "
+            f"{outcome.supports_retired} retired."
+        )
+        mode = (
+            "Mode: clean recomputation; every derived relationship was discarded first."
+            if self.discarded_existing
+            else "Mode: in place; unchanged facts re-derive to the same supports."
+        )
+        coverage = (
+            f"Runs not yet derived: {self.underived_runs} completed, "
+            f"{self.runs_in_progress} still collecting."
+        )
+        skipped = [
+            f"  - skipped {skip.kind.value} {skip.key!r}: {skip.reason}"
+            for skip in outcome.skipped[:50]
+        ]
+        return (head, mode, coverage, *skipped)
+
+
+async def rebuild_graph(
+    database: Database, *, discard_existing: bool = False, now: dt.datetime | None = None
+) -> GraphRebuildSummary:
+    """Re-derive every privilege relationship from the facts stored now, in one transaction.
+
+    Reads collected facts and writes only ADG's derived graph tables. A failure rolls the whole
+    pass back, so the graph is either the old one or the rebuilt one, never half of each.
+    """
+    moment = now or dt.datetime.now(tz=dt.UTC)
+    async with database.session() as session:
+        projector = RelationshipProjector(session)
+        outcome = await projector.rebuild(now=moment, discard_existing=discard_existing)
+        await session.commit()
+        state = await projector.state()
+    logger.info("operations.graph.rebuilt", extra={"summary": outcome.summary})
+    return GraphRebuildSummary(
+        outcome=outcome,
+        discarded_existing=discard_existing,
+        underived_runs=len(state.underived_runs),
+        runs_in_progress=len(state.runs_in_progress),
+    )

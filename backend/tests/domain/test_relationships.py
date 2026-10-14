@@ -204,10 +204,11 @@ class TestTaxonomy:
             RelationshipType.MEMBER_OF: CollectionStatus.COLLECTED,
             RelationshipType.NESTED_MEMBER_OF: CollectionStatus.COLLECTED,
             RelationshipType.PRIMARY_GROUP_OF: CollectionStatus.COLLECTED,
-            RelationshipType.LOCAL_GROUP_MEMBER_OF: CollectionStatus.CONTRACT_ONLY,
-            RelationshipType.LOCAL_ADMIN_OF: CollectionStatus.CONTRACT_ONLY,
-            RelationshipType.REMOTE_DESKTOP_USER_OF: CollectionStatus.CONTRACT_ONLY,
-            RelationshipType.REMOTE_MANAGEMENT_USER_OF: CollectionStatus.CONTRACT_ONLY,
+            # Since ADG-GRAPH-01B a shipped collector reports local-group edges.
+            RelationshipType.LOCAL_GROUP_MEMBER_OF: CollectionStatus.COLLECTED,
+            RelationshipType.LOCAL_ADMIN_OF: CollectionStatus.COLLECTED,
+            RelationshipType.REMOTE_DESKTOP_USER_OF: CollectionStatus.COLLECTED,
+            RelationshipType.REMOTE_MANAGEMENT_USER_OF: CollectionStatus.COLLECTED,
             RelationshipType.OWNS: CollectionStatus.PARTIALLY_COLLECTED,
             RelationshipType.GENERIC_ALL: CollectionStatus.PARTIALLY_COLLECTED,
             RelationshipType.GENERIC_WRITE: CollectionStatus.PARTIALLY_COLLECTED,
@@ -228,12 +229,42 @@ class TestTaxonomy:
             assert not_collected == (not definition.collection.premises)
 
     def test_derivation_is_stated_separately_from_collection(self) -> None:
-        """Nothing is derived in this lane: only the existing traversal answers a type."""
+        """What ADG derives today (ADG-GRAPH-01B), pinned so a change to it is deliberate.
+
+        Every type with a storable premise has a projector rule; every type without one has
+        none, so a defined-but-uncollected type cannot appear to have been looked for.
+        """
         statuses = {
             d.relationship_type: d.derivation.status for d in RELATIONSHIP_TAXONOMY.values()
         }
         assert statuses.pop(RelationshipType.NESTED_MEMBER_OF) is DerivationStatus.QUERY_TIME
-        assert set(statuses.values()) == {DerivationStatus.NOT_IMPLEMENTED}
+        not_implemented = {
+            RelationshipType.CAN_MODIFY_MEMBERSHIP,
+            RelationshipType.CONTROLS_GPO,
+            RelationshipType.GPO_LINKED_TO,
+            RelationshipType.GPO_APPLIES_TO,
+            RelationshipType.TRUSTS,
+        }
+        assert {t for t, s in statuses.items() if s is DerivationStatus.NOT_IMPLEMENTED} == (
+            not_implemented
+        )
+        assert {t for t, s in statuses.items() if s is DerivationStatus.PROJECTOR} == (
+            set(statuses) - not_implemented
+        )
+        for relationship_type in not_implemented:
+            assert not RELATIONSHIP_TAXONOMY[relationship_type].collection.premises
+
+    def test_share_entries_are_not_a_premise_of_any_control_type(self) -> None:
+        """A share permission limits the share path; it is not control of the share."""
+        for kind in (
+            RelationshipType.GENERIC_ALL,
+            RelationshipType.GENERIC_WRITE,
+            RelationshipType.WRITE_DACL,
+            RelationshipType.WRITE_OWNER,
+        ):
+            premises = RELATIONSHIP_TAXONOMY[kind].collection.premises
+            assert EvidenceKind.SMB_ACE not in premises
+            assert premises == {EvidenceKind.NTFS_ACE, EvidenceKind.NTFS_RESOURCE}
 
     def test_only_nested_membership_is_traversal_only(self) -> None:
         traversal = {
@@ -724,3 +755,55 @@ class TestDeterministicSerialization:
     def test_attributes_are_stored_in_key_order(self) -> None:
         assertion = write_dacl(attributes={"inherited": False, "access_mask": 0x40000})
         assert list(assertion.attributes) == ["access_mask", "inherited"]
+
+
+class TestRetirement:
+    """A support whose facts are still stored and no longer establish it (ADG-GRAPH-01B)."""
+
+    def retired(self, support: RelationshipSupport) -> RelationshipSupport:
+        return replace(support, retired_at=T2, retired_basis_token=BASIS)
+
+    def test_a_retired_support_is_not_current_although_every_premise_is_present(self) -> None:
+        assertion = write_dacl()
+        support = self.retired(stored_support(assertion))
+        assert {item.state for item in support.evidence} == {EvidenceState.PRESENT}
+        assert support.currency is RelationshipCurrency.NOT_CURRENT
+        relationship = stored(support, of=assertion)
+        assert relationship.currency is RelationshipCurrency.NOT_CURRENT
+        text = relationship.explanation()
+        assert "still stored" in text and "no longer establish it" in text
+        assert "recorded its evidence gone" not in text
+
+    def test_a_retirement_is_attributed_or_refused(self) -> None:
+        support = stored_support(write_dacl())
+        with pytest.raises(DomainValidationError, match="both"):
+            replace(support, retired_at=T2)
+        with pytest.raises(DomainValidationError, match="both"):
+            replace(support, retired_basis_token=BASIS)
+
+    def test_another_current_support_keeps_the_relationship_current(self) -> None:
+        explicit = write_dacl()
+        inherited = write_dacl(evidence=(ace_evidence(ACE_INHERITED, RUN_2, T2),))
+        relationship = stored(
+            self.retired(stored_support(explicit)), stored_support(inherited), of=explicit
+        )
+        assert relationship.currency is RelationshipCurrency.CURRENT
+        assert relationship.best_support.support_key == inherited.support_key
+
+    def test_retirement_never_turns_unknown_into_absent_for_other_supports(self) -> None:
+        explicit = write_dacl()
+        inherited = write_dacl(evidence=(ace_evidence(ACE_INHERITED, RUN_2, T2),))
+        relationship = stored(
+            self.retired(stored_support(explicit)),
+            stored_support(inherited, states={ACE_INHERITED: EvidenceState.MISSING}),
+            of=explicit,
+        )
+        assert relationship.currency is RelationshipCurrency.UNKNOWN
+
+    def test_the_rendering_carries_the_retirement(self) -> None:
+        assertion = write_dacl()
+        rendered = stored(self.retired(stored_support(assertion)), of=assertion).as_dict()
+        (support,) = rendered["supports"]
+        assert support["retired_basis_token"] == BASIS
+        assert support["retired_at"] == T2.isoformat(timespec="microseconds")
+        assert support["currency"] == "not_current"

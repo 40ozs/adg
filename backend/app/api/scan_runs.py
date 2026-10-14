@@ -379,6 +379,7 @@ async def complete_scan_run(
             "checkpoint_advanced": (
                 outcome.checkpoint.accepted if outcome.checkpoint is not None else None
             ),
+            "graph": outcome.projection.summary if outcome.projection is not None else None,
             "subject": principal.subject,
             "post_run": post_run.summary,
         },

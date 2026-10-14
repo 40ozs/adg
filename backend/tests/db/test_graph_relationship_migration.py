@@ -1,10 +1,14 @@
-"""Revision 0018 against a populated database: additive, reversible, and touching nothing else.
+"""The graph revisions against a populated database: additive, reversible, touching nothing else.
 
 An installation upgrading to the relationship graph already holds collected facts, their
 timeline and their provenance. This builds exactly that — a database at revision 0017, filled
 through the real ingestion API — and then fingerprints every pre-existing table, row for row,
-across the upgrade, the downgrade and a second upgrade. The migration may add three empty tables
-and must change nothing else; a relationship must be recordable over the facts already there.
+across the upgrade to head (0018 and, since ADG-GRAPH-01B, 0019), the downgrade and a second
+upgrade. The migrations may add the graph's four empty tables and must change nothing else; a
+relationship must be recordable over the facts already there.
+
+0019 over a database whose graph already holds rows is
+``tests/db/test_graph_derivation_migration.py``.
 
 Its own database (``<test database>_graph_migration``), because it moves the schema up and down
 and the shared test database must stay at head for every other suite.
@@ -45,7 +49,12 @@ from tests.support.ingest import ingest_storable_scenario
 
 PREVIOUS = "0017_deployment_marker"
 GRAPH_TABLES = frozenset(
-    {"graph_relationships", "graph_relationship_supports", "graph_relationship_evidence"}
+    {
+        "graph_relationships",
+        "graph_relationship_supports",
+        "graph_relationship_evidence",
+        "graph_derivation_passes",
+    }
 )
 SCENARIOS = (
     "03-nested-group-grant",

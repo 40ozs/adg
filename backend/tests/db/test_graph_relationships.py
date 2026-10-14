@@ -75,13 +75,9 @@ FS01 = RelationshipScope.host("fs01")
 SCENARIO = "09-broken-inheritance"
 PAYROLL_ACE_SOURCE = "ntfs_ace|\\\\fs01\\finance\\payroll|S-1-5-32-544|allow|0x001f01ff|0x03"
 
-REVISION_PATH = (
-    pathlib.Path(__file__).resolve().parents[3]
-    / "database"
-    / "migrations"
-    / "versions"
-    / "0018_graph_relationships.py"
-)
+VERSIONS = pathlib.Path(__file__).resolve().parents[3] / "database" / "migrations" / "versions"
+REVISION_PATH = VERSIONS / "0018_graph_relationships.py"
+DERIVATION_REVISION_PATH = VERSIONS / "0019_graph_derivation.py"
 
 
 class Estate:
@@ -125,6 +121,23 @@ def _replace(evidence: RelationshipEvidence, **overrides: Any) -> RelationshipEv
         **overrides,
     }
     return RelationshipEvidence(**values)
+
+
+@pytest.fixture(autouse=True)
+def without_projection(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise the relationship *store*, so they keep it to themselves.
+
+    Since ADG-GRAPH-01B every completion runs the projector, which would derive these very
+    relationships from the scenarios as they are ingested — under its own rule ids, at its
+    own instants — and the recording outcomes below are assertions about a store the test
+    alone writes. ``tests/db/test_graph_derivation.py`` covers the projector over the same
+    facts.
+    """
+
+    async def skip(*_: Any, **__: Any) -> None:
+        return None
+
+    monkeypatch.setattr("app.ingestion.service.project_completed_run", skip)
 
 
 @pytest.fixture
@@ -746,8 +759,8 @@ def local_member_id() -> str:
     return relationship_id(RelationshipType.LOCAL_GROUP_MEMBER_OF, FINANCE_RW, FS01_ADMINS, FS01)
 
 
-def load_revision() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("adg_revision_0018", REVISION_PATH)
+def load_revision(path: pathlib.Path = REVISION_PATH) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(f"adg_revision_{path.stem[:4]}", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -787,12 +800,27 @@ class TestTheMigrationSpellsTheDomainVocabulary:
             "SCOPE_KINDS": domain.RelationshipScopeKind,
             "DERIVATION_CLASSES": domain.DerivationClass,
             "QUALIFIERS": domain.RelationshipQualifier,
-            "CONDITIONS": domain.RelationshipCondition,
             "EVIDENCE_KINDS": domain.EvidenceKind,
             "EVIDENCE_ROLES": domain.EvidenceRole,
         }
         for name, enum in pairs.items():
             assert getattr(revision, name) == tuple(sorted(m.value for m in enum)), name
+        # The condition vocabulary grew in 0019 (ADG-GRAPH-01B). 0018's list stays what it was
+        # on the day it ran, 0019 knows it, and 0019's full list is the domain's.
+        derivation = load_revision(DERIVATION_REVISION_PATH)
+        assert revision.CONDITIONS == derivation.CONDITIONS_0018
+        assert tuple(sorted(m.value for m in domain.RelationshipCondition)) == derivation.CONDITIONS
+        assert set(derivation.ADDED_CONDITIONS) == set(derivation.CONDITIONS) - set(
+            revision.CONDITIONS
+        )
+        assert (
+            tuple(sorted(m.value for m in domain.ProjectionTrigger))
+            == derivation.PROJECTION_TRIGGERS
+        )
+        assert (
+            tuple(sorted(m.value for m in domain.ProjectionStatus))
+            == derivation.PROJECTION_STATUSES
+        )
         assert (
             tuple(sorted(q.value for q in UNRESOLVED_QUALIFIERS)) == revision.UNRESOLVED_QUALIFIERS
         )

@@ -52,8 +52,10 @@ from app.demo_mode.lifecycle import (
 from app.demo_mode.marker import DemoTargetRefused
 from app.main import create_app
 from app.models.current import current_ntfs_resources, current_principals
+from app.relationships import UNDERIVED, RelationshipProjector
 from tests.db.conftest import BASE_DATABASE_URL, _render
 from tests.support.auth import auth_headers, token_for_roles
+from tests.support.relationships import graph_snapshot
 
 G1, G2, G3 = (generation.day for generation in GENERATIONS)
 MANIFEST = Path(__file__).resolve().parents[3] / "docs" / "demo" / "null-meridian.manifest.json"
@@ -362,6 +364,66 @@ class TestCurrentStateSemantics:
         incident = r"\\NM-SEC-FS01\Incidents\IR-2026-014"
         assert first.pop(incident) == run("g3-ntfs-nm-sec-fs01"), "created after g2"
         assert set(first.values()) == {run("g2-ntfs-nm-sec-fs01")}, "g1 could not read it"
+
+
+class TestThePrivilegeGraph:
+    """The relationship projector ran at every completion of the reset (ADG-GRAPH-01B).
+
+    Demo Mode ingests through the same endpoints a collector uses, so the graph here was derived
+    by exactly the code that derives a production estate's, over three generations of scans
+    with removals, revivals and reconciliations in between.
+    """
+
+    def test_every_completed_run_was_derived_and_no_pass_failed(self, engine: sa.Engine) -> None:
+        with engine.connect() as connection:
+            failed = connection.execute(
+                sa.text("SELECT count(*) FROM graph_derivation_passes WHERE status = 'failed'")
+            ).scalar_one()
+            underived = connection.execute(
+                sa.text(
+                    "SELECT count(*) FROM scan_runs r WHERE r.completed_at IS NOT NULL AND NOT "
+                    "EXISTS (SELECT 1 FROM graph_derivation_passes p WHERE p.source_run_id = "
+                    "r.run_id AND p.status = 'succeeded')"
+                )
+            ).scalar_one()
+            runs = connection.execute(sa.text("SELECT count(*) FROM scan_runs")).scalar_one()
+        assert runs > 0
+        assert failed == 0
+        assert underived == 0
+
+    def test_the_estate_holds_only_relationships_its_facts_support(self, engine: sa.Engine) -> None:
+        with engine.connect() as connection:
+            types = {
+                row[0]
+                for row in connection.execute(
+                    sa.text("SELECT DISTINCT relationship_type FROM graph_relationships")
+                )
+            }
+            share_targets = connection.execute(
+                sa.text("SELECT count(*) FROM graph_relationships WHERE target_kind = 'smb_share'")
+            ).scalar_one()
+        assert {"member_of", "local_group_member_of", "local_admin_of"} <= types
+        assert types & {"generic_all", "generic_write", "write_dacl", "write_owner"}
+        assert not types & {kind.value for kind in UNDERIVED}
+        assert share_targets == 0
+
+    async def test_a_clean_recomputation_reproduces_the_incremental_graph(
+        self, demo_settings: Settings, first_reset: ResetReport
+    ) -> None:
+        database = Database(demo_settings)
+        try:
+            async with database.session() as session:
+                incremental = await graph_snapshot(session)
+                outcome = await RelationshipProjector(session).rebuild(
+                    now=dt.datetime.now(tz=dt.UTC), discard_existing=True
+                )
+                rebuilt = await graph_snapshot(session)
+                # Leave the demo database exactly as the reset left it for the tests below.
+                await session.rollback()
+        finally:
+            await database.dispose()
+        assert outcome.succeeded and not outcome.skipped
+        assert incremental and rebuilt == incremental
 
 
 class TestTheGoldenScenariosThroughTheApi:

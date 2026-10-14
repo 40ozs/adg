@@ -19,11 +19,28 @@ writer already follow (``docs/architecture/history-model.md`` §4), applied to a
   and contradicts nothing; its derivation is not applied;
 * the same reading again is a **replay** and writes nothing;
 * an older reading that disagrees is **stale** and is not applied — counted, never silently
-  dropped.
+  dropped;
+* a reading no older than the last one, of a support that was **retired**, **reinstates** it:
+  the rule that stopped producing it produces it again (ADG-GRAPH-01B).
 
 Each evidence link keeps its own first and last observation, widened by every reading
 whatever the support's outcome: when a fact was seen is true independently of what was derived
-from it.
+from it. A support's *context* evidence describes the derivation that last applied, so when a
+newer derivation is applied its context replaces the old one; premises never change, because
+they are the support's identity.
+
+## Recording is set-based
+
+:meth:`RelationshipRepository.record_many` stores any number of derivations in a bounded number
+of statements per chunk — one insert per table, one locking read, one batch of updates — rather
+than several round trips per relationship. :meth:`record` is ``record_many`` of one, so the
+rules above have exactly one implementation.
+
+## Retirement
+
+:meth:`RelationshipRepository.retire` marks supports a derivation read and no longer produced
+(:mod:`app.relationships.projector` decides which). A retired support is not current whatever
+its premises say, and is kept, with its evidence, as the record of what used to hold.
 
 ## Currency is read, never stored
 
@@ -78,6 +95,7 @@ __all__ = [
     "DEFAULT_PAGE_SIZE",
     "MAX_PAGE_SIZE",
     "EvidenceNotStoredError",
+    "RecordBatch",
     "RecordOutcome",
     "RecordResult",
     "RelationshipPage",
@@ -87,6 +105,14 @@ __all__ = [
 DEFAULT_PAGE_SIZE: Final = 100
 MAX_PAGE_SIZE: Final = 500
 """The membership listings' page sizes, for the same reasons (``membership-graph.md`` §6)."""
+
+RECORD_CHUNK: Final = 500
+"""Derivations written per statement batch. An evidence row binds 11 parameters and a support
+row 18, so a chunk stays far below PostgreSQL's 65,535-parameter ceiling even when every
+support carries several evidence links."""
+
+READ_CHUNK: Final = 5000
+"""Ids per ``IN`` list on a read, for the same ceiling."""
 
 
 class EvidenceNotStoredError(ValueError):
@@ -113,6 +139,9 @@ class RecordOutcome(StrEnum):
     BACKDATED = "backdated"
     REPLAYED = "replayed"
     STALE = "stale"
+    REINSTATED = "reinstated"
+    """The support had been retired, and a reading no older than its last one produced it
+    again. Any window or derivation change that reading carries is applied as well."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +150,20 @@ class RecordResult:
     support_key: str
     relationship_created: bool
     outcome: RecordOutcome
+
+
+@dataclass(frozen=True, slots=True)
+class RecordBatch:
+    """What one :meth:`RelationshipRepository.record_many` call did, per derivation."""
+
+    results: tuple[RecordResult, ...]
+
+    @property
+    def relationships_created(self) -> int:
+        return sum(1 for result in self.results if result.relationship_created)
+
+    def count(self, outcome: RecordOutcome) -> int:
+        return sum(1 for result in self.results if result.outcome is outcome)
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,6 +204,73 @@ def _moment(observed_at: dt.datetime, run_id: UUID) -> tuple[dt.datetime, str]:
     return (observed_at, str(run_id))
 
 
+_REPLACES_CONTEXT: Final = frozenset(
+    {RecordOutcome.EXTENDED, RecordOutcome.REDERIVED, RecordOutcome.REINSTATED}
+)
+"""The outcomes that apply the reading's derivation over an older one, whose context links
+the new derivation may no longer name."""
+
+
+def _decide(
+    assertion: RelationshipAssertion, stored: sa.RowMapping
+) -> tuple[RecordOutcome, dict[str, Any]]:
+    """What one reading of an existing support does to it, and the columns it changes."""
+    observed_at, run_id = assertion.supported_at
+    derivation = _derivation_values(assertion)
+    reading = _moment(observed_at, run_id)
+    last = _moment(stored["last_observed_at"], stored["last_observed_run_id"])
+    first = _moment(stored["first_observed_at"], stored["first_observed_run_id"])
+    same_derivation = _stored_derivation(stored) == derivation
+
+    changes: dict[str, Any] = {}
+    if reading > last:
+        outcome = RecordOutcome.EXTENDED
+        changes = {
+            "last_observed_at": observed_at,
+            "last_observed_run_id": run_id,
+            "derived_at": assertion.derived_at,
+            **derivation,
+        }
+    elif reading == last and not same_derivation:
+        outcome = RecordOutcome.REDERIVED
+        changes = {"derived_at": assertion.derived_at, **derivation}
+    elif reading < first:
+        outcome = RecordOutcome.BACKDATED
+        changes = {"first_observed_at": observed_at, "first_observed_run_id": run_id}
+    elif same_derivation:
+        outcome = RecordOutcome.REPLAYED
+    else:
+        outcome = RecordOutcome.STALE
+
+    # A retired support produced again by a reading at least as new as its last one is
+    # current again. An older reading cannot undo what a newer derivation concluded.
+    if stored["retired_at"] is not None and reading >= last:
+        outcome = RecordOutcome.REINSTATED
+        changes = {**changes, "retired_at": None, "retired_basis_token": None}
+    return outcome, changes
+
+
+def _unique(assertions: Iterable[RelationshipAssertion]) -> list[RelationshipAssertion]:
+    """One derivation per support, in write order; a contradictory repeat is refused."""
+    by_identity: dict[tuple[str, str], RelationshipAssertion] = {}
+    for assertion in assertions:
+        identity = (assertion.relationship_id, assertion.support_key)
+        existing = by_identity.get(identity)
+        if existing is None:
+            by_identity[identity] = assertion
+        elif existing != assertion:
+            raise ValueError(
+                f"Support {identity[1]} of relationship {identity[0]} was derived two different "
+                "ways in one batch; a deterministic projector produces each support once."
+            )
+    return [by_identity[identity] for identity in sorted(by_identity)]
+
+
+def _rowcount(result: Any) -> int:
+    count = getattr(result, "rowcount", None)
+    return int(count) if isinstance(count, int) and count >= 0 else 0
+
+
 class RelationshipRepository:
     """Relationships over one session. Writes are not committed here; the caller owns that."""
 
@@ -171,189 +281,387 @@ class RelationshipRepository:
 
     async def record(self, assertion: RelationshipAssertion, *, now: dt.datetime) -> RecordResult:
         """Store one derivation: the relationship, its support and every evidence link."""
-        await self._require_stored(assertion)
-        relationship_id = assertion.relationship_id
-        key = assertion.support_key
-        observed_at, run_id = assertion.supported_at
+        (result,) = (await self.record_many((assertion,), now=now)).results
+        return result
 
-        created = (
+    async def record_many(
+        self, assertions: Iterable[RelationshipAssertion], *, now: dt.datetime
+    ) -> RecordBatch:
+        """Store derivations, each atomically with its evidence, in the caller's transaction.
+
+        Rows are written in ``(relationship_id, support_key)`` order, so two callers writing
+        overlapping sets lock them in the same order. A derivation repeated verbatim collapses;
+        the same support derived two different ways in one call is a projector defect and is
+        refused rather than resolved by whichever came last.
+        """
+        ordered = _unique(assertions)
+        await self._require_stored(ordered)
+        results: list[RecordResult] = []
+        for start in range(0, len(ordered), RECORD_CHUNK):
+            results.extend(await self._record_chunk(ordered[start : start + RECORD_CHUNK], now))
+        return RecordBatch(tuple(results))
+
+    async def retire(
+        self,
+        supports: Iterable[tuple[str, str]],
+        *,
+        now: dt.datetime,
+        basis_token: str,
+    ) -> int:
+        """Mark supports retired: their facts were read, all stored, and no rule produced them.
+
+        Already-retired supports are left as they were, so the retirement instant is the first
+        derivation that stopped producing the support. Returns how many were retired now.
+        """
+        keys = sorted(set(supports))
+        retired = 0
+        table = graph_relationship_supports
+        for start in range(0, len(keys), READ_CHUNK):
+            chunk = keys[start : start + READ_CHUNK]
+            result = await self._session.execute(
+                sa.update(table)
+                .where(
+                    sa.tuple_(table.c.relationship_id, table.c.support_key).in_(chunk),
+                    table.c.retired_at.is_(None),
+                )
+                .values(retired_at=now, retired_basis_token=basis_token, updated_at=now)
+            )
+            retired += _rowcount(result)
+        return retired
+
+    async def extend_observed(self, run_id: UUID, *, now: dt.datetime) -> int:
+        """Widen every window a run's re-observation of an unchanged fact extends, in SQL.
+
+        A fact a run observed again without changing it changes no derivation, so nothing has
+        to be re-derived for it: what moves is *when it was last seen*. Each evidence link on
+        a fact the run observed takes the fact's newer observation, and each support resting
+        on one of them takes its newest premise reading — the same windows
+        :meth:`record_many` would have written for an unchanged derivation, at one statement
+        per evidence kind and one for supports, however many facts the run re-read.
+
+        Retired supports are left as they were: their window ended when they were retired.
+        Returns how many supports were extended.
+        """
+        evidence = graph_relationship_evidence
+        for kind in EvidenceKind:
+            facts, key_column = CURRENT_STATE_KEYS[ObservationKind(kind.value)]
+            newer = sa.tuple_(
+                facts.c.last_observed_at, sa.cast(facts.c.last_observed_run_id, sa.Text)
+            ) > sa.tuple_(
+                evidence.c.last_observed_at, sa.cast(evidence.c.last_observed_run_id, sa.Text)
+            )
             await self._session.execute(
-                pg_insert(graph_relationships)
+                sa.update(evidence)
+                .where(
+                    evidence.c.evidence_kind == kind.value,
+                    evidence.c.evidence_key == facts.c[key_column],
+                    facts.c.last_observed_run_id == run_id,
+                    newer,
+                )
                 .values(
-                    relationship_id=relationship_id,
-                    relationship_type=assertion.relationship_type.value,
-                    source_kind=assertion.source.kind.value,
-                    source_key=assertion.source.key,
-                    target_kind=assertion.target.kind.value,
-                    target_key=assertion.target.key,
-                    scope_kind=assertion.scope.kind.value if assertion.scope else None,
-                    scope_key=assertion.scope.key if assertion.scope else None,
-                    created_at=now,
+                    last_observed_at=facts.c.last_observed_at,
+                    last_observed_run_id=facts.c.last_observed_run_id,
                     updated_at=now,
                 )
-                .on_conflict_do_nothing(index_elements=[graph_relationships.c.relationship_id])
-                .returning(graph_relationships.c.relationship_id)
             )
-        ).scalar_one_or_none() is not None
 
-        outcome = await self._record_support(
-            assertion, relationship_id, key, observed_at, run_id, now
+        # A support is re-confirmed only when the run observed *every* premise again: its
+        # window is when its newest premise was seen completing it, and a support with a
+        # premise the run did not see was not seen complete.
+        supports = graph_relationship_supports
+        premise = evidence.c.role == EvidenceRole.PREMISE.value
+        touched = (
+            sa.select(evidence.c.relationship_id, evidence.c.support_key)
+            .where(evidence.c.last_observed_run_id == run_id, premise)
+            .distinct()
+            .subquery("touched")
         )
-        await self._record_evidence(assertion, relationship_id, key, now)
-        return RecordResult(relationship_id, key, created, outcome)
+        confirmed = (
+            sa.select(
+                evidence.c.relationship_id,
+                evidence.c.support_key,
+                sa.func.max(evidence.c.last_observed_at).label("observed_at"),
+            )
+            .join(
+                touched,
+                sa.and_(
+                    touched.c.relationship_id == evidence.c.relationship_id,
+                    touched.c.support_key == evidence.c.support_key,
+                ),
+            )
+            .where(premise)
+            .group_by(evidence.c.relationship_id, evidence.c.support_key)
+            .having(sa.func.bool_and(evidence.c.last_observed_run_id == run_id))
+            .subquery("confirmed")
+        )
+        result = await self._session.execute(
+            sa.update(supports)
+            .where(
+                supports.c.relationship_id == confirmed.c.relationship_id,
+                supports.c.support_key == confirmed.c.support_key,
+                supports.c.retired_at.is_(None),
+                sa.tuple_(confirmed.c.observed_at, sa.literal(str(run_id)))
+                > sa.tuple_(
+                    supports.c.last_observed_at, sa.cast(supports.c.last_observed_run_id, sa.Text)
+                ),
+            )
+            .values(
+                last_observed_at=confirmed.c.observed_at,
+                last_observed_run_id=run_id,
+                updated_at=now,
+            )
+        )
+        return _rowcount(result)
 
-    async def _require_stored(self, assertion: RelationshipAssertion) -> None:
+    async def _require_stored(self, assertions: Sequence[RelationshipAssertion]) -> None:
         """Every piece of evidence must name a row its current-state table holds."""
         wanted: dict[EvidenceKind, set[str]] = {}
-        for item in assertion.evidence:
-            wanted.setdefault(item.kind, set()).add(item.key)
+        for assertion in assertions:
+            for item in assertion.evidence:
+                wanted.setdefault(item.kind, set()).add(item.key)
         missing: list[tuple[str, str]] = []
         for kind, keys in sorted(wanted.items()):
             table, column = CURRENT_STATE_KEYS[ObservationKind(kind.value)]
-            found = set(
-                (
-                    await self._session.execute(
-                        sa.select(table.c[column]).where(table.c[column].in_(sorted(keys)))
-                    )
-                ).scalars()
-            )
-            missing.extend((kind.value, key) for key in sorted(keys - found))
+            ordered = sorted(keys)
+            found: set[str] = set()
+            for start in range(0, len(ordered), READ_CHUNK):
+                found.update(
+                    (
+                        await self._session.execute(
+                            sa.select(table.c[column]).where(
+                                table.c[column].in_(ordered[start : start + READ_CHUNK])
+                            )
+                        )
+                    ).scalars()
+                )
+            missing.extend((kind.value, key) for key in ordered if key not in found)
         if missing:
             raise EvidenceNotStoredError(missing)
 
-    async def _record_support(
-        self,
-        assertion: RelationshipAssertion,
-        relationship_id: str,
-        key: str,
-        observed_at: dt.datetime,
-        run_id: UUID,
-        now: dt.datetime,
-    ) -> RecordOutcome:
-        derivation = _derivation_values(assertion)
-        inserted = (
-            await self._session.execute(
-                pg_insert(graph_relationship_supports)
-                .values(
-                    relationship_id=relationship_id,
-                    support_key=key,
-                    derived_at=assertion.derived_at,
-                    first_observed_at=observed_at,
-                    first_observed_run_id=run_id,
-                    last_observed_at=observed_at,
-                    last_observed_run_id=run_id,
-                    created_at=now,
-                    updated_at=now,
-                    **derivation,
-                )
-                .on_conflict_do_nothing()
-                .returning(graph_relationship_supports.c.support_key)
-            )
-        ).scalar_one_or_none()
-        if inserted is not None:
-            return RecordOutcome.CREATED
+    async def _record_chunk(
+        self, chunk: Sequence[RelationshipAssertion], now: dt.datetime
+    ) -> list[RecordResult]:
+        created = await self._insert_relationships(chunk, now)
+        inserted = await self._insert_supports(chunk, now)
+        existing = [a for a in chunk if (a.relationship_id, a.support_key) not in inserted]
+        stored = await self._lock_supports(existing)
 
-        identity = (
-            graph_relationship_supports.c.relationship_id == relationship_id,
-            graph_relationship_supports.c.support_key == key,
+        outcomes: dict[tuple[str, str], RecordOutcome] = {}
+        updates: list[dict[str, Any]] = []
+        for assertion in chunk:
+            identity = (assertion.relationship_id, assertion.support_key)
+            if identity in inserted:
+                outcomes[identity] = RecordOutcome.CREATED
+                continue
+            outcome, changes = _decide(assertion, stored[identity])
+            outcomes[identity] = outcome
+            if changes:
+                updates.append(
+                    {"b_relationship_id": identity[0], "b_support_key": identity[1], **changes}
+                )
+        await self._update_supports(updates, now)
+
+        # A support created just now has no older context to replace.
+        replaced = [
+            a for a in chunk if outcomes[(a.relationship_id, a.support_key)] in _REPLACES_CONTEXT
+        ]
+        await self._replace_context(replaced)
+        await self._record_evidence(chunk, now)
+        results = []
+        for assertion in chunk:
+            # A relationship created with several supports is created once: credited to the
+            # first of them, so counting results counts relationships.
+            first = assertion.relationship_id in created
+            created.discard(assertion.relationship_id)
+            results.append(
+                RecordResult(
+                    assertion.relationship_id,
+                    assertion.support_key,
+                    first,
+                    outcomes[(assertion.relationship_id, assertion.support_key)],
+                )
+            )
+        return results
+
+    async def _insert_relationships(
+        self, chunk: Sequence[RelationshipAssertion], now: dt.datetime
+    ) -> set[str]:
+        rows: dict[str, dict[str, Any]] = {}
+        for assertion in chunk:
+            rows.setdefault(
+                assertion.relationship_id,
+                {
+                    "relationship_id": assertion.relationship_id,
+                    "relationship_type": assertion.relationship_type.value,
+                    "source_kind": assertion.source.kind.value,
+                    "source_key": assertion.source.key,
+                    "target_kind": assertion.target.kind.value,
+                    "target_key": assertion.target.key,
+                    "scope_kind": assertion.scope.kind.value if assertion.scope else None,
+                    "scope_key": assertion.scope.key if assertion.scope else None,
+                    "created_at": now,
+                    "updated_at": now,
+                },
+            )
+        # Executed for many parameter sets rather than built as one multi-row VALUES: the
+        # statement compiles once and is cached, and the driver batches the rows itself.
+        created = (
+            await self._session.execute(
+                pg_insert(graph_relationships)
+                .on_conflict_do_nothing(index_elements=[graph_relationships.c.relationship_id])
+                .returning(graph_relationships.c.relationship_id),
+                [rows[key] for key in sorted(rows)],
+            )
+        ).scalars()
+        return set(created)
+
+    async def _insert_supports(
+        self, chunk: Sequence[RelationshipAssertion], now: dt.datetime
+    ) -> set[tuple[str, str]]:
+        rows = []
+        for assertion in chunk:
+            observed_at, run_id = assertion.supported_at
+            rows.append(
+                {
+                    "relationship_id": assertion.relationship_id,
+                    "support_key": assertion.support_key,
+                    "derived_at": assertion.derived_at,
+                    "first_observed_at": observed_at,
+                    "first_observed_run_id": run_id,
+                    "last_observed_at": observed_at,
+                    "last_observed_run_id": run_id,
+                    "created_at": now,
+                    "updated_at": now,
+                    **_derivation_values(assertion),
+                }
+            )
+        table = graph_relationship_supports
+        inserted = await self._session.execute(
+            pg_insert(table)
+            .on_conflict_do_nothing()
+            .returning(table.c.relationship_id, table.c.support_key),
+            rows,
         )
-        stored = (
+        return {(row.relationship_id, row.support_key) for row in inserted}
+
+    async def _lock_supports(
+        self, assertions: Sequence[RelationshipAssertion]
+    ) -> dict[tuple[str, str], sa.RowMapping]:
+        if not assertions:
+            return {}
+        table = graph_relationship_supports
+        keys = [(a.relationship_id, a.support_key) for a in assertions]
+        rows = (
             (
                 await self._session.execute(
-                    sa.select(graph_relationship_supports).where(*identity).with_for_update()
+                    sa.select(table)
+                    .where(sa.tuple_(table.c.relationship_id, table.c.support_key).in_(keys))
+                    .order_by(table.c.relationship_id, table.c.support_key)
+                    .with_for_update()
                 )
             )
             .mappings()
-            .one()
+            .all()
         )
-        reading = _moment(observed_at, run_id)
-        last = _moment(stored["last_observed_at"], stored["last_observed_run_id"])
-        first = _moment(stored["first_observed_at"], stored["first_observed_run_id"])
-        same_derivation = _stored_derivation(stored) == derivation
+        return {(row["relationship_id"], row["support_key"]): row for row in rows}
 
-        changes: dict[str, Any] = {}
-        if reading > last:
-            outcome = RecordOutcome.EXTENDED
-            changes = {
-                "last_observed_at": observed_at,
-                "last_observed_run_id": run_id,
-                "derived_at": assertion.derived_at,
-                **derivation,
-            }
-        elif reading == last and not same_derivation:
-            outcome = RecordOutcome.REDERIVED
-            changes = {"derived_at": assertion.derived_at, **derivation}
-        elif reading < first:
-            outcome = RecordOutcome.BACKDATED
-            changes = {"first_observed_at": observed_at, "first_observed_run_id": run_id}
-        elif same_derivation:
-            outcome = RecordOutcome.REPLAYED
-        else:
-            outcome = RecordOutcome.STALE
-
-        if changes:
-            await self._session.execute(
-                sa.update(graph_relationship_supports)
-                .where(*identity)
-                .values(updated_at=now, **changes)
+    async def _update_supports(self, updates: Sequence[dict[str, Any]], now: dt.datetime) -> None:
+        """One statement per distinct set of changed columns, each executed for many rows."""
+        table = graph_relationship_supports
+        by_columns: dict[tuple[str, ...], list[dict[str, Any]]] = {}
+        for update in updates:
+            columns = tuple(sorted(name for name in update if not name.startswith("b_")))
+            by_columns.setdefault(columns, []).append({**update, "updated_at": now})
+        for _, batch in sorted(by_columns.items()):
+            # No .values(): with executemany, the parameter names that are columns become the
+            # SET list, and the b_-prefixed ones bind the WHERE clause.
+            statement = sa.update(table).where(
+                table.c.relationship_id == sa.bindparam("b_relationship_id"),
+                table.c.support_key == sa.bindparam("b_support_key"),
             )
-        return outcome
+            await self._session.execute(statement, batch)
+
+    async def _replace_context(self, applied: Sequence[RelationshipAssertion]) -> None:
+        """Drop the context links an applied derivation no longer names."""
+        if not applied:
+            return
+        table = graph_relationship_evidence
+        keep = [
+            (a.relationship_id, a.support_key, item.kind.value, item.key)
+            for a in applied
+            for item in a.evidence
+            if item.role is EvidenceRole.CONTEXT
+        ]
+        supports = sorted({(a.relationship_id, a.support_key) for a in applied})
+        statement = sa.delete(table).where(
+            table.c.role == EvidenceRole.CONTEXT.value,
+            sa.tuple_(table.c.relationship_id, table.c.support_key).in_(supports),
+        )
+        if keep:
+            statement = statement.where(
+                sa.tuple_(
+                    table.c.relationship_id,
+                    table.c.support_key,
+                    table.c.evidence_kind,
+                    table.c.evidence_key,
+                ).not_in(keep)
+            )
+        await self._session.execute(statement)
 
     async def _record_evidence(
-        self,
-        assertion: RelationshipAssertion,
-        relationship_id: str,
-        key: str,
-        now: dt.datetime,
+        self, chunk: Sequence[RelationshipAssertion], now: dt.datetime
     ) -> None:
         table = graph_relationship_evidence
-        for item in assertion.evidence:
-            statement = pg_insert(table).values(
-                relationship_id=relationship_id,
-                support_key=key,
-                evidence_kind=item.kind.value,
-                evidence_key=item.key,
-                role=item.role.value,
-                first_observed_at=item.observed_at,
-                first_observed_run_id=item.run_id,
-                last_observed_at=item.observed_at,
-                last_observed_run_id=item.run_id,
-                created_at=now,
-                updated_at=now,
-            )
-            incoming = statement.excluded
-            earlier = sa.tuple_(
-                incoming.first_observed_at, sa.cast(incoming.first_observed_run_id, sa.Text)
-            ) < sa.tuple_(
-                table.c.first_observed_at, sa.cast(table.c.first_observed_run_id, sa.Text)
-            )
-            later = sa.tuple_(
-                incoming.last_observed_at, sa.cast(incoming.last_observed_run_id, sa.Text)
-            ) > sa.tuple_(table.c.last_observed_at, sa.cast(table.c.last_observed_run_id, sa.Text))
-            await self._session.execute(
-                statement.on_conflict_do_update(
-                    constraint="uq_graph_relationship_evidence_identity",
-                    set_={
-                        "first_observed_at": sa.case(
-                            (earlier, incoming.first_observed_at), else_=table.c.first_observed_at
-                        ),
-                        "first_observed_run_id": sa.case(
-                            (earlier, incoming.first_observed_run_id),
-                            else_=table.c.first_observed_run_id,
-                        ),
-                        "last_observed_at": sa.case(
-                            (later, incoming.last_observed_at), else_=table.c.last_observed_at
-                        ),
-                        "last_observed_run_id": sa.case(
-                            (later, incoming.last_observed_run_id),
-                            else_=table.c.last_observed_run_id,
-                        ),
-                        "updated_at": now,
-                    },
-                    # A replay widens nothing and writes nothing.
-                    where=sa.or_(earlier, later),
-                )
-            )
+        rows = [
+            {
+                "relationship_id": assertion.relationship_id,
+                "support_key": assertion.support_key,
+                "evidence_kind": item.kind.value,
+                "evidence_key": item.key,
+                "role": item.role.value,
+                "first_observed_at": item.observed_at,
+                "first_observed_run_id": item.run_id,
+                "last_observed_at": item.observed_at,
+                "last_observed_run_id": item.run_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for assertion in chunk
+            for item in assertion.evidence
+        ]
+        statement = pg_insert(table)
+        incoming = statement.excluded
+        earlier = sa.tuple_(
+            incoming.first_observed_at, sa.cast(incoming.first_observed_run_id, sa.Text)
+        ) < sa.tuple_(table.c.first_observed_at, sa.cast(table.c.first_observed_run_id, sa.Text))
+        later = sa.tuple_(
+            incoming.last_observed_at, sa.cast(incoming.last_observed_run_id, sa.Text)
+        ) > sa.tuple_(table.c.last_observed_at, sa.cast(table.c.last_observed_run_id, sa.Text))
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                constraint="uq_graph_relationship_evidence_identity",
+                set_={
+                    "first_observed_at": sa.case(
+                        (earlier, incoming.first_observed_at), else_=table.c.first_observed_at
+                    ),
+                    "first_observed_run_id": sa.case(
+                        (earlier, incoming.first_observed_run_id),
+                        else_=table.c.first_observed_run_id,
+                    ),
+                    "last_observed_at": sa.case(
+                        (later, incoming.last_observed_at), else_=table.c.last_observed_at
+                    ),
+                    "last_observed_run_id": sa.case(
+                        (later, incoming.last_observed_run_id),
+                        else_=table.c.last_observed_run_id,
+                    ),
+                    "updated_at": now,
+                },
+                # A replay widens nothing and writes nothing.
+                where=sa.or_(earlier, later),
+            ),
+            rows,
+        )
 
     # --- Reading ---------------------------------------------------------------------------
 
@@ -361,8 +669,17 @@ class RelationshipRepository:
         return (await self.get_many((relationship_id,))).get(relationship_id)
 
     async def get_many(self, relationship_ids: Iterable[str]) -> dict[str, StoredRelationship]:
-        """Relationships by id, each with every support and evidence link. Three queries."""
+        """Relationships by id, each with every support and evidence link.
+
+        Three queries per :data:`READ_CHUNK` ids.
+        """
         ids = sorted(set(relationship_ids))
+        result: dict[str, StoredRelationship] = {}
+        for start in range(0, len(ids), READ_CHUNK):
+            result.update(await self._get_chunk(ids[start : start + READ_CHUNK]))
+        return dict(sorted(result.items()))
+
+    async def _get_chunk(self, ids: Sequence[str]) -> dict[str, StoredRelationship]:
         if not ids:
             return {}
         relationships = (
@@ -425,6 +742,8 @@ class RelationshipRepository:
                             key=lambda link: (link.kind, link.key),
                         )
                     ),
+                    retired_at=row["retired_at"],
+                    retired_basis_token=row["retired_basis_token"],
                 )
             )
 
@@ -443,7 +762,7 @@ class RelationshipRepository:
                 scope=scope,
                 supports=tuple(by_relationship[row["relationship_id"]]),
             )
-        return dict(sorted(result.items()))
+        return result
 
     async def adjacent(
         self,
@@ -493,6 +812,54 @@ class RelationshipRepository:
             else None
         )
         return RelationshipPage(items=items, next_after=next_after)
+
+    async def supports_resting_on(
+        self, kind: EvidenceKind, keys: Iterable[str]
+    ) -> set[tuple[str, str]]:
+        """Every ``(relationship_id, support_key)`` with one of these facts as a premise."""
+        ordered = sorted(set(keys))
+        evidence = graph_relationship_evidence
+        found: set[tuple[str, str]] = set()
+        for start in range(0, len(ordered), READ_CHUNK):
+            rows = await self._session.execute(
+                sa.select(evidence.c.relationship_id, evidence.c.support_key)
+                .where(
+                    evidence.c.evidence_kind == kind.value,
+                    evidence.c.evidence_key.in_(ordered[start : start + READ_CHUNK]),
+                    evidence.c.role == EvidenceRole.PREMISE.value,
+                )
+                .distinct()
+            )
+            found.update((row.relationship_id, row.support_key) for row in rows)
+        return found
+
+    async def supports_targeting(
+        self,
+        kind: NodeKind,
+        keys: Iterable[str],
+        types: Iterable[RelationshipType],
+    ) -> set[tuple[str, str]]:
+        """Every support of a relationship of ``types`` whose target is one of these nodes."""
+        ordered = sorted(set(keys))
+        relationships, supports = graph_relationships, graph_relationship_supports
+        type_values = sorted(item.value for item in types)
+        found: set[tuple[str, str]] = set()
+        for start in range(0, len(ordered), READ_CHUNK):
+            rows = await self._session.execute(
+                sa.select(supports.c.relationship_id, supports.c.support_key)
+                .select_from(
+                    relationships.join(
+                        supports, supports.c.relationship_id == relationships.c.relationship_id
+                    )
+                )
+                .where(
+                    relationships.c.target_kind == kind.value,
+                    relationships.c.target_key.in_(ordered[start : start + READ_CHUNK]),
+                    relationships.c.relationship_type.in_(type_values),
+                )
+            )
+            found.update((row.relationship_id, row.support_key) for row in rows)
+        return found
 
     async def supported_by(self, kind: EvidenceKind, key: str) -> tuple[str, ...]:
         """The ids of every relationship with a support resting on one stored fact."""

@@ -7,9 +7,9 @@ from those facts: a typed, directed relationship between two canonical ADG objec
 traceable to the observations that produced it.
 
 It is deliberately a domain module only. Nothing here reads a database, derives a
-relationship from a stored fact, or walks a graph; the projector that turns facts into
-relationships is a later phase (ADG-GRAPH-01B), and the traversal that answers "nested
-membership" already exists and stays where it is.
+relationship from a stored fact, or walks a graph. The projector that turns facts into
+relationships is :mod:`app.relationships` (ADG-GRAPH-01B), and the traversal that answers
+"nested membership" already exists and stays where it is.
 
 ## The four rules this module enforces
 
@@ -31,7 +31,11 @@ the over-statement of *absence* this product exists to avoid.
 **Unknown is never folded into none.** Currency has three values, not two: a support whose
 premise has no stored row is :attr:`RelationshipCurrency.UNKNOWN`, not
 :attr:`RelationshipCurrency.NOT_CURRENT`. Only a measured absence — an open tombstone written
-by an authoritative reconciliation (``app.models.current``) — makes a premise absent.
+by an authoritative reconciliation (``app.models.current``) — makes a premise absent. The one
+other way a support stops being current is **retirement**: its facts are still stored and,
+as they now read, the rule that produced the support no longer does (an owner changed, a Deny
+appeared ahead of the grant). That is measured too — by the projector reading the stored fact
+— and it is recorded on the support, never inferred from a missing row.
 
 **Nothing derivable is stored.** The relationship's identity, its confidence, its currency and
 its explanation are all *computed* — the identity from its components, the confidence from
@@ -98,6 +102,8 @@ __all__ = [
     "Materialization",
     "NodeKind",
     "NodeRef",
+    "ProjectionStatus",
+    "ProjectionTrigger",
     "RelationshipAssertion",
     "RelationshipCondition",
     "RelationshipConfidence",
@@ -306,6 +312,12 @@ class RelationshipCondition(StrEnum):
     GPO_INHERITANCE_BLOCKING_UNEVALUATED = "gpo_inheritance_blocking_unevaluated"
     TRUST_SID_FILTERING_UNKNOWN = "trust_sid_filtering_unknown"
     TRUST_SELECTIVE_AUTHENTICATION_UNKNOWN = "trust_selective_authentication_unknown"
+    DENY_MAY_APPLY = "deny_may_apply"
+    ACL_ENTRIES_INCOMPLETE = "acl_entries_incomplete"
+    ACL_ORDER_UNKNOWN = "acl_order_unknown"
+    LOGON_RIGHT_UNEVALUATED = "logon_right_unevaluated"
+    SERVICE_ACCESS_POLICY_UNEVALUATED = "service_access_policy_unevaluated"
+    REMOTE_SERVICE_STATE_UNKNOWN = "remote_service_state_unknown"
 
 
 CONDITION_DESCRIPTIONS: Final[dict[RelationshipCondition, str]] = {
@@ -339,6 +351,30 @@ CONDITION_DESCRIPTIONS: Final[dict[RelationshipCondition, str]] = {
     ),
     RelationshipCondition.TRUST_SELECTIVE_AUTHENTICATION_UNKNOWN: (
         "Whether the trust uses selective authentication is not known."
+    ),
+    RelationshipCondition.DENY_MAY_APPLY: (
+        "A Deny entry for another trustee comes before the grant; it removes the right from "
+        "any holder whose token also carries that trustee, which was not evaluated."
+    ),
+    RelationshipCondition.ACL_ENTRIES_INCOMPLETE: (
+        "The descriptor declared a different number of entries than ADG holds for it, so an "
+        "entry ADG does not hold, or holds from an earlier reading, could change this."
+    ),
+    RelationshipCondition.ACL_ORDER_UNKNOWN: (
+        "The collector did not report the order of the entries, so whether a Deny entry is "
+        "evaluated before the grant is not known."
+    ),
+    RelationshipCondition.LOGON_RIGHT_UNEVALUATED: (
+        "Holds only if the host's user-rights assignment grants the logon right and no "
+        "deny-logon right removes it; user-rights assignments are not collected."
+    ),
+    RelationshipCondition.SERVICE_ACCESS_POLICY_UNEVALUATED: (
+        "Holds only if the service's own access policy admits the group, as the Windows "
+        "default does; that policy is not collected."
+    ),
+    RelationshipCondition.REMOTE_SERVICE_STATE_UNKNOWN: (
+        "Holds only if the service is enabled and reachable on the host; its state is not "
+        "collected."
     ),
 }
 
@@ -426,7 +462,8 @@ class RelationshipCurrency(StrEnum):
     """At least one support has every premise present."""
 
     NOT_CURRENT = "not_current"
-    """Every support has a premise an authoritative scan measured absent."""
+    """Every support has a premise an authoritative scan measured absent, or was retired: its
+    facts, as now stored, no longer establish it."""
 
     UNKNOWN = "unknown"
     """No support is fully present, and at least one is not measured absent either."""
@@ -505,6 +542,23 @@ class DerivationStatus(StrEnum):
 
     PROJECTOR = "projector"
     """Produced and stored by a projector rule."""
+
+
+class ProjectionTrigger(StrEnum):
+    """What started one projector pass (``graph_derivation_passes``)."""
+
+    RUN_COMPLETION = "run_completion"
+    """A scan run completed; the pass re-derived every fact that run touched."""
+
+    REBUILD = "rebuild"
+    """An operator recomputed relationships from every stored fact."""
+
+
+class ProjectionStatus(StrEnum):
+    """How one projector pass ended. A failed pass wrote no relationship."""
+
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
 # --- Taxonomy -----------------------------------------------------------------------------
@@ -610,8 +664,17 @@ _SPECIALIZED_CLASSES: Final = frozenset(
 )
 _ACL_CLASSES: Final = _SPECIALIZED_CLASSES
 _NOT_YET: Final = DerivationSupport(
-    DerivationStatus.NOT_IMPLEMENTED, "No projector rule yet; ADG-GRAPH-01B owns the first ones."
+    DerivationStatus.NOT_IMPLEMENTED,
+    "No rule derives it: ADG collects no fact it could rest on (ADG-GRAPH-01B).",
 )
+
+
+def _projected(rules: str) -> DerivationSupport:
+    return DerivationSupport(
+        DerivationStatus.PROJECTOR, f"app.relationships.rules: {rules} (ADG-GRAPH-01B)."
+    )
+
+
 _MEMBERSHIP_ATTRIBUTES: Final = MappingProxyType(
     {
         "edge_kind": AttributeSpec(str, "The membership edge kind the premise records."),
@@ -630,16 +693,23 @@ def _acl_definition(
     relationship_type: RelationshipType,
     reads_as: str,
     *,
-    extra_premises: frozenset[EvidenceKind] = frozenset(),
+    extra_rules: str = "",
     extra_note: str = "",
 ) -> RelationshipTypeDefinition:
-    """A right granted by an access-control entry.
+    """A right granted by an NTFS security descriptor.
 
     Never :attr:`DerivationClass.OBSERVED`: an entry is observed, and reading a right out of
     its mask is already an interpretation — generic bits map differently per object type, and
-    whether the entry is *effective* depends on Deny entries and inheritance, which belong to
-    the access engine (ADR-0010). A support reports what the entry grants, conditionally when
-    anything it did not evaluate could remove it.
+    whether the entry is *effective* depends on Deny entries and their order, which the access
+    engine's walk decides (ADR-0010). A support reports what the descriptor grants every
+    holder of the trustee, conditionally when anything it did not evaluate could remove it.
+
+    The descriptor row is a premise kind as well as its entries: a descriptor with no DACL
+    grants everyone everything, and ``OWNER RIGHTS`` grants whoever the descriptor names as
+    owner. Share entries are **not** a premise kind (ADG-GRAPH-01B): a share permission limits
+    what a session reaching the files through the share may do, it is not control of the share
+    object, and an entry granting ``WRITE_DAC`` there does not let its holder change the share's
+    permissions.
     """
     return RelationshipTypeDefinition(
         relationship_type=relationship_type,
@@ -651,17 +721,21 @@ def _acl_definition(
         attributes=_ACE_ATTRIBUTES,
         collection=CollectionSupport(
             CollectionStatus.PARTIALLY_COLLECTED,
-            frozenset({EvidenceKind.NTFS_ACE, EvidenceKind.SMB_ACE}) | extra_premises,
-            "Collected for NTFS and share access-control entries. Not collected for directory "
-            "objects (users, groups, computers), GPOs or domains: their DACLs are not read."
-            + extra_note,
+            frozenset({EvidenceKind.NTFS_ACE, EvidenceKind.NTFS_RESOURCE}),
+            "Collected for NTFS resources (their entries and descriptor). Not collected for "
+            "directory objects (users, groups, computers), GPOs or domains: their DACLs are not "
+            "read. Share entries are read but are an access limit on the share path, not "
+            "control of the share, so they are not a premise." + extra_note,
         ),
-        derivation=_NOT_YET,
+        derivation=_projected(
+            "ntfs.allow_entry, ntfs.allow_entries_combined, ntfs.owner_rights_entry, "
+            "ntfs.null_dacl" + extra_rules
+        ),
     )
 
 
 def _local_member_definition(
-    relationship_type: RelationshipType, reads_as: str, rid: int
+    relationship_type: RelationshipType, reads_as: str, rid: int, rule: str
 ) -> RelationshipTypeDefinition:
     """A specialization of local-group membership into one BUILTIN group.
 
@@ -678,12 +752,12 @@ def _local_member_definition(
         target_builtin_rid=rid,
         attributes=_MEMBERSHIP_ATTRIBUTES,
         collection=CollectionSupport(
-            CollectionStatus.CONTRACT_ONLY,
+            CollectionStatus.COLLECTED,
             frozenset({EvidenceKind.MEMBERSHIP_EDGE}),
-            "A specialization of local_group_member_of, so collected exactly when that is: the "
-            "contract carries local_group_member edges and no shipped collector emits them.",
+            "A specialization of local_group_member_of, so collected exactly when that is: by "
+            "the local-groups collector (ADG-GRAPH-01B).",
         ),
-        derivation=_NOT_YET,
+        derivation=_projected(rule),
     )
 
 
@@ -700,9 +774,10 @@ RELATIONSHIP_TAXONOMY: Final[Mapping[RelationshipType, RelationshipTypeDefinitio
                 collection=CollectionSupport(
                     CollectionStatus.COLLECTED,
                     frozenset({EvidenceKind.MEMBERSHIP_EDGE}),
-                    "The AD collector reports directory_group_member edges.",
+                    "The AD collector reports directory_group_member edges; a source-stated "
+                    "well_known_implicit edge is a direct membership too.",
                 ),
-                derivation=_NOT_YET,
+                derivation=_projected("membership.directory_edge"),
             ),
             RelationshipType.NESTED_MEMBER_OF: RelationshipTypeDefinition(
                 relationship_type=RelationshipType.NESTED_MEMBER_OF,
@@ -734,7 +809,7 @@ RELATIONSHIP_TAXONOMY: Final[Mapping[RelationshipType, RelationshipTypeDefinitio
                     frozenset({EvidenceKind.MEMBERSHIP_EDGE}),
                     "The AD collector reports primary_group edges from primaryGroupID.",
                 ),
-                derivation=_NOT_YET,
+                derivation=_projected("membership.primary_group_edge"),
             ),
             RelationshipType.LOCAL_GROUP_MEMBER_OF: RelationshipTypeDefinition(
                 relationship_type=RelationshipType.LOCAL_GROUP_MEMBER_OF,
@@ -745,27 +820,32 @@ RELATIONSHIP_TAXONOMY: Final[Mapping[RelationshipType, RelationshipTypeDefinitio
                 scope_rule=ScopeRule.HOST_REQUIRED,
                 attributes=_MEMBERSHIP_ATTRIBUTES,
                 collection=CollectionSupport(
-                    CollectionStatus.CONTRACT_ONLY,
+                    CollectionStatus.COLLECTED,
                     frozenset({EvidenceKind.MEMBERSHIP_EDGE}),
-                    "The contract carries host-scoped local_group_member edges; no shipped "
-                    "collector emits them (fixtures and the demo estate do).",
+                    "The local-groups collector (collector/powershell/localgroups, "
+                    "ADG-GRAPH-01B) reports host-scoped local_group_member edges. Its Windows "
+                    "binding is validated on a standalone CI runner; a remote domain-joined "
+                    "server is not yet validated.",
                 ),
-                derivation=_NOT_YET,
+                derivation=_projected("membership.local_group_edge"),
             ),
             RelationshipType.LOCAL_ADMIN_OF: _local_member_definition(
                 RelationshipType.LOCAL_ADMIN_OF,
                 "{source} is a local administrator through {target}",
                 544,
+                "local_group.builtin_administrators",
             ),
             RelationshipType.REMOTE_DESKTOP_USER_OF: _local_member_definition(
                 RelationshipType.REMOTE_DESKTOP_USER_OF,
                 "{source} may sign in over Remote Desktop through {target}",
                 555,
+                "local_group.builtin_remote_desktop_users",
             ),
             RelationshipType.REMOTE_MANAGEMENT_USER_OF: _local_member_definition(
                 RelationshipType.REMOTE_MANAGEMENT_USER_OF,
                 "{source} may use remote management (WinRM) through {target}",
                 580,
+                "local_group.builtin_remote_management_users",
             ),
             RelationshipType.OWNS: RelationshipTypeDefinition(
                 relationship_type=RelationshipType.OWNS,
@@ -780,7 +860,7 @@ RELATIONSHIP_TAXONOMY: Final[Mapping[RelationshipType, RelationshipTypeDefinitio
                     "Collected for NTFS resources (the descriptor's owner SID). Not collected "
                     "for directory objects, GPOs, domains or shares.",
                 ),
-                derivation=_NOT_YET,
+                derivation=_projected("ntfs.owner"),
             ),
             RelationshipType.GENERIC_ALL: _acl_definition(
                 RelationshipType.GENERIC_ALL, "{source} has full control of {target}"
@@ -792,9 +872,9 @@ RELATIONSHIP_TAXONOMY: Final[Mapping[RelationshipType, RelationshipTypeDefinitio
                 RelationshipType.WRITE_DACL,
                 "{source} can change the permissions of {target}",
                 # An object's owner is implicitly granted READ_CONTROL and WRITE_DAC whatever
-                # the DACL says, unless an OWNER RIGHTS entry restricts it -- so the descriptor's
-                # owner is a premise too, and such a support is conditional on that entry.
-                extra_premises=frozenset({EvidenceKind.NTFS_RESOURCE}),
+                # the DACL says, unless an OWNER RIGHTS entry replaces it -- so the descriptor's
+                # owner is a premise of its own rule as well.
+                extra_rules=", ntfs.owner_implicit_rights",
                 extra_note=(
                     " The owner of an NTFS resource is implicitly granted it unless an OWNER "
                     "RIGHTS entry says otherwise, so the resource's owner is a premise as well."
@@ -908,7 +988,9 @@ RELATIONSHIP_TAXONOMY: Final[Mapping[RelationshipType, RelationshipTypeDefinitio
                     "is_foreign_security_principal and as principals of kind "
                     "foreign_security_principal; the issuing domain is the SID's own prefix.",
                 ),
-                derivation=_NOT_YET,
+                derivation=_projected(
+                    "foreign_principal.membership_edge, foreign_principal.principal_object"
+                ),
             ),
         }
     )
@@ -1500,6 +1582,21 @@ class RelationshipSupport:
     last_observed_at: dt.datetime
     last_observed_run_id: UUID
     evidence: tuple[StoredEvidence, ...]
+    retired_at: dt.datetime | None = None
+    """When a derivation over this support's facts, all still stored, stopped producing it."""
+    retired_basis_token: str | None = None
+    """The collection basis that derivation read, so the retirement is attributable."""
+
+    def __post_init__(self) -> None:
+        if (self.retired_at is None) != (self.retired_basis_token is None):
+            raise DomainValidationError(
+                "A retirement names both when it happened and the basis it read.",
+                field="retired_at",
+            )
+
+    @property
+    def is_retired(self) -> bool:
+        return self.retired_at is not None
 
     @property
     def confidence(self) -> RelationshipConfidence:
@@ -1510,8 +1607,12 @@ class RelationshipSupport:
         """Current while every premise is present; not current once any is measured absent.
 
         A premise with no stored row at all is neither — nobody recorded it gone — and makes
-        the support's currency unknown rather than false.
+        the support's currency unknown rather than false. A **retired** support is not
+        current whatever its premises say: the projector read those facts, as stored, and
+        they no longer establish it.
         """
+        if self.is_retired:
+            return RelationshipCurrency.NOT_CURRENT
         states = {item.state for item in self.evidence if item.role is EvidenceRole.PREMISE}
         if EvidenceState.ABSENT in states:
             return RelationshipCurrency.NOT_CURRENT
@@ -1535,6 +1636,8 @@ class RelationshipSupport:
             "first_observed_run_id": str(self.first_observed_run_id),
             "last_observed_at": _iso(self.last_observed_at),
             "last_observed_run_id": str(self.last_observed_run_id),
+            "retired_at": None if self.retired_at is None else _iso(self.retired_at),
+            "retired_basis_token": self.retired_basis_token,
             "evidence": [
                 item.as_dict() for item in sorted(self.evidence, key=lambda e: (e.kind, e.key))
             ],
@@ -1714,14 +1817,28 @@ def explain(relationship: StoredRelationship, labels: Mapping[NodeRef, str] | No
         )
         parts.append(f"It exists, and what it connects cannot be established. {unresolved}")
 
-    other = sorted(best.qualifiers - UNRESOLVED_QUALIFIERS)
+    # Every qualifier is said once: the unresolved ones were said above for an unresolved
+    # support, and are said here for any other class that carries one (a conditional host
+    # privilege whose member is foreign, for instance).
+    stated = (
+        UNRESOLVED_QUALIFIERS
+        if best.derivation_class is DerivationClass.UNRESOLVED
+        else frozenset[RelationshipQualifier]()
+    )
+    other = sorted(best.qualifiers - stated)
     if other:
         parts.append(" ".join(describe_qualifier(qualifier) for qualifier in other))
     if len(relationship.supports) > 1:
         parts.append(f"Supported {len(relationship.supports)} independent ways.")
     currency = relationship.currency
     if currency is RelationshipCurrency.NOT_CURRENT:
-        parts.append("Not current: an authoritative scan recorded its evidence gone.")
+        if best.is_retired:
+            parts.append(
+                "Not current: the facts it rested on are still stored and, as they now read, "
+                "no longer establish it."
+            )
+        else:
+            parts.append("Not current: an authoritative scan recorded its evidence gone.")
     elif currency is RelationshipCurrency.UNKNOWN:
         parts.append(
             "Whether it still holds is unknown: evidence it rests on is no longer stored, "
