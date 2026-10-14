@@ -309,8 +309,10 @@ release, is not met because that release has not been published.
   `adg-next16-react418-01.md` §6 and `adg-next16-ui-integration-02.md` §9 keep Next.js 16.4.0 out
   of `main` until the October 14 security release is applied. That release is not published
   (§12). Second, this session is instructed to push only its own branch, and `main` changes by pull request.
-  Merging overrides the precondition and is outward-facing, so the decision goes to the owner
-  (§13).
+  Merging overrides the precondition and is outward-facing, so the decision went to the owner.
+  **Owner's decision (2026-10-14): hold `main`.** The candidate stays on
+  `claude/adoring-cannon-7gh2pf` and merges once the Next.js security release is applied and the
+  hosted gates pass.
 * **Not pushed to `deploy/ADG-FREE-STAGING-01`.** Moving it without deploying would break the
   rule `adg-next16-ui-integration-02.md` §8 set: the deploy branch's head is the live tree. The
   push would also start the workflow, which would fail at preflight.
@@ -391,7 +393,8 @@ committed script that runs unchanged against the public URL:
 
 ## 13. To finish the release
 
-1. **Decide `main`** (§9): merge this candidate now, or after the Next.js security release.
+1. **Apply the Next.js security release** once it is published, and rerun §4–§5 on it
+   (`adg-next16-react418-01.md` §6). The owner decided to hold `main` until then (§9).
 2. **Deploy**, from a workstation as every previous lane did (`docs/deployment/cloudflare-demo.md`
    §6), or configure the `cloudflare-staging` environment's 5 secrets and 3 variables so the
    workflow does it:
@@ -404,6 +407,8 @@ committed script that runs unchanged against the public URL:
    `directory-access.mjs`, `release.mjs` against the public URL; Worker CPU from analytics; a
    read-only `verify` (expect `228b9dce…f9efd0`).
 4. If any hosted gate fails materially, roll back with §10.
+5. **Merge to `main`** by pull request from `claude/adoring-cannon-7gh2pf` (merge commit, as
+   PRs #1 and #2 were), then confirm the canonical tree equals the validated candidate.
 
 ## 14. Verdict
 
@@ -416,8 +421,8 @@ Render image under Render Free limits. The release did not happen:
 
 1. **Deployment and hosted validation** need credentials and network access this environment
    does not have (§9). The workflow could do it once its environment is configured.
-2. **`main`** waits for the owner's decision, because the repository's own precondition (the
-   Next.js security release) is unmet (§9, §12).
+2. **`main` is held by the owner's decision** until the repository's own precondition, the
+   Next.js security release, is met and the hosted gates pass (§9, §12).
 
 **The public application is unchanged by this lane.** The latest recorded deployment is
 `33cca01` (Worker `66663d4a`, Render `dep-db6pe17f3r2c73c0e8f0`), which has the UI and EDGE work
