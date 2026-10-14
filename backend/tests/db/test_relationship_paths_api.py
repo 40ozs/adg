@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 import sqlalchemy as sa
@@ -66,7 +67,9 @@ async def seed_path(client: AsyncClient) -> None:
     await ingest_storable_scenario(client, "03-nested-group-grant")
 
 
-async def request_cost(client: AsyncClient, statements: StatementLog) -> tuple[int, dict[str, Any]]:
+async def request_cost(
+    client: AsyncClient, statements: StatementLog
+) -> tuple[int, dict[str, Any]]:
     with statements:
         response = await client.get(shortest_url())
     assert response.status_code == 200, response.text
@@ -74,7 +77,9 @@ async def request_cost(client: AsyncClient, statements: StatementLog) -> tuple[i
 
 
 class TestShortestPathApi:
-    async def test_projected_nested_membership_is_two_real_hops(self, client: AsyncClient) -> None:
+    async def test_projected_nested_membership_is_two_real_hops(
+        self, client: AsyncClient
+    ) -> None:
         await seed_path(client)
         response = await client.get(shortest_url())
         assert response.status_code == 200, response.text
@@ -165,7 +170,9 @@ class TestBoundedDatabaseCost:
 
 
 class TestOtherGraphPrimitives:
-    async def test_reverse_reachability_returns_the_nested_source(self, client: AsyncClient) -> None:
+    async def test_reverse_reachability_returns_the_nested_source(
+        self, client: AsyncClient
+    ) -> None:
         await seed_path(client)
         response = await client.get(
             "/api/v1/graph/traversal/reverse"
@@ -177,7 +184,9 @@ class TestOtherGraphPrimitives:
         assert ALICE in reached
         assert reached[ALICE]["path"]["hop_count"] == 2
 
-    async def test_alternates_are_bounded_and_neighbor_api_can_show_graph(self, client: AsyncClient) -> None:
+    async def test_alternates_are_bounded_and_neighbor_api_can_show_graph(
+        self, client: AsyncClient
+    ) -> None:
         await seed_path(client)
         alternates = await client.get(
             "/api/v1/graph/traversal/alternates"
