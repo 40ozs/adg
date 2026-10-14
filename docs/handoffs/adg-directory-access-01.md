@@ -18,7 +18,7 @@ answers and never evaluates an ACL itself.
 | Branch | `claude/compassionate-hamilton-3sh5db`. This is the branch assigned to this session. The `feature/ADG-DIRECTORY-ACCESS-01` naming the prompt suggests was not used, because pushes are restricted to the assigned branch. |
 | Starting point | `3e26e4a` = `integration/ADG-NEXT16-UI-02` = `deploy/ADG-FREE-STAGING-01` (verdict `READY_FOR_ADG_COMBINED_STAGING_REVIEW`) |
 | `origin/main` at start | `1ab01a2` (26 commits behind the starting point; contained in it) |
-| Commits | `145284a` the feature; `cd6016c` engine verdicts at stop points, benchmark; `__FINAL__` this report and evidence |
+| Commits | `145284a` the feature · `cd6016c` engine verdicts at stop points, benchmark · `7069db0` draft handoff · `c125d4b` export parameter renamed `content`, bottom-up tree counts, 30 s timeout for the two server-side fetches, stronger sort check · the commit carrying this report |
 | Merged / deployed | **No.** Nothing was merged, deployed or opened as a PR. |
 
 **Why the integrated tree, not `main`.** Pre-flight found the active UI work only on remote
@@ -119,7 +119,7 @@ sorted by share then key), with no I/O.
 * Current-state only. The new reads are registered as current-state-only in the as-of
   registry and refused by the simulation overlay (both coverage tests updated). `local`
   access is refused with a pointer to the paged listing.
-* OpenAPI snapshot: 4 paths and 15 schemas added, none changed or removed (verified
+* OpenAPI snapshot: 4 paths and 14 schemas added, none changed or removed (verified
   structurally).
 
 ## 5. Frontend
@@ -180,7 +180,20 @@ Aaron Adams (`…-1885`, an Engineering-FS member; scenario C's share):
 | Reachable | 272 | 272 = 43 roots + 229 reachable descendants |
 | `\\NM-ENG-FS01\Engineering` | 33 separate rows | **1 root**: Modify, **32 reachable descendants**, **2 exceptions** (`Docs`, `Runbooks\Payments-Legacy`: inheritance broken, Modify), **varies** |
 
-__EXAMPLE_AFTER_REFINEMENT__
+After stop points were evaluated by the engine (final code, same principal):
+
+* totals are unchanged (272 reachable, 43 roots, 44 exceptions, 41 shares, 272 candidates,
+  378 directories read in those shares);
+* exception reasons across all roots: **Access ends ×25, Inheritance broken ×17, Wider
+  rights ×4** (one exception can carry two reasons);
+* `\\NM-FIN-FS01\Finance`: a root with **0 reachable descendants and 7 exceptions**.
+  Accounting, Audit, Budgets, Commissions, Reports, Tax and Treasury each read *Access ends*,
+  are not named (no entry names Aaron or his groups), and carry the engine's verdict
+  `no_grant`. The share root is readable; the department folders are not. The flat list
+  showed this as one row, with nothing to say where access stopped;
+* the Engineering run's rights breakdown is `Modify ×33`. It is uniform in rights, and the
+  2 exceptions are inheritance breaks that keep Modify. That is why the row says **varies**
+  while the breakdown has one entry: inheritance changed even though the rights did not.
 
 ## 7. Export
 
@@ -210,11 +223,93 @@ in-order ACE oracle records what the subject should reach.
 
 ## 9. Validation
 
-__VALIDATION__
+All on this container (Linux x86_64, Python 3.13.16, Node 22.22, PostgreSQL 16.15). The
+commands are CI's (`.github/workflows/ci.yml`).
+
+**Baseline** (the starting tree `3e26e4a`, before any change):
+
+| Command | Result |
+| --- | --- |
+| `pytest -q -m "not smoke"` | 5,777 passed, 124 skipped |
+| `ADG_RUN_SMOKE_TESTS=1 pytest -q -m smoke` | 1,240 passed, 1 xfailed (32 min 52 s) |
+
+**Final:**
+
+| Command (directory) | Tree | Result |
+| --- | --- | --- |
+| `ruff check .` (backend) | `c125d4b` | All checks passed |
+| `ruff format --check .` | `c125d4b` | 409 files already formatted |
+| `mypy app tests` | `c125d4b` | no issues in 408 source files |
+| `pytest -q -m "not smoke"` | `c125d4b` | **5,810 passed, 124 skipped**, 0 failed (+33: 25 summarizer, 2 bounds, 1 harness, the rest registries and matrix) |
+| `ADG_RUN_SMOKE_TESTS=1 pytest -q -m smoke` (whole DB suite) | `7069db0` | **1,264 passed, 1 xfailed**, 0 failed, 36 min 49 s (+24: 23 directory-access, 1 harness). The xfail is pre-existing |
+| `ADG_RUN_SMOKE_TESTS=1 pytest -q -m smoke tests/db/test_directory_access_api.py tests/benchmarks/test_directory_access_benchmark_harness.py tests/test_database_smoke.py` | `c125d4b` | 26 passed |
+| `python -m app.contracts.openapi` → snapshot tests | `c125d4b` | current (4 paths, 14 schemas added, none changed or removed) |
+| `npm run lint` (frontend) | `c125d4b` | clean |
+| `npm run typecheck` | `c125d4b` | clean |
+| `npm run test` | `c125d4b` | **40 files, 1,366 passed** (baseline measured at `3e26e4a`: 39 files, 1,306; +60 = 24 directory-access tests + 12 new schemas × 3 contract-field checks) |
+| `npm run build` (`next build --webpack`, Next.js 16.4.0) | `c125d4b` | compiled; `/api/directory-access/export` route present |
+
+The whole DB suite last ran on `7069db0`. The one later change that touches backend behaviour
+(`c125d4b`) renames this feature's export query parameter `mode` → `content` and replaces
+the tree count with an equivalent bottom-up pass. For `c125d4b`, the whole hermetic suite and
+every directory-access DB test were re-run, as listed. **One failure was found and fixed on
+the way:** the first hermetic run on `7069db0` failed
+`tests/demo/test_demo_mode.py::TestNoRuntimeSwitch::test_no_request_in_the_published_api_can_name_the_mode`,
+because the export's `mode` parameter broke the rule that no published request field may
+name a mode. That is the reason for the rename; the test passes on `c125d4b`.
+
+Warnings: 69 in the DB suite and 6 hermetic, against 67 and 7 at baseline. The two
+directory-access ones are Starlette's `HTTP_422_UNPROCESSABLE_ENTITY` deprecation from the
+application-wide validation handler, which the existing 422 routes already raise.
+
+Not run: the Windows-only collector Pester suite (no PowerShell here; this change touches no
+collector code), and the Docker Compose config check (no change to compose files).
+
+### Performance (`python -m tests.benchmarks.directory_access_benchmark --estates 4x250 8x1000 20x1000 --repeat 5`)
+
+__BENCHMARK__
 
 ## 10. Manual browser acceptance (`directory-access.mjs`, Chromium 1194, 1360×900, local `next start` + API in demo mode over `adg_demo`)
 
-__BROWSER__
+`STAGING_URL=http://localhost:3000 node cloudflare/checks/directory-access.mjs`, on the
+final build (`c125d4b`, `next start` + `python -m app` in demo mode). The principal is Aaron
+Adams (`…-1885`). The result was **20/20 passed** on the final run and on each of four
+earlier runs during development. Each move is checked for a document reload (a main-frame
+document request, and a marker on `window`).
+
+| Prompt step | Check | Result |
+| --- | --- | --- |
+| 1 | open the principal | Aaron Adams |
+| 2–3 | Directory access opens, Summary is current | no reload |
+| 4–6 | roots, not every descendant; counts | 43 rows for 272 reachable; Σ(1 + descendants) = 272; Engineering = Modify, 32, 2 exceptions, *varies* |
+| 7 | exceptions indicated | 24 roots marked *varies*, 24 with an exceptions disclosure |
+| 8 | sort by root/path | rows ordered by path (`\\NM-ARCH-FS01\Archive` … `\\NM-SHARE-FS01\Data`), `aria-sort=ascending`, no reload |
+| 9 | sort by descendant count | descending numerically: 32, 13, 12, 11, 10…; no reload |
+| 10–11 | expand a root (Tree) | 11 children of `\\NM-ENG-FS01\Engineering`, **1** request (`?parent=\\nm-eng-fs01\engineering`), no reload |
+| 12 | nested expansion | `Benchmarks` opened, 2 requests in total |
+| 13 | collapse; reopen | reopened from cache, still 2 requests |
+| 14–16 | another view and back | Effective groups → Directory access: h1 Aaron Adams, same SID in the path, Summary current, no reload |
+| 17–18 | Tree shows the shares collapsed | 41 share roots, 0 open, **0** browser tree requests on load |
+| 19–20 | inspect a boundary | exceptions: `…\Docs`, `…\Runbooks\Payments-Legacy`, *inheritance broken*, Modify (parent Modify), 1 request, none on reopen. Tree: `Docs Modify inheritance broken 3 reachable below` under `Engineering Modify access root 32 reachable below` |
+| 21 | All paths | the flat listing, 100 rows on page 1 |
+| 22 | long paths | 42 closed rows, all 39.8 px; 24 clipped identifiers, every one with its full path as title |
+| 23 | keyboard | Enter opens, ← closes, focus stays on the control |
+| 24 | console/runtime | 0 page errors, 0 console errors (plus the pre-existing `/favicon.ico` 404, §11) |
+| — | export | `content=paths`: 272 rows, 272 reachable, `X-ADG-Complete: true` |
+| — | Reachable shares → Directory access | `share=nm-arch-fs01\|archive`: 1 root, one share |
+
+**Layout at three widths** (measured on the summary): at 1360 px the table is 936 px in a
+936 px box, so no column is scrolled away. At 1024 and 390 px the table scrolls inside its
+own container and the page does not (`documentElement.scrollWidth` = viewport width). Two
+defects were found and fixed this way during development: the count columns were scrolled
+off at 1360 px, and the page scrolled sideways at 390 px. The second was caused by a visually
+hidden span escaping the table scroller; its cell is now positioned.
+
+**Regression:** the existing navigation gate (`cloudflare/checks/navigation.mjs`) passed
+**19/19** on the same build. Its view list was updated for the renamed tab (§1).
+
+Screenshots: [`adg-directory-access-01-summary.png`](adg-directory-access-01-summary.png),
+[`adg-directory-access-01-tree.png`](adg-directory-access-01-tree.png).
 
 ## 11. Limitations
 
