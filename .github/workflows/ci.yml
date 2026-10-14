@@ -83,7 +83,7 @@ jobs:
       - name: Install Pester
         shell: pwsh
         run: Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
-      # Every collector suite: Active Directory, SMB, and NTFS. Unscoped on purpose - a
+      # Every collector suite: Active Directory, SMB, NTFS and local groups. Unscoped on purpose - a
       # collector that lands tests CI never runs is a collector nobody is checking, and the
       # script fails rather than passes when it discovers nothing.
       - name: Collector tests

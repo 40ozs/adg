@@ -1,0 +1,78 @@
+{
+  "description": "Two file servers' local groups, as NetLocalGroupEnum, LookupAccountName and NetLocalGroupGetMembers would report them. FS01 grants a domain group local administration, a user Remote Desktop and a group remote management, and holds an orphaned SID; FS02 holds the same BUILTIN groups with different members, which must stay a different group. DC01 is a domain controller and must be refused.",
+  "hosts": {
+    "fs01": {
+      "netbios_name": "FS01",
+      "is_domain_controller": false,
+      "groups": [
+        {
+          "name": "Administrators",
+          "sid": "S-1-5-32-544",
+          "domain": "BUILTIN",
+          "comment": "Administrators have complete and unrestricted access to the computer/domain",
+          "members": [
+            { "sid": "S-1-5-21-1004336348-1177238915-682003330-1202", "sid_usage": 2, "account_name": "CORP\\Finance-RW" },
+            { "sid": "S-1-5-21-111111111-222222222-333333333-500", "sid_usage": 1, "account_name": "FS01\\Administrator" },
+            { "sid": "S-1-5-21-1004336348-1177238915-682003330-9999", "sid_usage": 6, "account_name": "" }
+          ]
+        },
+        {
+          "name": "Remote Desktop Users",
+          "sid": "S-1-5-32-555",
+          "domain": "BUILTIN",
+          "comment": "",
+          "members": [
+            { "sid": "S-1-5-21-1004336348-1177238915-682003330-1104", "sid_usage": 1, "account_name": "CORP\\alice" }
+          ]
+        },
+        {
+          "name": "Remote Management Users",
+          "sid": "S-1-5-32-580",
+          "domain": "BUILTIN",
+          "comment": "",
+          "members": [
+            { "sid": "S-1-5-21-1004336348-1177238915-682003330-1201", "sid_usage": 2, "account_name": "CORP\\Finance-Team" }
+          ]
+        },
+        {
+          "name": "Users",
+          "sid": "S-1-5-32-545",
+          "domain": "BUILTIN",
+          "comment": "",
+          "members": [
+            { "sid": "S-1-5-4", "sid_usage": 5, "account_name": "NT AUTHORITY\\INTERACTIVE" },
+            { "sid": "S-1-5-11", "sid_usage": 5, "account_name": "NT AUTHORITY\\Authenticated Users" },
+            { "sid": "S-1-5-21-1004336348-1177238915-682003330-513", "sid_usage": 2, "account_name": "CORP\\Domain Users" }
+          ]
+        },
+        {
+          "name": "FileAdmins",
+          "sid": "S-1-5-21-111111111-222222222-333333333-1001",
+          "domain": "FS01",
+          "comment": "A machine-local group",
+          "members": []
+        }
+      ]
+    },
+    "fs02": {
+      "netbios_name": "FS02",
+      "is_domain_controller": false,
+      "groups": [
+        {
+          "name": "Administrators",
+          "sid": "S-1-5-32-544",
+          "domain": "BUILTIN",
+          "comment": "",
+          "members": [
+            { "sid": "S-1-5-21-1004336348-1177238915-682003330-1210", "sid_usage": 2, "account_name": "CORP\\Auditors" }
+          ]
+        }
+      ]
+    },
+    "dc01": {
+      "netbios_name": "DC01",
+      "is_domain_controller": true,
+      "groups": []
+    }
+  }
+}
