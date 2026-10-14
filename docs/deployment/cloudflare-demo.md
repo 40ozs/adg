@@ -61,7 +61,7 @@ Next.js application unmodified. The deployment adds infrastructure only:
 | `frontend/render/gate.ts` | The front gate and process supervisor on Render (§5). |
 | `docker/Dockerfile.render` | One image: the Next.js standalone build, the API as `Dockerfile.backend` installs it, Node for the gate. |
 | `backend/app/origin_gate.py` | The previous API-only gate (`python -m app.origin_gate`), kept for the rollback service `adg-demo-api` (§10). |
-| `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `navigation.mjs`, `null_meridian_fingerprint.py`: hosted checks (§6). |
+| `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `navigation.mjs`, `directory-access.mjs`, `release.mjs`, `null_meridian_fingerprint.py`: hosted checks (§6). |
 | `.github/workflows/cloudflare-staging.yml` | Preflight → gates → (bootstrap) → Render deploy → static files + Worker deploy → hosted checks. |
 
 ## 2. Routing
@@ -202,8 +202,8 @@ A password that has ever been pasted into a chat, ticket or log is treated as ex
    `Dockerfile.render`), waited on until live.
 5. **deploy**: `docker build --target web` of the same commit, its `.next/static` →
    `npm run cf:assets`, then `wrangler deploy --secrets-file … --var ADG_RENDER_ORIGIN:…`.
-6. **checks**: read-only `verify` + logical fingerprint, then `smoke.mjs`, `browser.mjs` and `navigation.mjs`
-   against the public URL.
+6. **checks**: read-only `verify` + logical fingerprint, then `smoke.mjs`, `browser.mjs`,
+   `navigation.mjs`, `directory-access.mjs` and `release.mjs` against the public URL.
 
 The same deploy from a workstation (wrangler logged in to the account; Docker running):
 
@@ -267,6 +267,8 @@ STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev \
 RENDER_ORIGIN=https://adg-demo-web.onrender.com node frontend/cloudflare/checks/smoke.mjs
 STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/browser.mjs
 STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/navigation.mjs
+STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/directory-access.mjs
+STAGING_URL=https://adg-demo-staging.<subdomain>.workers.dev node frontend/cloudflare/checks/release.mjs
 ```
 
 `navigation.mjs` (ADG-UI-UPDATE-01) signs in as `viewer` and walks Servers, Users and Groups,
@@ -274,7 +276,17 @@ name and SID search, sorting, a principal's relationship views with Identity inf
 folded, shortest-chain links with Back and Forward, a deep link and the old `?key=` address,
 failing on any full document reload.
 
-Both act as an anonymous visitor, then as the public `planner` account; `PUBLIC_ACCOUNTS`
+`directory-access.mjs` (ADG-DIRECTORY-ACCESS-01) walks Directory access: Summary roots and
+their counts, sorting, exceptions, the lazy Tree (one request per first expansion), All paths,
+the `paths` export and the link from Reachable shares. `release.mjs`
+(ADG-UI-EDGE-DIRECTORY-INTEGRATION-01) adds what the others leave unmeasured: one-line rows and
+SID cells in Users and Groups, relationship tables without SIDs, Exclude local groups checked
+against the API (machine-local groups removed, Domain Local kept), every view of a group with
+one request per switch and Back/Forward through them, the Identity information state on a newly
+selected object, a fresh load of every route family, and the export links' `content=`.
+All three sign in as `viewer` and write nothing.
+
+`smoke.mjs` and `browser.mjs` act as an anonymous visitor, then as the public `planner` account; `PUBLIC_ACCOUNTS`
 (default `viewer,planner`) is the account list they require development sign-in to offer, and
 every other default account must be refused.
 

@@ -287,6 +287,8 @@ jobs:
           npx playwright install --with-deps chromium
           node frontend/cloudflare/checks/browser.mjs | tee browser.log
           node frontend/cloudflare/checks/navigation.mjs | tee navigation.log
+          node frontend/cloudflare/checks/directory-access.mjs | tee directory-access.log
+          node frontend/cloudflare/checks/release.mjs | tee release.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -297,4 +299,6 @@ jobs:
             smoke.log
             browser.log
             navigation.log
+            directory-access.log
+            release.log
             screenshots/
