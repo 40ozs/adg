@@ -201,6 +201,53 @@ const EXPECTED: Record<string, string[]> = {
     "is_acl_boundary",
   ],
   ShareRef: ["key", "name", "server_key", "observed"],
+  // Contract 1.1 (ADG-DEMO-02): hop provenance and the investigation summary.
+  HopEvidenceView: [
+    "edge_id",
+    "basis",
+    "record",
+    "record_key",
+    "source_key",
+    "first_observed_at",
+    "first_observed_run_id",
+    "last_observed_at",
+    "last_observed_run_id",
+    "collector",
+    "collection_method",
+    "last_run_status",
+  ],
+  InvestigationView: [
+    "presence",
+    "primary_routes",
+    "open_questions",
+    "impact",
+    "affects_conclusion",
+    "next_steps",
+    "routes_complete",
+  ],
+  PrimaryRouteView: [
+    "layer",
+    "path_id",
+    "route",
+    "placement",
+    "membership_hops",
+    "coverage",
+    "removal_edge_id",
+    "removal_effect",
+    "rights_after_removal",
+    "alternate_path_ids",
+  ],
+  OpenQuestionView: [
+    "condition",
+    "message",
+    "state",
+    "impact",
+    "may_overstate",
+    "may_understate",
+    "about",
+    "detail",
+  ],
+  NextStepView: ["code", "about", "path_id", "condition"],
 };
 
 /** The response body itself. */
@@ -222,14 +269,16 @@ const TOP_LEVEL = [
   "complete",
   "truncation",
   "warnings",
+  "evidence",
+  "investigation",
 ];
 
 describe("the derived contract", () => {
   it("is the version lib/derived.ts was written against", () => {
     // A major bump means a new directory and a new endpoint prefix; a minor bump is
     // additive and safe. Either way it is a deliberate edit here, not a surprise at runtime.
-    expect(explanationSchema["x-contract-version"]).toBe("1.0");
-    expect(explanationSchema.properties?.schema_version?.const).toBe("1.0");
+    expect(explanationSchema["x-contract-version"]).toBe("1.1");
+    expect(explanationSchema.properties?.schema_version?.const).toBe("1.1");
   });
 
   it("serves every derived path this application calls", () => {
@@ -297,6 +346,30 @@ describe("the vocabulary a client branches on", () => {
       "EdgeKind",
       ["assumed_membership", "deny", "grant", "membership", "ownership", "trustee"],
     ],
+    ["AccessPresence", ["absent", "present", "undetermined"]],
+    ["RouteKind", ["assumed", "direct", "group", "ownership"]],
+    ["EntryPlacement", ["explicit", "inherited", "owner"]],
+    ["RemovalEffect", ["changes_nothing", "narrows_access", "revokes_access", "widens_access"]],
+    [
+      "EvidenceState",
+      ["ambiguous", "assumed", "confirmed", "conflicting", "context", "derived", "missing"],
+    ],
+    ["ConclusionImpact", ["extent", "none", "presence"]],
+    [
+      "NextStepCode",
+      [
+        "collect_group_membership",
+        "collect_subject_membership",
+        "inspect_explanation",
+        "rescan_resource",
+        "resolve_subject_identity",
+        "resolve_trustee_identity",
+        "review_finding",
+        "review_redundant_entry",
+        "review_sole_route",
+        "settle_system_mapping",
+      ],
+    ],
   ])("declares exactly the %s values the union allows", (name, expected) => {
     expect(defs[name]?.enum?.slice().sort()).toEqual(expected);
   });
@@ -355,6 +428,12 @@ describe("the captured response body", () => {
   it("exports as text and as its own JSON", () => {
     expect(explanationText(example)).toContain("ADG access explanation");
     expect(JSON.parse(explanationJson(example))).toEqual(example);
+  });
+
+  it("carries provenance for every edge it draws, in graph order", () => {
+    expect(example.evidence?.map((item) => item.edge_id)).toEqual(
+      example.graph.edges.map((edge) => edge.id),
+    );
   });
 
   it("has nothing to warn about when every route is a real one", () => {

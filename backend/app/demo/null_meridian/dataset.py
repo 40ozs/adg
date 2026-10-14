@@ -13,6 +13,7 @@ Contract member            Source
 ``baseline_generations``   all three: the canon is what ADG had collected by the snapshot
 ``risk_configuration()``   :data:`.risk.DEMO_RISK_CONFIGURATION`
 ``scenarios()``            :func:`.scenarios.golden_scenarios` (A-H)
+``investigations()``       :func:`.scenarios.investigations` (the Apollo access question)
 ``probes()``               the objects scenarios A-H and the scan history are about, named
                            by canon identifiers and checked in current state on every reset
 =========================  ============================================================
@@ -31,11 +32,12 @@ from app.demo.null_meridian import canon as nm
 from app.demo.null_meridian.canon import Canon, build_canon
 from app.demo.null_meridian.generations import GENERATIONS, build_generations
 from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
-from app.demo.null_meridian.scenarios import golden_scenarios
+from app.demo.null_meridian.scenarios import golden_scenarios, investigations
 from app.demo_mode.datasets import (
     CANONICAL_DATASET,
     CanonicalProbe,
     DemoDatasetMetadata,
+    DemoInvestigation,
     DemoScenario,
     ScanGeneration,
     ScenarioSubject,
@@ -116,6 +118,13 @@ class NullMeridianDataset:
     def _scenarios(self) -> tuple[DemoScenario, ...]:
         canon = self._canon
         return tuple(_scenario(item, canon) for item in golden_scenarios(canon))
+
+    def investigations(self) -> Sequence[DemoInvestigation]:
+        return self._investigations
+
+    @cached_property
+    def _investigations(self) -> tuple[DemoInvestigation, ...]:
+        return tuple(_investigation(item) for item in investigations(self._canon))
 
     def probes(self) -> Sequence[CanonicalProbe]:
         return self._probes
@@ -269,6 +278,20 @@ def _scenario(item: dict[str, Any], canon: Canon) -> DemoScenario:
         resource=item["resource"],
         subjects=tuple(subjects),
         related_resources=tuple(item.get("also", ())),
+    )
+
+
+def _investigation(item: dict[str, Any]) -> DemoInvestigation:
+    person = item["person"]
+    return DemoInvestigation(
+        key=item["id"],
+        title=item["title"],
+        question=item["question"],
+        principal=ScenarioSubject("person", person["name"], person["sid"]),
+        resource=item["resource"],
+        access_path=item["access_path"],
+        summary=item["demonstrates"],
+        scenarios=tuple(item["scenarios"]),
     )
 
 

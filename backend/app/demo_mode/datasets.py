@@ -51,6 +51,11 @@ Optional members, read with ``getattr`` so a dataset declares only what it has:
     the folder and the people or groups it is about by the dataset's own identifiers. Served
     on ``GET /api/v1/demo`` so the UI can link into the real application's pages for them;
     Demo Mode renders them and attaches no meaning to any of them.
+``investigations()``
+    :class:`DemoInvestigation` values: access questions the demo opens with -- one principal,
+    one folder, one access path -- so a reviewer can start a guided investigation without
+    looking up a SID. Served on ``GET /api/v1/demo`` beside the scenarios and, like them,
+    display-only: the answer is whatever the real access engine computes for the pair.
 
 **generations() is called often** -- by the demo overview on every request -- so a dataset
 should build its transcripts once and return the same tuple thereafter.
@@ -90,6 +95,7 @@ __all__ = [
     "DatasetEntry",
     "DatasetUnavailable",
     "DemoDatasetMetadata",
+    "DemoInvestigation",
     "DemoScenario",
     "ProbeKind",
     "ScanGeneration",
@@ -97,6 +103,7 @@ __all__ = [
     "SyntheticDataset",
     "baseline_generations",
     "cached_dataset",
+    "dataset_investigations",
     "dataset_scenarios",
     "load_dataset",
 ]
@@ -170,6 +177,23 @@ class DemoScenario:
     related_resources: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class DemoInvestigation:
+    """One access question the dataset offers as a guided investigation. Display-only."""
+
+    key: str
+    title: str
+    question: str
+    """The question in words, naming the principal and the folder."""
+    principal: ScenarioSubject
+    resource: str
+    """The UNC path of the folder the question is about."""
+    access_path: Literal["remote_smb", "local"] = "remote_smb"
+    summary: str = ""
+    scenarios: tuple[str, ...] = ()
+    """Keys of the :class:`DemoScenario` walkthroughs this one belongs to."""
+
+
 ProbeKind = Literal["principal", "membership", "share", "share_ace", "ntfs_resource", "ntfs_ace"]
 
 
@@ -223,6 +247,12 @@ def baseline_generations(dataset: SyntheticDataset) -> int:
 def dataset_scenarios(dataset: SyntheticDataset) -> tuple[DemoScenario, ...]:
     """The dataset's optional :class:`DemoScenario` walkthroughs, or none."""
     supplier = getattr(dataset, "scenarios", None)
+    return tuple(supplier()) if callable(supplier) else ()
+
+
+def dataset_investigations(dataset: SyntheticDataset) -> tuple[DemoInvestigation, ...]:
+    """The dataset's optional :class:`DemoInvestigation` questions, or none."""
+    supplier = getattr(dataset, "investigations", None)
     return tuple(supplier()) if callable(supplier) else ()
 
 

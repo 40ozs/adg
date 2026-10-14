@@ -68,6 +68,14 @@
             "title": "Generations",
             "type": "array"
           },
+          "investigations": {
+            "description": "Guided access investigations to start from: one principal and one folder each, chosen by the dataset.",
+            "items": {
+              "$ref": "#/components/schemas/InvestigationSeedView"
+            },
+            "title": "Investigations",
+            "type": "array"
+          },
           "mutation_policy": {
             "items": {
               "$ref": "#/components/schemas/PolicyView"
@@ -157,6 +165,63 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InvestigationSeedView": {
+        "description": "One access question the demo offers as a guided investigation (ADG-DEMO-02).\n\nThe pair to ask about, and nothing about the answer: the investigation page sends it to\n``GET /api/v1/access/explain`` like any other, and renders what the engine computes.",
+        "properties": {
+          "access_path": {
+            "enum": [
+              "remote_smb",
+              "local"
+            ],
+            "title": "Access Path",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/ScenarioSubjectView"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "resource": {
+            "description": "UNC path of the folder the question is about.",
+            "title": "Resource",
+            "type": "string"
+          },
+          "scenarios": {
+            "description": "Keys of the scenarios this question belongs to.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Scenarios",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "question",
+          "principal",
+          "resource",
+          "access_path",
+          "summary",
+          "scenarios"
+        ],
+        "title": "InvestigationSeedView",
         "type": "object"
       },
       "PolicyView": {

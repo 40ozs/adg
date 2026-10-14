@@ -29,10 +29,12 @@ from app.auth.roles import Capability
 from app.config import Settings
 from app.demo_mode.datasets import (
     DatasetUnavailable,
+    DemoInvestigation,
     DemoScenario,
     SyntheticDataset,
     baseline_generations,
     cached_dataset,
+    dataset_investigations,
     dataset_scenarios,
 )
 from app.demo_mode.lifecycle import DemoLifecycleError, generation_states, run_synthetic_scan
@@ -79,6 +81,38 @@ class ScenarioView(BaseModel):
         )
 
 
+class InvestigationSeedView(BaseModel):
+    """One access question the demo offers as a guided investigation (ADG-DEMO-02).
+
+    The pair to ask about, and nothing about the answer: the investigation page sends it to
+    ``GET /api/v1/access/explain`` like any other, and renders what the engine computes.
+    """
+
+    key: str
+    title: str
+    question: str
+    principal: ScenarioSubjectView
+    resource: str = Field(description="UNC path of the folder the question is about.")
+    access_path: Literal["remote_smb", "local"]
+    summary: str
+    scenarios: list[str] = Field(description="Keys of the scenarios this question belongs to.")
+
+    @classmethod
+    def of(cls, item: DemoInvestigation) -> InvestigationSeedView:
+        return cls(
+            key=item.key,
+            title=item.title,
+            question=item.question,
+            principal=ScenarioSubjectView(
+                kind=item.principal.kind, name=item.principal.name, sid=item.principal.sid
+            ),
+            resource=item.resource,
+            access_path=item.access_path,
+            summary=item.summary,
+            scenarios=list(item.scenarios),
+        )
+
+
 class PolicyView(BaseModel):
     method: str
     path: str
@@ -96,6 +130,11 @@ class DemoView(BaseModel):
         description="The generation 'Run synthetic scan' would apply, or null when none remains."
     )
     scenarios: list[ScenarioView]
+    investigations: list[InvestigationSeedView] = Field(
+        default_factory=list,
+        description="Guided access investigations to start from: one principal and one "
+        "folder each, chosen by the dataset.",
+    )
     mutation_policy: list[PolicyView]
 
 
@@ -146,6 +185,7 @@ async def demo_overview(request: Request) -> DemoView:
         baseline_generations=baseline,
         next_generation=pending[0].name if pending else None,
         scenarios=[ScenarioView.of(item) for item in dataset_scenarios(dataset)],
+        investigations=[InvestigationSeedView.of(item) for item in dataset_investigations(dataset)],
         mutation_policy=[
             PolicyView(
                 method=method,

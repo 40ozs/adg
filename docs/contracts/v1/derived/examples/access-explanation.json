@@ -3,11 +3,11 @@
   "basis": {
     "batches_received": 1,
     "is_empty": false,
-    "latest_activity_at": "2026-09-14T21:13:52.961056Z",
-    "latest_run_id": "67fccf66-d30a-4804-a1c1-6c00b414dead",
+    "latest_activity_at": "2026-10-14T21:29:46.571521Z",
+    "latest_run_id": "46034753-0223-456b-9245-e5f72b584060",
     "observations_applied": 10,
     "runs": 1,
-    "token": "0a6c0ae82c06105bc9e807805d354570"
+    "token": "b1b4269608a1edff65717028f6cbc1d9"
   },
   "complete": true,
   "cycles": [],
@@ -205,6 +205,106 @@
     },
     "share_key": "fs01|finance"
   },
+  "evidence": [
+    {
+      "basis": "assumed",
+      "collection_method": null,
+      "collector": null,
+      "edge_id": "assumed_membership:principal:S-1-5-21-1004336348-1177238915-682003330-1104->assumed:S-1-1-0",
+      "first_observed_at": null,
+      "first_observed_run_id": null,
+      "last_observed_at": null,
+      "last_observed_run_id": null,
+      "last_run_status": null,
+      "record": null,
+      "record_key": null,
+      "source_key": null
+    },
+    {
+      "basis": "observed",
+      "collection_method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector": "ntfs",
+      "edge_id": "grant:ntfs-ace:\\\\fs01\\finance:0000",
+      "first_observed_at": "2026-09-14T08:00:10Z",
+      "first_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_observed_at": "2026-09-14T08:00:10Z",
+      "last_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_run_status": "succeeded",
+      "record": "ntfs_ace",
+      "record_key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+      "source_key": "ntfs_ace|\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03"
+    },
+    {
+      "basis": "observed",
+      "collection_method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector": "ntfs",
+      "edge_id": "grant:smb-ace:fs01|finance:0000",
+      "first_observed_at": "2026-09-14T08:00:03Z",
+      "first_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_observed_at": "2026-09-14T08:00:03Z",
+      "last_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_run_status": "succeeded",
+      "record": "smb_share_ace",
+      "record_key": "fs01|finance|S-1-1-0|allow|full",
+      "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|full"
+    },
+    {
+      "basis": "observed",
+      "collection_method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector": "ntfs",
+      "edge_id": "membership:group:S-1-5-21-1004336348-1177238915-682003330-1201->group:S-1-5-21-1004336348-1177238915-682003330-1202",
+      "first_observed_at": "2026-09-14T08:00:08Z",
+      "first_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_observed_at": "2026-09-14T08:00:08Z",
+      "last_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_run_status": "succeeded",
+      "record": "membership_edge",
+      "record_key": "S-1-5-21-1004336348-1177238915-682003330-1202->S-1-5-21-1004336348-1177238915-682003330-1201|directory_group_member",
+      "source_key": "edge|S-1-5-21-1004336348-1177238915-682003330-1202->S-1-5-21-1004336348-1177238915-682003330-1201|directory_group_member"
+    },
+    {
+      "basis": "observed",
+      "collection_method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector": "ntfs",
+      "edge_id": "membership:principal:S-1-5-21-1004336348-1177238915-682003330-1104->group:S-1-5-21-1004336348-1177238915-682003330-1201",
+      "first_observed_at": "2026-09-14T08:00:07Z",
+      "first_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_observed_at": "2026-09-14T08:00:07Z",
+      "last_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_run_status": "succeeded",
+      "record": "membership_edge",
+      "record_key": "S-1-5-21-1004336348-1177238915-682003330-1201->S-1-5-21-1004336348-1177238915-682003330-1104|directory_group_member",
+      "source_key": "edge|S-1-5-21-1004336348-1177238915-682003330-1201->S-1-5-21-1004336348-1177238915-682003330-1104|directory_group_member"
+    },
+    {
+      "basis": "observed",
+      "collection_method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector": "ntfs",
+      "edge_id": "trustee:assumed:S-1-1-0->smb-ace:fs01|finance:0000",
+      "first_observed_at": "2026-09-14T08:00:03Z",
+      "first_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_observed_at": "2026-09-14T08:00:03Z",
+      "last_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_run_status": "succeeded",
+      "record": "smb_share_ace",
+      "record_key": "fs01|finance|S-1-1-0|allow|full",
+      "source_key": "smb_ace|fs01|finance|S-1-1-0|allow|full"
+    },
+    {
+      "basis": "observed",
+      "collection_method": "System.IO.DirectoryInfo.GetAccessControl",
+      "collector": "ntfs",
+      "edge_id": "trustee:group:S-1-5-21-1004336348-1177238915-682003330-1202->ntfs-ace:\\\\fs01\\finance:0000",
+      "first_observed_at": "2026-09-14T08:00:10Z",
+      "first_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_observed_at": "2026-09-14T08:00:10Z",
+      "last_observed_run_id": "46034753-0223-456b-9245-e5f72b584060",
+      "last_run_status": "succeeded",
+      "record": "ntfs_ace",
+      "record_key": "\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03",
+      "source_key": "ntfs_ace|\\\\fs01\\finance|S-1-5-21-1004336348-1177238915-682003330-1202|allow|0x001301bf|0x03"
+    }
+  ],
   "graph": {
     "edges": [
       {
@@ -336,6 +436,124 @@
         "sid": "S-1-1-0"
       }
     ]
+  },
+  "investigation": {
+    "affects_conclusion": false,
+    "impact": "none",
+    "next_steps": [
+      {
+        "about": null,
+        "code": "review_sole_route",
+        "condition": null,
+        "path_id": "p0000"
+      },
+      {
+        "about": null,
+        "code": "review_sole_route",
+        "condition": null,
+        "path_id": "p0001"
+      }
+    ],
+    "open_questions": [
+      {
+        "about": null,
+        "condition": "assumed_token_sids",
+        "detail": {
+          "access_path": "remote_smb",
+          "assumption": "authenticated_user",
+          "sids": [
+            "S-1-1-0",
+            "S-1-5-11",
+            "S-1-5-2"
+          ]
+        },
+        "impact": "none",
+        "may_overstate": false,
+        "may_understate": false,
+        "message": "Well-known SIDs that Windows places in every token of this kind were added to the subject's token. They are listed so the assumption can be checked.",
+        "state": "assumed"
+      }
+    ],
+    "presence": "present",
+    "primary_routes": [
+      {
+        "alternate_path_ids": [],
+        "coverage": {
+          "categories": [
+            "Modify"
+          ],
+          "escalation_rights": [],
+          "extra_rights": [],
+          "indeterminate": false,
+          "is_exact": true,
+          "label": "Modify",
+          "layer": "effective",
+          "mask": "0x001301BF",
+          "primary": "Modify",
+          "unrecognized_bits": null,
+          "value": 1245631
+        },
+        "layer": "ntfs",
+        "membership_hops": 2,
+        "path_id": "p0000",
+        "placement": "explicit",
+        "removal_edge_id": "membership:principal:S-1-5-21-1004336348-1177238915-682003330-1104->group:S-1-5-21-1004336348-1177238915-682003330-1201",
+        "removal_effect": "revokes_access",
+        "rights_after_removal": {
+          "categories": [],
+          "escalation_rights": [],
+          "extra_rights": [],
+          "indeterminate": false,
+          "is_exact": true,
+          "label": "No access",
+          "layer": "effective",
+          "mask": "0x00000000",
+          "primary": "No access",
+          "unrecognized_bits": null,
+          "value": 0
+        },
+        "route": "group"
+      },
+      {
+        "alternate_path_ids": [],
+        "coverage": {
+          "categories": [
+            "Modify"
+          ],
+          "escalation_rights": [],
+          "extra_rights": [],
+          "indeterminate": false,
+          "is_exact": true,
+          "label": "Modify",
+          "layer": "effective",
+          "mask": "0x001301BF",
+          "primary": "Modify",
+          "unrecognized_bits": null,
+          "value": 1245631
+        },
+        "layer": "smb_share",
+        "membership_hops": 1,
+        "path_id": "p0001",
+        "placement": "explicit",
+        "removal_edge_id": "trustee:assumed:S-1-1-0->smb-ace:fs01|finance:0000",
+        "removal_effect": "revokes_access",
+        "rights_after_removal": {
+          "categories": [],
+          "escalation_rights": [],
+          "extra_rights": [],
+          "indeterminate": false,
+          "is_exact": true,
+          "label": "No access",
+          "layer": "effective",
+          "mask": "0x00000000",
+          "primary": "No access",
+          "unrecognized_bits": null,
+          "value": 0
+        },
+        "route": "assumed"
+      }
+    ],
+    "routes_complete": true
   },
   "limits": {
     "max_depth": 32,
@@ -846,7 +1064,7 @@
     "path": "\\\\FS01\\Finance",
     "share_key": "fs01|finance"
   },
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "share": {
     "key": "fs01|finance",
     "name": "Finance",

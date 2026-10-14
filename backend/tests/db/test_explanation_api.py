@@ -621,15 +621,16 @@ class TestWhatTheCachingActuallyCosts:
         )
         assert statements.reading("scan_runs") == 1
 
-    async def test_the_validator_costs_exactly_one_more_than_the_answer(
+    async def test_the_validator_and_the_provenance_cost_one_statement_each(
         self, client: AsyncClient, multiple_paths: None, statements: StatementLog
     ) -> None:
-        """The basis is one aggregate on top of the resolution, and nothing else.
+        """The basis is one aggregate on top of the resolution, and the provenance one more.
 
-        Phase 5A measured that explaining an answer costs what answering costs. This adds
-        the only statement this phase introduces, and pins it at one — a basis read that
-        grew with the estate, or ran per row, would be a cache key more expensive than the
-        thing it caches.
+        Phase 5A measured that explaining an answer costs what answering costs. The cache
+        validator adds one statement, and ADG-DEMO-02's hop provenance (``evidence``) adds
+        exactly one more: a single ``UNION ALL`` by primary key over the rows the graph
+        already names. Both are pinned — a basis read that grew with the estate, or a
+        provenance read that ran per edge, would cost more than the answer it decorates.
         """
         path_addressed = (
             f"/api/v1/access/paths/principals/{quote(ALICE, safe='')}"
@@ -643,7 +644,8 @@ class TestWhatTheCachingActuallyCosts:
             await client.get(explain_url())
         with_basis = statements.count
 
-        assert with_basis == without_basis + 1
+        assert with_basis == without_basis + 2
+        assert statements.reading("scan_runs") == 2, statements.statements
 
 
 class TestItFailsTheWayTheOtherRoutesFail:

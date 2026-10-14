@@ -99,8 +99,27 @@
             "$ref": "#/components/schemas/EffectiveAccessView",
             "description": "The full derivation: the effective mask, and the NTFS and SMB evaluations that produced it with every contributing and denying entry."
           },
+          "evidence": {
+            "description": "Contract 1.1. The provenance of every edge in graph, one entry per edge in graph order: the run and collector that reported it, or why no row backs it.",
+            "items": {
+              "$ref": "#/components/schemas/HopEvidenceView"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
           "graph": {
             "$ref": "#/components/schemas/ExplanationGraphView"
+          },
+          "investigation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestigationView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contract 1.1. The explanation summarized as an investigation: the route that carries the access on each layer, the open questions and whether they reach the conclusion, and what to look at next. Always present from this server."
           },
           "limits": {
             "$ref": "#/components/schemas/ExplanationLimitsView"
@@ -125,8 +144,8 @@
             "$ref": "#/components/schemas/ResourceRef"
           },
           "schema_version": {
-            "const": "1.0",
-            "default": "1.0",
+            "const": "1.1",
+            "default": "1.1",
             "description": "Version of the derived-answer contract this body conforms to. Additive changes bump the minor; a breaking change means a new major and a new path.",
             "title": "Schema Version",
             "type": "string"
@@ -237,8 +256,8 @@
             "$ref": "#/components/schemas/ResourceRef"
           },
           "schema_version": {
-            "const": "1.0",
-            "default": "1.0",
+            "const": "1.1",
+            "default": "1.1",
             "title": "Schema Version",
             "type": "string"
           },
@@ -357,6 +376,16 @@
         ],
         "title": "AccessPathsResponse",
         "type": "object"
+      },
+      "AccessPresence": {
+        "description": "Question 1, read straight off the verdict.",
+        "enum": [
+          "present",
+          "absent",
+          "undetermined"
+        ],
+        "title": "AccessPresence",
+        "type": "string"
       },
       "AccessSideView": {
         "description": "One effective-access answer, at one instant.",
@@ -3655,6 +3684,16 @@
         "title": "ComparisonResponse",
         "type": "object"
       },
+      "ConclusionImpact": {
+        "description": "Question 6, per open question and for the answer as a whole. Ordered by severity.",
+        "enum": [
+          "none",
+          "extent",
+          "presence"
+        ],
+        "title": "ConclusionImpact",
+        "type": "string"
+      },
       "ConfigurationView": {
         "description": "What the rules were set to do when this report was produced.",
         "properties": {
@@ -5046,6 +5085,16 @@
         "title": "EntryBody",
         "type": "object"
       },
+      "EntryPlacement": {
+        "description": "Question 3, the other axis: where the entry at the end of the route was set.",
+        "enum": [
+          "explicit",
+          "inherited",
+          "owner"
+        ],
+        "title": "EntryPlacement",
+        "type": "string"
+      },
       "EntryRemovalView": {
         "description": "What removing one of this item's own entries would do, on its own.",
         "properties": {
@@ -5452,6 +5501,20 @@
         ],
         "title": "EvidenceRecordView",
         "type": "object"
+      },
+      "EvidenceState": {
+        "description": "How an open question stands, in the vocabulary ADG-DEMO-01 fixed for SYSTEM.\n\nA display classification only. Whether a question affects the conclusion is decided by\nits direction (:class:`ConclusionImpact`), never by this value, so an unfamiliar\ncondition that falls through to :attr:`CONTEXT` still gets the right impact.",
+        "enum": [
+          "confirmed",
+          "ambiguous",
+          "missing",
+          "conflicting",
+          "assumed",
+          "derived",
+          "context"
+        ],
+        "title": "EvidenceState",
+        "type": "string"
       },
       "ExecutionPolicyView": {
         "description": "What this deployment can do to Windows. The answer is nothing, with reasons.",
@@ -6265,12 +6328,12 @@
             "type": "object"
           },
           "may_overstate": {
-            "description": "True when this gap means the rights could be wider than reported.",
+            "description": "True when this gap means the answer may overstate: the real rights could be narrower than reported (an unseen restriction).",
             "title": "May Overstate",
             "type": "boolean"
           },
           "may_understate": {
-            "description": "True when this gap means the rights could be narrower than reported.",
+            "description": "True when this gap means the answer may understate: the real rights could be wider than reported (an unseen grant or membership).",
             "title": "May Understate",
             "type": "boolean"
           },
@@ -6679,6 +6742,155 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HopEvidenceView": {
+        "description": "Where one edge of the explanation graph came from (ADG-DEMO-02).\n\nOne per edge of ``graph``, so an investigator can ask of any hop on any path: which\ncollector reported this, in which run, and when it was first and last seen. Nothing\nhere takes part in the answer; it is what the answer rests on.",
+        "properties": {
+          "basis": {
+            "description": "observed — a stored row a collector reported, with its provenance below. assumed — a SID Windows places in the token; no collector reports it and no row exists. projected — an NTFS entry projected from an ancestor's DACL because this directory's own descriptor was never read. unrecorded — the hop is real but no stored row backs it here (the token recorded a chain whose edge was not supplied); treat it as unverified.",
+            "enum": [
+              "observed",
+              "assumed",
+              "projected",
+              "unrecorded"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "collection_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection Method"
+          },
+          "collector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The collector of the last observing run: active_directory, local_groups, smb or ntfs.",
+            "title": "Collector"
+          },
+          "edge_id": {
+            "title": "Edge Id",
+            "type": "string"
+          },
+          "first_observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Observed At"
+          },
+          "first_observed_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Observed Run Id"
+          },
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a collector last reported this row. Current state keeps a row until a complete scan of its scope proves it gone, so this can be older than the latest run.",
+            "title": "Last Observed At"
+          },
+          "last_observed_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Observed Run Id"
+          },
+          "last_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Status of the last observing run, as it completed.",
+            "title": "Last Run Status"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "enum": [
+                  "membership_edge",
+                  "ntfs_ace",
+                  "smb_share_ace",
+                  "ntfs_resource"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which stored row the provenance is read from.",
+            "title": "Record"
+          },
+          "record_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Key"
+          },
+          "source_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The collector's own identifier for the observation.",
+            "title": "Source Key"
+          }
+        },
+        "required": [
+          "edge_id",
+          "basis"
+        ],
+        "title": "HopEvidenceView",
+        "type": "object"
+      },
       "IdentityHitView": {
         "properties": {
           "display_name": {
@@ -6865,6 +7077,59 @@
           "protected"
         ],
         "title": "InheritanceChangeInput",
+        "type": "object"
+      },
+      "InvestigationView": {
+        "description": "The explanation summarized as an investigation (ADG-DEMO-02).\n\nEvery field is a selection from, or a classification of, something else in this response\n— the verdict, the paths, the removal targets, the warnings — computed by the engine\n(:func:`app.access_engine.investigate`), so it cannot disagree with the explanation.",
+        "properties": {
+          "affects_conclusion": {
+            "description": "True when an open question could change whether access exists.",
+            "title": "Affects Conclusion",
+            "type": "boolean"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/ConclusionImpact",
+            "description": "The most severe impact of any open question."
+          },
+          "next_steps": {
+            "items": {
+              "$ref": "#/components/schemas/NextStepView"
+            },
+            "title": "Next Steps",
+            "type": "array"
+          },
+          "open_questions": {
+            "items": {
+              "$ref": "#/components/schemas/OpenQuestionView"
+            },
+            "title": "Open Questions",
+            "type": "array"
+          },
+          "presence": {
+            "$ref": "#/components/schemas/AccessPresence",
+            "description": "present (granted), absent (denied or no_grant, conclusive), or undetermined (indeterminate). Never absent while the verdict is inconclusive."
+          },
+          "primary_routes": {
+            "description": "The strongest contributing route on each layer, NTFS first. Over SMB there are two, because both ACLs must allow a right for it to survive.",
+            "items": {
+              "$ref": "#/components/schemas/PrimaryRouteView"
+            },
+            "title": "Primary Routes",
+            "type": "array"
+          },
+          "routes_complete": {
+            "description": "False when the path enumeration was truncated: a stronger route than the one reported may exist.",
+            "title": "Routes Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "presence",
+          "impact",
+          "affects_conclusion",
+          "routes_complete"
+        ],
+        "title": "InvestigationView",
         "type": "object"
       },
       "ItemContextResponse": {
@@ -7746,6 +8011,69 @@
           "content_digest"
         ],
         "title": "MembershipView",
+        "type": "object"
+      },
+      "NextStepCode": {
+        "description": "Question 7. A closed set, so a client words each one and a test can pin each one.",
+        "enum": [
+          "resolve_trustee_identity",
+          "collect_group_membership",
+          "settle_system_mapping",
+          "resolve_subject_identity",
+          "collect_subject_membership",
+          "rescan_resource",
+          "review_redundant_entry",
+          "review_sole_route",
+          "review_finding",
+          "inspect_explanation"
+        ],
+        "title": "NextStepCode",
+        "type": "string"
+      },
+      "NextStepView": {
+        "description": "What to look at next. A closed vocabulary; the client words it.",
+        "properties": {
+          "about": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrincipalSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "$ref": "#/components/schemas/NextStepCode"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The open question this step answers, when it answers one.",
+            "title": "Condition"
+          },
+          "path_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path Id"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "NextStepView",
         "type": "object"
       },
       "NodeKind": {
@@ -8776,6 +9104,61 @@
         "title": "ObservationKind",
         "type": "string"
       },
+      "OpenQuestionView": {
+        "description": "One finding, classified for an investigator, with whether it reaches the conclusion.",
+        "properties": {
+          "about": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrincipalSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The principal the finding is about, when it names one: an ACL trustee, or the SYSTEM subject."
+          },
+          "condition": {
+            "title": "Condition",
+            "type": "string"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "title": "Detail",
+            "type": "object"
+          },
+          "impact": {
+            "$ref": "#/components/schemas/ConclusionImpact",
+            "description": "none — recorded for context. extent — the access stands; the rights could be wider than shown. presence — the conclusion itself rests on it: a grant could narrow to nothing, or a negative could hide a grant."
+          },
+          "may_overstate": {
+            "title": "May Overstate",
+            "type": "boolean"
+          },
+          "may_understate": {
+            "title": "May Understate",
+            "type": "boolean"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EvidenceState",
+            "description": "confirmed, ambiguous, missing, conflicting (the ADG-DEMO-01 vocabulary), assumed, derived, or context. A display classification: impact is decided by the finding's direction, not by this."
+          }
+        },
+        "required": [
+          "condition",
+          "message",
+          "state",
+          "impact",
+          "may_overstate",
+          "may_understate"
+        ],
+        "title": "OpenQuestionView",
+        "type": "object"
+      },
       "OwnerListResponse": {
         "properties": {
           "items": {
@@ -9678,6 +10061,86 @@
           "detail"
         ],
         "title": "PreconditionView",
+        "type": "object"
+      },
+      "PrimaryRouteView": {
+        "description": "The route that carries the access through one ACL.",
+        "properties": {
+          "alternate_path_ids": {
+            "description": "Other contributing grant paths on the same layer.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Alternate Path Ids",
+            "type": "array"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/RightsView",
+            "description": "The part of the final effective mask this route's entry names on its own. The ranking key among contributing routes."
+          },
+          "layer": {
+            "title": "Layer",
+            "type": "string"
+          },
+          "membership_hops": {
+            "title": "Membership Hops",
+            "type": "integer"
+          },
+          "path_id": {
+            "description": "The id of the path in ``paths``.",
+            "title": "Path Id",
+            "type": "string"
+          },
+          "placement": {
+            "$ref": "#/components/schemas/EntryPlacement",
+            "description": "explicit — set on this object (or the share). inherited — set on an ancestor folder. owner — not an entry."
+          },
+          "removal_edge_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first removable edge of the route from the subject's end, as measured in removal_targets.",
+            "title": "Removal Edge Id"
+          },
+          "removal_effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RemovalEffect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rights_after_removal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RightsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteKind",
+            "description": "direct — the entry names the subject. group — through observed memberships. assumed — through a SID Windows assumes (Everyone, Authenticated Users). ownership — implicit owner rights."
+          }
+        },
+        "required": [
+          "layer",
+          "path_id",
+          "route",
+          "placement",
+          "membership_hops",
+          "coverage"
+        ],
+        "title": "PrimaryRouteView",
         "type": "object"
       },
       "PrincipalAccessView": {
@@ -11182,6 +11645,17 @@
         "title": "RemediationView",
         "type": "object"
       },
+      "RemovalEffect": {
+        "description": "What the engine measured when the subject's own first link of a route was removed.",
+        "enum": [
+          "revokes_access",
+          "narrows_access",
+          "changes_nothing",
+          "widens_access"
+        ],
+        "title": "RemovalEffect",
+        "type": "string"
+      },
       "RemovalTargetView": {
         "description": "What removing one edge would do, measured by re-running the access check.",
         "properties": {
@@ -11342,8 +11816,8 @@
             "$ref": "#/components/schemas/PageInfo"
           },
           "schema_version": {
-            "const": "1.0",
-            "default": "1.0",
+            "const": "1.1",
+            "default": "1.1",
             "title": "Schema Version",
             "type": "string"
           },
@@ -11860,6 +12334,17 @@
         ],
         "title": "RoleDescription",
         "type": "object"
+      },
+      "RouteKind": {
+        "description": "Question 3: how the entry at the end of a route reaches the subject.",
+        "enum": [
+          "direct",
+          "group",
+          "assumed",
+          "ownership"
+        ],
+        "title": "RouteKind",
+        "type": "string"
       },
       "RuleConfigView": {
         "description": "One rule, as this installation has configured it.",

@@ -51,8 +51,9 @@ time-to-live anywhere. ADR-0017 and :mod:`app.api.caching`.
 
 from __future__ import annotations
 
+import datetime as dt
 from collections.abc import Sequence
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Header, Path, Query, Response
 from pydantic import BaseModel, Field
@@ -67,28 +68,40 @@ from app.access_engine import (
     AccessFinding,
     AccessOutcome,
     AccessPath,
+    AccessPresence,
     AccessVerdict,
     AclEvaluation,
     AclProvenance,
     AppliedAce,
     CausalPath,
+    ConclusionImpact,
     EdgeKind,
     EffectiveAccess,
+    EntryPlacement,
+    EvidenceState,
     ExplanationEdge,
     ExplanationGraph,
     ExplanationLimits,
     ExplanationNode,
+    Investigation,
     LimitingLayer,
+    NextStep,
+    NextStepCode,
     NodeKind,
+    OpenQuestion,
     PathEffect,
     PathRelation,
+    PrimaryRoute,
+    RemovalEffect,
     RemovalTarget,
     RightsMask,
+    RouteKind,
     SubjectToken,
     TokenAssumption,
     TokenSid,
     category_display_name,
     classify_access,
+    investigate,
     summarize,
 )
 from app.api.caching import (
@@ -110,8 +123,9 @@ from app.api.pagination import (
     encode_offset_cursor,
     normalize_limit,
 )
-from app.domain import DomainValidationError, TraversalLimits, parse_unc_path
+from app.domain import DomainValidationError, PrincipalKind, TraversalLimits, parse_unc_path
 from app.repositories import MembershipRepository, PrincipalRecord, ResourceRepository
+from app.repositories.provenance import ObservedRecord, ProvenanceRepository
 from app.services.access import (
     AccessService,
     PrincipalAccess,
@@ -320,10 +334,12 @@ class FindingView(BaseModel):
     condition: str
     message: str
     may_overstate: bool = Field(
-        description="True when this gap means the rights could be wider than reported."
+        description="True when this gap means the answer may overstate: the real rights could "
+        "be narrower than reported (an unseen restriction)."
     )
     may_understate: bool = Field(
-        description="True when this gap means the rights could be narrower than reported."
+        description="True when this gap means the answer may understate: the real rights "
+        "could be wider than reported (an unseen grant or membership)."
     )
     detail: dict[str, Any] = Field(default_factory=dict)
 
@@ -585,6 +601,149 @@ class VerdictView(BaseModel):
     )
 
 
+class HopEvidenceView(BaseModel):
+    """Where one edge of the explanation graph came from (ADG-DEMO-02).
+
+    One per edge of ``graph``, so an investigator can ask of any hop on any path: which
+    collector reported this, in which run, and when it was first and last seen. Nothing
+    here takes part in the answer; it is what the answer rests on.
+    """
+
+    edge_id: str
+    basis: Literal["observed", "assumed", "projected", "unrecorded"] = Field(
+        description=(
+            "observed — a stored row a collector reported, with its provenance below. "
+            "assumed — a SID Windows places in the token; no collector reports it and no "
+            "row exists. projected — an NTFS entry projected from an ancestor's DACL because "
+            "this directory's own descriptor was never read. unrecorded — the hop is real "
+            "but no stored row backs it here (the token recorded a chain whose edge was not "
+            "supplied); treat it as unverified."
+        )
+    )
+    record: Literal["membership_edge", "ntfs_ace", "smb_share_ace", "ntfs_resource"] | None = Field(
+        default=None, description="Which stored row the provenance is read from."
+    )
+    record_key: str | None = None
+    source_key: str | None = Field(
+        default=None, description="The collector's own identifier for the observation."
+    )
+    first_observed_at: dt.datetime | None = None
+    first_observed_run_id: str | None = None
+    last_observed_at: dt.datetime | None = Field(
+        default=None,
+        description="When a collector last reported this row. Current state keeps a row "
+        "until a complete scan of its scope proves it gone, so this can be older than the "
+        "latest run.",
+    )
+    last_observed_run_id: str | None = None
+    collector: str | None = Field(
+        default=None,
+        description="The collector of the last observing run: active_directory, "
+        "local_groups, smb or ntfs.",
+    )
+    collection_method: str | None = None
+    last_run_status: str | None = Field(
+        default=None, description="Status of the last observing run, as it completed."
+    )
+
+
+class PrimaryRouteView(BaseModel):
+    """The route that carries the access through one ACL."""
+
+    layer: str
+    path_id: str = Field(description="The id of the path in ``paths``.")
+    route: RouteKind = Field(
+        description="direct — the entry names the subject. group — through observed "
+        "memberships. assumed — through a SID Windows assumes (Everyone, Authenticated "
+        "Users). ownership — implicit owner rights."
+    )
+    placement: EntryPlacement = Field(
+        description="explicit — set on this object (or the share). inherited — set on an "
+        "ancestor folder. owner — not an entry."
+    )
+    membership_hops: int
+    coverage: RightsView = Field(
+        description="The part of the final effective mask this route's entry names on its "
+        "own. The ranking key among contributing routes."
+    )
+    removal_edge_id: str | None = Field(
+        default=None,
+        description="The first removable edge of the route from the subject's end, as "
+        "measured in removal_targets.",
+    )
+    removal_effect: RemovalEffect | None = None
+    rights_after_removal: RightsView | None = None
+    alternate_path_ids: list[str] = Field(
+        default_factory=list,
+        description="Other contributing grant paths on the same layer.",
+    )
+
+
+class OpenQuestionView(BaseModel):
+    """One finding, classified for an investigator, with whether it reaches the conclusion."""
+
+    condition: str
+    message: str
+    state: EvidenceState = Field(
+        description="confirmed, ambiguous, missing, conflicting (the ADG-DEMO-01 vocabulary), "
+        "assumed, derived, or context. A display classification: impact is decided by the "
+        "finding's direction, not by this."
+    )
+    impact: ConclusionImpact = Field(
+        description="none — recorded for context. extent — the access stands; the rights "
+        "could be wider than shown. presence — the conclusion itself rests on it: a grant "
+        "could narrow to nothing, or a negative could hide a grant."
+    )
+    may_overstate: bool
+    may_understate: bool
+    about: PrincipalSummary | None = Field(
+        default=None,
+        description="The principal the finding is about, when it names one: an ACL trustee, "
+        "or the SYSTEM subject.",
+    )
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
+class NextStepView(BaseModel):
+    """What to look at next. A closed vocabulary; the client words it."""
+
+    code: NextStepCode
+    about: PrincipalSummary | None = None
+    path_id: str | None = None
+    condition: str | None = Field(
+        default=None, description="The open question this step answers, when it answers one."
+    )
+
+
+class InvestigationView(BaseModel):
+    """The explanation summarized as an investigation (ADG-DEMO-02).
+
+    Every field is a selection from, or a classification of, something else in this response
+    — the verdict, the paths, the removal targets, the warnings — computed by the engine
+    (:func:`app.access_engine.investigate`), so it cannot disagree with the explanation.
+    """
+
+    presence: AccessPresence = Field(
+        description="present (granted), absent (denied or no_grant, conclusive), or "
+        "undetermined (indeterminate). Never absent while the verdict is inconclusive."
+    )
+    primary_routes: list[PrimaryRouteView] = Field(
+        default_factory=list,
+        description="The strongest contributing route on each layer, NTFS first. Over SMB "
+        "there are two, because both ACLs must allow a right for it to survive.",
+    )
+    open_questions: list[OpenQuestionView] = Field(default_factory=list)
+    impact: ConclusionImpact = Field(description="The most severe impact of any open question.")
+    affects_conclusion: bool = Field(
+        description="True when an open question could change whether access exists."
+    )
+    next_steps: list[NextStepView] = Field(default_factory=list)
+    routes_complete: bool = Field(
+        description="False when the path enumeration was truncated: a stronger route than "
+        "the one reported may exist."
+    )
+
+
 class ExplanationLimitsView(BaseModel):
     """The bounds actually applied, after clamping."""
 
@@ -701,6 +860,17 @@ class AccessExplanationResponse(BaseModel):
         description="Everything that qualifies this answer: assumptions made, trustees that "
         "could not be resolved, descriptors never read. The same list as effective.findings, "
         "surfaced here because it qualifies the whole response and not just the mask.",
+    )
+    evidence: list[HopEvidenceView] = Field(
+        default_factory=list,
+        description="Contract 1.1. The provenance of every edge in graph, one entry per edge "
+        "in graph order: the run and collector that reported it, or why no row backs it.",
+    )
+    investigation: InvestigationView | None = Field(
+        default=None,
+        description="Contract 1.1. The explanation summarized as an investigation: the route "
+        "that carries the access on each layer, the open questions and whether they reach "
+        "the conclusion, and what to look at next. Always present from this server.",
     )
     limits: ExplanationLimitsView
     complete: bool = Field(
@@ -1005,6 +1175,7 @@ async def explain(
     )
     explanation = resolved.explanation
     labels = resolved.principals
+    evidence = await _hop_evidence(ProvenanceRepository(session), explanation)
     validator.apply(response)
     return AccessExplanationResponse(
         basis=basis_view(validator.basis),
@@ -1020,6 +1191,8 @@ async def explain(
         removal_targets=[_removal_view(target) for target in explanation.removal_targets],
         cycles=[list(cycle.members) for cycle in explanation.cycles],
         warnings=[_finding_view(finding) for finding in explanation.access.findings],
+        evidence=evidence,
+        investigation=_investigation_view(explanation, labels),
         limits=_limits_view(explanation),
         complete=explanation.complete,
         truncation=[reason.value for reason in explanation.truncation],
@@ -1392,6 +1565,152 @@ async def _explain(
         assumption=assumption,
     )
     return resolved, record, key
+
+
+async def _hop_evidence(
+    provenance: ProvenanceRepository, explanation: AccessExplanation
+) -> list[HopEvidenceView]:
+    """The provenance of every edge in the explanation graph, in graph order.
+
+    One statement, issued only when the graph names a stored row: every membership row, NTFS
+    and share entry, and (for an ownership edge) the descriptor the graph refers to, joined
+    to the run and collector that last observed each. Bounded by the explanation's limits.
+    """
+    edges = explanation.graph.edges
+    nodes = {node.node_id: node for node in explanation.graph.nodes}
+    resource_key = explanation.access.resource_key
+    ace_layers = {
+        edge.ace_key: _ace_layer(edge, nodes) for edge in edges if edge.ace_key is not None
+    }
+    rows = await provenance.observed(
+        membership_edges=[e.membership_edge_key for e in edges if e.membership_edge_key],
+        ntfs_aces=[key for key, layer in ace_layers.items() if layer is NodeKind.NTFS_ACE],
+        share_aces=[key for key, layer in ace_layers.items() if layer is NodeKind.SMB_ACE],
+        ntfs_resources=([resource_key] if any(e.kind is EdgeKind.OWNERSHIP for e in edges) else []),
+    )
+    projected = explanation.access.provenance is AclProvenance.DERIVED
+
+    views: list[HopEvidenceView] = []
+    for edge in edges:
+        if edge.kind is EdgeKind.ASSUMED_MEMBERSHIP:
+            views.append(HopEvidenceView(edge_id=edge.edge_id, basis="assumed"))
+            continue
+        row: ObservedRecord | None = None
+        if edge.kind is EdgeKind.MEMBERSHIP and edge.membership_edge_key:
+            row = rows.get(("membership_edge", edge.membership_edge_key))
+        elif edge.kind is EdgeKind.OWNERSHIP:
+            row = rows.get(("ntfs_resource", resource_key))
+        elif edge.ace_key is not None:
+            on_ntfs = ace_layers[edge.ace_key] is NodeKind.NTFS_ACE
+            row = rows.get(("ntfs_ace" if on_ntfs else "smb_share_ace", edge.ace_key))
+        if row is not None:
+            views.append(_observed_view(edge.edge_id, row))
+            continue
+        on_projected_ntfs = (
+            projected
+            and edge.kind in (EdgeKind.TRUSTEE, EdgeKind.GRANT, EdgeKind.DENY)
+            and _ace_layer(edge, nodes) is NodeKind.NTFS_ACE
+        )
+        views.append(
+            HopEvidenceView(
+                edge_id=edge.edge_id, basis="projected" if on_projected_ntfs else "unrecorded"
+            )
+        )
+    return views
+
+
+def _ace_layer(edge: ExplanationEdge, nodes: dict[str, ExplanationNode]) -> NodeKind | None:
+    """The kind of the ACE node an ACE-bearing edge touches: NTFS or SMB."""
+    node = nodes.get(edge.target if edge.kind is EdgeKind.TRUSTEE else edge.source)
+    return None if node is None else node.kind
+
+
+def _observed_view(edge_id: str, row: ObservedRecord) -> HopEvidenceView:
+    return HopEvidenceView(
+        edge_id=edge_id,
+        basis="observed",
+        record=row.record,
+        record_key=row.key,
+        source_key=row.source_key,
+        first_observed_at=row.first_observed_at,
+        first_observed_run_id=str(row.first_observed_run_id),
+        last_observed_at=row.last_observed_at,
+        last_observed_run_id=str(row.last_observed_run_id),
+        collector=row.collector,
+        collection_method=row.collection_method,
+        last_run_status=row.last_run_status,
+    )
+
+
+def _investigation_view(
+    explanation: AccessExplanation, labels: dict[str, PrincipalRecord]
+) -> InvestigationView:
+    """The engine's investigation, with every principal it names rendered.
+
+    ``unidentified`` is the one input only this layer can supply: which keys the findings
+    name that no record describes, or that a record describes as ``unresolved``. The
+    labels already hold every ACL trustee, so this costs no query.
+    """
+    named = {
+        value
+        for finding in explanation.access.findings
+        for field in ("trustee_key", "subject_key")
+        if isinstance(value := finding.detail.get(field), str)
+    }
+    unidentified = {
+        key
+        for key in named
+        if (record := labels.get(key)) is None or record.principal_kind is PrincipalKind.UNRESOLVED
+    }
+    summary: Investigation = investigate(explanation, unidentified=unidentified)
+    return InvestigationView(
+        presence=summary.presence,
+        primary_routes=[_primary_route_view(route) for route in summary.primary_routes],
+        open_questions=[_open_question_view(item, labels) for item in summary.open_questions],
+        impact=summary.impact,
+        affects_conclusion=summary.affects_conclusion,
+        next_steps=[_next_step_view(step, labels) for step in summary.next_steps],
+        routes_complete=summary.routes_complete,
+    )
+
+
+def _primary_route_view(route: PrimaryRoute) -> PrimaryRouteView:
+    return PrimaryRouteView(
+        layer=route.layer.value,
+        path_id=route.path_id,
+        route=route.route,
+        placement=route.placement,
+        membership_hops=route.membership_hops,
+        coverage=render_rights(route.coverage),
+        removal_edge_id=route.removal_edge_id,
+        removal_effect=route.removal_effect,
+        rights_after_removal=(
+            None if route.removal is None else render_rights(route.removal.rights_after)
+        ),
+        alternate_path_ids=list(route.alternates),
+    )
+
+
+def _open_question_view(item: OpenQuestion, labels: dict[str, PrincipalRecord]) -> OpenQuestionView:
+    return OpenQuestionView(
+        condition=item.finding.condition.value,
+        message=item.finding.message,
+        state=item.state,
+        impact=item.impact,
+        may_overstate=item.finding.may_overstate,
+        may_understate=item.finding.may_understate,
+        about=None if item.about is None else principal_summary(item.about, labels.get(item.about)),
+        detail=item.finding.detail,
+    )
+
+
+def _next_step_view(step: NextStep, labels: dict[str, PrincipalRecord]) -> NextStepView:
+    return NextStepView(
+        code=step.code,
+        about=None if step.about is None else principal_summary(step.about, labels.get(step.about)),
+        path_id=step.path_id,
+        condition=None if step.condition is None else step.condition.value,
+    )
 
 
 def _subgraph(graph: ExplanationGraph, paths: Sequence[CausalPath]) -> ExplanationGraph:

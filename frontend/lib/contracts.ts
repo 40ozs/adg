@@ -101,6 +101,22 @@ export interface DemoScenario {
   related_resources: string[];
 }
 
+/**
+ * An access question the demo dataset offers as a guided investigation (ADG-DEMO-02). The
+ * pair only: the answer is whatever `GET /api/v1/access/explain` computes for it.
+ */
+export interface DemoInvestigation {
+  key: string;
+  title: string;
+  question: string;
+  principal: DemoScenarioSubject;
+  resource: string;
+  access_path: "remote_smb" | "local";
+  summary: string;
+  /** Keys of the scenarios this question belongs to. */
+  scenarios: string[];
+}
+
 /** What one mutating route does on a demo deployment. */
 export interface DemoPolicyEntry {
   method: string;
@@ -118,6 +134,8 @@ export interface DemoOverview {
   baseline_generations: number;
   next_generation: string | null;
   scenarios: DemoScenario[];
+  /** Absent from a server older than ADG-DEMO-02. */
+  investigations?: DemoInvestigation[];
   mutation_policy: DemoPolicyEntry[];
 }
 

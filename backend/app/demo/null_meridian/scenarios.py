@@ -9,13 +9,17 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from app.demo.null_meridian.canon import Canon, build_canon
+from app.demo.null_meridian.canon import Canon, Employee, build_canon
+from app.demo.null_meridian.estate import AceIntent, catalog
 
-__all__ = ["SCENARIO_IDS", "golden_scenarios"]
+__all__ = ["APOLLO", "SCENARIO_IDS", "golden_scenarios", "investigations"]
 
 SCENARIO_IDS: Final = ("A", "B", "C", "D", "E", "F", "G", "H")
 
 FINANCE = r"\\NM-FIN-FS01\Finance"
+
+APOLLO: Final = r"\\NM-ENG-FS01\Engineering\Projects\Apollo"
+"""The folder of the canonical access investigation (ADG-DEMO-02)."""
 
 
 def _person(canon: Canon, tag: str) -> dict[str, str]:
@@ -207,3 +211,68 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
             "look_at": ["GET /api/v1/risks/findings?rule=empty_permission_bearing_group"],
         },
     ]
+
+
+def investigations(canon: Canon | None = None) -> list[dict[str, Any]]:
+    """The guided access investigations the demo opens with (ADG-DEMO-02). One, for now.
+
+    **Why can a long-tenured engineer still modify the Apollo project folder?** It is the
+    question an access review actually asks, and the folder was authored to make answering
+    it honest rather than easy (scenario C): its ACL names a project group, a veteran
+    engineer directly (a historical entry), and a former employee's account that no longer
+    resolves; it inherits five engineering grants; and the share in front of it grants
+    Change to every engineering team, to the same veteran directly, and to Proj-Zephyr-RW,
+    the group scenario H shows has had no members since 2019.
+
+    Nothing here computes the answer. The people are read off the authored ACL by their
+    intent, the same way the estate placed them; the summary says what the scans of that ACL
+    show, and ``TestTheAccessInvestigation`` in ``tests/db/test_null_meridian_demo.py`` pins
+    every claim in it against what ADG actually computes after a reset.
+    """
+    canon = canon or build_canon()
+    share = next(
+        item
+        for item in catalog(canon)
+        if item.server == "NM-ENG-FS01" and item.name == "Engineering"
+    )
+    folder = next(item for item in share.folders if item.rel == "Projects/Apollo")
+    veteran = _intended(canon, folder.explicit, AceIntent.HISTORICAL_ENGINEER)
+    former = _intended(canon, folder.explicit, AceIntent.FORMER_USER)
+    return [
+        {
+            "id": "apollo",
+            "title": "Why can a long-tenured engineer still modify the Apollo project folder?",
+            "question": f"Why does {veteran.display_name} have access to {APOLLO}?",
+            "person": _person_record(veteran),
+            "resource": APOLLO,
+            "access_path": "remote_smb",
+            "scenarios": ["C", "H"],
+            "former": {"account": former.sam_account_name, "sid": former.sid},
+            "demonstrates": (
+                f"{veteran.display_name} is named directly on the Apollo folder from their early "
+                "years on the project, and also reaches it through five nested engineering "
+                "groups. ADG shows which route actually carries the access on each ACL, where "
+                "each hop was observed, and two things it cannot confirm: what the orphaned "
+                f"SID of a former employee ({former.sam_account_name}) on the same ACLs is, "
+                "and who is in Proj-Zephyr-RW, whose membership was never collected. Neither "
+                "can take the established access away; both mean the rights shown are a lower "
+                "bound."
+            ),
+        }
+    ]
+
+
+def _intended(canon: Canon, entries: Any, intent: AceIntent) -> Employee:
+    [entry] = [item for item in entries if item.intent is intent]
+    return canon.employees_by_id[entry.trustee]
+
+
+def _person_record(person: Employee) -> dict[str, str]:
+    return {
+        "employee_id": person.employee_id,
+        "name": person.display_name,
+        "email": person.email,
+        "sid": person.sid,
+        "department": person.department,
+        "title": person.title,
+    }

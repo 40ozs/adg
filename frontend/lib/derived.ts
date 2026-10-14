@@ -1,5 +1,5 @@
 /**
- * The derived-answer contract, version 1.0.
+ * The derived-answer contract, version 1.1.
  *
  * `lib/contracts.ts` describes what the API returns when it *lists* what a collector
  * observed. This file describes the other kind of response: an answer the backend
@@ -269,6 +269,120 @@ export interface AccessExplanationResponse {
   complete: boolean;
   truncation: string[];
   warnings: FindingView[];
+  /**
+   * Contract 1.1. Where every edge of `graph` came from, one entry per edge in graph order.
+   * Absent from a 1.0 body, which a client renders as "provenance not reported" rather
+   * than as "no evidence".
+   */
+  evidence?: HopEvidenceView[];
+  /** Contract 1.1. The explanation summarized as an investigation. */
+  investigation?: InvestigationView | null;
+}
+
+/* ------------------------------------------------------- contract 1.1: investigation */
+
+/**
+ * How one hop is known.
+ *
+ * `observed` — a stored row a collector reported. `assumed` — a SID Windows places in the
+ * token; nothing reports it. `projected` — an NTFS entry projected from an ancestor because
+ * this directory's own descriptor was never read. `unrecorded` — no stored row backs it.
+ */
+export type HopBasis = "observed" | "assumed" | "projected" | "unrecorded";
+
+/** The provenance of one edge of the explanation graph. */
+export interface HopEvidenceView {
+  edge_id: string;
+  basis: HopBasis;
+  record: "membership_edge" | "ntfs_ace" | "smb_share_ace" | "ntfs_resource" | null;
+  record_key: string | null;
+  source_key: string | null;
+  first_observed_at: string | null;
+  first_observed_run_id: string | null;
+  last_observed_at: string | null;
+  last_observed_run_id: string | null;
+  /** active_directory, local_groups, smb or ntfs. */
+  collector: string | null;
+  collection_method: string | null;
+  last_run_status: string | null;
+}
+
+export type AccessPresence = "present" | "absent" | "undetermined";
+export type RouteKind = "direct" | "group" | "assumed" | "ownership";
+export type EntryPlacement = "explicit" | "inherited" | "owner";
+export type RemovalEffect = "revokes_access" | "narrows_access" | "changes_nothing" | "widens_access";
+
+/** The ADG-DEMO-01 vocabulary, plus how an assumption and a projection are known. */
+export type EvidenceState =
+  | "confirmed"
+  | "ambiguous"
+  | "missing"
+  | "conflicting"
+  | "assumed"
+  | "derived"
+  | "context";
+
+/**
+ * Whether an open question reaches the conclusion. Decided by the engine from the
+ * finding's direction: `extent` can only widen a granted answer, `presence` can take the
+ * access away, or hide a grant behind a negative.
+ */
+export type ConclusionImpact = "none" | "extent" | "presence";
+
+export type NextStepCode =
+  | "resolve_trustee_identity"
+  | "collect_group_membership"
+  | "settle_system_mapping"
+  | "resolve_subject_identity"
+  | "collect_subject_membership"
+  | "rescan_resource"
+  | "review_redundant_entry"
+  | "review_sole_route"
+  | "review_finding"
+  | "inspect_explanation";
+
+/** The route that carries the access through one ACL. */
+export interface PrimaryRouteView {
+  layer: string;
+  path_id: string;
+  route: RouteKind;
+  placement: EntryPlacement;
+  membership_hops: number;
+  coverage: RightsView;
+  removal_edge_id: string | null;
+  removal_effect: RemovalEffect | null;
+  rights_after_removal: RightsView | null;
+  alternate_path_ids: string[];
+}
+
+export interface OpenQuestionView {
+  condition: string;
+  message: string;
+  state: EvidenceState;
+  impact: ConclusionImpact;
+  may_overstate: boolean;
+  may_understate: boolean;
+  about: PrincipalSummary | null;
+  detail: Record<string, unknown>;
+}
+
+export interface NextStepView {
+  code: NextStepCode;
+  about: PrincipalSummary | null;
+  path_id: string | null;
+  condition: string | null;
+}
+
+/** The seven answers an investigator needs, each computed by the engine. */
+export interface InvestigationView {
+  presence: AccessPresence;
+  primary_routes: PrimaryRouteView[];
+  open_questions: OpenQuestionView[];
+  impact: ConclusionImpact;
+  affects_conclusion: boolean;
+  next_steps: NextStepView[];
+  /** False when the path enumeration was truncated: a stronger route may exist. */
+  routes_complete: boolean;
 }
 
 /** A page of the same causal paths, in the same deterministic order. */

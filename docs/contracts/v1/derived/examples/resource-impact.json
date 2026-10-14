@@ -3,11 +3,11 @@
   "basis": {
     "batches_received": 1,
     "is_empty": false,
-    "latest_activity_at": "2026-09-14T21:14:05.358532Z",
-    "latest_run_id": "49a89aad-437f-4a3c-84ef-952e281deffa",
+    "latest_activity_at": "2026-10-14T21:30:07.788439Z",
+    "latest_run_id": "e9865907-220d-41a9-8ffe-b3072aadf926",
     "observations_applied": 10,
     "runs": 1,
-    "token": "0b55f806a5a30271cfe895c5c8fdde45"
+    "token": "502fd24ee8a22c8089adc143b5f7e6d4"
   },
   "group": {
     "display_name": "Finance-Team",
@@ -156,7 +156,7 @@
     "next_cursor": null,
     "total": null
   },
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "token": {
     "access_path": "remote_smb",
     "assumption": "authenticated_user",

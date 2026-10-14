@@ -39,6 +39,7 @@ from app.db import Database
 from app.demo.null_meridian.canon import SNAPSHOT, Canon, build_canon
 from app.demo.null_meridian.estate import build_estate
 from app.demo.null_meridian.generations import GENERATIONS, TRANSCRIPT_NAMESPACE
+from app.demo.null_meridian.scenarios import investigations
 from app.demo_mode.datasets import CANONICAL_DATASET, load_dataset
 from app.demo_mode.lifecycle import (
     DemoLifecycleError,
@@ -617,6 +618,282 @@ class TestTheSystemExplanation:
         assert [e["trustee"]["key"] for e in body["effective"]["ntfs"]["granted_by"]] == [
             "S-1-5-18"
         ]
+
+
+class TestTheAccessInvestigation:
+    r"""ADG-DEMO-02: the guided investigation the demo opens with, end to end.
+
+    *Why does Fatima Gordon have access to* ``\\NM-ENG-FS01\Engineering\Projects\Apollo``*?*
+    Asked of the reset estate through ``GET /api/v1/demo`` and ``GET /api/v1/access/explain``
+    exactly as the investigation page asks it. Every claim the seed's summary makes, and
+    every field the page renders, is pinned here against what the engine computes.
+    """
+
+    APOLLO = r"\\NM-ENG-FS01\Engineering\Projects\Apollo"
+    FIVE_GROUPS = (
+        "ENG-Mobile",
+        "Engineering-Frontend",
+        "Engineering",
+        "Engineering-FS",
+        "Share_Engineering_Modify",
+    )
+
+    @pytest.fixture
+    def seed(self, canon: Canon) -> dict[str, Any]:
+        [item] = investigations(canon)
+        return item
+
+    async def explain(self, api: AsyncClient, principal: str) -> dict[str, Any]:
+        response = await api.get(
+            "/api/v1/access/explain", params={"principal": principal, "resource": self.APOLLO}
+        )
+        assert response.status_code == 200, response.text
+        body: dict[str, Any] = response.json()
+        return body
+
+    @staticmethod
+    def path(body: dict[str, Any], path_id: str) -> dict[str, Any]:
+        found: list[dict[str, Any]] = [item for item in body["paths"] if item["id"] == path_id]
+        assert len(found) == 1, path_id
+        return found[0]
+
+    @staticmethod
+    def hops(body: dict[str, Any], path: dict[str, Any]) -> list[tuple[str, str | None]]:
+        nodes = {node["id"]: node for node in body["graph"]["nodes"]}
+        return [(nodes[n]["kind"], nodes[n]["display_name"]) for n in path["nodes"]]
+
+    async def test_the_demo_offers_the_question_without_a_sid_to_look_up(
+        self, api: AsyncClient, seed: dict[str, Any]
+    ) -> None:
+        overview = (await api.get("/api/v1/demo")).json()
+
+        [offered] = overview["investigations"]
+        assert offered["key"] == "apollo"
+        assert offered["principal"] == {
+            "kind": "person",
+            "name": "Fatima Gordon",
+            "sid": seed["person"]["sid"],
+        }
+        assert offered["resource"] == self.APOLLO
+        assert offered["access_path"] == "remote_smb"
+        assert offered["question"] == f"Why does Fatima Gordon have access to {self.APOLLO}?"
+        assert offered["scenarios"] == ["C", "H"]
+
+    async def test_access_is_observed_and_qualified_not_certain(
+        self, api: AsyncClient, seed: dict[str, Any]
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+
+        assert body["schema_version"] == "1.1"
+        assert body["verdict"]["outcome"] == "granted"
+        assert body["verdict"]["conclusive"] is True
+        assert body["verdict"]["certainty"] == "at_least"
+        assert body["effective"]["rights"]["label"] == "Modify"
+        assert body["effective"]["acl_provenance"] == "observed"
+        assert body["complete"] is True
+        assert body["investigation"]["presence"] == "present"
+
+    async def test_the_ntfs_route_is_the_direct_entry_and_the_share_route_a_group(
+        self, api: AsyncClient, seed: dict[str, Any]
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+        ntfs, share = body["investigation"]["primary_routes"]
+
+        assert (ntfs["layer"], ntfs["route"], ntfs["placement"], ntfs["membership_hops"]) == (
+            "ntfs",
+            "direct",
+            "explicit",
+            0,
+        )
+        direct = self.path(body, ntfs["path_id"])
+        assert direct["effect"] == "contributes"
+        assert (direct["via_group"], direct["inherited"]) == (False, False)
+        assert self.hops(body, direct) == [
+            ("principal", "Fatima Gordon"),
+            ("ntfs_ace", None),
+            ("resource", None),
+        ]
+        assert ntfs["coverage"]["label"] == "Modify"
+
+        assert (share["layer"], share["route"], share["membership_hops"]) == (
+            "smb_share",
+            "group",
+            1,
+        )
+        assert self.hops(body, self.path(body, share["path_id"])) == [
+            ("principal", "Fatima Gordon"),
+            ("group", "ENG-Mobile"),
+            ("smb_ace", None),
+            ("resource", None),
+        ]
+
+    async def test_the_inherited_route_through_five_groups_is_shown_in_order_and_redundant(
+        self, api: AsyncClient, seed: dict[str, Any]
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+        chains = {
+            tuple(member["display_name"] for member in item["chain"]): item
+            for item in body["paths"]
+            if item["layer"] == "ntfs"
+        }
+        inherited = chains[("Fatima Gordon", *self.FIVE_GROUPS)]
+
+        assert (inherited["via_group"], inherited["inherited"]) == (True, True)
+        assert inherited["effect"] == "redundant"
+        assert self.hops(body, inherited) == [
+            ("principal", "Fatima Gordon"),
+            *[("group", name) for name in self.FIVE_GROUPS],
+            ("ntfs_ace", None),
+            ("resource", None),
+        ]
+        # And the seven-group detour through the application group, also redundant.
+        detour = chains[
+            (
+                "Fatima Gordon",
+                "ENG-Mobile",
+                "Engineering-Frontend",
+                "Engineering",
+                "APP-GitHub-Users",
+                "Engineering-FS",
+                "Share_Engineering_Modify",
+            )
+        ]
+        assert detour["effect"] == "redundant"
+
+    async def test_removing_either_route_is_measured_to_change_nothing(
+        self, api: AsyncClient, seed: dict[str, Any]
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+        routes = body["investigation"]["primary_routes"]
+
+        assert [route["removal_effect"] for route in routes] == [
+            "changes_nothing",
+            "changes_nothing",
+        ]
+        assert all(route["rights_after_removal"]["label"] == "Modify" for route in routes)
+        measured = {target["edge_id"]: target for target in body["removal_targets"]}
+        for route in routes:
+            assert measured[route["removal_edge_id"]]["changes_nothing"] is True
+
+    async def test_every_hop_carries_its_collector_and_scan(
+        self, api: AsyncClient, seed: dict[str, Any]
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+        evidence = {item["edge_id"]: item for item in body["evidence"]}
+        edges = body["graph"]["edges"]
+
+        assert [item["edge_id"] for item in body["evidence"]] == [e["id"] for e in edges]
+        expected = {"membership": "active_directory", "trustee": None, "grant": None}
+        for edge in edges:
+            hop = evidence[edge["id"]]
+            assert hop["basis"] == "observed", hop
+            assert hop["last_run_status"] == "succeeded"
+            if edge["kind"] == "membership":
+                assert hop["record"] == "membership_edge"
+                assert hop["record_key"] == edge["membership_edge_key"]
+                assert hop["collector"] == expected["membership"]
+            else:
+                layer = "ntfs" if "ntfs-ace" in edge["id"] else "smb"
+                assert hop["record"] == ("ntfs_ace" if layer == "ntfs" else "smb_share_ace")
+                assert hop["record_key"] == edge["ace_key"]
+                assert hop["collector"] == layer
+
+        direct = self.path(body, body["investigation"]["primary_routes"][0]["path_id"])
+        entry = evidence[direct["edges"][0]]
+        # Authored on the folder before ADG went live; seen by every NTFS scan since.
+        assert entry["first_observed_at"].startswith(G1.isoformat())
+        assert entry["last_observed_at"].startswith(G3.isoformat())
+
+    async def test_what_cannot_be_confirmed_is_named_and_does_not_reach_the_conclusion(
+        self, api: AsyncClient, seed: dict[str, Any], canon: Canon
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+        investigation = body["investigation"]
+        open_ = {
+            item["about"]["sid"]: item
+            for item in investigation["open_questions"]
+            if item["about"] is not None
+        }
+
+        orphan = open_[seed["former"]["sid"]]
+        assert orphan["condition"] == "trustee_membership_unobserved"
+        assert orphan["state"] == "missing"
+        assert orphan["impact"] == "extent"
+        assert orphan["about"]["kind"] == "unresolved"
+        assert orphan["about"]["display_name"] is None
+        assert orphan["about"]["last_known_name"] == r"NULLMERIDIAN\lhansen"
+
+        zephyr = open_[canon.group("Proj-Zephyr-RW").sid]
+        assert zephyr["condition"] == "trustee_membership_unobserved"
+        assert zephyr["state"] == "missing"
+        assert zephyr["impact"] == "extent"
+
+        assert investigation["impact"] == "extent"
+        assert investigation["affects_conclusion"] is False
+        assert all(item["impact"] != "presence" for item in investigation["open_questions"])
+
+    async def test_the_next_steps_follow_from_the_state(
+        self, api: AsyncClient, seed: dict[str, Any], canon: Canon
+    ) -> None:
+        body = await self.explain(api, seed["person"]["sid"])
+        steps = [
+            (step["code"], None if step["about"] is None else step["about"]["sid"], step["path_id"])
+            for step in body["investigation"]["next_steps"]
+        ]
+
+        assert steps == [
+            ("resolve_trustee_identity", seed["former"]["sid"], None),
+            ("collect_group_membership", canon.group("Proj-Zephyr-RW").sid, None),
+            (
+                "review_redundant_entry",
+                None,
+                body["investigation"]["primary_routes"][0]["path_id"],
+            ),
+        ]
+
+    async def test_it_is_deterministic(self, api: AsyncClient, seed: dict[str, Any]) -> None:
+        first = await self.explain(api, seed["person"]["sid"])
+        second = await self.explain(api, seed["person"]["sid"])
+
+        for field in ("investigation", "evidence", "paths", "graph", "removal_targets"):
+            assert first[field] == second[field], field
+
+    async def test_system_reaches_the_summary_with_its_mapping_intact(
+        self, api: AsyncClient
+    ) -> None:
+        """ADG-DEMO-01's request, read through the investigation summary."""
+        shared = r"\\NM-FS-01\Shared"
+        over_smb = (
+            await api.get(
+                "/api/v1/access/explain", params={"principal": "S-1-5-18", "resource": shared}
+            )
+        ).json()["investigation"]
+        local = (
+            await api.get(
+                "/api/v1/access/explain",
+                params={"principal": "S-1-5-18", "resource": shared, "access_path": "local"},
+            )
+        ).json()["investigation"]
+
+        def mapping(summary: dict[str, Any]) -> dict[str, Any]:
+            found: list[dict[str, Any]] = [
+                item
+                for item in summary["open_questions"]
+                if item["condition"].startswith("system_mapping_")
+            ]
+            assert len(found) == 1, found
+            return found[0]
+
+        assert over_smb["presence"] == "undetermined"
+        assert over_smb["primary_routes"] == []
+        assert mapping(over_smb)["state"] == "ambiguous"
+        assert over_smb["affects_conclusion"] is True
+        assert "settle_system_mapping" in [step["code"] for step in over_smb["next_steps"]]
+
+        assert local["presence"] == "present"
+        assert mapping(local)["state"] == "confirmed"
+        assert mapping(local)["impact"] == "extent"
+        assert "settle_system_mapping" not in [step["code"] for step in local["next_steps"]]
 
 
 class TestTheBoundary:
