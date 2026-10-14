@@ -1,6 +1,6 @@
 # ADG-DIRECTORY-ACCESS-01 — Reachable directories summarized into access roots, with drill-down
 
-**Status: DRAFT — validation in progress.** Sections marked `__…__` are filled from measured results before the verdict is issued.
+**Verdict: `ADG_DIRECTORY_ACCESS_01_COMPLETE_WITH_LIMITATIONS`** (§12).
 
 The principal view formerly labelled **Reachable directories** is now **Directory access**.
 By default it shows **access roots**: the places where a principal's reach begins inside
@@ -267,7 +267,60 @@ collector code), and the Docker Compose config check (no change to compose files
 
 ### Performance (`python -m tests.benchmarks.directory_access_benchmark --estates 4x250 8x1000 20x1000 --repeat 5`)
 
-__BENCHMARK__
+Estates from `tests/support/directory_estate.py` (seed 29), ingested through the API into
+`adgdev_bench`, on the final code (`c125d4b`). *Cold* empties the computation cache before
+every sample: that is the first reader after an ingestion. *Warm* is every request after it.
+The statement counts come from one request each.
+
+Measured on Linux-6.18.44-fc-v114-x86_64-with-glibc2.39 (x86_64), Python 3.13.16, at 2026-10-14T14:50:02Z.
+
+| Estate | Directories | Observations | Ingest (s) | Candidates | Reachable | Roots | Exceptions |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4x250 | 1000 | 3974 | 5.4 | 795 | 756 | 49 | 91 |
+| 8x1000 | 8000 | 29663 | 33.2 | 6007 | 5395 | 381 | 704 |
+| 20x1000 | 20000 | 74903 | 87.5 | 15373 | 13759 | 899 | 1789 |
+
+| Shape | Directories | Rows | Statements | Min (ms) | Median (ms) | p95 (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| summary_cold | 1000 | 49 | 16 | 160.25 | 170.87 | 264.37 |
+| summary_warm | 1000 | 49 | 1 | 9.22 | 9.87 | 11.96 |
+| tree_top_warm | 1000 | 4 | 1 | 4.05 | 4.35 | 4.85 |
+| tree_expand_warm | 1000 | 4 | 1 | 3.70 | 4.09 | 4.30 |
+| exceptions_warm | 1000 | 16 | 1 | 5.81 | 5.90 | 9.82 |
+| flat_listing_page | 1000 | 500 | 10 | 105.91 | 123.50 | 197.17 |
+| summary_cold | 8000 | 100 | 28 | 1381.81 | 1639.79 | 1801.47 |
+| summary_warm | 8000 | 100 | 1 | 16.75 | 21.23 | 25.68 |
+| tree_top_warm | 8000 | 8 | 1 | 3.28 | 3.53 | 10.48 |
+| tree_expand_warm | 8000 | 4 | 1 | 3.46 | 3.48 | 3.57 |
+| exceptions_warm | 8000 | 47 | 1 | 6.20 | 6.30 | 6.86 |
+| flat_listing_page | 8000 | 500 | 10 | 171.66 | 219.49 | 519.40 |
+| summary_cold | 20000 | 100 | 44 | 3756.11 | 3925.26 | 5381.68 |
+| summary_warm | 20000 | 100 | 1 | 24.99 | 25.80 | 41.25 |
+| tree_top_warm | 20000 | 20 | 1 | 4.06 | 4.14 | 9.65 |
+| tree_expand_warm | 20000 | 4 | 1 | 3.58 | 3.86 | 4.33 |
+| exceptions_warm | 20000 | 55 | 1 | 7.19 | 7.61 | 10.08 |
+| flat_listing_page | 20000 | 500 | 10 | 212.33 | 254.15 | 311.08 |
+
+What the numbers say:
+
+* **Initial render is bounded.** A warm summary page is 1 statement (the basis read) and
+  ≤ 26 ms at 20,000 directories. The tree's top level is the share roots (20 nodes at 20,000
+  directories), and one expansion is one level (1 statement, ≤ 4 ms), with nothing else
+  loaded. The browser gate counted 0 tree requests on load and exactly one per first
+  expansion (§10).
+* **The cold computation grows with the candidate count.** The statements are
+  4 per 2,000-candidate chunk plus a constant, so 16 → 28 → 44 for 795 → 6,007 → 15,373
+  candidates. Time is about 0.26 ms per candidate (3.9 s median, 5.4 s p95 at 15,373). A
+  profile at 15,373 candidates attributes it to the engine's per-directory evaluation
+  (`resolve_access`, ≈ 180 µs each) and the bulk reads, both pre-existing and identical to
+  paging through the whole flat listing. The summarizer itself was 0.74 s of tree counting
+  before `c125d4b`'s bottom-up pass and no longer appears in the profile's top 25 (the cold
+  median fell from 4.79 s to 3.93 s). The DB test pins the shape: the statement count is
+  equal at 40 and 400 directories, which share one chunk.
+* For comparison, one 500-row page of the flat listing costs 10 statements and 254 ms at
+  20,000 directories. Walking the 15,373 candidates that way takes 31 pages.
+* At the 50,000-candidate ceiling, a cold summary extrapolates to about 13 s. The frontend
+  therefore allows 30 s for the two server-side directory-access fetches (§11).
 
 ## 10. Manual browser acceptance (`directory-access.mjs`, Chromium 1194, 1360×900, local `next start` + API in demo mode over `adg_demo`)
 
@@ -327,8 +380,39 @@ Screenshots: [`adg-directory-access-01-summary.png`](adg-directory-access-01-sum
   principal with more roots than a page sorts each page, and the caption says so.
 * **Files are not summarized.** File candidates are excluded from roots (counted in
   `files_excluded`) and remain in All paths and the `paths` export.
+* **The first summary after an ingestion takes seconds on a large principal**: 3.9 s
+  median at 15,373 candidates, about 13 s extrapolated at the 50,000 ceiling. That is the
+  engine's per-directory cost (§9). Later requests reuse the computation (≤ 26 ms). The two
+  server-side fetches allow 30 s. The tree and exceptions travel through the JSON proxy with
+  its 10 s default, which matters only if the cache was evicted between the summary and an
+  expansion on a principal that large.
 * **The computation cache is per process.** Several API workers each compute once per
   collected state.
 * **`/favicon.ico` is a 404** on every page (the app ships no icon). This is pre-existing,
   and the gate reports it separately.
 * Not validated on the hosted staging deployment; nothing was deployed (§1).
+
+## 12. Verdict
+
+**`ADG_DIRECTORY_ACCESS_01_COMPLETE_WITH_LIMITATIONS`**
+
+Met, on the final tree, with evidence:
+
+- [x] The default view no longer lists every reachable descendant (43 rows for 272 in the browser).
+- [x] Roots are computed deterministically (shuffle-invariance test) and carry a descendant count.
+- [x] Permission and inheritance changes are exceptions, never absorbed, and `uniform`/**varies** say so.
+- [x] Exception detail is available (route, disclosure, tree badges, CSV).
+- [x] Inaccessible descendants are never counted (unit, DB, browser count reconciliation).
+- [x] Resumed access is its own root, linked to the run above it.
+- [x] The tree drills down without a document reload, collapsed at the share roots, one level per expansion, cached.
+- [x] The engine's effective-access logic is reused; no ACL evaluation was added outside it (§2).
+- [x] Long paths keep rows to one line (39.8 px rows), with the full value in the title, copy and export.
+- [x] The summary is sortable (numeric counts), and the principal survives every view and mode change.
+- [x] The complete path set is available (All paths, `paths` CSV = every evaluated candidate).
+- [x] Existing components and patterns are reused in place of a Ponytail library, which does not exist in this repository (§5).
+- [x] Behaviour is validated on a 20,000-directory fixture (§9), with automated regression coverage (§8), the browser gate 20/20 (§10), and every repository gate green (§9).
+
+Why not `COMPLETE`: the limitations in §11 are real. In particular, it was **not deployed or
+checked on the hosted staging stack**; the prompt forbids merging or deploying before review.
+The cold summary takes seconds at the scale measured. Folders reachable only through
+ownership are outside the candidate set, as before. Nothing above is blocked.
