@@ -411,9 +411,17 @@ class TestTheConditionVocabulary:
         assert known >= UNDERSTATING_CONDITIONS
 
     def test_a_condition_in_both_directions_is_deliberate(self):
-        """Three of them are, and each is a gap whose missing data could be either kind."""
+        """Six of them are, and each is a gap whose missing data could be either kind.
+
+        The three ``SYSTEM_MAPPING_*`` conditions are the unsettled states of a SYSTEM
+        subject's identity (ADG-DEMO-01): an identity nobody can name has unknown grants and
+        unknown restrictions, exactly as an unresolved subject does.
+        """
         assert {
             AccessCondition.ACE_COUNT_MISMATCH,
             AccessCondition.ACL_TRUNCATED,
             AccessCondition.SUBJECT_UNRESOLVED,
+            AccessCondition.SYSTEM_MAPPING_AMBIGUOUS,
+            AccessCondition.SYSTEM_MAPPING_MISSING,
+            AccessCondition.SYSTEM_MAPPING_CONFLICTING,
         } == OVERSTATING_CONDITIONS & UNDERSTATING_CONDITIONS

@@ -561,6 +561,64 @@ class TestTheGoldenScenariosThroughTheApi:
         } <= rules
 
 
+class TestTheSystemExplanation:
+    r"""ADG-DEMO-01: the request that once contradicted itself, on the demo estate itself.
+
+    ``GET /explain?principal=S-1-5-18&resource=\\NM-FS-01\Shared`` answered ``no_grant``,
+    *certain*, "no entry on either ACL names it" -- beside ``SYSTEM: Full Control`` in
+    ``effective.ntfs.granted_by``. Over a share SYSTEM is a computer account the question does
+    not name, so the honest answer is the ambiguous mapping; locally it is confirmed.
+    """
+
+    SHARED = r"\\NM-FS-01\Shared"
+
+    async def explain(self, api: AsyncClient, **query: str) -> dict[str, Any]:
+        response = await api.get(
+            "/api/v1/access/explain",
+            params={"principal": "S-1-5-18", "resource": self.SHARED, **query},
+        )
+        assert response.status_code == 200, response.text
+        body: dict[str, Any] = response.json()
+        return body
+
+    @staticmethod
+    def mapping(body: dict[str, Any]) -> dict[str, Any]:
+        found: list[dict[str, Any]] = [
+            w for w in body["warnings"] if w["condition"].startswith("system_mapping_")
+        ]
+        assert len(found) == 1, found
+        return found[0]
+
+    async def test_over_the_share_it_is_ambiguous_and_contradicts_nothing(
+        self, api: AsyncClient
+    ) -> None:
+        body = await self.explain(api)
+
+        assert self.mapping(body)["detail"]["state"] == "ambiguous"
+        assert body["verdict"]["outcome"] == "indeterminate"
+        assert body["verdict"]["conclusive"] is False
+        assert body["verdict"]["certainty"] == "uncertain"
+        assert "No entry on either ACL names it" not in body["verdict"]["reason"]
+        assert body["effective"]["ntfs"]["granted_by"] == []
+        assert body["paths"] == []
+
+    async def test_locally_it_is_the_servers_own_system_and_holds_full_control(
+        self, api: AsyncClient
+    ) -> None:
+        body = await self.explain(api, access_path="local")
+        detail = self.mapping(body)["detail"]
+
+        assert detail["state"] == "confirmed"
+        assert detail["described_as"] == "well_known"
+        assert detail["last_observed_run_id"] is not None
+        assert body["verdict"]["outcome"] == "granted"
+        assert body["verdict"]["certainty"] == "certain"
+        assert body["effective"]["rights"]["label"] == "Full Control"
+        assert [e["trustee"]["key"] for e in body["effective"]["ntfs"]["granted_by"]] == [
+            "S-1-5-18"
+        ]
+
+
 class TestTheBoundary:
     def test_a_production_deployment_is_refused(self) -> None:
         production = build_settings(environment="test", database_url=DEMO_URL)

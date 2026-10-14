@@ -832,6 +832,8 @@ def _subject_facts(key: str, record: PrincipalRecord | None) -> SubjectFacts:
         kind=record.principal_kind if record is not None else None,
         display_name=record.display_name if record is not None else None,
         enabled=record.enabled if record is not None else None,
+        last_observed_run_id=str(record.last_observed_run_id) if record is not None else None,
+        last_observed_at=record.last_observed_at if record is not None else None,
     )
 
 

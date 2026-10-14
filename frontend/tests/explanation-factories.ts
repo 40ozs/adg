@@ -547,6 +547,13 @@ export function noGrant(): AccessExplanationResponse {
       rights: NO_RIGHTS,
       limiting_layer: "none",
       ntfs: { ...base.effective.ntfs, rights: NO_RIGHTS, granted_by: [] },
+      // Neither layer grants anything. The base share layer grants Full Control, and a
+      // "nothing names this principal" answer beside it is the contradiction ADG-DEMO-01
+      // removed — so this fixture must not carry it.
+      share:
+        base.effective.share === null
+          ? null
+          : { ...base.effective.share, rights: { ...NO_RIGHTS, layer: "smb_share" }, granted_by: [] },
     },
     graph: {
       nodes: [
@@ -601,5 +608,108 @@ export function indeterminate(): AccessExplanationResponse {
         may_understate: true,
       }),
     ],
+  };
+}
+
+/**
+ * ADG-DEMO-01's original shape: NTFS grants, the share names nobody, nothing survives.
+ *
+ * The engine now says which layer granted; before, it said no entry named the principal.
+ */
+export function noGrantBetweenLayers(): AccessExplanationResponse {
+  const base = explanation();
+  return {
+    ...noGrant(),
+    verdict: verdict({
+      outcome: "no_grant",
+      reason:
+        "This principal holds no rights here and nothing denied any. The NTFS permissions " +
+        "grant it rights, but the share permissions give it none, so nothing survives both layers.",
+    }),
+    effective: {
+      ...noGrant().effective,
+      limiting_layer: "smb_share",
+      ntfs: base.effective.ntfs,
+    },
+  };
+}
+
+export const SYSTEM_SID = "S-1-5-18";
+
+/** A SYSTEM subject's mapping finding, exactly as the engine words and shapes it. */
+export function systemMappingFinding(
+  state: "confirmed" | "ambiguous" | "missing" | "conflicting",
+  describedAs: string | null = "well_known",
+): FindingView {
+  const unsettled = state !== "confirmed";
+  return finding({
+    condition: `system_mapping_${state}`,
+    message: `SYSTEM (S-1-5-18) is ${state}.`,
+    may_overstate: unsettled,
+    may_understate: unsettled,
+    detail: {
+      state,
+      subject_sid: SYSTEM_SID,
+      subject_key: SYSTEM_SID,
+      access_path: state === "ambiguous" ? "remote_smb" : "local",
+      presented: state !== "ambiguous",
+      described_as: describedAs,
+      described_name: describedAs === "well_known" ? "SYSTEM" : null,
+      expected_kind: "well_known",
+      last_observed_run_id: describedAs === null ? null : "00000000-0000-4000-8000-0000000d0a03",
+      last_observed_at: describedAs === null ? null : "2026-09-14T09:00:00+00:00",
+      withheld_groups: [],
+    },
+  });
+}
+
+/** SYSTEM over a share: the mapping is ambiguous and nothing was established. */
+export function systemOverShare(): AccessExplanationResponse {
+  const base = indeterminate();
+  const system = principal({
+    key: SYSTEM_SID,
+    sid: SYSTEM_SID,
+    kind: "well_known",
+    is_group: false,
+    display_name: "SYSTEM",
+  });
+  return {
+    ...base,
+    subject: system,
+    access_path: "remote_smb",
+    verdict: verdict({
+      outcome: "indeterminate",
+      certainty: "uncertain",
+      conclusive: false,
+      may_overstate: true,
+      may_understate: true,
+      reason:
+        "No rights were established, and this is not a finding of no access. Over a share " +
+        "SYSTEM is the computer account of whichever machine it runs on, and nothing in " +
+        "this question says which.",
+    }),
+    resource: resource(),
+    effective: { ...base.effective, certainty: "uncertain", acl_provenance: "observed" },
+    token: token({ subject: system, assumption: "sids_only" }),
+    complete: true,
+    truncation: [],
+    warnings: [systemMappingFinding("ambiguous")],
+  };
+}
+
+/** SYSTEM on the server itself, described as well-known: the mapping is confirmed. */
+export function systemLocally(): AccessExplanationResponse {
+  const base = explanation();
+  return {
+    ...base,
+    access_path: "local",
+    subject: principal({
+      key: SYSTEM_SID,
+      sid: SYSTEM_SID,
+      kind: "well_known",
+      is_group: false,
+      display_name: "SYSTEM",
+    }),
+    warnings: [...base.warnings, systemMappingFinding("confirmed")],
   };
 }

@@ -132,6 +132,114 @@ export function outcomeWording(verdict: VerdictView): OutcomeWording {
   }
 }
 
+/** The four states the engine reports for a SYSTEM subject. See `systemMapping`. */
+export type SystemMappingState = "confirmed" | "ambiguous" | "missing" | "conflicting";
+
+const SYSTEM_MAPPING_STATES: readonly SystemMappingState[] = [
+  "confirmed",
+  "ambiguous",
+  "missing",
+  "conflicting",
+];
+
+export interface SystemMappingView {
+  state: SystemMappingState;
+  /** The engine's sentence for the state. Rendered as given. */
+  message: string;
+  /** What a collector said S-1-5-18 is; null when nothing described it. */
+  describedAs: string | null;
+}
+
+/**
+ * Which identity a SYSTEM subject stands for, as the engine reported it — or null.
+ *
+ * Read from the one `system_mapping_*` finding the engine attaches to every answer about
+ * S-1-5-18 (ADG-DEMO-01). Nothing here infers a mapping: no finding means the subject is
+ * not SYSTEM, and a finding this client does not recognise is returned as null rather than
+ * guessed at. Only `confirmed` may be worded as a resolved identity.
+ */
+export function systemMapping(explanation: AccessExplanationResponse): SystemMappingView | null {
+  for (const warning of explanation.warnings) {
+    if (!warning.condition.startsWith("system_mapping_")) {
+      continue;
+    }
+    const state = warning.condition.slice("system_mapping_".length) as SystemMappingState;
+    if (!SYSTEM_MAPPING_STATES.includes(state)) {
+      return null;
+    }
+    const described = warning.detail?.described_as;
+    return {
+      state,
+      message: warning.message,
+      describedAs: typeof described === "string" ? described : null,
+    };
+  }
+  return null;
+}
+
+/** What would settle an unconfirmed SYSTEM mapping. One sentence per state. */
+const SYSTEM_MAPPING_NEXT_STEP: Record<Exclude<SystemMappingState, "confirmed">, string> = {
+  ambiguous:
+    "Over a share SYSTEM arrives as the computer account of the machine it runs on; ask " +
+    "about that computer account to get an answer about it.",
+  missing:
+    "No collector has described S-1-5-18. Once a run has, this answer can be confirmed or " +
+    "refuted.",
+  conflicting:
+    "A collector described S-1-5-18 as something Windows defines it not to be. Reconcile " +
+    "that description before relying on any answer about SYSTEM.",
+};
+
+/**
+ * The verdict wording for one explanation, with guidance that agrees with its evidence.
+ *
+ * `outcomeWording` words an outcome in general. Two answers make the general guidance
+ * false, and this is where they are caught — always from the response's own facts:
+ *
+ * - **A SYSTEM subject whose mapping is not confirmed.** "Collection could be hiding a
+ *   right" is not why an ambiguous SYSTEM has no answer, and "at least one right
+ *   survives" names an account the engine could not name.
+ * - **`no_grant` where one layer granted.** "Nothing on either ACL reaches this principal"
+ *   would sit beside the entry that did.
+ */
+export function explanationWording(explanation: AccessExplanationResponse): OutcomeWording {
+  const base = outcomeWording(explanation.verdict);
+  const mapping = systemMapping(explanation);
+  if (mapping !== null && mapping.state !== "confirmed") {
+    const next = SYSTEM_MAPPING_NEXT_STEP[mapping.state];
+    const guidance =
+      explanation.verdict.outcome === "granted"
+        ? `These rights are real for the SIDs shown, but which identity SYSTEM stands for ` +
+          `here is ${mapping.state}, so they cannot be attributed to one account. ${next}`
+        : `No right was established, and this is not a finding of no access: which ` +
+          `identity SYSTEM stands for here is ${mapping.state}. ${next}`;
+    return { ...base, guidance };
+  }
+  if (explanation.verdict.outcome === "no_grant") {
+    const ntfs = explanation.effective.ntfs.rights.value !== 0;
+    const share = (explanation.effective.share?.rights.value ?? 0) !== 0;
+    if (ntfs || share) {
+      return { ...base, guidance: betweenLayersGuidance(ntfs, share) };
+    }
+  }
+  return base;
+}
+
+function betweenLayersGuidance(ntfs: boolean, share: boolean): string {
+  if (ntfs && share) {
+    return (
+      "Both ACLs grant this principal something, but nothing granted by one is granted by " +
+      "the other. No Deny is involved: what each layer allows is shown below."
+    );
+  }
+  const [granting, withholding] = ntfs ? ["NTFS", "share"] : ["share", "NTFS"];
+  return (
+    `The ${granting} ACL grants this principal rights, but the ${withholding} ACL gives it ` +
+    `none, so nothing survives both. No Deny is involved: widening the ${withholding} ACL ` +
+    "would make the grant real."
+  );
+}
+
 /**
  * The direction the evidence could be wrong.
  *
@@ -832,12 +940,16 @@ export function cautions(explanation: AccessExplanationResponse): Caution[] {
   }
 
   if (!explanation.verdict.conclusive) {
+    const mapping = systemMapping(explanation);
     notes.push({
       id: "inconclusive",
       headline: "This answer does not support a negative conclusion",
       detail:
-        "No right was established and collection is incomplete in a direction that could " +
-        "hide one. Do not record this as 'no access'.",
+        mapping !== null && mapping.state !== "confirmed"
+          ? `No right was established, and which identity SYSTEM stands for here is ` +
+            `${mapping.state}. Do not record this as 'no access'.`
+          : "No right was established and collection is incomplete in a direction that " +
+            "could hide one. Do not record this as 'no access'.",
       severity: "warning",
     });
   }
@@ -948,7 +1060,8 @@ export function explanationJson(explanation: AccessExplanationResponse): string 
  * how "ADG says nobody has access" gets quoted about a directory nobody scanned.
  */
 export function explanationText(explanation: AccessExplanationResponse): string {
-  const wording = outcomeWording(explanation.verdict);
+  const wording = explanationWording(explanation);
+  const mapping = systemMapping(explanation);
   const subject = explanation.subject.display_name ?? explanation.subject.sid;
   const resource = explanation.resource.path ?? explanation.resource.key;
   const lines: string[] = [];
@@ -964,9 +1077,19 @@ export function explanationText(explanation: AccessExplanationResponse): string 
   lines.push("");
 
   lines.push(`VERDICT: ${wording.word.toUpperCase()} — ${wording.headline}`);
-  lines.push(`Effective rights: ${explanation.effective.rights.label} (${explanation.effective.rights.mask})`);
+  lines.push(`Guidance: ${wording.guidance}`);
+  // An inconclusive answer established nothing, and the engine's label for an empty mask
+  // is "No access" — the one reading the verdict just withheld. Same rule as the screen.
+  lines.push(
+    explanation.verdict.conclusive
+      ? `Effective rights: ${explanation.effective.rights.label} (${explanation.effective.rights.mask})`
+      : `Effective rights: none established (${explanation.effective.rights.mask}) — not a finding of no access`,
+  );
   lines.push(`Certainty: ${explanation.verdict.certainty} — ${certaintyNote(explanation.verdict.certainty)}`);
   lines.push(`Conclusive: ${explanation.verdict.conclusive ? "yes" : "no"}`);
+  if (mapping !== null) {
+    lines.push(`SYSTEM mapping: ${mapping.state} — ${mapping.message}`);
+  }
   lines.push(`Narrower layer: ${explanation.effective.limiting_layer}`);
   lines.push("");
 
@@ -976,7 +1099,11 @@ export function explanationText(explanation: AccessExplanationResponse): string 
 
   lines.push(`ROUTES (${explanation.paths.length}${explanation.complete ? "" : ", not all of them"}):`);
   if (explanation.paths.length === 0) {
-    lines.push("  none — no entry on either ACL reached this principal");
+    lines.push(
+      mapping !== null && mapping.state === "ambiguous"
+        ? "  none — no network session carries SYSTEM's own SID, so entries naming it were not applied"
+        : "  none — no entry on either ACL reached this principal",
+    );
   }
   for (const path of explanation.paths) {
     const chain = chainLabels(path.chain);

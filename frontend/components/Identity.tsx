@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { PrincipalDetail, PrincipalSummary } from "@/lib/contracts";
 import {
   isAmbiguous,
+  isUnresolved,
   principalHref,
   principalKindLabel,
   principalLabel,
@@ -55,7 +56,7 @@ export function PrincipalName({
       </span>
       {!keyIsTheName && <code className="principal-sid">{principal.key}</code>}
       {notes.length > 0 && (
-        <span className={principal.resolved ? "principal-notes" : "principal-notes status-warn"}>
+        <span className={isUnresolved(principal) ? "principal-notes status-warn" : "principal-notes"}>
           {notes.join(" · ")}
         </span>
       )}

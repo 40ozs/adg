@@ -123,13 +123,17 @@ from app.access_engine.subjects import (
     LOGON_SESSION_SIDS,
     NETWORK_SID,
     OWNER_RIGHTS_SID,
+    SYSTEM_MAPPING_CONDITIONS,
+    SYSTEM_SID,
     SidOrigin,
     SubjectFacts,
     SubjectToken,
+    SystemMapping,
     TokenAssumption,
     TokenSid,
     build_token,
     default_assumption,
+    system_mapping_of,
 )
 from app.access_engine.verdict import (
     OUTCOME_DESCRIPTIONS,
@@ -138,6 +142,7 @@ from app.access_engine.verdict import (
     AccessVerdict,
     classify_access,
     describe_outcome,
+    describe_verdict,
 )
 
 __all__ = [
@@ -170,6 +175,8 @@ __all__ = [
     "OWNER_RIGHTS_SID",
     "SHARE_LEVEL_MASKS",
     "SYNCHRONIZE_BIT",
+    "SYSTEM_MAPPING_CONDITIONS",
+    "SYSTEM_SID",
     "UNDERSTATING_CERTAINTIES",
     "UNDERSTATING_CONDITIONS",
     "AccessCertainty",
@@ -213,6 +220,7 @@ __all__ = [
     "SidOrigin",
     "SubjectFacts",
     "SubjectToken",
+    "SystemMapping",
     "TokenAssumption",
     "TokenSid",
     "apply_deny",
@@ -225,6 +233,7 @@ __all__ = [
     "default_assumption",
     "describe_condition",
     "describe_outcome",
+    "describe_verdict",
     "effective_rights",
     "evaluate_acl",
     "explain_access",
@@ -239,6 +248,7 @@ __all__ = [
     "resolve_canonical",
     "share_entry",
     "summarize",
+    "system_mapping_of",
     "union_all",
     "unobserved_trustee_findings",
 ]

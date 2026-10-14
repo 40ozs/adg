@@ -112,6 +112,18 @@ export function isAmbiguous(principal: AnyPrincipal, ambiguous: Set<string>): bo
 }
 
 /**
+ * Whether nothing has said what this SID is — no record at all, or a record saying so.
+ *
+ * Two different absences, one answer. `resolved` is false only when ADG holds no record;
+ * a record whose `kind` is `unresolved` exists precisely to say that the collector that
+ * saw the SID could not resolve it. Reading `resolved` alone would render that SID as a
+ * resolved principal — the false certainty ADG-DEMO-01 removed for SYSTEM.
+ */
+export function isUnresolved(principal: AnyPrincipal): boolean {
+  return principal.resolved === false || principal.kind === "unresolved";
+}
+
+/**
  * Things about this principal a reader must not miss.
  *
  * A disabled account still appears on ACLs and still shows in an effective-access answer,
@@ -120,7 +132,7 @@ export function isAmbiguous(principal: AnyPrincipal, ambiguous: Set<string>): bo
  */
 export function principalNotes(principal: AnyPrincipal): string[] {
   const notes: string[] = [];
-  if (principal.resolved === false) {
+  if (isUnresolved(principal)) {
     notes.push(
       principal.unresolved_reason
         ? `unresolved (${principal.unresolved_reason.replace(/_/g, " ")})`

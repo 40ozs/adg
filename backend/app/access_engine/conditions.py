@@ -128,6 +128,31 @@ class AccessCondition(StrEnum):
     this kind (``Everyone``, ``Authenticated Users``, the logon-type SID). They are named
     individually on the finding so the assumption can be checked."""
 
+    # -- which identity a SYSTEM subject stands for --------------------------------------
+    #
+    # Exactly one of these accompanies every token built for ``S-1-5-18``, and none
+    # accompanies any other. Each is one value of
+    # :class:`~app.access_engine.subjects.SystemMapping`; the detail carries the evidence.
+
+    SYSTEM_MAPPING_CONFIRMED = "system_mapping_confirmed"
+    """The subject is SYSTEM, a collector described it as the well-known SYSTEM principal,
+    and the access path is local: it is the LocalSystem account of the host holding the
+    ACL, which is exactly the identity an entry naming SYSTEM there grants to."""
+
+    SYSTEM_MAPPING_AMBIGUOUS = "system_mapping_ambiguous"
+    """The subject is SYSTEM and the access path is a share. No network logon carries
+    ``S-1-5-18``: a SYSTEM process arrives as the computer account of whichever machine it
+    runs on, and nothing in the question says which machine."""
+
+    SYSTEM_MAPPING_MISSING = "system_mapping_missing"
+    """The subject is SYSTEM and no collector described ``S-1-5-18``, or the one that tried
+    could not resolve it. Which identity it stands for is unknown, not assumed."""
+
+    SYSTEM_MAPPING_CONFLICTING = "system_mapping_conflicting"
+    """The subject is SYSTEM and a collector described ``S-1-5-18`` as something other than
+    the well-known SYSTEM principal. Windows fixes what that SID means, so the collected
+    description and the SID disagree, and neither is preferred."""
+
     # -- coverage gaps -----------------------------------------------------------------
 
     SHARE_ACL_NOT_OBSERVED = "share_acl_not_observed"
@@ -244,6 +269,28 @@ CONDITION_DESCRIPTIONS: Final[dict[AccessCondition, str]] = {
         "Well-known SIDs that Windows places in every token of this kind were added to the "
         "subject's token. They are listed so the assumption can be checked."
     ),
+    AccessCondition.SYSTEM_MAPPING_CONFIRMED: (
+        "SYSTEM (S-1-5-18) is confirmed: a collector described it as the well-known SYSTEM "
+        "principal, and on local access it is the LocalSystem account of the host that "
+        "holds this ACL — the identity an entry naming SYSTEM here grants to."
+    ),
+    AccessCondition.SYSTEM_MAPPING_AMBIGUOUS: (
+        "SYSTEM (S-1-5-18) is ambiguous over a share. No network logon carries S-1-5-18: a "
+        "SYSTEM process arrives as the computer account of the machine it runs on, and "
+        "nothing in this question says which machine. Entries naming SYSTEM were not "
+        "applied; ask about that computer account instead."
+    ),
+    AccessCondition.SYSTEM_MAPPING_MISSING: (
+        "SYSTEM (S-1-5-18) is unconfirmed: no collector has described it, so which identity "
+        "it stands for is unknown. Entries naming the SID were matched literally and nothing "
+        "else about it was assumed."
+    ),
+    AccessCondition.SYSTEM_MAPPING_CONFLICTING: (
+        "SYSTEM (S-1-5-18) is disputed: a collector described it as something other than "
+        "the well-known SYSTEM principal, which Windows defines it to be. The disagreement "
+        "and where it came from are kept in the detail; no conclusion is drawn from either "
+        "side."
+    ),
     AccessCondition.SHARE_ACL_NOT_OBSERVED: (
         "No run has read this share's permissions, so the share layer could not restrict "
         "the result. The real access cannot be wider than what is reported."
@@ -295,6 +342,9 @@ OVERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
         AccessCondition.SUBJECT_IS_A_GROUP,
         AccessCondition.SUBJECT_UNRESOLVED,
         AccessCondition.SUBJECT_DISABLED,
+        AccessCondition.SYSTEM_MAPPING_AMBIGUOUS,
+        AccessCondition.SYSTEM_MAPPING_MISSING,
+        AccessCondition.SYSTEM_MAPPING_CONFLICTING,
     }
 )
 """Conditions under which the reported rights may be **wider** than the truth.
@@ -316,6 +366,13 @@ kind, so the assumption is exact once the kind is known — and whether the kind
 what ``SUBJECT_IS_A_GROUP`` and ``SUBJECT_UNRESOLVED`` report. Counting it as an uncertainty
 would mark every ordinary answer in the system uncertain, which is how a certainty flag
 stops being read.
+
+The three unsettled ``SYSTEM_MAPPING_*`` conditions are in **both** sets, for the reason
+``SUBJECT_UNRESOLVED`` is: an identity nobody can name has unknown grants and unknown
+restrictions. Being in the understating set is what keeps an empty answer for them
+``indeterminate`` rather than a conclusive "no access". ``SYSTEM_MAPPING_CONFIRMED`` is in
+neither: it records which identity was meant and where the description came from, and it
+qualifies nothing.
 """
 
 UNDERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
@@ -327,6 +384,9 @@ UNDERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
         AccessCondition.ACE_COUNT_MISMATCH,
         AccessCondition.ACL_TRUNCATED,
         AccessCondition.NTFS_ACL_NOT_OBSERVED,
+        AccessCondition.SYSTEM_MAPPING_AMBIGUOUS,
+        AccessCondition.SYSTEM_MAPPING_MISSING,
+        AccessCondition.SYSTEM_MAPPING_CONFLICTING,
     }
 )
 """Conditions under which the reported rights may be **narrower** than the truth.

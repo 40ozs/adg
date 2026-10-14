@@ -41,6 +41,7 @@ from typing import Final
 
 from app.access_engine.evaluation import AppliedAce
 from app.access_engine.resolver import AccessCertainty, EffectiveAccess
+from app.access_engine.subjects import SystemMapping
 
 __all__ = [
     "OUTCOME_DESCRIPTIONS",
@@ -49,6 +50,7 @@ __all__ = [
     "AccessVerdict",
     "classify_access",
     "describe_outcome",
+    "describe_verdict",
 ]
 
 
@@ -102,9 +104,89 @@ OUTCOME_DESCRIPTIONS: Final[dict[AccessOutcome, str]] = {
 }
 
 
+_NO_GRANT_BETWEEN_LAYERS: Final[dict[tuple[bool, bool], str]] = {
+    (True, False): (
+        "This principal holds no rights here and nothing denied any. The NTFS permissions "
+        "grant it rights, but the share permissions give it none, so nothing survives both "
+        "layers."
+    ),
+    (False, True): (
+        "This principal holds no rights here and nothing denied any. The share permissions "
+        "grant it rights, but the NTFS permissions give it none, so nothing survives both "
+        "layers."
+    ),
+    (True, True): (
+        "This principal holds no rights here and nothing denied any. The NTFS and share "
+        "permissions each grant it rights, but no right is granted by both, so nothing "
+        "survives the intersection."
+    ),
+}
+"""``no_grant`` when an entry *did* name the principal, keyed by (NTFS granted, share
+granted). The plain description says no entry names it, which is false here."""
+
+_UNSETTLED_SYSTEM: Final[dict[tuple[AccessOutcome, SystemMapping], str]] = {
+    (AccessOutcome.GRANTED, SystemMapping.AMBIGUOUS): (
+        "Rights survive, but only through SIDs every network session is assumed to carry. "
+        "Over a share SYSTEM is the computer account of whichever machine it runs on, and "
+        "nothing in this question says which."
+    ),
+    (AccessOutcome.GRANTED, SystemMapping.MISSING): (
+        "Rights survive, but no collector has described S-1-5-18, so which identity holds "
+        "them is not confirmed."
+    ),
+    (AccessOutcome.GRANTED, SystemMapping.CONFLICTING): (
+        "Rights survive, but a collector's description of S-1-5-18 contradicts what Windows "
+        "defines it to be, so which identity holds them is disputed."
+    ),
+    (AccessOutcome.INDETERMINATE, SystemMapping.AMBIGUOUS): (
+        "No rights were established, and this is not a finding of no access. Over a share "
+        "SYSTEM is the computer account of whichever machine it runs on, and nothing in "
+        "this question says which."
+    ),
+    (AccessOutcome.INDETERMINATE, SystemMapping.MISSING): (
+        "No rights were established, and this is not a finding of no access. No collector "
+        "has described S-1-5-18, so which identity this question is about is unknown."
+    ),
+    (AccessOutcome.INDETERMINATE, SystemMapping.CONFLICTING): (
+        "No rights were established, and this is not a finding of no access. A collector's "
+        "description of S-1-5-18 contradicts what Windows defines it to be."
+    ),
+}
+"""The sentence for an answer about a SYSTEM whose mapping is not confirmed.
+
+Only ``granted`` and ``indeterminate`` appear: an unsettled mapping widens the certainty
+both ways, so an empty answer for one can never be ``denied`` or ``no_grant``.
+"""
+
+
 def describe_outcome(outcome: AccessOutcome) -> str:
     """The operator-facing sentence for an outcome."""
     return OUTCOME_DESCRIPTIONS[outcome]
+
+
+def describe_verdict(outcome: AccessOutcome, access: EffectiveAccess) -> str:
+    """The sentence for this outcome *on this evidence*.
+
+    :func:`describe_outcome` is the general sentence, and it is the one used unless the
+    evidence contradicts it. Two cases do:
+
+    * ``no_grant`` where a layer's own entries named the principal and granted it rights —
+      "no entry names it" sat beside the entry that did;
+    * an answer about a SYSTEM whose :class:`SystemMapping` is not confirmed, where "this
+      principal holds rights" or "a gap in collection" would state an identity, or a cause,
+      the evidence does not support.
+    """
+    mapping = access.token.system_mapping
+    if mapping is not None and mapping is not SystemMapping.CONFIRMED:
+        unsettled = _UNSETTLED_SYSTEM.get((outcome, mapping))
+        if unsettled is not None:
+            return unsettled
+    if outcome is AccessOutcome.NO_GRANT:
+        ntfs = not access.ntfs.rights.is_empty
+        share = access.share is not None and not access.share.rights.is_empty
+        if ntfs or share:
+            return _NO_GRANT_BETWEEN_LAYERS[(ntfs, share)]
+    return describe_outcome(outcome)
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,7 +269,7 @@ def classify_access(access: EffectiveAccess) -> AccessVerdict:
     return AccessVerdict(
         outcome=outcome,
         certainty=certainty,
-        reason=describe_outcome(outcome),
+        reason=describe_verdict(outcome, access),
         denials=denials,
     )
 

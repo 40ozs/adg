@@ -16,7 +16,13 @@ import {
 } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import type { CollectionStatus, MemberInclusion, PrincipalDetail } from "@/lib/contracts";
-import { ambiguousLabels, isGroup, principalKindLabel, principalLabel } from "@/lib/identity";
+import {
+  ambiguousLabels,
+  isGroup,
+  isUnresolved,
+  principalKindLabel,
+  principalLabel,
+} from "@/lib/identity";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation, type Trail } from "@/lib/paging";
 import { shareHref } from "@/lib/resources";
 import { classify, coverageCaveat } from "@/lib/state";
@@ -109,6 +115,18 @@ export default async function PrincipalPage({
       </h1>
 
       <CoverageCaveat caveat={coverageCaveat(coverageData)} />
+      {principal.resolved && isUnresolved(principal) && (
+        <div className="banner banner-warning" role="alert">
+          <h2>A run saw this SID and could not resolve it</h2>
+          <p>
+            <code>{principal.key}</code> was recorded as unresolved
+            {principal.unresolved_reason
+              ? ` (${principal.unresolved_reason.replace(/_/g, " ")})`
+              : ""}
+            . Its name and kind are unknown, and nothing on this page names it as anything else.
+          </p>
+        </div>
+      )}
       {!principal.resolved && (
         <div className="banner banner-warning" role="alert">
           <h2>No run has described this SID</h2>

@@ -76,6 +76,44 @@ collected data settles which applied. An ACE naming one of them is reported as
 `LOGON_TYPE_TRUSTEE` and **not** treated as unmatched: "Alice is not in this group" is a
 conclusion, and "Alice may or may not have logged on that way" is not.
 
+### SYSTEM: one mapping state, assessed once (ADG-DEMO-01)
+
+`S-1-5-18` is the LocalSystem account *of whichever machine evaluates the ACL*, and no
+network logon carries it: a SYSTEM process reaching a share arrives as its machine's
+computer account. So a SYSTEM subject's identity depends on the path, and
+`app.access_engine.subjects.system_mapping_of` assesses it once, as a `SystemMapping`,
+which every token built for `S-1-5-18` carries together with exactly one finding:
+
+| State | When | Finding | Directions |
+| --- | --- | --- | --- |
+| `confirmed` | local access, and a collector described `S-1-5-18` as `well_known` | `system_mapping_confirmed` (cites the describing run) | neither |
+| `ambiguous` | any access over a share | `system_mapping_ambiguous` | both |
+| `missing` | local access, and no description, or one of kind `unresolved` | `system_mapping_missing` | both |
+| `conflicting` | a collector described `S-1-5-18` as any other kind | `system_mapping_conflicting` | both |
+
+Precedence is `conflicting`, then `ambiguous`, then `missing`: a disagreement in collected
+evidence is never hidden, and over a share no description of `S-1-5-18` can change the
+answer. The finding's detail always carries the description that was read (`null`
+included), the expected kind, the describing run, whether the SID was presented, and any
+observed groups withheld.
+
+What follows from the state, and nowhere else:
+
+* **Over a share the subject's own SID is not presented.** The subject entry stays first in
+  the token, but `SubjectToken.contains`/`entry` do not offer it, so neither an ACE naming
+  SYSTEM nor SYSTEM's ownership applies; groups observed for SYSTEM's local identity are
+  withheld too and named in the finding. Assumed session SIDs still apply.
+* **SYSTEM always defaults to `sids_only`**, whatever a collector said it is: a missing or
+  disputed description is not licence to invent `Everyone`, `Authenticated Users` and a
+  logon SID for it.
+* **Only `confirmed` can be conclusive about SYSTEM.** The other three are in both
+  direction sets, so an empty answer is `indeterminate`, never `no_grant` or `denied`.
+* **The verdict sentence is derived from the state** (`describe_verdict`), as is the
+  `no_grant` sentence when one layer granted and the other gave nothing.
+
+A token built directly to ask what an ACL grants entries naming a SID (the risk engine's
+`_token_for`) carries no mapping and is unaffected.
+
 ### Matching is by storage key, never by SID
 
 `S-1-5-32-544` is byte-identical on every Windows computer. `BUILTIN\Administrators` on

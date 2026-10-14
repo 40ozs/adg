@@ -6,8 +6,9 @@ import {
   describeRemoval,
   alternateRouteWarning,
   cautions,
-  outcomeWording,
+  explanationWording,
   sufficientRemovals,
+  systemMapping,
 } from "@/lib/explanation";
 import { limitingLayerLabel } from "@/lib/access";
 import { Rights } from "@/components/EffectiveAccess";
@@ -28,7 +29,8 @@ export function VerdictPanel({
 }: {
   explanation: AccessExplanationResponse;
 }): JSX.Element {
-  const wording = outcomeWording(explanation.verdict);
+  const wording = explanationWording(explanation);
+  const mapping = systemMapping(explanation);
   const effective = explanation.effective;
   return (
     <div className="card">
@@ -61,6 +63,15 @@ export function VerdictPanel({
         <dd>
           <code>{explanation.verdict.certainty}</code> — {certaintyNote(explanation.verdict.certainty)}
         </dd>
+
+        {mapping !== null && (
+          <>
+            <dt>SYSTEM mapping</dt>
+            <dd>
+              <code>{mapping.state}</code> — {mapping.message}
+            </dd>
+          </>
+        )}
 
         <dt>Narrower layer</dt>
         <dd>{limitingLayerLabel(effective.limiting_layer)}</dd>
