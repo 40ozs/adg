@@ -73,6 +73,7 @@ is surfaced rather than resolved. A directory whose parent nobody read is report
 | --- | --- |
 | What can this principal do to this directory? | `/access/principals/{sid}/resources/{path}` |
 | Everything this principal reaches | `/access/principals/{sid}/resources`, `…/shares` |
+| Where inside the shares that access begins, how far it runs, and where it changes | `/access/principals/{sid}/directory-access` (`/tree`, `/exceptions`, `/export`) — the same engine answers grouped into access roots ([handoff](../handoffs/adg-directory-access-01.md)) |
 | Everyone who reaches this directory | `/access/resources/{path}/principals` |
 | Everything a group's membership reaches | `/groups/{sid}/resource-impact` |
 | **Why** — the whole derivation | `/access/explain?principal=…&resource=…` |
