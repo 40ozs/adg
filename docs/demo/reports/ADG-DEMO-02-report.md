@@ -373,7 +373,19 @@ because the application ships no favicon. That predates this change.
 
 ### 6.5 CI
 
-GitHub Actions on `6196eaa` (CI run 63, `https://github.com/40ozs/adg/actions/runs/38644401684`): Collector (Pester, `windows-latest`) **passed**, Frontend (lint, types, tests, build) **passed**, Docker Compose configuration **passed**, Backend lint, type check and unit tests **passed**; the Backend database step was still running when this report was first committed, and its result is recorded in the follow-up commit.
+GitHub Actions, CI run 64 on `2b25b84` ([run](https://github.com/40ozs/adg/actions/runs/38645166406)).
+That commit is `6196eaa` plus this report and its evidence: 11 documentation files, no code.
+**Every job passed:**
+
+* Backend: lint, type check, unit tests, and **database tests** (22:08–22:30 UTC);
+* Collector (Pester, `windows-latest`);
+* Frontend: lint, types, tests, build;
+* Docker Compose configuration.
+
+CI run 63 on `6196eaa` itself passed Collector, Frontend, Compose, and the backend's lint,
+types and unit tests. Its database step was still running on its runner more than 30
+minutes after it started, while run 64's identical step had already passed. Its final
+conclusion is on the run page.
 
 ## 7. ADG-DEMO-01 regression status
 
