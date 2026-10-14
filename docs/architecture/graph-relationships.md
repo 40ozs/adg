@@ -1,20 +1,23 @@
-# Privilege relationships: the domain model, the evidence contract, and their derivation
+# Privilege relationships: the domain model, the evidence contract, their derivation and traversal
 
-**Phases:** ADG-GRAPH-01A (model), ADG-GRAPH-01B (derivation) · **Status:** implemented (domain,
-schema, internal repository, projector, local-groups collector)
+**Phases:** ADG-GRAPH-01A (model), ADG-GRAPH-01B (derivation), ADG-GRAPH-01C (traversal and
+graph API) · **Status:** implemented (domain, schema, internal repository, projector,
+local-groups collector, path engine, `/api/v1/graph`)
 **Code:** `backend/app/domain/relationships.py`, `backend/app/models/schema.py` (graph section),
 `backend/app/repositories/relationships.py`, `backend/app/relationships/` (rules and projector),
+`backend/app/traversal/` (semantics, search, completeness, service),
+`backend/app/api/relationship_graph.py`,
 `database/migrations/versions/0018_graph_relationships.py` and `0019_graph_derivation.py`,
 `collector/powershell/localgroups/`
 **Decisions:** [ADR-0040](../decisions/0040-a-privilege-relationship-is-a-derived-projection-with-traceable-supports.md),
 [ADR-0041](../decisions/0041-a-relationship-is-rederived-when-its-facts-change.md),
-building on ADR-0001, 0002, 0003, 0007, 0010, 0011 and 0018.
+[ADR-0042](../decisions/0042-a-path-is-only-as-complete-as-the-graph-it-walked.md),
+building on ADR-0001, 0002, 0003, 0006, 0007, 0010, 0011, 0016 and 0018.
 
-This document defines what a privilege relationship means in ADG, how ADG can prove one, and
+This document defines what a privilege relationship means in ADG, how ADG can prove one,
 (§9) which relationships the projector derives from the facts ADG collects and how they stay
-current. It does **not** define a traversal over relationships or an API that serves them;
-those are ADG-GRAPH-01C onward. The existing membership traversal (`membership-graph.md`) is
-unchanged.
+current, and (§10) how paths through them are searched and served. The existing membership
+traversal (`membership-graph.md`) and its routes are unchanged.
 
 ---
 
@@ -303,8 +306,10 @@ by key, evidence by `(kind, key)`, sets sorted, timestamps in UTC ISO-8601, and 
 | `get(id)` / `get_many(ids)` | relationships with every support and evidence link, and evidence state; 3 queries |
 | `adjacent(node, outbound\|inbound, types=, after=, limit=)` | keyset page ordered by `(type, id)` over the adjacency index |
 | `supported_by(kind, key)` | relationship ids resting on one fact |
+| `adjacent_many(nodes, direction, types=, limit=)` | one breadth-first level: every relationship touching any of the nodes, in `(kind, key, type, id)` order, plus `get_many` (ADG-GRAPH-01C) |
+| `nodes_named(nodes)` | which nodes some relationship names (ADG-GRAPH-01C) |
 
-There is no HTTP surface. The final public graph API is deliberately not built in this lane.
+The HTTP surface over this repository is §10.
 
 ---
 
@@ -314,8 +319,8 @@ There is no HTTP surface. The final public graph API is deliberately not built i
   ACLs, security and WMI filtering), trusts (`trustedDomain`) and OU placement. Until then,
   `can_modify_membership`, `controls_gpo`, `gpo_linked_to`, `gpo_applies_to` and `trusts` cannot
   hold a relationship. §9.9 states exactly what each would need.
-* **Graph traversal over relationships**, path search and a public graph API with an accessible
-  structured representation (ADG-GRAPH-01C onward).
+* **Rendering paths** in the UI (ADG-GRAPH-01E). Traversal, path search and the graph API
+  were built in ADG-GRAPH-01C (§10).
 * **History of relationships.** Relationships are re-derivable from the versioned facts; a
   relationship timeline is not stored. A retired support records when it stopped holding.
 
@@ -578,3 +583,181 @@ A rebuild over 400 memberships and 60 descriptors of seven entries each issues 3
   for access through SMB).
 * Never infer a relationship the store does not hold, and never read the absence of a
   `not_collected` type as "no".
+
+These four points are what §10 implements; ADR-0042 records the decisions.
+
+---
+
+## 10. Traversal and the graph API (ADG-GRAPH-01C)
+
+`app.traversal` searches the relationships §9 derives. `semantics` says which ones a path may
+use, `search` holds the four bounded searches over an adjacency provider (no SQL, testable in
+memory, ADR-0006), `completeness` decides what an answer means, and `service` runs them over
+PostgreSQL in one snapshot. `app.api.relationship_graph` serves them under `/api/v1/graph`.
+Nothing here derives, stores or changes a relationship.
+
+### 10.1 Traversal semantics
+
+| Type | Role | Class | Followed by path search | Reverse reachability |
+| --- | --- | --- | --- | --- |
+| `member_of`, `primary_group_of` | hop | identity membership | yes, member → group | yes |
+| `local_group_member_of` | hop | host-local membership | yes, member → local group, in its host's scope | yes |
+| `owns`, `generic_all`, `generic_write`, `write_dacl`, `write_owner` | hop | file/resource control (NTFS only) | yes, trustee → resource | yes |
+| `local_admin_of` | reading of `local_group_member_of` | host-local privilege | never as a hop; attached to the step it reads | — |
+| `remote_desktop_user_of`, `remote_management_user_of` | reading, always conditional | conditional remote access | never as a hop; attached to the step it reads | — |
+| `foreign_principal_of` | informational | informational | never | never (neighbors only) |
+| `nested_member_of` | traversal-only | — | never stored: a nested chain is its direct `member_of` hops | — |
+| `can_modify_membership`, `controls_gpo`, `gpo_linked_to`, `gpo_applies_to`, `trusts` | not collected | directory-object control, group policy, trust | never; never fabricated | — |
+
+The table is `TRAVERSAL_SEMANTICS`, one entry per type, and `GET /api/v1/graph/semantics`
+publishes it. Classes are never merged: read access to a folder is not control of its server,
+membership of Remote Desktop Users is not a successful sign-in, and a foreign principal's domain
+is not a privilege over it.
+
+**Direction** is the relationship's own. A hop is followed source to target, the way the
+privilege flows. Reverse reachability starts at the target and walks the same hops backwards,
+and still reports each route source to target.
+
+**Host scope** is part of node identity: `fs01|S-1-5-32-544` and `fs02|S-1-5-32-544` are two
+nodes, and nothing is ever joined by SID or display name. Two collectors that spell one host
+differently (`fs01`, `fs01.corp.example.com`) produce two hosts; that limitation (01B report §12) is
+preserved and tested, not papered over.
+
+### 10.2 Paths
+
+A **path is a sequence of nodes**. Each step carries every followed hop that joins its two
+nodes, strongest first (confidence, then class, then type, then id), and every current reading
+of that pair. Parallel relationships — an owner's `owns` and `write_dacl` — are one step, so a
+route is never returned twice.
+
+A path's **assessment** is never a score. `confidence` is the weakest of every step's strongest
+hop, the readings the path *ends* on, and the conditions only the path knows; `chain_confidence`
+is the hops alone. So a route to `fs01|S-1-5-32-555` reads `chain_confidence: confirmed` (bob is
+a member) and `confidence: probable` with `logon_right_unevaluated` and
+`remote_service_state_unknown` (signing in is conditional). A reading in the middle of a route
+conditions nothing: the group's SID is in any logon's token. Conditions carry their origin
+(`relationship`, `reading`, `path`) and step. The path-only condition is
+`token_filtering_not_modeled`, added when a host-local account's membership of the host's
+Administrators is then *used* (UAC remote restrictions filter local accounts, not domain ones). A
+path ending at an NTFS resource notes `share_layer_not_evaluated`: it states NTFS control, and
+access over SMB is the access engine's answer.
+
+Every edge names its relationship id, rule and version, support count and the premise facts of
+its strongest support, and links to `GET /api/v1/graph/relationships/{id}`, which returns every
+support with its evidence and each fact's stored state.
+
+### 10.3 What is followed
+
+Only `current` relationships. `not_current` ones are history and are skipped; `unknown` ones are
+counted and make an empty answer a `boundary`. The caller names a policy, and every answer echoes
+it:
+
+| Policy | Follows | Declined relationships |
+| --- | --- | --- |
+| `all_current` (default) | every current hop | none |
+| `confirmed_only` | current hops whose confidence is `confirmed` | counted (`exploration.excluded_by_policy`); an empty answer is `policy_restricted`, never `no_path` |
+
+### 10.4 Outcome and completeness
+
+| `outcome` | Meaning | `conclusive` |
+| --- | --- | --- |
+| `found` | at least one route | true unless the projection is behind |
+| `no_path` | the search finished within its limits over a current graph, met no boundary and declined nothing | true, about the modeled graph only |
+| `incomplete_evidence` | nothing found; the graph does not reflect everything collected, or nothing was | false |
+| `truncated` | nothing found before a limit stopped the search | false |
+| `boundary` | nothing found; the search met an unknown relationship, an unresolved principal or a logon-time SID | false |
+| `policy_restricted` | nothing found through what the policy follows | false |
+
+Precedence: evidence, truncation, boundary, policy (`classify`). `completeness.reasons` lists
+every reason, each with a category and a sentence: `nothing_collected`, `projection_failed`,
+`projection_behind`, `max_depth`, `max_nodes`, `max_edges`, `max_paths`, `search_budget`,
+`unknown_relationships`, `unresolved_boundary`, `implicit_membership_boundary`,
+`excluded_by_policy`, and the notice `collection_in_progress`.
+
+**Boundaries** are found walking towards a target: a node reached through an unresolved
+relationship (a foreign or unresolvable principal, whose holders are outside the collected
+domain) and a SID Windows adds at logon (`Everyone`, `Authenticated Users`, logon-session
+SIDs), which no stored membership leads into. A path search that finds nothing finishes its
+backward walk to `max_depth - 1`, so these are looked for wherever a route could have come from.
+
+**Coverage** is on every response: the not-collected relationship types, directory-object
+control, logon-time token memberships, cross-domain membership and the share layer. It is never
+a completeness reason — no search could complete it — and it is why `no_path` is a statement
+about the modeled graph and never about the estate.
+
+### 10.5 Readiness and snapshot
+
+Readiness is `RelationshipProjector.state()` (completed runs no successful pass covered, the
+ones whose own pass failed, runs in progress, the pass count and the latest pass) plus the
+collection basis — no second readiness record. `GET /api/v1/graph/readiness` reports it, and
+every answer carries it as `basis.projection`: `current`, `behind` (`projection_behind`, the
+state of an upgrade to 0019 before `rebuild-graph`), `failed` (`projection_failed`) or `empty`.
+
+Each request runs in one `REPEATABLE READ, READ ONLY` transaction (`basis.snapshot`): the
+collection basis, the projection state and every level of every walk are one snapshot, so a run
+completing mid-request cannot mix two graphs into one answer. The `ETag` covers the collection
+basis and the projection token (pass count and latest pass), so a rebuild — which moves no scan
+run — invalidates cached answers.
+
+### 10.6 Determinism
+
+Nodes order by `(kind, canonical key)`. The shortest path is the lexicographically smallest node
+sequence among the shortest routes: at each position, the smallest next node from which the
+target is still reachable in the remaining hops. Alternates are ordered by length, then by that
+order. Reverse reachability is ordered by hops, then node; neighbors by level, type, id. Every
+frontier is sorted and every batch processed in sorted order; set order, row order, insertion
+order and display names never decide. Incremental derivation, a clean rebuild and a different
+ingestion order give the same routes (tested over scenarios and over Null Meridian).
+
+### 10.7 Algorithms and limits
+
+| Search | Algorithm | Bounded by |
+| --- | --- | --- |
+| shortest path | bidirectional, level-synchronous BFS (smaller frontier first); the route is chosen in memory once the visited sets meet; a depth probe looks one level past `max_depth` before reporting truncation | `max_depth`, `max_nodes`, `max_edges` |
+| alternate paths | both sides walk until their depths sum to `max_depth`; simple routes enumerated in memory, one length at a time, depth-first in sorted order, pruned by distance to the target | the above, `max_paths`, a fixed work budget (200,000 extensions) |
+| reverse reachability | backward BFS to `max_depth`, with a one-level probe | `max_depth`, `max_nodes`, `max_edges`; paged |
+| neighbors | BFS over the requested types and directions to `depth`; `frontier` counts unexpanded nodes (a hint, not a truncation) | `depth`, `max_nodes`, `max_edges`; paged |
+
+| Parameter | Default | Maximum |
+| --- | --- | --- |
+| `max_depth` | 10 | 32 |
+| `max_nodes` | 20,000 | 100,000 |
+| `max_edges` (relationships read) | 100,000 | 500,000 |
+| `max_paths` | 10 | 100 |
+| neighbor `depth` | 1 | 3 |
+| page `limit` | 100 | 500 |
+
+A value outside its range is a 422; nothing is clamped (ADR-0042, unlike ADR-0006's membership
+routes). Every level is one read of the adjacency index plus `get_many`'s three, whatever it
+holds; a cycle is crossed once; no all-pairs or closure table exists.
+
+### 10.8 API
+
+All under `/api/v1/graph`, behind `graph:read` (held exactly where `identities:read`,
+`resources:read` and `access:read` are; never a side channel around them):
+
+| Route | Answers |
+| --- | --- |
+| `GET /semantics` | the registry, policies, outcomes, reasons, limits, tie-break and coverage |
+| `GET /readiness` | whether the graph reflects what was collected |
+| `GET /paths/shortest?source=&target=` | the shortest route |
+| `GET /paths?source=&target=` | bounded alternate routes |
+| `GET /reachability?target=` | every node with a route into the target, paged |
+| `GET /neighbors?node=&direction=&type=&depth=` | the relationships around a node, paged |
+| `GET /relationships/{relationship_id}` | one relationship, its supports and evidence |
+
+Nodes are addressed as `<kind>:<canonical key>` (`principal:fs01|S-1-5-32-544`,
+`ntfs_resource:\\fs01\finance`); a non-canonical spelling is a 422 naming the field, an unknown
+node a 404, and a bare BUILTIN SID with host-local namesakes a 404 that lists them. Responses
+carry `basis`, `completeness`, `limits`, `exploration` and `coverage`.
+
+### 10.9 Validation
+
+| | |
+| --- | --- |
+| Registry against the taxonomy and rules | `backend/tests/traversal/test_semantics.py` |
+| Searches over in-memory graphs (cycles, ties, row order, readings, conditions, scope, boundaries, limits) | `backend/tests/traversal/test_search.py` |
+| Outcome precedence and readiness | `backend/tests/traversal/test_completeness.py` |
+| HTTP surface over ingested estates (readiness states, ETag and rebuild, ingestion order, authorization, statement counts) | `backend/tests/db/test_graph_paths_api.py` |
+| Routes over Null Meridian unchanged by a clean recomputation | `backend/tests/db/test_null_meridian_demo.py::TestThePathEngine` |
+| Measured cost | `python -m tests.benchmarks.path_benchmark`; numbers in the ADG-GRAPH-01C report |

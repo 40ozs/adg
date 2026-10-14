@@ -50,3 +50,4 @@ Rules:
 | [0039](0039-demo-is-a-deployment-boundary.md) | Demo is a deployment boundary drawn at ingestion, not a switch | Accepted |
 | [0040](0040-a-privilege-relationship-is-a-derived-projection-with-traceable-supports.md) | A privilege relationship is a derived projection with traceable supports | Accepted |
 | [0041](0041-a-relationship-is-rederived-when-its-facts-change.md) | A relationship is re-derived when its facts change, and retired when they no longer establish it | Accepted |
+| [0042](0042-a-path-is-only-as-complete-as-the-graph-it-walked.md) | A path is only as complete as the graph it walked | Accepted |

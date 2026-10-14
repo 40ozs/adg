@@ -21,8 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.roles import Role
 from app.db import Database
+from app.domain.relationships import NodeKind, NodeRef
 from app.models.schema import graph_relationships, metadata
 from app.relationships import RelationshipProjector
+from app.repositories.basis import CollectionBasisRepository
+from app.traversal.semantics import TraversalPolicy
+from app.traversal.service import RelationshipGraphService
 from tests.support.ingest import replay
 from tests.support.relationships import ace, at, edge, principal, resource, transcript
 
@@ -832,6 +836,45 @@ class TestDeterminismAndRebuild:
         # A rebuild moves no scan run; the projection token is what invalidates the tag.
         assert rebuilt.status_code == 200
         assert rebuilt.headers["ETag"] != etag
+
+
+class TestSnapshot:
+    async def test_one_request_reads_one_snapshot(
+        self, client: AsyncClient, database: Database
+    ) -> None:
+        """A run that completes while a request is between two reads is not half-visible."""
+        await estate(client)
+        carol = NodeRef.principal(CAROL)
+        payroll = NodeRef(NodeKind.NTFS_RESOURCE, PAYROLL.casefold())
+
+        async with database.session() as session:
+            service = RelationshipGraphService(session)
+            snapshot = await service.open()
+            before = await service.shortest_path(carol, payroll, policy=TraversalPolicy.ALL_CURRENT)
+            # Another writer completes a run that puts carol into Finance-RW, and commits.
+            await replay(
+                client,
+                directory(10, ((TEAM, ALICE), (RW, TEAM), (AUDITORS, BOB), (RW, CAROL))),
+            )
+            during = await service.shortest_path(carol, payroll, policy=TraversalPolicy.ALL_CURRENT)
+            basis = await CollectionBasisRepository(session).current()
+
+        assert snapshot.isolation == "repeatable_read"
+        assert before.paths == () and during.paths == ()
+        assert basis.token == snapshot.basis.token
+        # The next request reads the new state, and says it is a different one.
+        after = await shortest(client, p(CAROL), PAYROLL_REF)
+        assert after["outcome"] == "found"
+        assert after["basis"]["collection"]["token"] != snapshot.basis.token
+
+    async def test_a_graph_request_cannot_write(
+        self, client: AsyncClient, database: Database
+    ) -> None:
+        await estate(client)
+        async with database.session() as session:
+            await RelationshipGraphService(session).open()
+            with pytest.raises(sa.exc.DBAPIError, match="read-only transaction"):
+                await session.execute(sa.delete(graph_relationships))
 
 
 # --- Authorization ------------------------------------------------------------------------

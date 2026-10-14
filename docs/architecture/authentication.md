@@ -38,16 +38,21 @@ set membership against that list.
 | `changes:read` | ● | ● | ● | |
 | `collectors:read` | ● | ● | ● | |
 | `search` | ● | ● | ● | |
+| `graph:read` | ● | ● | ● | |
 | `settings:read` | | ● | ● | |
 | `settings:write` | | | ● | |
 | `collectors:ingest` | | | ● | |
 | `remediation:execute` | | | | |
 
-Two rules are structural rather than conventional:
+Three rules are structural rather than conventional:
 
 - **A viewer can see whether collection succeeded.** `collectors:read` is granted to every
   role deliberately. Without it, a viewer cannot tell an empty estate from a failed scan,
   which is the misreading this product exists to prevent.
+- **`graph:read` is never a side channel.** The relationship graph (ADG-GRAPH-01C) composes
+  memberships and NTFS control, so it is held exactly where `identities:read`,
+  `resources:read` and `access:read` all are; `tests/auth/test_roles.py` refuses a role table
+  that grants it without them (ADR-0042).
 - **`remediator` grants nothing, and no role grants `remediation:execute`.** The role exists
   so a tenant can provision it ahead of the feature and so the name cannot be reused.
   Until remediation ships, holding it is indistinguishable from holding no role at all.
