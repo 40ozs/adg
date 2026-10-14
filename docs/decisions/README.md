@@ -48,3 +48,4 @@ Rules:
 | [0037](0037-a-plans-blast-radius-is-the-access-engine-not-an-estimate.md) | A plan's blast radius is the access engine, not an estimate | Accepted |
 | [0038](0038-proposing-approving-and-carrying-out-are-three-pairs-of-hands.md) | Proposing, approving and carrying out a change are three pairs of hands | Accepted |
 | [0039](0039-demo-is-a-deployment-boundary.md) | Demo is a deployment boundary drawn at ingestion, not a switch | Accepted |
+| [0040](0040-a-privilege-relationship-is-a-derived-projection-with-traceable-supports.md) | A privilege relationship is a derived projection with traceable supports | Accepted |

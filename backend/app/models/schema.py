@@ -37,8 +37,9 @@ the same shape ``membership_edges`` already has toward ``principals``.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
-from typing import Any
+from typing import Any, Final
 
 from sqlalchemy import (
     BigInteger,
@@ -58,7 +59,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 from app.contracts.v1.common import ObservationKind, ScopeKind
@@ -96,6 +97,20 @@ from app.domain import (
     UnresolvedReason,
 )
 from app.domain.observation import CollectorKind
+from app.domain.relationships import (
+    BASIS_TOKEN_LENGTH,
+    RELATIONSHIP_DIGEST_LENGTH,
+    RELATIONSHIP_TAXONOMY,
+    UNRESOLVED_QUALIFIERS,
+    DerivationClass,
+    EvidenceKind,
+    EvidenceRole,
+    Materialization,
+    NodeKind,
+    RelationshipCondition,
+    RelationshipQualifier,
+    RelationshipScopeKind,
+)
 
 metadata = MetaData()
 
@@ -121,6 +136,7 @@ __all__ = [
     "KEY_LENGTH",
     "MAX_ACCESS_MASK_VALUE",
     "PLAN_TITLE_LENGTH",
+    "RELATIONSHIP_ID_SQL",
     "SIMULATION_TOKEN_LENGTH",
     "STATE_DIGEST_LENGTH",
     "SUBJECT_LENGTH",
@@ -145,6 +161,9 @@ __all__ = [
     "collector_sources",
     "deployment_marker",
     "governance_audit_events",
+    "graph_relationship_evidence",
+    "graph_relationship_supports",
+    "graph_relationships",
     "membership_edges",
     "metadata",
     "ntfs_aces",
@@ -2738,5 +2757,302 @@ deployment_marker = Table(
         "database that is not marked demo -- so synthetic data cannot be written over real "
         "observations by pointing a demo at the wrong connection string. See "
         "docs/architecture/demo-mode.md."
+    ),
+)
+
+
+# --- Privilege relationship graph (ADG-GRAPH-01A) -----------------------------------------
+#
+# Three tables, all derived state (ADR-0003, ADR-0040). Nothing here is a collected fact and
+# nothing collected is copied here: a relationship names the canonical objects it connects by
+# their existing keys, and every support names the stored facts it rests on by theirs.
+#
+# * ``graph_relationships`` is identity only -- type, endpoints, scope. Its primary key is a
+#   digest of exactly those columns, and the database recomputes it, so a row whose id
+#   disagrees with its components cannot be written.
+# * ``graph_relationship_supports`` is one row per independent way a relationship is
+#   supported, with that derivation's class, rule, qualifiers, conditions and attribution.
+# * ``graph_relationship_evidence`` is one row per stored fact a support rests on.
+#
+# Endpoints and evidence carry no foreign key to the canonical tables, for the reason
+# ``membership_edges`` has none toward ``principals``: an endpoint nobody has described is a
+# real, reportable state, and refusing it would hide the finding. Resolution stays a join
+# (ADR-0007). Run ids *do* reference ``scan_runs``: derived state must never outlive the
+# provenance it cites.
+
+
+def _relationship_value_list(values: Iterable[str]) -> str:
+    return ", ".join(f"'{value}'" for value in sorted(values))
+
+
+_STORABLE_RELATIONSHIP_TYPES: Final = tuple(
+    sorted(
+        definition.relationship_type.value
+        for definition in RELATIONSHIP_TAXONOMY.values()
+        if definition.materialization is Materialization.STORED
+    )
+)
+_NO_SELF_RELATIONSHIP_TYPES: Final = tuple(
+    sorted(
+        definition.relationship_type.value
+        for definition in RELATIONSHIP_TAXONOMY.values()
+        if definition.materialization is Materialization.STORED and not definition.allows_self
+    )
+)
+
+RELATIONSHIP_ID_SQL: Final = (
+    "encode(sha256(convert_to(concat_ws(chr(31), relationship_type, source_kind, source_key, "
+    "target_kind, target_key, coalesce(scope_kind, ''), coalesce(scope_key, '')), 'UTF8')), "
+    "'hex')"
+)
+"""The database's own recomputation of :func:`app.domain.relationships.relationship_id`.
+
+``tests/db/test_graph_relationships.py`` asserts the two agree on every row it writes, and the
+check constraint refuses a row on which they would not."""
+
+
+def _host_local_endpoint_check(end: str) -> CheckConstraint:
+    """A host-local principal endpoint (``<host>|<SID>``) must sit in that host's scope."""
+    return CheckConstraint(
+        # coalesce: with no scope the comparison is NULL, and a CHECK passes on NULL.
+        f"{end}_kind <> 'principal' OR strpos({end}_key, '|') = 0 OR "
+        f"coalesce(scope_kind = 'host' AND strpos({end}_key, scope_key || '|') = 1, false)",
+        name=f"ck_graph_relationships_{end}_host_matches_scope",
+    )
+
+
+graph_relationships = Table(
+    "graph_relationships",
+    metadata,
+    # relationship_id(type, source, target, scope): a full SHA-256, recomputed by the check
+    # below. Not the concatenation: two 512-character keys overflow a btree index row.
+    Column("relationship_id", String(RELATIONSHIP_DIGEST_LENGTH), primary_key=True),
+    Column("relationship_type", Text, nullable=False),
+    Column("source_kind", Text, nullable=False),
+    Column("source_key", String(KEY_LENGTH), nullable=False),
+    Column("target_kind", Text, nullable=False),
+    Column("target_key", String(KEY_LENGTH), nullable=False),
+    # 'host' and a case-folded host name, or both NULL. Stored, although a host-local endpoint
+    # implies it, so "everything on FS01" is one indexed read; the checks below keep the two
+    # statements from disagreeing.
+    Column("scope_kind", Text, nullable=True),
+    Column("scope_key", Text, nullable=True),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    # Only storable types: a traversal-only type (nested membership) is a closure, and a stored
+    # closure is what ADR-0002 rejected.
+    CheckConstraint(
+        f"relationship_type IN ({_relationship_value_list(_STORABLE_RELATIONSHIP_TYPES)})",
+        name="ck_graph_relationships_type_is_storable",
+    ),
+    _enum_check("source_kind", NodeKind),
+    _enum_check("target_kind", NodeKind),
+    _enum_check("scope_kind", RelationshipScopeKind, nullable=True),
+    CheckConstraint(
+        "(scope_kind IS NULL) = (scope_key IS NULL)",
+        name="ck_graph_relationships_scope_is_whole",
+    ),
+    CheckConstraint(
+        f"relationship_id ~ '^[0-9a-f]{{{RELATIONSHIP_DIGEST_LENGTH}}}$'",
+        name="ck_graph_relationships_id_shape",
+    ),
+    CheckConstraint(
+        f"relationship_id = {RELATIONSHIP_ID_SQL}", name="ck_graph_relationships_id_is_digest"
+    ),
+    # Windows creates no self-membership and no self-trust; one here is a derivation defect.
+    CheckConstraint(
+        f"relationship_type NOT IN ({_relationship_value_list(_NO_SELF_RELATIONSHIP_TYPES)}) "
+        "OR source_kind <> target_kind OR source_key <> target_key",
+        name="ck_graph_relationships_no_self_edge",
+    ),
+    _host_local_endpoint_check("source"),
+    _host_local_endpoint_check("target"),
+    # Adjacency, in both directions, filtered by type and paged by id: the trailing columns
+    # make each index cover the keyset order as well.
+    Index(
+        "ix_graph_relationships_source",
+        "source_kind",
+        "source_key",
+        "relationship_type",
+        "relationship_id",
+    ),
+    Index(
+        "ix_graph_relationships_target",
+        "target_kind",
+        "target_key",
+        "relationship_type",
+        "relationship_id",
+    ),
+    Index(
+        "ix_graph_relationships_scope",
+        "scope_kind",
+        "scope_key",
+        "relationship_id",
+        postgresql_where=text("scope_key IS NOT NULL"),
+    ),
+    Index("ix_graph_relationships_type", "relationship_type", "relationship_id"),
+    comment=(
+        "Derived privilege relationships between canonical ADG objects: identity only. "
+        "Rebuildable from collected facts; never a fact itself (ADR-0040)."
+    ),
+)
+
+
+graph_relationship_supports = Table(
+    "graph_relationship_supports",
+    metadata,
+    Column(
+        "relationship_id",
+        String(RELATIONSHIP_DIGEST_LENGTH),
+        ForeignKey("graph_relationships.relationship_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    # support_key(premises): a digest of the set of facts this derivation rests on.
+    Column("support_key", String(RELATIONSHIP_DIGEST_LENGTH), primary_key=True),
+    Column("derivation_class", Text, nullable=False),
+    Column("rule_id", Text, nullable=False),
+    Column("rule_version", Integer, nullable=False),
+    Column("qualifiers", ARRAY(Text), nullable=False, server_default="{}"),
+    Column("conditions", ARRAY(Text), nullable=False, server_default="{}"),
+    Column("attributes", JSONB, nullable=False, server_default="{}"),
+    # The collection basis the derivation read (app.domain.basis): whether it is stale is a
+    # comparison against the current basis, not a clock.
+    Column("basis_token", String(BASIS_TOKEN_LENGTH), nullable=False),
+    _timestamp("derived_at"),
+    # The observation window of the support: when its newest premise was first and last seen
+    # completing it. Observation instants, not derivation instants -- derived_at is that.
+    _timestamp("first_observed_at"),
+    Column(
+        "first_observed_run_id",
+        PgUUID(as_uuid=True),
+        ForeignKey("scan_runs.run_id"),
+        nullable=False,
+    ),
+    _timestamp("last_observed_at"),
+    Column(
+        "last_observed_run_id",
+        PgUUID(as_uuid=True),
+        ForeignKey("scan_runs.run_id"),
+        nullable=False,
+    ),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    _enum_check("derivation_class", DerivationClass),
+    CheckConstraint(
+        f"qualifiers <@ ARRAY[{_relationship_value_list(q.value for q in RelationshipQualifier)}]"
+        "::text[]",
+        name="ck_graph_relationship_supports_qualifiers_valid",
+    ),
+    CheckConstraint(
+        f"conditions <@ ARRAY[{_relationship_value_list(c.value for c in RelationshipCondition)}]"
+        "::text[]",
+        name="ck_graph_relationship_supports_conditions_valid",
+    ),
+    # A conditional support names its conditions; no other support has any.
+    CheckConstraint(
+        "(derivation_class = 'conditionally_derived') = (cardinality(conditions) > 0)",
+        name="ck_graph_relationship_supports_conditional_has_conditions",
+    ),
+    # An unresolved support says what is unresolved.
+    CheckConstraint(
+        "derivation_class <> 'unresolved' OR qualifiers && "
+        f"ARRAY[{_relationship_value_list(q.value for q in UNRESOLVED_QUALIFIERS)}]::text[]",
+        name="ck_graph_relationship_supports_unresolved_names_why",
+    ),
+    CheckConstraint(
+        "rule_id ~ '^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$'",
+        name="ck_graph_relationship_supports_rule_id_shape",
+    ),
+    CheckConstraint("rule_version >= 1", name="ck_graph_relationship_supports_rule_version"),
+    CheckConstraint(
+        "jsonb_typeof(attributes) = 'object'",
+        name="ck_graph_relationship_supports_attributes_object",
+    ),
+    CheckConstraint(
+        f"support_key ~ '^[0-9a-f]{{{RELATIONSHIP_DIGEST_LENGTH}}}$'",
+        name="ck_graph_relationship_supports_key_shape",
+    ),
+    CheckConstraint(
+        f"basis_token ~ '^[0-9a-f]{{{BASIS_TOKEN_LENGTH}}}$'",
+        name="ck_graph_relationship_supports_basis_token_shape",
+    ),
+    CheckConstraint(
+        "last_observed_at >= first_observed_at",
+        name="ck_graph_relationship_supports_window",
+    ),
+    Index("ix_graph_relationship_supports_last_observed_run", "last_observed_run_id"),
+    Index("ix_graph_relationship_supports_first_observed_run", "first_observed_run_id"),
+    comment=(
+        "Each independent derivation of a relationship: class, rule, qualifiers, conditions, "
+        "attribution and observation window. A relationship is as strong as its strongest "
+        "current support."
+    ),
+)
+
+
+graph_relationship_evidence = Table(
+    "graph_relationship_evidence",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("relationship_id", String(RELATIONSHIP_DIGEST_LENGTH), nullable=False),
+    Column("support_key", String(RELATIONSHIP_DIGEST_LENGTH), nullable=False),
+    # The stored fact: its ObservationKind and its current-state primary key, which is also
+    # object_versions.object_key and observations.subject_key. Not a foreign key -- it names
+    # a row in one of seven tables -- and deliberately so: a fact a later run has not re-sent
+    # is still the fact this support was derived from.
+    Column("evidence_kind", Text, nullable=False),
+    Column("evidence_key", String(KEY_LENGTH), nullable=False),
+    Column("role", Text, nullable=False),
+    _timestamp("first_observed_at"),
+    Column(
+        "first_observed_run_id",
+        PgUUID(as_uuid=True),
+        ForeignKey("scan_runs.run_id"),
+        nullable=False,
+    ),
+    _timestamp("last_observed_at"),
+    Column(
+        "last_observed_run_id",
+        PgUUID(as_uuid=True),
+        ForeignKey("scan_runs.run_id"),
+        nullable=False,
+    ),
+    _timestamp("created_at"),
+    _timestamp("updated_at"),
+    ForeignKeyConstraint(
+        ["relationship_id", "support_key"],
+        [
+            "graph_relationship_supports.relationship_id",
+            "graph_relationship_supports.support_key",
+        ],
+        ondelete="CASCADE",
+        name="fk_graph_relationship_evidence_support",
+    ),
+    UniqueConstraint(
+        "relationship_id",
+        "support_key",
+        "evidence_kind",
+        "evidence_key",
+        name="uq_graph_relationship_evidence_identity",
+    ),
+    _enum_check("evidence_kind", EvidenceKind),
+    _enum_check("role", EvidenceRole),
+    CheckConstraint(
+        "last_observed_at >= first_observed_at",
+        name="ck_graph_relationship_evidence_window",
+    ),
+    # "Which relationships rest on this fact" -- what a re-derivation invalidates when the
+    # fact changes, and what an explanation walks backwards.
+    Index(
+        "ix_graph_relationship_evidence_fact",
+        "evidence_kind",
+        "evidence_key",
+        "relationship_id",
+    ),
+    Index("ix_graph_relationship_evidence_last_observed_run", "last_observed_run_id"),
+    Index("ix_graph_relationship_evidence_first_observed_run", "first_observed_run_id"),
+    comment=(
+        "The stored facts each relationship support rests on, with the runs that observed "
+        "them. A relationship is traceable to its observations through these rows."
     ),
 )
