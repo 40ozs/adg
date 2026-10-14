@@ -200,14 +200,14 @@ commands from `.github/workflows/ci.yml`.
 | `ruff format --check .` | — | **passed** (401 files) |
 | `mypy app tests` | — | **passed** (400 files) |
 | `pytest -m "not smoke"` | 5765 passed, 124 skipped, 1215 deselected | **5866 passed, 124 skipped, 1227 deselected** |
-| `pytest -m smoke` (PostgreSQL), full | running when this report was first committed; result recorded in §7a | running when this report was first committed; result recorded in §7a |
+| `pytest -m smoke` (PostgreSQL), full | 1214 passed, 1 xfailed, exit 0 (24m46s) | **1226 passed, 1 xfailed, exit 0** (24m18s) |
 | `pytest -m smoke`, the 12 new DB tests (`test_system_mapping_api.py`, `TestTheSystemExplanation`) | — | **12 passed** (10 in 9.7 s, 2 in 85.9 s), isolated database |
 | frontend `npm run lint` | — | **passed** |
 | frontend `npm run typecheck` | — | **passed** |
 | frontend `npm run test` | — | **1186 passed** (34 files) |
 | frontend `npm run build` | — | **passed** |
-| Collector Pester suite (`windows-latest`) | not run | not run: no Windows host here; no collector file changed |
-| `docker compose config -q` | not run | not run: no Docker here; no compose file changed |
+| Collector Pester suite (`windows-latest`) | not run | not run locally (no Windows host); **passed in GitHub Actions** CI run 58 on `315fab0` |
+| `docker compose config -q` | not run | not run locally (no Docker); **passed in GitHub Actions** CI run 58 on `315fab0` |
 
 Method notes, so the numbers can be trusted:
 
@@ -215,12 +215,20 @@ Method notes, so the numbers can be trusted:
   (`adgbase*`), and the final one against `adg*`, so the two could not share tables. An
   earlier attempt that ran both against one database interfered with itself (truncations
   from one run deadlocked the other) and its results were discarded.
-* The final unit and DB suites ran on exactly `b949735`. The report commit adds only this
-  file, the evidence directory and a documentation correction.
+* The final unit and DB suites ran on exactly `b949735`. The commits after it add only this
+  report, the evidence directory and a documentation correction; no code or test changed.
 
 ### 7a. Full DB suite results
 
-*Pending at the first commit of this report. A follow-up commit records both counts here.*
+Both full PostgreSQL suites finished after this report was first committed (`315fab0`), and
+their counts are now in the table above. 1226 = the baseline's 1214 + the 12 new DB tests:
+no pre-existing DB test changed outcome, and the one `xfail` is the same pre-existing one.
+
+GitHub Actions on the pushed branch (CI run 58, head `315fab0`, which contains `b949735`):
+Docker Compose configuration, Collector (Pester, `windows-latest`), and Frontend (lint,
+types, tests, build) passed. Backend lint, type check and unit tests passed, and its
+database step was still running when this was written. The final response reports its
+outcome, and the run is at `https://github.com/40ozs/adg/actions/runs/38625889131`.
 
 ## 8. Correctness and safety properties
 
@@ -272,9 +280,9 @@ Method notes, so the numbers can be trusted:
    unchanged.
 6. **Integration conflict ahead.** Merging with the nine parallel UI branches conflicts in
    `frontend/app/identities/principal/page.tsx` only (see §1 for the resolution).
-7. **Not run here:** the Windows Pester collector suite and the Docker Compose validation (no
-   Windows host or Docker in this environment; no collector or compose file changed). No
-   browser screenshot pass was taken. The UI behavior is covered by jsdom component tests
+7. **Not run locally:** the Windows Pester collector suite and the Docker Compose validation
+   (no Windows host or Docker in this environment). Both passed in GitHub Actions on the
+   pushed branch. No browser screenshot pass was taken. The UI behavior is covered by jsdom component tests
    and a production `next build`.
 
 ## 10. Relevant files
