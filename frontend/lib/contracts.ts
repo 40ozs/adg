@@ -12,6 +12,9 @@
  */
 
 /** Roles and capabilities are strings on the wire; the backend owns the vocabulary. */
+
+import type { BasisView } from "@/lib/derived";
+
 export type Capability =
   | "resources:read"
   | "identities:read"
@@ -734,6 +737,143 @@ export interface PrincipalResourcesResponse {
   access_path: string;
   token: TokenView;
   items: ResourceAccessView[];
+  page: PageInfo;
+}
+
+/* ------------------------------------------------------------- directory access
+ *
+ * `/api/v1/access/principals/{id}/directory-access`: the reachable-directory answer grouped
+ * into access roots. Every verdict is the engine's, as in `ResourceAccessView`; a root's
+ * `reachable_descendants` is not a claim that they hold the root's rights — the exceptions
+ * and `rights_breakdown` say where they differ, and `uniform` is true only when nothing does.
+ */
+
+export type ExceptionReason =
+  | "rights_widen"
+  | "rights_narrow"
+  | "rights_differ"
+  | "certainty_change"
+  | "inheritance_broken"
+  | "access_denied"
+  | "access_ends"
+  | "access_unknown"
+  | "owner_only"
+  | "not_observed";
+
+export type RootParent = "share_root" | "no_access" | "not_observed";
+
+export interface DirectoryView {
+  key: string;
+  path: string;
+  name: string;
+  server: string;
+  share: string;
+  share_key: string;
+  relative_path: string;
+  observed: boolean;
+  is_acl_boundary: boolean | null;
+  boundary_reason: string | null;
+  dacl_protected: boolean | null;
+}
+
+export interface DirectoryVerdictView {
+  access: boolean;
+  outcome: "granted" | "denied" | "no_grant" | "indeterminate";
+  rights: RightsView;
+  certainty: AccessCertainty;
+  limiting_layer: LimitingLayer;
+  conditions: string[];
+}
+
+export interface ReasonView {
+  reason: ExceptionReason;
+  label: string;
+}
+
+export interface ReasonCountView extends ReasonView {
+  count: number;
+}
+
+export interface AccessRootView {
+  directory: DirectoryView;
+  verdict: DirectoryVerdictView;
+  reachable_descendants: number;
+  exception_count: number;
+  uniform: boolean;
+  reasons: ReasonCountView[];
+  rights_breakdown: { rights: RightsView; directories: number }[];
+  starts_because: RootParent;
+  starts_because_label: string;
+  resumes_within: string | null;
+  resumes_below: string | null;
+}
+
+export interface DirectoryAccessTotals {
+  reachable_directories: number;
+  roots: number;
+  exceptions: number;
+  shares: number;
+  candidates_evaluated: number;
+  unreachable_named: number;
+  observed_directories: number;
+  files_excluded: number;
+}
+
+export interface DirectoryAccessResponse {
+  /** The collected state this answer was computed from. */
+  basis: BasisView;
+  subject: PrincipalSummary;
+  access_path: string;
+  token: TokenView;
+  complete: boolean;
+  truncation: string[];
+  totals: DirectoryAccessTotals;
+  access_levels: string[];
+  roots: AccessRootView[];
+  matched: number;
+  page: PageInfo;
+}
+
+export interface AccessExceptionView {
+  directory: DirectoryView;
+  reasons: ReasonView[];
+  reachable: boolean;
+  named: boolean;
+  verdict: DirectoryVerdictView | null;
+  parent_key: string;
+  parent_verdict: DirectoryVerdictView;
+}
+
+export interface DirectoryExceptionsResponse {
+  /** The collected state this answer was computed from. */
+  basis: BasisView;
+  subject: PrincipalSummary;
+  root: AccessRootView;
+  items: AccessExceptionView[];
+  page: PageInfo;
+}
+
+export interface DirectoryTreeNodeView {
+  directory: DirectoryView;
+  reachable: boolean;
+  named: boolean;
+  verdict: DirectoryVerdictView | null;
+  is_root: boolean;
+  root_key: string | null;
+  reasons: ReasonView[];
+  reachable_below: number;
+  child_count: number;
+  hidden_child_count: number;
+}
+
+export interface DirectoryTreeResponse {
+  /** The collected state this answer was computed from. */
+  basis: BasisView;
+  subject: PrincipalSummary;
+  complete: boolean;
+  truncation: string[];
+  parent: DirectoryTreeNodeView | null;
+  children: DirectoryTreeNodeView[];
   page: PageInfo;
 }
 

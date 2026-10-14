@@ -59,6 +59,10 @@ CURRENT_STATE_ONLY_RESOURCES = frozenset(
         "share_acl",
         "resources_named_by",
         "shares_named_by",
+        # The directory-access summary: the whole candidate set and the directory outline
+        # of the shares it touches, for a current-state screen.
+        "all_resources_named_by",
+        "directory_outline",
         "shares_referencing",
         "reference_keys_for",
         # Lookups an access resolution does not make. ``get_share_root_resource`` is one a

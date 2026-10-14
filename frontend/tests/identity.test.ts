@@ -181,7 +181,7 @@ describe("a principal's relationship views", () => {
       "Parent groups",
       "Effective groups",
       "Reachable shares",
-      "Reachable directories",
+      "Directory access",
       "Named on share ACLs",
     ]);
   });

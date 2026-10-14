@@ -76,6 +76,15 @@ instead by ``max_paths`` and ``max_removal_targets``, which
 paging is not an exemption from being bounded.
 """
 
+EXPORT_ROUTES = frozenset({"/api/v1/access/principals/{identifier}/directory-access/export"})
+"""Routes that hand over a whole answer as a file, and therefore do not page.
+
+A CSV that pages is a CSV nobody can use. The directory-access export is bounded instead by
+the same ceilings as the summary it exports — ``MAX_SUMMARY_CANDIDATES`` evaluated paths and
+``MAX_OUTLINE_DIRECTORIES`` outline rows — and says ``X-ADG-Complete: false`` past them.
+:class:`TestTheExportIsBoundedWithoutPaging` holds that in place.
+"""
+
 EXPLANATION_ROUTES = (
     "/api/v1/access/paths/principals/{identifier}/resources/{resource}",
     "/api/v1/access/explain",
@@ -160,7 +169,7 @@ class TestEveryListingIsPaged:
     def test_every_listing_accepts_a_limit_and_a_cursor(self, schema: dict[str, Any]) -> None:
         missing: list[str] = []
         for path, operations in access_paths(schema).items():
-            if path in SINGULAR_ROUTES:
+            if path in SINGULAR_ROUTES or path in EXPORT_ROUTES:
                 continue
             names = _parameter_names(operations)
             if not {"limit", "cursor"} <= names:
@@ -171,7 +180,7 @@ class TestEveryListingIsPaged:
         """A cap in the schema is a cap the framework enforces before any code runs."""
         uncapped: list[str] = []
         for path, operations in access_paths(schema).items():
-            if path in SINGULAR_ROUTES:
+            if path in SINGULAR_ROUTES or path in EXPORT_ROUTES:
                 continue
             limit = _parameter(operations, "limit")
             assert limit is not None, path
@@ -188,7 +197,7 @@ class TestEveryListingIsPaged:
         alone would pass for a response that carried a `page` object with nothing in it.
         """
         for path, operations in access_paths(schema).items():
-            if path in SINGULAR_ROUTES:
+            if path in SINGULAR_ROUTES or path in EXPORT_ROUTES:
                 continue
             model = _response_model(schema, operations)
             assert model is not None, path
@@ -219,6 +228,27 @@ class TestEveryListingIsPaged:
             assert anchors & {"principal", "identifier", "sid"}, (
                 f"{path} is exempt from paging but names no single principal: {sorted(anchors)}"
             )
+
+
+class TestTheExportIsBoundedWithoutPaging:
+    """The substitute standard for the one unpaged listing: a ceiling, and a flag past it."""
+
+    def test_the_export_is_anchored_to_one_principal(self, schema: dict[str, Any]) -> None:
+        for path in EXPORT_ROUTES:
+            operations = access_paths(schema).get(path)
+            assert operations is not None, f"{path} no longer exists; revisit the exemption"
+            assert "identifier" in anchors_of(path, operations)
+
+    def test_the_ceilings_are_finite_and_name_their_partial_answer(self) -> None:
+        from app.api import directory_access
+        from app.services.directory_access import (
+            MAX_OUTLINE_DIRECTORIES,
+            MAX_SUMMARY_CANDIDATES,
+        )
+
+        assert 0 < MAX_SUMMARY_CANDIDATES <= 100_000
+        assert 0 < MAX_OUTLINE_DIRECTORIES <= 500_000
+        assert "X-ADG-Complete" in (directory_access.directory_access_export.__doc__ or "")
 
 
 class TestTheAnchorDetectorIsHonest:

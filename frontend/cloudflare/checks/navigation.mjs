@@ -176,7 +176,7 @@ await check("Users: selecting a user opens that user, by SID, without a reload",
   expect((await h1()).includes(BIANCA.name), `heading ${await h1()}`);
 });
 
-const VIEWS = ["Effective groups", "Reachable shares", "Reachable directories", "Named on share ACLs", "Direct groups"];
+const VIEWS = ["Effective groups", "Reachable shares", "Directory access", "Named on share ACLs", "Direct groups"];
 
 await check("Identity information collapses, stays collapsed across every view, and expands", async () => {
   const details = disclosure();

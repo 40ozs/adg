@@ -69,6 +69,57 @@
         "title": "AccessDeltaView",
         "type": "object"
       },
+      "AccessExceptionView": {
+        "description": "One place inside a root's run where the answer changes or access stops.",
+        "properties": {
+          "directory": {
+            "$ref": "#/components/schemas/DirectoryView"
+          },
+          "named": {
+            "description": "False when nothing on this ACL names the principal or its groups. The engine still evaluated it (verdict); it is null only for a folder no scan read.",
+            "title": "Named",
+            "type": "boolean"
+          },
+          "parent_key": {
+            "title": "Parent Key",
+            "type": "string"
+          },
+          "parent_verdict": {
+            "$ref": "#/components/schemas/DirectoryVerdictView"
+          },
+          "reachable": {
+            "title": "Reachable",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ReasonView"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectoryVerdictView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "directory",
+          "reasons",
+          "reachable",
+          "named",
+          "parent_key",
+          "parent_verdict"
+        ],
+        "title": "AccessExceptionView",
+        "type": "object"
+      },
       "AccessExplanationResponse": {
         "description": "Everything needed to render \"why does this principal have this access?\" — once.\n\nThe published shape of this response is\n``docs/contracts/v1/access-explanation.schema.json``; the schema is the contract and\nthis model is the implementation of it, held together by a parity test.\n\nIt is deliberately one round trip. A client that had to fetch the answer, then the\npaths, then the ACL to work out which entry mattered would be reimplementing the access\ncheck to join them — and the whole point of the engine is that nothing outside it ever\nhas to.",
         "properties": {
@@ -356,6 +407,89 @@
           "complete"
         ],
         "title": "AccessPathsResponse",
+        "type": "object"
+      },
+      "AccessRootView": {
+        "description": "One access root: where an uninterrupted run of reachable directories begins.",
+        "properties": {
+          "directory": {
+            "$ref": "#/components/schemas/DirectoryView"
+          },
+          "exception_count": {
+            "description": "Places inside the run where the answer changes, or where access stops.",
+            "title": "Exception Count",
+            "type": "integer"
+          },
+          "reachable_descendants": {
+            "description": "Reachable directories beneath the root, each reached through reachable parents. Not a claim that they share the root's rights: see exception_count.",
+            "title": "Reachable Descendants",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ReasonCountView"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "resumes_below": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The inaccessible folder access resumes below.",
+            "title": "Resumes Below"
+          },
+          "resumes_within": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When access resumes below an inaccessible folder inside another root's run, that root's key.",
+            "title": "Resumes Within"
+          },
+          "rights_breakdown": {
+            "description": "Every effective mask held across the root and its descendants.",
+            "items": {
+              "$ref": "#/components/schemas/RightsShareView"
+            },
+            "title": "Rights Breakdown",
+            "type": "array"
+          },
+          "starts_because": {
+            "$ref": "#/components/schemas/RootParent"
+          },
+          "starts_because_label": {
+            "title": "Starts Because Label",
+            "type": "string"
+          },
+          "uniform": {
+            "description": "True only when exception_count is zero.",
+            "title": "Uniform",
+            "type": "boolean"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/DirectoryVerdictView"
+          }
+        },
+        "required": [
+          "directory",
+          "verdict",
+          "reachable_descendants",
+          "exception_count",
+          "uniform",
+          "starts_because",
+          "starts_because_label"
+        ],
+        "title": "AccessRootView",
         "type": "object"
       },
       "AccessSideView": {
@@ -4365,6 +4499,159 @@
         "title": "DirectMembersResponse",
         "type": "object"
       },
+      "DirectoryAccessResponse": {
+        "description": "One principal's directory access, summarized into access roots.",
+        "properties": {
+          "access_levels": {
+            "description": "The effective-access labels the roots carry, for filtering, most common first.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Access Levels",
+            "type": "array"
+          },
+          "access_path": {
+            "title": "Access Path",
+            "type": "string"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "complete": {
+            "description": "False when a bound was reached; the summary then covers what was read.",
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "matched": {
+            "description": "Roots matching the filters, across all pages.",
+            "title": "Matched",
+            "type": "integer"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "roots": {
+            "items": {
+              "$ref": "#/components/schemas/AccessRootView"
+            },
+            "title": "Roots",
+            "type": "array"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PrincipalSummary"
+          },
+          "token": {
+            "$ref": "#/components/schemas/TokenView"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/DirectoryAccessTotals"
+          },
+          "truncation": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Truncation",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis",
+          "subject",
+          "access_path",
+          "token",
+          "complete",
+          "totals",
+          "matched",
+          "page"
+        ],
+        "title": "DirectoryAccessResponse",
+        "type": "object"
+      },
+      "DirectoryAccessTotals": {
+        "properties": {
+          "candidates_evaluated": {
+            "description": "Paths whose ACL names a token SID or has no DACL, each evaluated. The set the All paths listing pages through.",
+            "title": "Candidates Evaluated",
+            "type": "integer"
+          },
+          "exceptions": {
+            "title": "Exceptions",
+            "type": "integer"
+          },
+          "files_excluded": {
+            "description": "Reachable files. The summary is about directories; files stay in the full-detail export and the All paths listing.",
+            "title": "Files Excluded",
+            "type": "integer"
+          },
+          "observed_directories": {
+            "description": "Directories read in the shares concerned, whether reachable or not.",
+            "title": "Observed Directories",
+            "type": "integer"
+          },
+          "reachable_directories": {
+            "description": "Every directory the engine found reachable. Equals the sum over all roots of 1 + reachable_descendants.",
+            "title": "Reachable Directories",
+            "type": "integer"
+          },
+          "roots": {
+            "title": "Roots",
+            "type": "integer"
+          },
+          "shares": {
+            "description": "Shares holding at least one reachable directory.",
+            "title": "Shares",
+            "type": "integer"
+          },
+          "unreachable_named": {
+            "description": "Evaluated directories that turned out unreachable: named, holding nothing.",
+            "title": "Unreachable Named",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reachable_directories",
+          "roots",
+          "exceptions",
+          "shares",
+          "candidates_evaluated",
+          "unreachable_named",
+          "observed_directories",
+          "files_excluded"
+        ],
+        "title": "DirectoryAccessTotals",
+        "type": "object"
+      },
+      "DirectoryExceptionsResponse": {
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccessExceptionView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "root": {
+            "$ref": "#/components/schemas/AccessRootView"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PrincipalSummary"
+          }
+        },
+        "required": [
+          "basis",
+          "subject",
+          "root",
+          "page"
+        ],
+        "title": "DirectoryExceptionsResponse",
+        "type": "object"
+      },
       "DirectoryHitView": {
         "properties": {
           "is_acl_boundary": {
@@ -4396,6 +4683,256 @@
           "is_acl_boundary"
         ],
         "title": "DirectoryHitView",
+        "type": "object"
+      },
+      "DirectoryTreeNodeView": {
+        "description": "One directory in the drill-down, with what lies beneath it.",
+        "properties": {
+          "child_count": {
+            "description": "Children this tree offers when expanded.",
+            "title": "Child Count",
+            "type": "integer"
+          },
+          "directory": {
+            "$ref": "#/components/schemas/DirectoryView"
+          },
+          "hidden_child_count": {
+            "description": "Children a scan read that are left out: unreachable, below a folder without access, with nothing reachable beneath them.",
+            "title": "Hidden Child Count",
+            "type": "integer"
+          },
+          "is_root": {
+            "description": "This directory starts a run in the summary.",
+            "title": "Is Root",
+            "type": "boolean"
+          },
+          "named": {
+            "title": "Named",
+            "type": "boolean"
+          },
+          "reachable": {
+            "title": "Reachable",
+            "type": "boolean"
+          },
+          "reachable_below": {
+            "title": "Reachable Below",
+            "type": "integer"
+          },
+          "reasons": {
+            "description": "How this directory differs from its parent.",
+            "items": {
+              "$ref": "#/components/schemas/ReasonView"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "root_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The root whose run this directory belongs to.",
+            "title": "Root Key"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectoryVerdictView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "directory",
+          "reachable",
+          "named",
+          "is_root",
+          "reachable_below",
+          "child_count",
+          "hidden_child_count"
+        ],
+        "title": "DirectoryTreeNodeView",
+        "type": "object"
+      },
+      "DirectoryTreeResponse": {
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryTreeNodeView"
+            },
+            "title": "Children",
+            "type": "array"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectoryTreeNodeView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The directory expanded; null at the top level."
+          },
+          "subject": {
+            "$ref": "#/components/schemas/PrincipalSummary"
+          },
+          "truncation": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Truncation",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis",
+          "subject",
+          "complete",
+          "page"
+        ],
+        "title": "DirectoryTreeResponse",
+        "type": "object"
+      },
+      "DirectoryVerdictView": {
+        "description": "The engine's answer for one directory. ``rights.mask`` is the answer.",
+        "properties": {
+          "access": {
+            "title": "Access",
+            "type": "boolean"
+          },
+          "certainty": {
+            "$ref": "#/components/schemas/AccessCertainty"
+          },
+          "conditions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "limiting_layer": {
+            "$ref": "#/components/schemas/LimitingLayer"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AccessOutcome"
+          },
+          "rights": {
+            "$ref": "#/components/schemas/RightsView"
+          }
+        },
+        "required": [
+          "access",
+          "outcome",
+          "rights",
+          "certainty",
+          "limiting_layer"
+        ],
+        "title": "DirectoryVerdictView",
+        "type": "object"
+      },
+      "DirectoryView": {
+        "description": "Where one directory sits, and what its descriptor says about inheritance.\n\n``observed: false`` is an ancestor no run read, present only so the tree connects; its\ndescriptor fields are then null — unknown, not false.",
+        "properties": {
+          "boundary_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boundary Reason"
+          },
+          "dacl_protected": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "True when the DACL refuses inherited entries.",
+            "title": "Dacl Protected"
+          },
+          "is_acl_boundary": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Acl Boundary"
+          },
+          "key": {
+            "description": "The canonical, case-folded UNC path. The identity.",
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "description": "The last path segment.",
+            "title": "Name",
+            "type": "string"
+          },
+          "observed": {
+            "title": "Observed",
+            "type": "boolean"
+          },
+          "path": {
+            "description": "The UNC path as collected, for display.",
+            "title": "Path",
+            "type": "string"
+          },
+          "relative_path": {
+            "description": "The path below the share root; empty at the root.",
+            "title": "Relative Path",
+            "type": "string"
+          },
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "share": {
+            "title": "Share",
+            "type": "string"
+          },
+          "share_key": {
+            "title": "Share Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "path",
+          "name",
+          "server",
+          "share",
+          "share_key",
+          "relative_path",
+          "observed"
+        ],
+        "title": "DirectoryView",
         "type": "object"
       },
       "DrainResponse": {
@@ -5460,6 +5997,23 @@
         ],
         "title": "EvidenceRecordView",
         "type": "object"
+      },
+      "ExceptionReason": {
+        "description": "Why one directory inside a reachable run is called out rather than summarized.",
+        "enum": [
+          "rights_widen",
+          "rights_narrow",
+          "rights_differ",
+          "certainty_change",
+          "inheritance_broken",
+          "access_denied",
+          "access_ends",
+          "access_unknown",
+          "owner_only",
+          "not_observed"
+        ],
+        "title": "ExceptionReason",
+        "type": "string"
       },
       "ExecutionPolicyView": {
         "description": "What this deployment can do to Windows. The answer is nothing, with reasons.",
@@ -11199,6 +11753,45 @@
         "title": "ReadinessResponse",
         "type": "object"
       },
+      "ReasonCountView": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ExceptionReason"
+          }
+        },
+        "required": [
+          "reason",
+          "label",
+          "count"
+        ],
+        "title": "ReasonCountView",
+        "type": "object"
+      },
+      "ReasonView": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ExceptionReason"
+          }
+        },
+        "required": [
+          "reason",
+          "label"
+        ],
+        "title": "ReasonView",
+        "type": "object"
+      },
       "ReconciliationDriftView": {
         "description": "What a reconciliation corrected that the incremental runs could not.",
         "properties": {
@@ -11926,6 +12519,23 @@
         "title": "ReviewerProgressView",
         "type": "object"
       },
+      "RightsShareView": {
+        "properties": {
+          "directories": {
+            "title": "Directories",
+            "type": "integer"
+          },
+          "rights": {
+            "$ref": "#/components/schemas/RightsView"
+          }
+        },
+        "required": [
+          "rights",
+          "directories"
+        ],
+        "title": "RightsShareView",
+        "type": "object"
+      },
       "RightsView": {
         "description": "A rights mask, with its rendering alongside it. The mask is the answer.",
         "properties": {
@@ -12086,6 +12696,16 @@
         ],
         "title": "RoleDescription",
         "type": "object"
+      },
+      "RootParent": {
+        "description": "What lies directly above an access root — why the run starts there.",
+        "enum": [
+          "share_root",
+          "no_access",
+          "not_observed"
+        ],
+        "title": "RootParent",
+        "type": "string"
       },
       "RuleConfigView": {
         "description": "One rule, as this installation has configured it.",
@@ -18221,6 +18841,1002 @@
           }
         },
         "summary": "Why one principal has the rights it has on one directory",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/v1/access/principals/{identifier}/directory-access": {
+      "get": {
+        "description": "The summary: access roots, each with its reachable descendants and exceptions.\n\nFilters apply on the server, across every root, before paging; ``matched`` counts what\nthey kept. Without filters the roots come in share, then path, order.",
+        "operationId": "directory_access_api_v1_access_principals__identifier__directory_access_get",
+        "parameters": [
+          {
+            "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Identifier",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "Case-insensitive text the root's path (server, share or folder) contains.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Case-insensitive text the root's path (server, share or folder) contains.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Only roots whose effective access carries this label.",
+            "in": "query",
+            "name": "access",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only roots whose effective access carries this label.",
+              "title": "Access"
+            }
+          },
+          {
+            "description": "Only roots inside this share, by share key (fs01|finance).",
+            "in": "query",
+            "name": "share",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only roots inside this share, by share key (fs01|finance).",
+              "title": "Share"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryAccessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing has been collected since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Where one principal can reach inside the shares, as access roots",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/v1/access/principals/{identifier}/directory-access/exceptions": {
+      "get": {
+        "description": "Every exception inside one root's run, in path order: path, answer, reasons, parent.",
+        "operationId": "directory_access_exceptions_api_v1_access_principals__identifier__directory_access_exceptions_get",
+        "parameters": [
+          {
+            "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Identifier",
+              "type": "string"
+            }
+          },
+          {
+            "description": "A directory's UNC path, for example \\\\FS01\\Finance\\Budgets.",
+            "in": "query",
+            "name": "root",
+            "required": true,
+            "schema": {
+              "description": "A directory's UNC path, for example \\\\FS01\\Finance\\Budgets.",
+              "maxLength": 4096,
+              "minLength": 3,
+              "title": "Root",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryExceptionsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing has been collected since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "description": "The root is not a UNC path, or not an access root."
+          }
+        },
+        "summary": "Where the answer changes beneath one access root",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/v1/access/principals/{identifier}/directory-access/export": {
+      "get": {
+        "description": "The summary's roots, or the complete evaluated set, as a spreadsheet can open it.\n\n``paths`` carries every candidate the engine evaluated — reachable or not, file or\ndirectory — with its verdict and, for a directory, the root whose run it belongs to and\nwhy it is an exception. Nothing the summary groups away is missing from it. A partial\ncomputation is named in the file name and in ``X-ADG-Complete``.",
+        "operationId": "directory_access_export_api_v1_access_principals__identifier__directory_access_export_get",
+        "parameters": [
+          {
+            "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Identifier",
+              "type": "string"
+            }
+          },
+          {
+            "description": "summary: one row per access root. paths: every evaluated directory, reachable or not — the complete underlying set.",
+            "in": "query",
+            "name": "content",
+            "required": false,
+            "schema": {
+              "default": "summary",
+              "description": "summary: one row per access root. paths: every evaluated directory, reachable or not — the complete underlying set.",
+              "enum": [
+                "summary",
+                "paths"
+              ],
+              "title": "Content",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {}
+            },
+            "description": "The CSV document."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Directory access as CSV: the roots, or every evaluated directory",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/v1/access/principals/{identifier}/directory-access/tree": {
+      "get": {
+        "description": "The children of one directory, or the share roots when ``parent`` is omitted.\n\nOne level per request, so a client renders the tree as the reader opens it and never\nholds the file system. A directory the tree does not offer (it leads nowhere reachable)\nis refused rather than answered with an empty list that would read as \"nothing here\".",
+        "operationId": "directory_access_tree_api_v1_access_principals__identifier__directory_access_tree_get",
+        "parameters": [
+          {
+            "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "description": "A SID (S-1-5-21-...) or a host-scoped storage key (fs01|S-1-5-32-544). Use ?host= to disambiguate a BUILTIN SID seen on several computers.",
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Identifier",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Host that scopes a local group, when the identifier is a bare SID.",
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Host that scopes a local group, when the identifier is a bare SID.",
+              "title": "Host"
+            }
+          },
+          {
+            "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+            "in": "query",
+            "name": "assumption",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TokenAssumption"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Which SIDs to assume are in the subject's access token beyond its observed memberships. Defaults from the subject's kind; the response always reports what was used and what it added.",
+              "title": "Assumption"
+            }
+          },
+          {
+            "description": "The directory whose children to list. Omit for the share roots.",
+            "in": "query",
+            "name": "parent",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The directory whose children to list. Omit for the share roots.",
+              "title": "Parent"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership hops to follow. Clamped to the server ceiling; the response reports the limits actually used.",
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Maximum principals to enumerate.",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum principals to enumerate.",
+              "title": "Max Nodes"
+            }
+          },
+          {
+            "description": "Maximum membership edges to read.",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum membership edges to read.",
+              "title": "Max Edges"
+            }
+          },
+          {
+            "description": "Maximum distinct paths to enumerate.",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum distinct paths to enumerate.",
+              "title": "Max Paths"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected since, so a client may hold an explanation indefinitely and still never render a stale one.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryTreeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing has been collected since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about this principal."
+          },
+          "409": {
+            "description": "A bare SID matched several host-scoped principals."
+          },
+          "422": {
+            "description": "The parent is not a UNC path, or the tree does not offer it."
+          }
+        },
+        "summary": "One level of the directory-access tree",
         "tags": [
           "access"
         ]

@@ -428,6 +428,15 @@ class OverlayResourceRepository(ResourceRepository):
     async def reference_keys_for(self, principal_key: str) -> tuple[str, ...]:
         _refuse("reference_keys_for")
 
+    # The directory-access summary is a current-state screen over every candidate at once.
+    # A simulation measures named resources against an overlay; summarizing a whole
+    # hypothetical estate is not part of the simulated surface, so both reads refuse.
+    async def all_resources_named_by(self, *args: Any, **kwargs: Any) -> Any:
+        _refuse("all_resources_named_by")
+
+    async def directory_outline(self, *args: Any, **kwargs: Any) -> Any:
+        _refuse("directory_outline")
+
     # ------------------------------------------------------------------ helpers
 
     def _touches(self, resource_key: str) -> bool:

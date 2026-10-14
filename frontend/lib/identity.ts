@@ -243,9 +243,10 @@ export function principalViews(principal: AnyPrincipal): PrincipalView[] {
       hint: "Engine answers: the share ACL crossed with the NTFS ACL of the directory it publishes.",
     },
     {
+      // The id stays "directories" so existing links and bookmarks keep working.
       id: "directories",
-      label: "Reachable directories",
-      hint: "Engine answers for directories whose ACLs could involve this principal.",
+      label: "Directory access",
+      hint: "Where access begins inside the shares, how far it runs, and where it changes.",
     },
     {
       id: "acl-references",

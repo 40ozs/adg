@@ -230,6 +230,26 @@ class SubjectAccessPage:
     """Labels for the subject and every group in its token."""
 
 
+@dataclass(frozen=True, slots=True)
+class SubjectAccessSet:
+    """Everything one principal could reach, evaluated at once, up to a stated ceiling."""
+
+    subject_key: str
+    subject: PrincipalRecord | None
+    path: AccessPath
+    items: tuple[ResolvedAccess, ...]
+    truncated: bool
+    """More candidates existed than the ceiling admitted; ``items`` is a subset."""
+    token: SubjectToken
+    principals: dict[str, PrincipalRecord] = field(default_factory=dict)
+
+
+#: Directories evaluated per bulk read when a whole candidate set is evaluated. Each chunk
+#: is the four statements of one listing page; the size keeps each statement's bind
+#: parameters far below what the driver accepts.
+EVALUATION_CHUNK: Final = 2_000
+
+
 class AccessService:
     """Effective-access answers for one request, over one database session."""
 
@@ -510,6 +530,63 @@ class AccessService:
             token=token,
             principals=token_labels,
         )
+
+    async def all_accessible_resources(
+        self,
+        subject_key: str,
+        *,
+        path: AccessPath = AccessPath.REMOTE_SMB,
+        limits: TraversalLimits = DEFAULT_LIMITS,
+        assumption: TokenAssumption | None = None,
+        max_candidates: int,
+    ) -> SubjectAccessSet:
+        """Every candidate :meth:`accessible_resources` pages through, evaluated in one call.
+
+        For answers about the set as a whole, which no single page can give — the
+        directory-access summary groups every reachable directory into roots. The token,
+        the candidate rule and the per-directory evaluation are the listing's own
+        (:meth:`_build_token`, ``resources_named_by``'s union, :meth:`_resource_page`), so a
+        directory cannot be reachable here and not there.
+
+        Bounded by ``max_candidates``; past it the result says ``truncated`` rather than
+        evaluating an estate nobody bounded. Evaluation runs in fixed-size chunks so the
+        statement count grows with the candidate count only by the chunk factor, and no
+        single statement carries more bind parameters than the driver accepts.
+        """
+        subject_record = await self._membership.get_principal(subject_key)
+        token, token_labels, _ = await self._build_token(
+            subject_key, subject_record, path=path, limits=limits, assumption=assumption
+        )
+        keys, truncated = await self._resources.all_resources_named_by(
+            sorted(token.keys), limit=max_candidates
+        )
+        items = await self.evaluate_resources(token, keys, path)
+        return SubjectAccessSet(
+            subject_key=subject_key,
+            subject=subject_record,
+            path=path,
+            items=tuple(items),
+            truncated=truncated,
+            token=token,
+            principals=token_labels,
+        )
+
+    async def evaluate_resources(
+        self, token: SubjectToken, keys: Sequence[str], path: AccessPath
+    ) -> tuple[ResolvedAccess, ...]:
+        """Evaluate named directories for an already built token, in fixed-size chunks.
+
+        The listing's own page body, so a directory evaluated here gets the same answer it
+        gets on a page of ``/resources``. Used for whole candidate sets, and for the folders
+        a directory-access summary finds where access stops — directories the reference
+        index did not offer, which still deserve the engine's verdict rather than a guess.
+        """
+        items: list[ResolvedAccess] = []
+        for start in range(0, len(keys), EVALUATION_CHUNK):
+            items.extend(
+                await self._resource_page(token, keys[start : start + EVALUATION_CHUNK], path)
+            )
+        return tuple(items)
 
     # ---------------------------------------------------------------- page bodies
 

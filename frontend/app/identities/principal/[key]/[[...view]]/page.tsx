@@ -7,6 +7,8 @@ import type { AccessRow } from "@/lib/access";
 import {
   fetchAccessibleResources,
   fetchAccessibleShares,
+  fetchDirectoryAccess,
+  fetchDirectoryAccessTree,
   fetchDirectGroups,
   fetchDirectMembers,
   fetchEffectiveGroups,
@@ -23,10 +25,18 @@ import {
   principalLabel,
   principalViews,
 } from "@/lib/identity";
+import { directoryAccessHref, directoryMode, type DirectoryMode } from "@/lib/directoryAccess";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation, type Trail } from "@/lib/paging";
 import { shareHref } from "@/lib/resources";
 import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
+import {
+  DirectoryAccessSummary,
+  DirectoryExports,
+  type DirectoryFilters,
+  DirectoryModes,
+} from "@/components/DirectoryAccess";
+import { DirectoryAccessTree } from "@/components/DirectoryAccessTree";
 import { EffectiveLayer, FactSection, RawLayer } from "@/components/Layer";
 import { PrincipalChain, PrincipalName } from "@/components/Identity";
 import { PagePosition, Pager } from "@/components/Pager";
@@ -76,10 +86,26 @@ export default async function PrincipalViewPage({
   const coverage = await collectionStatus(token);
   const trail = decodeTrail(single(query.p));
   const basePath = principalHrefForKey(key, view);
+  // Directory access keeps its mode and filters in the query, beside the principal's path.
+  const directory = {
+    mode: directoryMode(single(query.mode)),
+    filters: {
+      q: single(query.q)?.trim() || undefined,
+      access: single(query.access)?.trim() || undefined,
+      share: single(query.share)?.trim() || undefined,
+    },
+  };
+  const keep =
+    view === "directories"
+      ? {
+          mode: directory.mode === "summary" ? undefined : directory.mode,
+          ...(directory.mode === "summary" ? directory.filters : {}),
+        }
+      : { include: single(query.include) };
 
   return (
     <>
-      <PagePosition trail={trail} firstPageHref={hrefWith(basePath, { include: single(query.include) })} />
+      <PagePosition trail={trail} firstPageHref={hrefWith(basePath, keep)} />
       {await panel({
         key,
         view,
@@ -87,6 +113,7 @@ export default async function PrincipalViewPage({
         trail,
         basePath,
         include: single(query.include),
+        directory,
         coverage: coverage.ok ? coverage.data : null,
       })}
     </>
@@ -104,6 +131,8 @@ interface PanelOptions {
   /** This view's own path, which paging and filtering stay on. */
   basePath: string;
   include: string | undefined;
+  /** Directory access: which of its three readings, and the summary's filters. */
+  directory: { mode: DirectoryMode; filters: DirectoryFilters };
   coverage: CollectionStatus | null;
 }
 
@@ -120,7 +149,7 @@ async function panel(options: PanelOptions): Promise<JSX.Element> {
     case "shares":
       return reachPanel(options, "share");
     case "directories":
-      return reachPanel(options, "directory");
+      return directoryAccessPanel(options);
     default:
       return directGroupsPanel(options);
   }
@@ -387,6 +416,25 @@ async function reachPanel(
   options: PanelOptions,
   subject: "share" | "directory",
 ): Promise<JSX.Element> {
+  const title = subject === "share" ? "Shares this principal can reach" : "Directories this principal can reach";
+  return (
+    <EffectiveLayer title={title} id={`panel-${subject}s`}>
+      {await reachBody(options, subject, { include: options.include })}
+    </EffectiveLayer>
+  );
+}
+
+/**
+ * The paged flat listing: one row per evaluated share or directory, each with its verdict.
+ *
+ * For directories this is Directory access's All paths reading, unchanged — every candidate
+ * the ACLs named, reachable or not, in key order, page by page.
+ */
+async function reachBody(
+  options: PanelOptions,
+  subject: "share" | "directory",
+  pagerParams: Record<string, string | undefined>,
+): Promise<JSX.Element> {
   const { key, token, trail, coverage } = options;
   const fetcher = subject === "share" ? fetchAccessibleShares : fetchAccessibleResources;
   const result = await fetcher(token, key, { cursor: cursorFor(trail) });
@@ -396,10 +444,8 @@ async function reachPanel(
     subject: subject === "share" ? "reachable shares" : "reachable directories",
   });
 
-  const title = subject === "share" ? "Shares this principal can reach" : "Directories this principal can reach";
-
   return (
-    <EffectiveLayer title={title} id={`panel-${subject}s`}>
+    <>
       <StateMessage state={state} />
       {state.kind === "ready" && (
         <>
@@ -412,11 +458,12 @@ async function reachPanel(
             items={state.data.items}
             subject={subject}
             explainFor={key}
+            directoryAccessFor={subject === "share" ? key : undefined}
           />
           <Pager
             navigation={pageNavigation({
               basePath: options.basePath,
-              params: { include: options.include },
+              params: pagerParams,
               trailParam: "p",
               trail,
               nextCursor: state.data.page.next_cursor,
@@ -426,6 +473,112 @@ async function reachPanel(
           />
         </>
       )}
+    </>
+  );
+}
+
+/**
+ * Directory access: where this principal can reach inside the shares.
+ *
+ * The summary is the default because the flat list is one row per directory, and on a real
+ * share that is hundreds of rows saying the same thing. The flat list is still here, as All
+ * paths, and the full export carries every evaluated directory: the summary groups the
+ * engine's answers and never replaces them.
+ */
+async function directoryAccessPanel(options: PanelOptions): Promise<JSX.Element> {
+  const { key, token, trail, coverage, directory } = options;
+  const { mode, filters } = directory;
+
+  let body: JSX.Element;
+  if (mode === "paths") {
+    body = (
+      <>
+        <p className="muted">
+          Every directory whose ACL names this principal, one of its groups, or nobody (a NULL
+          DACL), each with the engine&apos;s verdict — including the ones that grant nothing.
+        </p>
+        <DirectoryExports principalKey={key} />
+        {await reachBody(options, "directory", { mode: "paths" })}
+      </>
+    );
+  } else if (mode === "tree") {
+    const result = await fetchDirectoryAccessTree(token, key);
+    const state = classify(result, {
+      isEmpty: () => false,
+      coverage,
+      subject: "reachable directories",
+    });
+    body = (
+      <>
+        <p className="muted">
+          The shares that hold a folder this principal can reach, closed. Open a folder to load
+          the folders beneath it — the ones that lead to access, and the ones where access
+          stops. Folders with neither are counted, not listed.
+        </p>
+        <StateMessage state={state} />
+        {state.kind === "ready" && (
+          <>
+            {!state.data.complete && (
+              <div className="banner banner-warning" role="alert">
+                <h2>This tree covers part of the estate</h2>
+                <p>A bound was reached ({state.data.truncation.join(", ")}).</p>
+              </div>
+            )}
+            <DirectoryAccessTree principalKey={key} initial={state.data} />
+          </>
+        )}
+      </>
+    );
+  } else {
+    const result = await fetchDirectoryAccess(token, key, {
+      ...filters,
+      cursor: cursorFor(trail),
+    });
+    const state = classify(result, {
+      isEmpty: (data) => data.totals.roots === 0,
+      coverage,
+      subject: "reachable directories",
+    });
+    body = (
+      <>
+        <StateMessage state={state} />
+        {state.kind === "ready" && (
+          <>
+            <DirectoryAccessSummary
+              principalKey={key}
+              data={state.data}
+              filters={filters}
+              basePath={options.basePath}
+            />
+            <Pager
+              navigation={pageNavigation({
+                basePath: options.basePath,
+                params: { ...filters },
+                trailParam: "p",
+                trail,
+                nextCursor: state.data.page.next_cursor,
+              })}
+              page={state.data.page}
+              subject="access roots"
+            />
+          </>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <EffectiveLayer title="Directory access" id="panel-directories">
+      <p className="muted">
+        Where this principal can reach inside the shares. Reachable shares says which shares;
+        this says where inside them access begins, how far it runs and where it changes.{" "}
+        <Link href={directoryAccessHref(key, { mode: "paths" })} prefetch={false}>
+          All paths
+        </Link>{" "}
+        lists every evaluated directory.
+      </p>
+      <DirectoryModes principalKey={key} current={mode} filters={filters} />
+      {body}
     </EffectiveLayer>
   );
 }

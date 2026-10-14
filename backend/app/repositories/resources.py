@@ -83,6 +83,7 @@ from app.repositories.membership import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page, 
 __all__ = [
     "MAX_ACL_FETCH",
     "UNCOMPARED_BOUNDARY_REASONS",
+    "DirectoryOutlineRow",
     "NtfsAceRecord",
     "NtfsAclRecomputation",
     "NtfsBoundaryVerification",
@@ -109,6 +110,18 @@ restated here rather than imported so that the persistence layer keeps no depend
 authorization engine. A test pins the two equal; drifting apart would mean the database
 hands the evaluator less than it is willing to evaluate, and nothing would say so.
 """
+
+
+@dataclass(frozen=True, slots=True)
+class DirectoryOutlineRow:
+    """Where one directory sits and what kind of ACL boundary it is. No ACEs."""
+
+    resource_key: str
+    path: str
+    share_key: str
+    is_acl_boundary: bool
+    boundary_reason: str | None
+    dacl_protected: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -1083,15 +1096,72 @@ class ResourceRepository:
         if not principal_keys:
             return Page(items=(), has_more=False, next_key=None)
 
-        named = select(principal_references.c.reference_key.label("candidate_key")).where(
-            principal_references.c.principal_key.in_(sorted(set(principal_keys))),
-            principal_references.c.reference_kind == ReferenceKind.NTFS_ACE.value,
-            _still_named(current_ntfs_aces, "resource_key"),
+        return await self._candidate_page(_resource_candidates(principal_keys), page_size, after)
+
+    async def all_resources_named_by(
+        self, principal_keys: Sequence[str], *, limit: int
+    ) -> tuple[tuple[str, ...], bool]:
+        """The whole candidate set :meth:`resources_named_by` pages through, in one statement.
+
+        For an answer about the set as a whole -- the directory-access summary groups every
+        reachable directory into roots, which no single page can do. Same union, same order,
+        same confirmation against current entries, so the two cannot disagree about which
+        paths are candidates. ``limit`` is the caller's ceiling; the second value says
+        whether more candidates existed beyond it, so a summary over a truncated set can say
+        so rather than look whole.
+        """
+        if not principal_keys:
+            return (), False
+        page = await self._candidate_page(_resource_candidates(principal_keys), max(1, limit), None)
+        return page.items, page.has_more
+
+    async def directory_outline(
+        self, share_keys: Sequence[str], *, limit: int
+    ) -> tuple[tuple[DirectoryOutlineRow, ...], bool]:
+        """Every directory read in these shares: where it sits and what kind of boundary it is.
+
+        The tree a directory-access summary is laid over. Only the columns that place a
+        directory and describe its descriptor -- no ACEs, which the access engine has
+        already read for the directories that could involve the principal. One statement on
+        ``ix_ntfs_resources_share``; ``limit`` bounds it, and the second value reports a
+        share larger than that rather than truncating it silently.
+        """
+        folded = sorted({key.casefold() for key in share_keys})
+        if not folded:
+            return (), False
+        table = current_ntfs_resources
+        statement = (
+            select(
+                table.c.resource_key,
+                table.c.path,
+                table.c.share_key,
+                table.c.is_acl_boundary,
+                table.c.boundary_reason,
+                table.c.dacl_protected,
+            )
+            .where(
+                table.c.share_key.in_(folded),
+                table.c.resource_kind == ResourceKind.DIRECTORY.value,
+            )
+            .order_by(table.c.share_key, table.c.resource_key)
+            .limit(max(1, limit) + 1)
         )
-        unrestricted = select(current_ntfs_resources.c.resource_key.label("candidate_key")).where(
-            ~current_ntfs_resources.c.dacl_present
+        rows = (await self._session.execute(statement)).mappings().all()
+        truncated = len(rows) > limit
+        return (
+            tuple(
+                DirectoryOutlineRow(
+                    resource_key=row["resource_key"],
+                    path=row["path"],
+                    share_key=row["share_key"],
+                    is_acl_boundary=bool(row["is_acl_boundary"]),
+                    boundary_reason=row["boundary_reason"],
+                    dacl_protected=bool(row["dacl_protected"]),
+                )
+                for row in rows[:limit]
+            ),
+            truncated,
         )
-        return await self._candidate_page(named.union(unrestricted), page_size, after)
 
     async def shares_named_by(
         self,
@@ -1170,6 +1240,23 @@ def _share_root_key(share_key: str) -> str:
             "SmbShare.identity_key produces."
         )
     return UncPath(server=server, share=name).comparison_key
+
+
+def _resource_candidates(principal_keys: Sequence[str]) -> CompoundSelect[Any]:
+    """Paths whose evaluation could involve one of these principals, as one indexed union.
+
+    The reference index confirmed against current entries, plus every path with a NULL DACL,
+    which names nobody and grants everybody. See :meth:`ResourceRepository.resources_named_by`.
+    """
+    named = select(principal_references.c.reference_key.label("candidate_key")).where(
+        principal_references.c.principal_key.in_(sorted(set(principal_keys))),
+        principal_references.c.reference_kind == ReferenceKind.NTFS_ACE.value,
+        _still_named(current_ntfs_aces, "resource_key"),
+    )
+    unrestricted = select(current_ntfs_resources.c.resource_key.label("candidate_key")).where(
+        ~current_ntfs_resources.c.dacl_present
+    )
+    return named.union(unrestricted)
 
 
 def _still_named(aces: Any, container_column: str) -> Any:

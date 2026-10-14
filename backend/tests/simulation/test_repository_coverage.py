@@ -96,6 +96,8 @@ RESOURCE_REFUSED = frozenset(
         "shares_referencing",
         "count_shares_referencing",
         "reference_keys_for",
+        "all_resources_named_by",
+        "directory_outline",
     }
 )
 
