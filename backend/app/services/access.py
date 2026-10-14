@@ -727,11 +727,7 @@ class AccessService:
         if not candidates:
             return ()
         records = await self._membership.principals_by_keys(candidates)
-        possible_groups = [
-            key
-            for key in candidates
-            if (record := records.get(key)) is None or record.principal_kind in GROUP_KINDS
-        ]
+        possible_groups = [key for key in candidates if _could_contain_members(records.get(key))]
         if not possible_groups:
             return ()
         known = await self._membership.keys_with_members(possible_groups)
@@ -803,6 +799,22 @@ def _matches(kind: PrincipalKind | None, inclusion: MemberInclusion) -> bool:
     if inclusion is MemberInclusion.USERS:
         return kind in (PrincipalKind.USER, PrincipalKind.MANAGED_SERVICE_ACCOUNT)
     return kind not in GROUP_KINDS
+
+
+def _could_contain_members(record: PrincipalRecord | None) -> bool:
+    """Whether an ACL trustee might be a group the subject belongs to without ADG knowing.
+
+    A group can, and so can any SID whose kind nothing has established: no record at all,
+    or a record of kind ``unresolved``. The second is the case that is easy to get wrong. The
+    row exists, but it records that no authority could say what the SID is, so it carries
+    no more knowledge of the kind than a missing row does. Treating it as "not a group"
+    would rule the subject out of it on no evidence, and the answer would read ``certain``
+    where it is a lower bound. :attr:`app.access_engine.SubjectFacts.resolved` draws the
+    same line for the subject, and this draws it for the trustees.
+    """
+    if record is None:
+        return True
+    return record.principal_kind in GROUP_KINDS or record.principal_kind is PrincipalKind.UNRESOLVED
 
 
 def _token_sid_for(node: ResolvedNode, trustee: str) -> TokenSid:
