@@ -67,9 +67,7 @@ async def seed_path(client: AsyncClient) -> None:
     await ingest_storable_scenario(client, "03-nested-group-grant")
 
 
-async def request_cost(
-    client: AsyncClient, statements: StatementLog
-) -> tuple[int, dict[str, Any]]:
+async def request_cost(client: AsyncClient, statements: StatementLog) -> tuple[int, dict[str, Any]]:
     with statements:
         response = await client.get(shortest_url())
     assert response.status_code == 200, response.text
@@ -77,9 +75,7 @@ async def request_cost(
 
 
 class TestShortestPathApi:
-    async def test_projected_nested_membership_is_two_real_hops(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_projected_nested_membership_is_two_real_hops(self, client: AsyncClient) -> None:
         await seed_path(client)
         response = await client.get(shortest_url())
         assert response.status_code == 200, response.text
@@ -197,8 +193,7 @@ class TestOtherGraphPrimitives:
         assert alternates.json()["path_count"] == 1
 
         neighbors = await client.get(
-            "/api/v1/graph/traversal/neighbors"
-            f"?root_kind=principal&root_key={ALICE}&max_depth=1"
+            f"/api/v1/graph/traversal/neighbors?root_kind=principal&root_key={ALICE}&max_depth=1"
         )
         assert neighbors.status_code == 200, neighbors.text
         body = neighbors.json()
