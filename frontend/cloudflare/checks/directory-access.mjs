@@ -160,10 +160,14 @@ await check("8. sort by root / path, without a reload", async () => {
   await header.getByRole("button").click();
   await noReload("sorting by root");
   expect((await header.getAttribute("aria-sort")) === "ascending", "aria-sort is not ascending");
-  const names = await summaryTable().locator("tbody th").allInnerTexts();
-  const sorted = [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-  // The root column sorts by the canonical key (share, then folder); assert it is ordered.
-  return `${names.length} rows, first ${names[0]}, last ${names[names.length - 1]} (alphabetic first would be ${sorted[0]})`;
+  // The root column sorts by the canonical key: the full path, compared case-insensitively.
+  const paths = await summaryTable().locator("tbody th a.identifier").evaluateAll((links) =>
+    links.map((link) => link.getAttribute("title") ?? ""),
+  );
+  const keys = paths.map((path) => path.toLowerCase());
+  const ordered = keys.every((key, i) => i === 0 || keys[i - 1].localeCompare(key, undefined, { sensitivity: "base" }) <= 0);
+  expect(ordered, `not ordered by path: ${paths.slice(0, 5).join(", ")}…`);
+  return `${paths.length} rows ordered by path; first ${paths[0]}, last ${paths[paths.length - 1]}`;
 });
 
 await check("9. sort by descendant count, numerically", async () => {
@@ -312,7 +316,7 @@ await check("21. All paths: the full flat detail remains", async () => {
 });
 
 await check("export: the paths CSV carries every evaluated directory", async () => {
-  const response = await page.request.get(`${BASE}/api/directory-access/export?key=${encodeURIComponent(SUBJECT.sid)}&mode=paths`);
+  const response = await page.request.get(`${BASE}/api/directory-access/export?key=${encodeURIComponent(SUBJECT.sid)}&content=paths`);
   expect(response.status() === 200, `HTTP ${response.status()}`);
   expect((response.headers()["content-type"] ?? "").startsWith("text/csv"), response.headers()["content-type"]);
   const lines = (await response.text()).trim().split(/\r?\n/);

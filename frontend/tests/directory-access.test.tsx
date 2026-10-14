@@ -334,11 +334,11 @@ describe("the summary", () => {
     render(await view());
 
     expect(screen.getByRole("link", { name: "Download summary (CSV)" }).getAttribute("href")).toBe(
-      `/api/directory-access/export?key=${encodeURIComponent(ADA.key)}&mode=summary`,
+      `/api/directory-access/export?key=${encodeURIComponent(ADA.key)}&content=summary`,
     );
     expect(
       screen.getByRole("link", { name: "Download every evaluated path (CSV)" }).getAttribute("href"),
-    ).toContain("mode=paths");
+    ).toContain("content=paths");
   });
 
   it("warns when the summary covers part of the estate", async () => {

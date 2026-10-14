@@ -71,8 +71,8 @@ export function exceptionsUrl(key: string, root: string): string {
 }
 
 /** A download of the summary or of every evaluated directory, as CSV. */
-export function exportHref(key: string, mode: "summary" | "paths"): string {
-  return hrefWith("/api/directory-access/export", { key, mode });
+export function exportHref(key: string, content: "summary" | "paths"): string {
+  return hrefWith("/api/directory-access/export", { key, content });
 }
 
 /** Whether a reason means access continues through the folder or stops at it. */

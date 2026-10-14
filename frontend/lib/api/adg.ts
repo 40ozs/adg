@@ -389,6 +389,14 @@ export function fetchAccessibleResources(
   );
 }
 
+/**
+ * The first directory-access request after an ingestion evaluates every candidate at once
+ * (measured: about 4.8 s for 15,000 candidates, docs/handoffs/adg-directory-access-01.md);
+ * later ones reuse that computation. The default 10 s would cut the first one short on a
+ * large principal, so these two calls allow longer.
+ */
+const DIRECTORY_ACCESS_TIMEOUT_MS = 30_000;
+
 /** Filters the directory-access summary applies on the server, across every root. */
 export interface DirectoryAccessQuery extends PageQuery {
   q?: string;
@@ -407,7 +415,7 @@ export function fetchDirectoryAccess(
 ): Promise<ApiResult<DirectoryAccessResponse>> {
   return apiRequest<DirectoryAccessResponse>(
     `/api/v1/access/principals/${segment(identifier)}/directory-access`,
-    { token, query: { ...query } },
+    { token, query: { ...query }, timeoutMs: DIRECTORY_ACCESS_TIMEOUT_MS },
   );
 }
 
@@ -419,7 +427,7 @@ export function fetchDirectoryAccessTree(
 ): Promise<ApiResult<DirectoryTreeResponse>> {
   return apiRequest<DirectoryTreeResponse>(
     `/api/v1/access/principals/${segment(identifier)}/directory-access/tree`,
-    { token, query: { ...query } },
+    { token, query: { ...query }, timeoutMs: DIRECTORY_ACCESS_TIMEOUT_MS },
   );
 }
 

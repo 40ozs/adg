@@ -10,7 +10,7 @@ Four views of one computation, under ``/api/v1/access/principals/{identifier}/di
   share roots down, offering only what leads to reachable directories or marks where access
   stops. Lazy by construction: the client asks for the children of the branch it opens;
 * **the exceptions of one root** (``/exceptions?root=``) — fetched when a reader asks;
-* **the export** (``/export?mode=summary|paths``) — CSV. ``summary`` is the roots;
+* **the export** (``/export?content=summary|paths``) — CSV. ``summary`` is the roots;
   ``paths`` is every directory the engine evaluated, reachable or not, which is the complete
   set the paged ``/resources`` listing walks through. The summary never replaces it.
 
@@ -337,7 +337,7 @@ SummaryLimitQuery = Annotated[
 OffsetCursorQuery = Annotated[
     str | None, Query(description="Opaque cursor from a previous response's next_cursor.")
 ]
-ExportModeQuery = Annotated[
+ExportContentQuery = Annotated[
     Literal["summary", "paths"],
     Query(
         description="summary: one row per access root. paths: every evaluated directory, "
@@ -606,7 +606,7 @@ async def directory_access_export(
     request: Request,
     session: Session,
     limits: TraversalBounds,
-    mode: ExportModeQuery = "summary",
+    content: ExportContentQuery = "summary",
     host: HostQuery = None,
     assumption: AssumptionQuery = None,
 ) -> Response:
@@ -625,14 +625,14 @@ async def directory_access_export(
         host=host,
         assumption=assumption,
         view="export",
-        view_parameters={"mode": mode},
+        view_parameters={"content": content},
         if_none_match=None,
     )
     if isinstance(computed, Response):  # no If-None-Match is passed, so never a 304
         return computed
     model, validator = computed
-    body = _summary_csv(model) if mode == "summary" else _paths_csv(model)
-    stem = f"directory-access-{mode}-{model.subject.sid if model.subject else 'principal'}"
+    body = _summary_csv(model) if content == "summary" else _paths_csv(model)
+    stem = f"directory-access-{content}-{model.subject.sid if model.subject else 'principal'}"
     suffix = "" if model.complete else "-partial"
     headers = {
         "Content-Disposition": f'attachment; filename="{_safe_filename(stem)}{suffix}.csv"',

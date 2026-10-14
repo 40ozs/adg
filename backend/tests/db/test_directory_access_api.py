@@ -370,7 +370,7 @@ class TestExport:
         self, client: AsyncClient, estate: DirectoryEstate
     ) -> None:
         listing = await every_listing_row(client)
-        response = await client.get(url("/export", mode="paths"))
+        response = await client.get(url("/export", content="paths"))
 
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("text/csv")
@@ -387,7 +387,7 @@ class TestExport:
         self, client: AsyncClient, estate: DirectoryEstate
     ) -> None:
         body = await summary(client, limit=500)
-        response = await client.get(url("/export", mode="summary"))
+        response = await client.get(url("/export", content="summary"))
 
         rows = list(csv.DictReader(io.StringIO(response.text)))
         assert [row["root_path"].casefold() for row in rows] == [

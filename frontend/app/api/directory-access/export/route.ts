@@ -6,7 +6,7 @@
  * proxy does — attach the session's token, forward, hide nothing — for exactly one API route,
  * and passes the CSV, its file name and its completeness header through unchanged.
  *
- * `mode=summary` is one row per access root. `mode=paths` is every directory the engine
+ * `content=summary` is one row per access root. `content=paths` is every directory the engine
  * evaluated, reachable or not — the complete set behind All paths, never only what a page
  * shows.
  */
@@ -16,16 +16,16 @@ import { NextResponse } from "next/server";
 import { currentSession } from "@/lib/auth/current";
 import { resolveServerApiUrl } from "@/lib/config";
 
-const MODES = new Set(["summary", "paths"]);
+const CONTENTS = new Set(["summary", "paths"]);
 const PASSED_HEADERS = ["content-type", "content-disposition", "x-adg-complete", "x-adg-collection-basis"];
 
 export async function GET(request: Request): Promise<Response> {
   const params = new URL(request.url).searchParams;
   const key = params.get("key")?.trim() ?? "";
-  const mode = params.get("mode") ?? "summary";
-  if (key === "" || !MODES.has(mode)) {
+  const content = params.get("content") ?? "summary";
+  if (key === "" || !CONTENTS.has(content)) {
     return NextResponse.json(
-      { detail: "An export needs a principal key and a mode of summary or paths." },
+      { detail: "An export needs a principal key and content of summary or paths." },
       { status: 422 },
     );
   }
@@ -41,7 +41,7 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(
     `${resolveServerApiUrl()}/api/v1/access/principals/${encodeURIComponent(key)}/directory-access/export`,
   );
-  url.searchParams.set("mode", mode);
+  url.searchParams.set("content", content);
 
   let upstream: Response;
   try {

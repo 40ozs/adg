@@ -473,12 +473,14 @@ def _tree(
     an unreachable folder is counted on its parent rather than listed: that is the rest of
     the file system, and listing it is what this view exists to avoid.
     """
+    # One bottom-up pass: each directory hands its parent what lies below it plus itself.
+    # Every reachable directory's ancestors are in ``facts`` (synthesized when unread).
     reachable_below: Counter[str] = Counter()
-    for key in root_of:
-        parent = facts[key].parent_key
-        while parent is not None:
-            reachable_below[parent] += 1
-            parent = facts[parent].parent_key if parent in facts else None
+    for item in sorted(facts.values(), key=lambda entry: -entry.depth):
+        if item.parent_key is not None and item.parent_key in facts:
+            reachable_below[item.parent_key] += reachable_below[item.key] + (
+                1 if item.key in root_of else 0
+            )
 
     by_parent: dict[str | None, list[str]] = defaultdict(list)
     for key, item in facts.items():

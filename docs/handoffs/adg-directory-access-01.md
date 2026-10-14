@@ -104,7 +104,7 @@ sorted by share then key), with no I/O.
 | `GET /api/v1/access/principals/{id}/directory-access` | totals, roots (`q`, `access`, `share` filters applied server-side, across all roots, before offset paging), `access_levels`, `complete`/`truncation`, token, basis |
 | `…/directory-access/tree?parent=` | one level: the share roots, or the offered children of `parent`. `422` for a directory the tree does not offer |
 | `…/directory-access/exceptions?root=` | one root's exceptions: path, reasons, the engine's verdict, the parent's verdict, `named` |
-| `…/directory-access/export?mode=summary\|paths` | CSV (§7) |
+| `…/directory-access/export?content=summary\|paths` | CSV (§7) |
 
 * Directories are addressed by **query parameter**: a UNC key cannot pass the frontend proxy
   as a path segment (`lib/api/proxy.ts`).

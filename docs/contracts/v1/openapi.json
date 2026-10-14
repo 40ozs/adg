@@ -19415,7 +19415,7 @@
           {
             "description": "summary: one row per access root. paths: every evaluated directory, reachable or not — the complete underlying set.",
             "in": "query",
-            "name": "mode",
+            "name": "content",
             "required": false,
             "schema": {
               "default": "summary",
@@ -19424,7 +19424,7 @@
                 "summary",
                 "paths"
               ],
-              "title": "Mode",
+              "title": "Content",
               "type": "string"
             }
           },
