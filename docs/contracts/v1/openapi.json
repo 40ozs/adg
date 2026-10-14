@@ -6612,6 +6612,1481 @@
         "title": "GrantView",
         "type": "object"
       },
+      "GraphAssessmentView": {
+        "description": "What a path rests on, folded from its steps. Never a score.",
+        "properties": {
+          "chain_confidence": {
+            "description": "The relationships alone, without the readings the path ends on.",
+            "title": "Chain Confidence",
+            "type": "string"
+          },
+          "conditional": {
+            "title": "Conditional",
+            "type": "boolean"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/GraphPathConditionView"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "confidence": {
+            "description": "The weakest of: every step's strongest relationship, the readings the path ends on, and the conditions only the path knows.",
+            "title": "Confidence",
+            "type": "string"
+          },
+          "notes": {
+            "description": "What the path does not claim. Never changes its confidence.",
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "qualifiers": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Qualifiers",
+            "type": "array"
+          },
+          "unresolved": {
+            "title": "Unresolved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confidence",
+          "chain_confidence",
+          "conditional",
+          "unresolved",
+          "conditions",
+          "qualifiers",
+          "notes"
+        ],
+        "title": "GraphAssessmentView",
+        "type": "object"
+      },
+      "GraphBasisView": {
+        "properties": {
+          "collection": {
+            "$ref": "#/components/schemas/BasisView"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/GraphProjectionView"
+          },
+          "snapshot": {
+            "description": "repeatable_read: the basis, the projection state and every read of the search came from one snapshot.",
+            "title": "Snapshot",
+            "type": "string"
+          }
+        },
+        "required": [
+          "collection",
+          "projection",
+          "snapshot"
+        ],
+        "title": "GraphBasisView",
+        "type": "object"
+      },
+      "GraphCompletenessView": {
+        "properties": {
+          "complete": {
+            "description": "False means the answer is short of complete for the reasons listed.",
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/GraphReasonView"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "truncation": {
+            "description": "Which limits stopped the search.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Truncation",
+            "type": "array"
+          }
+        },
+        "required": [
+          "complete",
+          "reasons",
+          "truncation"
+        ],
+        "title": "GraphCompletenessView",
+        "type": "object"
+      },
+      "GraphCoverageGapView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "relationship_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relationship Types",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "summary",
+          "relationship_types"
+        ],
+        "title": "GraphCoverageGapView",
+        "type": "object"
+      },
+      "GraphCoverageView": {
+        "description": "What no answer over this graph can see, stated on every answer.",
+        "properties": {
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GraphCoverageGapView"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "statement",
+          "gaps"
+        ],
+        "title": "GraphCoverageView",
+        "type": "object"
+      },
+      "GraphEvidenceRefView": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "GraphEvidenceRefView",
+        "type": "object"
+      },
+      "GraphEvidenceView": {
+        "properties": {
+          "first_observed_at": {
+            "format": "date-time",
+            "title": "First Observed At",
+            "type": "string"
+          },
+          "first_observed_run_id": {
+            "title": "First Observed Run Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_observed_at": {
+            "format": "date-time",
+            "title": "Last Observed At",
+            "type": "string"
+          },
+          "last_observed_run_id": {
+            "title": "Last Observed Run Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key",
+          "role",
+          "state",
+          "first_observed_at",
+          "first_observed_run_id",
+          "last_observed_at",
+          "last_observed_run_id"
+        ],
+        "title": "GraphEvidenceView",
+        "type": "object"
+      },
+      "GraphExplorationView": {
+        "properties": {
+          "depth_backward": {
+            "title": "Depth Backward",
+            "type": "integer"
+          },
+          "depth_forward": {
+            "title": "Depth Forward",
+            "type": "integer"
+          },
+          "excluded_by_policy": {
+            "title": "Excluded By Policy",
+            "type": "integer"
+          },
+          "implicit_membership_boundary": {
+            "description": "Logon-time token SIDs the search reached (up to 20).",
+            "items": {
+              "type": "string"
+            },
+            "title": "Implicit Membership Boundary",
+            "type": "array"
+          },
+          "nodes_reached": {
+            "title": "Nodes Reached",
+            "type": "integer"
+          },
+          "not_current_skipped": {
+            "description": "History: not followed.",
+            "title": "Not Current Skipped",
+            "type": "integer"
+          },
+          "reads": {
+            "description": "Batched adjacency reads: one per level per direction.",
+            "title": "Reads",
+            "type": "integer"
+          },
+          "relationships_read": {
+            "title": "Relationships Read",
+            "type": "integer"
+          },
+          "unknown_relationships": {
+            "description": "Met, of unknown currency, and not followed. They may still hold.",
+            "title": "Unknown Relationships",
+            "type": "integer"
+          },
+          "unresolved_boundary": {
+            "description": "Unresolved principals the search reached (up to 20).",
+            "items": {
+              "type": "string"
+            },
+            "title": "Unresolved Boundary",
+            "type": "array"
+          }
+        },
+        "required": [
+          "nodes_reached",
+          "relationships_read",
+          "reads",
+          "depth_forward",
+          "depth_backward",
+          "unknown_relationships",
+          "excluded_by_policy",
+          "not_current_skipped",
+          "unresolved_boundary",
+          "implicit_membership_boundary"
+        ],
+        "title": "GraphExplorationView",
+        "type": "object"
+      },
+      "GraphLimitBoundView": {
+        "properties": {
+          "default": {
+            "title": "Default",
+            "type": "integer"
+          },
+          "maximum": {
+            "title": "Maximum",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "default",
+          "maximum"
+        ],
+        "title": "GraphLimitBoundView",
+        "type": "object"
+      },
+      "GraphLimitsView": {
+        "properties": {
+          "max_depth": {
+            "title": "Max Depth",
+            "type": "integer"
+          },
+          "max_edges": {
+            "title": "Max Edges",
+            "type": "integer"
+          },
+          "max_nodes": {
+            "title": "Max Nodes",
+            "type": "integer"
+          },
+          "max_paths": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Paths"
+          }
+        },
+        "required": [
+          "max_depth",
+          "max_nodes",
+          "max_edges"
+        ],
+        "title": "GraphLimitsView",
+        "type": "object"
+      },
+      "GraphNeighborView": {
+        "properties": {
+          "depth": {
+            "title": "Depth",
+            "type": "integer"
+          },
+          "direction": {
+            "description": "How the search met it: outbound or inbound.",
+            "title": "Direction",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/GraphRelationshipView"
+          }
+        },
+        "required": [
+          "depth",
+          "direction",
+          "relationship"
+        ],
+        "title": "GraphNeighborView",
+        "type": "object"
+      },
+      "GraphNeighborsResponse": {
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/GraphBasisView"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/GraphCompletenessView"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/GraphCoverageView"
+          },
+          "depth": {
+            "title": "Depth",
+            "type": "integer"
+          },
+          "directions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Directions",
+            "type": "array"
+          },
+          "exploration": {
+            "$ref": "#/components/schemas/GraphExplorationView"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNeighborView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/GraphLimitsView"
+          },
+          "node": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          },
+          "nodes": {
+            "description": "Every node this page's relationships name.",
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeView"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "query": {
+            "$ref": "#/components/schemas/GraphQueryView"
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis",
+          "query",
+          "node",
+          "depth",
+          "directions",
+          "types",
+          "items",
+          "nodes",
+          "page",
+          "completeness",
+          "limits",
+          "exploration",
+          "coverage"
+        ],
+        "title": "GraphNeighborsResponse",
+        "type": "object"
+      },
+      "GraphNodeView": {
+        "description": "One node, identified canonically and labelled with whatever is stored about it.",
+        "properties": {
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The host a host-local principal is on.",
+            "title": "Host"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "description": "A display name when one is stored, else the key. Never an identifier.",
+            "title": "Label",
+            "type": "string"
+          },
+          "present": {
+            "description": "Whether the node's own object has a current row (a principal, a resource). False for a node only a relationship names: an undescribed member, a domain.",
+            "title": "Present",
+            "type": "boolean"
+          },
+          "principal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrincipalSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ref": {
+            "description": "The canonical reference, '<kind>:<key>'. Use it to query.",
+            "title": "Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref",
+          "kind",
+          "key",
+          "label",
+          "present"
+        ],
+        "title": "GraphNodeView",
+        "type": "object"
+      },
+      "GraphPassView": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "pass_id": {
+            "title": "Pass Id",
+            "type": "string"
+          },
+          "source_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Run Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trigger": {
+            "title": "Trigger",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pass_id",
+          "trigger",
+          "status",
+          "source_run_id",
+          "completed_at"
+        ],
+        "title": "GraphPassView",
+        "type": "object"
+      },
+      "GraphPathConditionView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "origin": {
+            "description": "relationship, reading, or path (known only to the path).",
+            "title": "Origin",
+            "type": "string"
+          },
+          "relationship_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationship Id"
+          },
+          "step": {
+            "title": "Step",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "description",
+          "origin",
+          "step"
+        ],
+        "title": "GraphPathConditionView",
+        "type": "object"
+      },
+      "GraphPathResponse": {
+        "description": "The shortest route between two nodes, or why there is none to show.",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/GraphBasisView"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/GraphCompletenessView"
+          },
+          "conclusive": {
+            "title": "Conclusive",
+            "type": "boolean"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/GraphCoverageView"
+          },
+          "exploration": {
+            "$ref": "#/components/schemas/GraphExplorationView"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/GraphLimitsView"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeView"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/PathOutcome",
+            "description": "found, no_path, or why nothing was found: incomplete_evidence, truncated, boundary, policy_restricted. Only no_path supports a negative conclusion, and only about what the graph models (see coverage)."
+          },
+          "path": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphPathView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "query": {
+            "$ref": "#/components/schemas/GraphQueryView"
+          },
+          "source": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          },
+          "target": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          }
+        },
+        "required": [
+          "basis",
+          "query",
+          "source",
+          "target",
+          "outcome",
+          "conclusive",
+          "path",
+          "nodes",
+          "completeness",
+          "limits",
+          "exploration",
+          "coverage"
+        ],
+        "title": "GraphPathResponse",
+        "type": "object"
+      },
+      "GraphPathView": {
+        "properties": {
+          "assessment": {
+            "$ref": "#/components/schemas/GraphAssessmentView"
+          },
+          "hops": {
+            "title": "Hops",
+            "type": "integer"
+          },
+          "nodes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/GraphStepView"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hops",
+          "nodes",
+          "steps",
+          "assessment"
+        ],
+        "title": "GraphPathView",
+        "type": "object"
+      },
+      "GraphPathsResponse": {
+        "description": "Every simple route up to a cap, shortest first and then in canonical node order.",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/GraphBasisView"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/GraphCompletenessView"
+          },
+          "conclusive": {
+            "title": "Conclusive",
+            "type": "boolean"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/GraphCoverageView"
+          },
+          "exploration": {
+            "$ref": "#/components/schemas/GraphExplorationView"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/GraphLimitsView"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeView"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/PathOutcome"
+          },
+          "paths": {
+            "items": {
+              "$ref": "#/components/schemas/GraphPathView"
+            },
+            "title": "Paths",
+            "type": "array"
+          },
+          "query": {
+            "$ref": "#/components/schemas/GraphQueryView"
+          },
+          "source": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          },
+          "target": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          }
+        },
+        "required": [
+          "basis",
+          "query",
+          "source",
+          "target",
+          "outcome",
+          "conclusive",
+          "paths",
+          "nodes",
+          "completeness",
+          "limits",
+          "exploration",
+          "coverage"
+        ],
+        "title": "GraphPathsResponse",
+        "type": "object"
+      },
+      "GraphProjectionView": {
+        "description": "Whether the relationship graph reflects what was collected.",
+        "properties": {
+          "failed_runs": {
+            "description": "Of those, runs whose own derivation pass failed.",
+            "title": "Failed Runs",
+            "type": "integer"
+          },
+          "latest_pass": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphPassView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "passes": {
+            "title": "Passes",
+            "type": "integer"
+          },
+          "runs_in_progress": {
+            "title": "Runs In Progress",
+            "type": "integer"
+          },
+          "state": {
+            "description": "current, behind, failed or empty.",
+            "title": "State",
+            "type": "string"
+          },
+          "token": {
+            "description": "Moves whenever a derivation pass is recorded.",
+            "title": "Token",
+            "type": "string"
+          },
+          "underived_run_ids": {
+            "description": "Up to 20, oldest first.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Underived Run Ids",
+            "type": "array"
+          },
+          "underived_runs": {
+            "description": "Completed runs no successful pass covered.",
+            "title": "Underived Runs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "state",
+          "token",
+          "passes",
+          "latest_pass",
+          "underived_runs",
+          "failed_runs",
+          "runs_in_progress",
+          "underived_run_ids"
+        ],
+        "title": "GraphProjectionView",
+        "type": "object"
+      },
+      "GraphQueryView": {
+        "properties": {
+          "policy": {
+            "title": "Policy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy"
+        ],
+        "title": "GraphQueryView",
+        "type": "object"
+      },
+      "GraphReachabilityResponse": {
+        "description": "Every node with a route into the target, nearest first. A graph primitive: it\nclassifies nothing and ranks nothing.",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/GraphBasisView"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/GraphCompletenessView"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/GraphCoverageView"
+          },
+          "exploration": {
+            "$ref": "#/components/schemas/GraphExplorationView"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GraphReachedView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/GraphLimitsView"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "query": {
+            "$ref": "#/components/schemas/GraphQueryView"
+          },
+          "target": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          }
+        },
+        "required": [
+          "basis",
+          "query",
+          "target",
+          "items",
+          "page",
+          "completeness",
+          "limits",
+          "exploration",
+          "coverage"
+        ],
+        "title": "GraphReachabilityResponse",
+        "type": "object"
+      },
+      "GraphReachedView": {
+        "properties": {
+          "boundary": {
+            "description": "unresolved_boundary: who holds this principal lies outside the collected domain. implicit_membership_boundary: a logon-time token SID — every principal whose token carries it is behind it.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Boundary",
+            "type": "array"
+          },
+          "hops": {
+            "title": "Hops",
+            "type": "integer"
+          },
+          "node": {
+            "$ref": "#/components/schemas/GraphNodeView"
+          },
+          "path": {
+            "$ref": "#/components/schemas/GraphPathView",
+            "description": "Its shortest route into the target."
+          }
+        },
+        "required": [
+          "node",
+          "hops",
+          "boundary",
+          "path"
+        ],
+        "title": "GraphReachedView",
+        "type": "object"
+      },
+      "GraphReadinessResponse": {
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/GraphBasisView"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/GraphReasonView"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis",
+          "reasons"
+        ],
+        "title": "GraphReadinessResponse",
+        "type": "object"
+      },
+      "GraphReasonView": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "description"
+        ],
+        "title": "GraphReasonView",
+        "type": "object"
+      },
+      "GraphRelationshipDetailResponse": {
+        "description": "One relationship and every way it is supported, down to the stored facts.",
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/GraphBasisView"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeView"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reads_as": {
+            "title": "Reads As",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/GraphRelationshipView"
+          },
+          "supports": {
+            "items": {
+              "$ref": "#/components/schemas/GraphSupportView"
+            },
+            "title": "Supports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis",
+          "relationship",
+          "reads_as",
+          "note",
+          "supports",
+          "nodes"
+        ],
+        "title": "GraphRelationshipDetailResponse",
+        "type": "object"
+      },
+      "GraphRelationshipView": {
+        "description": "One relationship on an answer, with enough to say what it means and why it holds.\n\nThe full support and evidence record is one request away at ``href``.",
+        "properties": {
+          "conditional": {
+            "title": "Conditional",
+            "type": "boolean"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "derivation_class": {
+            "title": "Derivation Class",
+            "type": "string"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "premises": {
+            "description": "The stored facts its strongest support rests on.",
+            "items": {
+              "$ref": "#/components/schemas/GraphEvidenceRefView"
+            },
+            "title": "Premises",
+            "type": "array"
+          },
+          "qualifiers": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Qualifiers",
+            "type": "array"
+          },
+          "relationship_class": {
+            "title": "Relationship Class",
+            "type": "string"
+          },
+          "relationship_id": {
+            "title": "Relationship Id",
+            "type": "string"
+          },
+          "relationship_type": {
+            "title": "Relationship Type",
+            "type": "string"
+          },
+          "role": {
+            "description": "hop, reading or informational.",
+            "title": "Role",
+            "type": "string"
+          },
+          "rule": {
+            "description": "The rule and version of the support it is as strong as.",
+            "title": "Rule",
+            "type": "string"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphScopeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "supports": {
+            "description": "Independent ways it is supported.",
+            "title": "Supports",
+            "type": "integer"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "unresolved": {
+            "title": "Unresolved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "relationship_id",
+          "relationship_type",
+          "label",
+          "relationship_class",
+          "role",
+          "source",
+          "target",
+          "scope",
+          "derivation_class",
+          "confidence",
+          "currency",
+          "conditional",
+          "unresolved",
+          "conditions",
+          "qualifiers",
+          "rule",
+          "supports",
+          "premises",
+          "href"
+        ],
+        "title": "GraphRelationshipView",
+        "type": "object"
+      },
+      "GraphScopeView": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "GraphScopeView",
+        "type": "object"
+      },
+      "GraphSemanticsResponse": {
+        "description": "How the path engine reads the graph: one table, the same for every answer.",
+        "properties": {
+          "coverage": {
+            "$ref": "#/components/schemas/GraphCoverageView"
+          },
+          "limits": {
+            "items": {
+              "$ref": "#/components/schemas/GraphLimitBoundView"
+            },
+            "title": "Limits",
+            "type": "array"
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Outcomes",
+            "type": "array"
+          },
+          "policies": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Policies",
+            "type": "array"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/GraphReasonView"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "relationship_types": {
+            "items": {
+              "$ref": "#/components/schemas/GraphSemanticsView"
+            },
+            "title": "Relationship Types",
+            "type": "array"
+          },
+          "tie_break": {
+            "title": "Tie Break",
+            "type": "string"
+          }
+        },
+        "required": [
+          "relationship_types",
+          "policies",
+          "outcomes",
+          "reasons",
+          "limits",
+          "tie_break",
+          "coverage"
+        ],
+        "title": "GraphSemanticsResponse",
+        "type": "object"
+      },
+      "GraphSemanticsView": {
+        "properties": {
+          "always_conditional": {
+            "title": "Always Conditional",
+            "type": "boolean"
+          },
+          "collection": {
+            "title": "Collection",
+            "type": "string"
+          },
+          "derivation": {
+            "title": "Derivation",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "privilege_traversable": {
+            "title": "Privilege Traversable",
+            "type": "boolean"
+          },
+          "reads": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reads"
+          },
+          "reads_as": {
+            "title": "Reads As",
+            "type": "string"
+          },
+          "relationship_class": {
+            "title": "Relationship Class",
+            "type": "string"
+          },
+          "relationship_type": {
+            "title": "Relationship Type",
+            "type": "string"
+          },
+          "reverse_meaningful": {
+            "title": "Reverse Meaningful",
+            "type": "boolean"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "relationship_type",
+          "label",
+          "reads_as",
+          "role",
+          "relationship_class",
+          "privilege_traversable",
+          "reverse_meaningful",
+          "reads",
+          "always_conditional",
+          "collection",
+          "derivation",
+          "note"
+        ],
+        "title": "GraphSemanticsView",
+        "type": "object"
+      },
+      "GraphStepView": {
+        "properties": {
+          "basis": {
+            "description": "The relationship this step is as strong as.",
+            "title": "Basis",
+            "type": "string"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "readings": {
+            "description": "Readings of this step's local membership: local administration, Remote Desktop, WinRM. Their own class and conditions apply; a Remote Desktop reading is never a statement that a sign-in succeeds.",
+            "items": {
+              "$ref": "#/components/schemas/GraphRelationshipView"
+            },
+            "title": "Readings",
+            "type": "array"
+          },
+          "relationships": {
+            "description": "Every followed relationship joining the two nodes, strongest first.",
+            "items": {
+              "$ref": "#/components/schemas/GraphRelationshipView"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphScopeView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "source",
+          "target",
+          "scope",
+          "basis",
+          "confidence",
+          "relationships",
+          "readings"
+        ],
+        "title": "GraphStepView",
+        "type": "object"
+      },
+      "GraphSupportView": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "title": "Attributes",
+            "type": "object"
+          },
+          "basis_token": {
+            "title": "Basis Token",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "derivation_class": {
+            "title": "Derivation Class",
+            "type": "string"
+          },
+          "derived_at": {
+            "format": "date-time",
+            "title": "Derived At",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEvidenceView"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "first_observed_at": {
+            "format": "date-time",
+            "title": "First Observed At",
+            "type": "string"
+          },
+          "last_observed_at": {
+            "format": "date-time",
+            "title": "Last Observed At",
+            "type": "string"
+          },
+          "qualifiers": {
+            "items": {
+              "$ref": "#/components/schemas/GraphVocabularyView"
+            },
+            "title": "Qualifiers",
+            "type": "array"
+          },
+          "retired_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retired At"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "support_key": {
+            "title": "Support Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "support_key",
+          "derivation_class",
+          "rule",
+          "confidence",
+          "currency",
+          "qualifiers",
+          "conditions",
+          "attributes",
+          "basis_token",
+          "derived_at",
+          "first_observed_at",
+          "last_observed_at",
+          "retired_at",
+          "evidence"
+        ],
+        "title": "GraphSupportView",
+        "type": "object"
+      },
+      "GraphVocabularyView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "description"
+        ],
+        "title": "GraphVocabularyView",
+        "type": "object"
+      },
       "GroupRouteView": {
         "description": "One group through which this principal *also* reaches the target.",
         "properties": {
@@ -9169,6 +10644,19 @@
         "title": "PathEffect",
         "type": "string"
       },
+      "PathOutcome": {
+        "description": "What a path query's answer is. Branch on this, never on an empty list.",
+        "enum": [
+          "found",
+          "no_path",
+          "incomplete_evidence",
+          "truncated",
+          "boundary",
+          "policy_restricted"
+        ],
+        "title": "PathOutcome",
+        "type": "string"
+      },
       "PathRelation": {
         "description": "Whether the ACE at the end of a path allows or denies.",
         "enum": [
@@ -11362,6 +12850,31 @@
         ],
         "title": "RelatedFindingView",
         "type": "object"
+      },
+      "RelationshipType": {
+        "description": "The relationship taxonomy. Extensible: a new member needs a definition, nothing else.\n\nEvery member here is *defined*. Whether ADG collects its premises and whether it derives\nit are separate statements (:attr:`RelationshipTypeDefinition.collection`,\n:attr:`RelationshipTypeDefinition.derivation`), because a type that is defined and not\ncollected must never be read as a type that was looked for and not found.",
+        "enum": [
+          "member_of",
+          "nested_member_of",
+          "primary_group_of",
+          "local_group_member_of",
+          "local_admin_of",
+          "remote_desktop_user_of",
+          "remote_management_user_of",
+          "owns",
+          "generic_all",
+          "generic_write",
+          "write_dacl",
+          "write_owner",
+          "can_modify_membership",
+          "controls_gpo",
+          "gpo_linked_to",
+          "gpo_applies_to",
+          "trusts",
+          "foreign_principal_of"
+        ],
+        "title": "RelationshipType",
+        "type": "string"
       },
       "RemediationAction": {
         "description": "A change somebody might make in Windows as a result of a decision.\n\nEvery member is a **proposal**. ADG performs none of them: the application is read-only\ntoward the estate (SECURITY.md), ``Capability.REMEDIATION_EXECUTE`` is held by no role,\nand nothing in the governance package can reach a Windows API.",
@@ -16218,6 +17731,15 @@
         ],
         "title": "TokenView",
         "type": "object"
+      },
+      "TraversalPolicy": {
+        "description": "Which current hops a search follows. Named by the caller and echoed by every answer.",
+        "enum": [
+          "all_current",
+          "confirmed_only"
+        ],
+        "title": "TraversalPolicy",
+        "type": "string"
       },
       "TraversalView": {
         "description": "Whether the answer above it is the whole answer.",
@@ -22592,6 +24114,861 @@
         "summary": "What is waiting for the calling reviewer, across every campaign",
         "tags": [
           "governance"
+        ]
+      }
+    },
+    "/api/v1/graph/neighbors": {
+      "get": {
+        "description": "Bounded neighbor exploration, for a client that draws the graph around a node.\n\nLists every current relationship of the requested types — hops, readings, and\ninformational ones such as ``foreign_principal_of`` — with the level and the direction it\nwas met at. Relationships of unknown currency are counted and not listed; ones that are\nno longer current are history and are not listed either. Ordered by level, type and id,\nand paged with an offset cursor over the bounded result.",
+        "operationId": "neighbor_relationships_api_v1_graph_neighbors_get",
+        "parameters": [
+          {
+            "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+            "in": "query",
+            "name": "node",
+            "required": true,
+            "schema": {
+              "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+              "maxLength": 600,
+              "minLength": 3,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Node",
+              "type": "string"
+            }
+          },
+          {
+            "description": "outbound: relationships whose source is the node. inbound: whose target is the node. both (default).",
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "description": "outbound: relationships whose source is the node. inbound: whose target is the node. both (default).",
+              "enum": [
+                "outbound",
+                "inbound",
+                "both"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repeatable. Default: every type the graph stores (hops, readings and informational relationships).",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/RelationshipType"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable. Default: every type the graph stores (hops, readings and informational relationships).",
+              "title": "Type"
+            }
+          },
+          {
+            "description": "Levels out (default 1, at most 3).",
+            "in": "query",
+            "name": "depth",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Levels out (default 1, at most 3).",
+              "maximum": 3,
+              "minimum": 1,
+              "title": "Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined.",
+            "in": "query",
+            "name": "policy",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TraversalPolicy",
+              "default": "all_current",
+              "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined."
+            }
+          },
+          {
+            "description": "Nodes the search may reach (default 20000, at most 100000).",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 20000,
+              "description": "Nodes the search may reach (default 20000, at most 100000).",
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Relationships the search may read (default 100000, at most 500000).",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 100000,
+              "description": "Relationships the search may read (default 100000, at most 500000).",
+              "maximum": 500000,
+              "minimum": 1,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphNeighborsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing was collected or derived since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about the node."
+          },
+          "422": {
+            "description": "A malformed reference, a type that is never stored, or a limit."
+          }
+        },
+        "summary": "The current relationships around one node, a bounded number of levels out",
+        "tags": [
+          "relationship graph"
+        ]
+      }
+    },
+    "/api/v1/graph/paths": {
+      "get": {
+        "description": "Bounded alternate routes: shortest first, then in canonical node order.\n\nSimple routes only — no node twice — and never the same route twice, however many\nrelationships join a pair of its nodes. ``max_paths`` and ``max_depth`` bound what is\nreturned, and a fixed work budget bounds what is tried; ``completeness`` names whichever\nstopped it. This is graph traversal and nothing else: it ranks no route and removes none.",
+        "operationId": "paths_api_v1_graph_paths_get",
+        "parameters": [
+          {
+            "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+            "in": "query",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+              "maxLength": 600,
+              "minLength": 3,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Source",
+              "type": "string"
+            }
+          },
+          {
+            "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+            "in": "query",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+              "maxLength": 600,
+              "minLength": 3,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Target",
+              "type": "string"
+            }
+          },
+          {
+            "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined.",
+            "in": "query",
+            "name": "policy",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TraversalPolicy",
+              "default": "all_current",
+              "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined."
+            }
+          },
+          {
+            "description": "Hops a route may have (default 10, at most 32).",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "description": "Hops a route may have (default 10, at most 32).",
+              "maximum": 32,
+              "minimum": 1,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Routes to return (default 10, at most 100).",
+            "in": "query",
+            "name": "max_paths",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "description": "Routes to return (default 10, at most 100).",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Max Paths",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Nodes the search may reach (default 20000, at most 100000).",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 20000,
+              "description": "Nodes the search may reach (default 20000, at most 100000).",
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Relationships the search may read (default 100000, at most 500000).",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 100000,
+              "description": "Relationships the search may read (default 100000, at most 500000).",
+              "maximum": 500000,
+              "minimum": 1,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphPathsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing was collected or derived since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about a node."
+          },
+          "422": {
+            "description": "A malformed reference, the same node twice, or a limit out of range."
+          }
+        },
+        "summary": "Every simple route from one node to another, up to a cap",
+        "tags": [
+          "relationship graph"
+        ]
+      }
+    },
+    "/api/v1/graph/paths/shortest": {
+      "get": {
+        "description": "The lexicographically first of the shortest routes, with every relationship on it.\n\nBreadth-first from both ends, one batched read per level. A route is a sequence of nodes;\neach step lists every followed relationship joining its two nodes, strongest first, and\nthe readings of a local membership. The path's ``assessment`` is the weakest of its steps,\nthe readings it ends on, and the conditions only a path knows.",
+        "operationId": "shortest_api_v1_graph_paths_shortest_get",
+        "parameters": [
+          {
+            "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+            "in": "query",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+              "maxLength": 600,
+              "minLength": 3,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Source",
+              "type": "string"
+            }
+          },
+          {
+            "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+            "in": "query",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+              "maxLength": 600,
+              "minLength": 3,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Target",
+              "type": "string"
+            }
+          },
+          {
+            "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined.",
+            "in": "query",
+            "name": "policy",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TraversalPolicy",
+              "default": "all_current",
+              "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined."
+            }
+          },
+          {
+            "description": "Hops a route may have (default 10, at most 32).",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "description": "Hops a route may have (default 10, at most 32).",
+              "maximum": 32,
+              "minimum": 1,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Nodes the search may reach (default 20000, at most 100000).",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 20000,
+              "description": "Nodes the search may reach (default 20000, at most 100000).",
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Relationships the search may read (default 100000, at most 500000).",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 100000,
+              "description": "Relationships the search may read (default 100000, at most 500000).",
+              "maximum": 500000,
+              "minimum": 1,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphPathResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing was collected or derived since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about a node."
+          },
+          "422": {
+            "description": "A malformed reference, the same node twice, or a limit out of range."
+          }
+        },
+        "summary": "The shortest route from one node to another",
+        "tags": [
+          "relationship graph"
+        ]
+      }
+    },
+    "/api/v1/graph/reachability": {
+      "get": {
+        "description": "Reverse reachability: who holds a route into ``target``.\n\nThe relationships are walked target to source, and each route is still reported source to\ntarget, in the direction the privilege flows. Results are ordered by hops, then by\ncanonical reference, and paged with an offset cursor over the bounded result; the search\nre-runs per page, so ``completeness`` travels with every page. ``max_nodes`` caps how many\nsources are found at all. A source that is a foreign principal, or a logon-time SID such\nas Authenticated Users, is a boundary rather than an end: every principal behind it is.",
+        "operationId": "reachability_api_v1_graph_reachability_get",
+        "parameters": [
+          {
+            "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+            "in": "query",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "description": "A canonical node reference, '<kind>:<key>'. For example: principal:S-1-5-21-1004336348-1177238915-682003330-1104, principal:fs01|S-1-5-32-544, ntfs_resource:\\\\fs01\\finance\\payroll, domain:S-1-5-21-3000000001-3000000002-3000000003.",
+              "maxLength": 600,
+              "minLength": 3,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Target",
+              "type": "string"
+            }
+          },
+          {
+            "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined.",
+            "in": "query",
+            "name": "policy",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TraversalPolicy",
+              "default": "all_current",
+              "description": "all_current: follow every current relationship and mark what is conditional or unresolved. confirmed_only: follow only relationships whose confidence is confirmed, and count the rest as declined."
+            }
+          },
+          {
+            "description": "Hops a route may have (default 10, at most 32).",
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "description": "Hops a route may have (default 10, at most 32).",
+              "maximum": 32,
+              "minimum": 1,
+              "title": "Max Depth",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Nodes the search may reach (default 20000, at most 100000).",
+            "in": "query",
+            "name": "max_nodes",
+            "required": false,
+            "schema": {
+              "default": 20000,
+              "description": "Nodes the search may reach (default 20000, at most 100000).",
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Max Nodes",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Relationships the search may read (default 100000, at most 500000).",
+            "in": "query",
+            "name": "max_edges",
+            "required": false,
+            "schema": {
+              "default": 100000,
+              "description": "Relationships the search may read (default 100000, at most 500000).",
+              "maximum": 500000,
+              "minimum": 1,
+              "title": "Max Edges",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An ETag from a previous response. The server answers 304 when nothing has been collected or derived since.",
+              "title": "If-None-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphReachabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Nothing was collected or derived since the ETag was issued."
+          },
+          "404": {
+            "description": "Nothing is stored about the target."
+          },
+          "422": {
+            "description": "A malformed reference, a limit out of range, or a bad cursor."
+          }
+        },
+        "summary": "Every node with a route into a target, nearest first",
+        "tags": [
+          "relationship graph"
+        ]
+      }
+    },
+    "/api/v1/graph/readiness": {
+      "get": {
+        "operationId": "readiness_api_v1_graph_readiness_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphReadinessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Whether the relationship graph reflects what was collected",
+        "tags": [
+          "relationship graph"
+        ]
+      }
+    },
+    "/api/v1/graph/relationships/{relationship_id}": {
+      "get": {
+        "description": "The evidence behind an edge: its supports, their rules and conditions, and each\npremise's stored state. Current, not current and unknown supports are all shown, because\nwhat used to hold, and until when, stays explainable.",
+        "operationId": "relationship_detail_api_v1_graph_relationships__relationship_id__get",
+        "parameters": [
+          {
+            "description": "The relationship's identity digest, as every path edge names it.",
+            "in": "path",
+            "name": "relationship_id",
+            "required": true,
+            "schema": {
+              "description": "The relationship's identity digest, as every path edge names it.",
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Relationship Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphRelationshipDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No relationship has this id."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One relationship, every way it is supported, and the stored facts behind each",
+        "tags": [
+          "relationship graph"
+        ]
+      }
+    },
+    "/api/v1/graph/semantics": {
+      "get": {
+        "operationId": "semantics_api_v1_graph_semantics_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphSemanticsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "How the path engine reads each relationship type, and what it does not model",
+        "tags": [
+          "relationship graph"
         ]
       }
     },

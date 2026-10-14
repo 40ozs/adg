@@ -226,6 +226,14 @@ class ProjectionState:
     runs_in_progress: tuple[UUID, ...]
     """Runs still collecting. Their facts are stored and not yet derived, by design."""
 
+    failed_runs: tuple[UUID, ...] = ()
+    """The underived runs whose own completion pass failed: derivation was attempted and
+    wrote nothing (ADG-GRAPH-01C reports these apart from runs never attempted)."""
+
+    passes: int = 0
+    """Every pass recorded, successful or not. The log only grows, so this and the latest pass
+    identify the derived state a reader saw."""
+
     @property
     def is_current(self) -> bool:
         return not self.underived_runs and not self.runs_in_progress
@@ -438,10 +446,23 @@ class RelationshipProjector:
                 .order_by(scan_runs.c.started_at, scan_runs.c.run_id)
             )
         ).scalars()
+        counted = (
+            await self._session.execute(
+                sa.select(
+                    sa.func.count().label("passes"),
+                    sa.func.array_agg(sa.distinct(passes.c.source_run_id))
+                    .filter(passes.c.status == ProjectionStatus.FAILED.value)
+                    .label("failed"),
+                ).select_from(passes)
+            )
+        ).one()
+        attempted = {run for run in (counted.failed or ()) if run is not None}
         return ProjectionState(
             latest_pass=None if latest is None else dict(latest),
             underived_runs=underived_runs,
             runs_in_progress=tuple(in_progress),
+            failed_runs=tuple(run for run in underived_runs if run in attempted),
+            passes=int(counted.passes),
         )
 
     async def _lock(self) -> None:

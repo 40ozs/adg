@@ -36,8 +36,26 @@ class TestWhatEachRoleGrants:
                 Capability.CHANGES_READ,
                 Capability.COLLECTORS_READ,
                 Capability.SEARCH,
+                # Paths over relationships the three estate reads above already disclose,
+                # hop by hop. See test_the_graph_is_never_a_side_channel.
+                Capability.GRAPH_READ,
             }
         )
+
+    def test_the_graph_is_never_a_side_channel(self) -> None:
+        """A path composes memberships and NTFS control. A role that could read paths and not
+        the memberships, the ACLs or the access answers they are made of would learn through
+        the graph what it is refused directly."""
+        underlying = {
+            Capability.IDENTITIES_READ,
+            Capability.RESOURCES_READ,
+            Capability.ACCESS_READ,
+        }
+        holders = [role for role in Role if Capability.GRAPH_READ in ROLE_CAPABILITIES[role]]
+
+        assert holders
+        for role in holders:
+            assert underlying <= ROLE_CAPABILITIES[role], role
 
     def test_a_viewer_can_see_whether_collection_succeeded(self) -> None:
         """Not a convenience. Without it, a viewer cannot tell an empty estate from a

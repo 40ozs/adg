@@ -81,6 +81,14 @@ class Capability(StrEnum):
     COLLECTORS_READ = "collectors:read"
     COLLECTORS_INGEST = "collectors:ingest"
     SEARCH = "search"
+    #: Read the privilege-relationship graph: paths, reverse reachability and neighbors over
+    #: the relationships ADG derives (ADG-GRAPH-01C). Held exactly where IDENTITIES_READ,
+    #: RESOURCES_READ and ACCESS_READ are all held. Every hop of a path is a membership, a
+    #: host-local membership or an NTFS ownership or control entry, which those three already
+    #: disclose to the same reader -- the graph composes them and discloses nothing a holder
+    #: could not read hop by hop. A role holding this without all three would make the graph
+    #: a side channel around them, and tests/auth/test_roles.py refuses such a table.
+    GRAPH_READ = "graph:read"
     SETTINGS_READ = "settings:read"
     SETTINGS_WRITE = "settings:write"
     #: Read campaigns, items, decisions, ownership records and the audit trail. A more
@@ -151,6 +159,9 @@ _VIEWER: frozenset[Capability] = frozenset(
         # dangerous misreading this product can produce.
         Capability.COLLECTORS_READ,
         Capability.SEARCH,
+        # The relationship graph composes memberships and NTFS control the three estate
+        # reads above already disclose; see Capability.GRAPH_READ.
+        Capability.GRAPH_READ,
         # A viewer may read alerts and may not configure one. Seeing that the payroll share
         # was edited is the same disclosure class as seeing the edit in the change feed,
         # which a viewer already has.

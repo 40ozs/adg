@@ -66,6 +66,8 @@ PATH_PARAMETERS = {
     # constrains the shape. Any well-formed one does: the request must be refused before
     # anything looks it up.
     "key": "0" * 64,
+    # A relationship id is the same 64-character digest shape.
+    "relationship_id": "0" * 64,
 }
 
 
@@ -242,6 +244,16 @@ ROUTE_CAPABILITIES: dict[tuple[str, str], str | None] = {
     # inherit the weaker requirement. See the note at the include site in app/api/__init__.
     ("GET", "/api/v1/groups/{identifier}/resource-impact"): Capability.ACCESS_READ.value,
     ("GET", "/api/v1/search"): Capability.SEARCH.value,
+    # The privilege-relationship graph (ADG-GRAPH-01C). One capability for all of it, held
+    # exactly where identities:read, resources:read and access:read are: every hop it composes
+    # is one of those disclosures (tests/auth/test_roles.py).
+    ("GET", "/api/v1/graph/semantics"): Capability.GRAPH_READ.value,
+    ("GET", "/api/v1/graph/readiness"): Capability.GRAPH_READ.value,
+    ("GET", "/api/v1/graph/paths/shortest"): Capability.GRAPH_READ.value,
+    ("GET", "/api/v1/graph/paths"): Capability.GRAPH_READ.value,
+    ("GET", "/api/v1/graph/reachability"): Capability.GRAPH_READ.value,
+    ("GET", "/api/v1/graph/neighbors"): Capability.GRAPH_READ.value,
+    ("GET", "/api/v1/graph/relationships/{relationship_id}"): Capability.GRAPH_READ.value,
     # Changes. The feed, the summary, one object's timeline and the point-in-time comparison
     # all report what was *edited*.
     ("GET", "/api/v1/changes"): Capability.CHANGES_READ.value,

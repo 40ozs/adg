@@ -46,6 +46,7 @@ from app.api import (
     groups,
     health,
     meta,
+    relationship_graph,
     remediation,
     resources,
     risks,
@@ -110,6 +111,13 @@ def build_api_router(settings: Settings) -> APIRouter:
     # between /api/v1/groups' membership routes and its resource-impact route.
     api_router.include_router(
         changes.impact_router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
+    )
+    # The privilege-relationship graph (ADG-GRAPH-01C): paths, reachability and neighbors
+    # over derived relationships. Its own capability, held exactly where identities:read,
+    # resources:read and access:read all are -- every hop it composes is one of those
+    # disclosures, so the graph cannot be a side channel around them (app/auth/roles.py).
+    api_router.include_router(
+        relationship_graph.router, dependencies=[Depends(requires(Capability.GRAPH_READ))]
     )
     # Search spans areas, so it requires only the capability to search and then filters
     # each category by the caller's own capabilities; see app.services.search.

@@ -32,6 +32,7 @@ from typing import Any
 import pytest
 import sqlalchemy as sa
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.roles import Role
 from app.config import Settings, build_settings
@@ -50,9 +51,12 @@ from app.demo_mode.lifecycle import (
     verify_demo,
 )
 from app.demo_mode.marker import DemoTargetRefused
+from app.domain.relationships import NodeKind, NodeRef, RelationshipType
 from app.main import create_app
 from app.models.current import current_ntfs_resources, current_principals
 from app.relationships import UNDERIVED, RelationshipProjector
+from app.traversal.semantics import TraversalPolicy
+from app.traversal.service import RelationshipGraphService
 from tests.db.conftest import BASE_DATABASE_URL, _render
 from tests.support.auth import auth_headers, token_for_roles
 from tests.support.relationships import graph_snapshot
@@ -424,6 +428,85 @@ class TestThePrivilegeGraph:
             await database.dispose()
         assert outcome.succeeded and not outcome.skipped
         assert incremental and rebuilt == incremental
+
+
+class TestThePathEngine:
+    """The path engine over the demo's derived graph (ADG-GRAPH-01C).
+
+    Null Meridian's graph was derived incrementally across 300 completions with removals and
+    revivals in between. A clean recomputation must not change a single route the engine
+    returns: path identity depends on the facts, never on the order they were derived in.
+    """
+
+    @staticmethod
+    async def _sample(
+        session: AsyncSession, service: RelationshipGraphService
+    ) -> list[tuple[NodeRef, NodeRef]]:
+        rows = await session.execute(
+            sa.text(
+                "SELECT target_key FROM graph_relationships WHERE target_kind = 'ntfs_resource' "
+                "GROUP BY target_key ORDER BY count(*) DESC, target_key LIMIT 3"
+            )
+        )
+        pairs: list[tuple[NodeRef, NodeRef]] = []
+        for key in rows.scalars():
+            target = NodeRef(NodeKind.NTFS_RESOURCE, key)
+            reached = await service.reverse_reachability(target, policy=TraversalPolicy.ALL_CURRENT)
+            pairs.extend((item.node, target) for item in reached.sources[::25])
+        return pairs
+
+    @staticmethod
+    async def _routes(
+        service: RelationshipGraphService, pairs: list[tuple[NodeRef, NodeRef]]
+    ) -> dict[tuple[NodeRef, NodeRef], Any]:
+        found: dict[tuple[NodeRef, NodeRef], Any] = {}
+        for source, target in pairs:
+            search = await service.shortest_path(source, target, policy=TraversalPolicy.ALL_CURRENT)
+            found[(source, target)] = [
+                (
+                    [str(node) for node in path.nodes],
+                    [[edge.relationship_id for edge in step.relationships] for step in path.steps],
+                    path.assessment.confidence.value,
+                )
+                for path in search.paths
+            ]
+        return found
+
+    async def test_every_route_survives_a_clean_recomputation(
+        self, demo_settings: Settings, first_reset: ResetReport
+    ) -> None:
+        database = Database(demo_settings)
+        try:
+            async with database.session() as session:
+                service = RelationshipGraphService(session)
+                snapshot = await service.open()
+                pairs = await self._sample(session, service)
+                incremental = await self._routes(service, pairs)
+            async with database.session() as session:
+                await RelationshipProjector(session).rebuild(
+                    now=dt.datetime.now(tz=dt.UTC), discard_existing=True
+                )
+                service = RelationshipGraphService(session)
+                await service.open()
+                rebuilt = await self._routes(service, pairs)
+                # Leave the demo database exactly as the reset left it.
+                await session.rollback()
+        finally:
+            await database.dispose()
+        assert snapshot.readiness.state == "current"
+        assert len(pairs) >= 20
+        assert all(incremental.values()), "every sampled source reaches its target"
+        assert rebuilt == incremental
+
+    async def test_the_demo_answers_are_current_and_conclusive(self, api: AsyncClient) -> None:
+        readiness = (await api.get("/api/v1/graph/readiness")).json()
+        semantics = (await api.get("/api/v1/graph/semantics")).json()
+
+        assert readiness["basis"]["projection"]["state"] == "current"
+        assert readiness["reasons"] == []
+        assert {item["relationship_type"] for item in semantics["relationship_types"]} == {
+            item.value for item in RelationshipType
+        }
 
 
 class TestTheGoldenScenariosThroughTheApi:

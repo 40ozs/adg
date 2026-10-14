@@ -813,6 +813,77 @@ class RelationshipRepository:
         )
         return RelationshipPage(items=items, next_after=next_after)
 
+    async def adjacent_many(
+        self,
+        nodes: Iterable[NodeRef],
+        direction: AdjacencyDirection,
+        *,
+        types: Iterable[RelationshipType],
+        limit: int,
+    ) -> tuple[list[StoredRelationship], bool]:
+        """Every relationship of ``types`` leaving (outbound) or reaching (inbound) any of
+        ``nodes``, whatever its currency, and whether more than ``limit`` existed.
+
+        One breadth-first level of a traversal (ADG-GRAPH-01C) in one indexed read: the nodes
+        are grouped by kind so each group is an ``IN`` probe of the adjacency index, and the
+        rows come back in ``(kind, key, type, id)`` order, so a read cut at ``limit`` is the
+        same subset every time. The relationships themselves are then loaded by
+        :meth:`get_many` — three queries per :data:`READ_CHUNK` ids — so a level costs a
+        constant number of statements however many nodes or relationships it holds.
+        """
+        if limit < 1:
+            raise ValueError("limit must be at least 1")
+        table = graph_relationships
+        kind_column, key_column = (
+            (table.c.source_kind, table.c.source_key)
+            if direction is AdjacencyDirection.OUTBOUND
+            else (table.c.target_kind, table.c.target_key)
+        )
+        by_kind: dict[NodeKind, set[str]] = {}
+        for node in nodes:
+            by_kind.setdefault(node.kind, set()).add(node.key)
+        type_values = sorted({item.value for item in types})
+        if not by_kind or not type_values:
+            return [], False
+        statement = (
+            sa.select(table.c.relationship_id)
+            .where(
+                sa.or_(
+                    *(
+                        sa.and_(kind_column == kind.value, key_column.in_(sorted(keys)))
+                        for kind, keys in sorted(by_kind.items())
+                    )
+                ),
+                table.c.relationship_type.in_(type_values),
+            )
+            .order_by(kind_column, key_column, table.c.relationship_type, table.c.relationship_id)
+            .limit(limit + 1)
+        )
+        ids = list((await self._session.execute(statement)).scalars())
+        truncated = len(ids) > limit
+        loaded = await self.get_many(ids[:limit])
+        return [loaded[item] for item in ids[:limit]], truncated
+
+    async def nodes_named(self, nodes: Iterable[NodeRef]) -> frozenset[NodeRef]:
+        """The nodes some relationship names as its source or target. Two indexed reads."""
+        wanted = sorted(set(nodes))
+        if not wanted:
+            return frozenset()
+        table = graph_relationships
+        found: set[NodeRef] = set()
+        for kind_column, key_column in (
+            (table.c.source_kind, table.c.source_key),
+            (table.c.target_kind, table.c.target_key),
+        ):
+            pairs = sa.tuple_(kind_column, key_column)
+            rows = await self._session.execute(
+                sa.select(kind_column, key_column)
+                .where(pairs.in_([(node.kind.value, node.key) for node in wanted]))
+                .distinct()
+            )
+            found.update(NodeRef(NodeKind(kind), key) for kind, key in rows.all())
+        return frozenset(found)
+
     async def supports_resting_on(
         self, kind: EvidenceKind, keys: Iterable[str]
     ) -> set[tuple[str, str]]:
