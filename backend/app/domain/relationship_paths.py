@@ -91,8 +91,7 @@ def _semantics() -> Mapping[RelationshipType, TraversalSemantics]:
                 True,
                 True,
                 note=(
-                    "Current NTFS control relationship with exactly the meaning "
-                    "GRAPH-01B derived."
+                    "Current NTFS control relationship with exactly the meaning GRAPH-01B derived."
                 ),
             )
         elif relationship_type in semantic_aliases:
@@ -319,19 +318,11 @@ def _is_eligible(
 
 
 def _next_node(relationship: StoredRelationship, direction: AdjacencyDirection) -> NodeRef:
-    return (
-        relationship.target
-        if direction is AdjacencyDirection.OUTBOUND
-        else relationship.source
-    )
+    return relationship.target if direction is AdjacencyDirection.OUTBOUND else relationship.source
 
 
 def _origin_node(relationship: StoredRelationship, direction: AdjacencyDirection) -> NodeRef:
-    return (
-        relationship.source
-        if direction is AdjacencyDirection.OUTBOUND
-        else relationship.target
-    )
+    return relationship.source if direction is AdjacencyDirection.OUTBOUND else relationship.target
 
 
 def _reconstruct_forward(

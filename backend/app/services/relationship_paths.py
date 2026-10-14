@@ -82,9 +82,7 @@ def _projection_view(state: ProjectionState) -> dict[str, Any]:
         "underived_run_count": len(state.underived_runs),
         "underived_run_ids": [str(item) for item in state.underived_runs[:_DIAGNOSTIC_SAMPLE]],
         "runs_in_progress_count": len(state.runs_in_progress),
-        "runs_in_progress_ids": [
-            str(item) for item in state.runs_in_progress[:_DIAGNOSTIC_SAMPLE]
-        ],
+        "runs_in_progress_ids": [str(item) for item in state.runs_in_progress[:_DIAGNOSTIC_SAMPLE]],
         "latest_pass_failed": latest_failed,
     }
 
@@ -185,9 +183,7 @@ def _completeness(
     readiness = _projection_view(after)
     gaps = capability_gaps()
     supported_complete = (
-        diagnostics.complete_within_supported_graph
-        and bool(readiness["ready"])
-        and basis_stable
+        diagnostics.complete_within_supported_graph and bool(readiness["ready"]) and basis_stable
     )
     enterprise_complete = supported_complete and not any(gaps.values())
     reasons: list[str] = []
@@ -233,9 +229,7 @@ class RelationshipPathService:
         limits: TraversalLimits,
     ) -> dict[str, Any]:
         before = await self._projector.state()
-        result = await shortest_path(
-            self._provider, source, target, policy=policy, limits=limits
-        )
+        result = await shortest_path(self._provider, source, target, policy=policy, limits=limits)
         after = await self._projector.state()
         return self._shortest_view(result, policy, before, after)
 
@@ -248,9 +242,7 @@ class RelationshipPathService:
         limits: TraversalLimits,
     ) -> dict[str, Any]:
         before = await self._projector.state()
-        result = await alternate_paths(
-            self._provider, source, target, policy=policy, limits=limits
-        )
+        result = await alternate_paths(self._provider, source, target, policy=policy, limits=limits)
         after = await self._projector.state()
         return {
             "source": {"kind": source.kind.value, "key": source.key},
@@ -270,9 +262,7 @@ class RelationshipPathService:
         limits: TraversalLimits,
     ) -> dict[str, Any]:
         before = await self._projector.state()
-        result = await reverse_reachability(
-            self._provider, target, policy=policy, limits=limits
-        )
+        result = await reverse_reachability(self._provider, target, policy=policy, limits=limits)
         after = await self._projector.state()
         return self._reverse_view(result, policy, before, after)
 
