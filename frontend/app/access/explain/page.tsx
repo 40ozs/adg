@@ -16,6 +16,8 @@ import { ExplainLauncher } from "@/components/ExplainLauncher";
 import { ExplanationExplorer } from "@/components/ExplanationExplorer";
 import { ExplanationExport } from "@/components/ExplanationExport";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { investigateHref } from "@/lib/investigation";
+import Link from "next/link";
 
 /**
  * Why one principal can, or cannot, reach one directory.
@@ -113,6 +115,16 @@ export default async function AccessExplanationPage({
   return (
     <>
       <ExplanationHeader explanation={explanation} />
+      <p>
+        <Link
+          href={investigateHref(principal, resource, {
+            host: host === "" ? undefined : host,
+            access_path: accessPath,
+          })}
+        >
+          Read this answer as a guided investigation
+        </Link>
+      </p>
 
       <CoverageCaveat caveat={coverageCaveat(coverageData)} />
 

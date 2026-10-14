@@ -40,6 +40,16 @@ export default async function AccessPage() {
       </div>
 
       <div className="card">
+        <h2>Investigate one answer</h2>
+        <p className="muted">
+          The same answer, read as an investigation: what ADG evaluated, the route that carries
+          the access and where each hop was observed, what could not be confirmed and whether
+          it matters, and what to look at next.
+        </p>
+        <ExplainLauncher mode="investigate" />
+      </div>
+
+      <div className="card">
         <h2>How ADG answers</h2>
         <p>
           An effective-access answer is an access check: the share ACL and the NTFS ACL are

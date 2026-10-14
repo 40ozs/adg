@@ -184,7 +184,7 @@ const CONFIRMED_SYSTEM_EMPTY =
   "established for SYSTEM's own SID, and this is not a finding of no access.";
 
 /** What would settle an unconfirmed SYSTEM mapping. One sentence per state. */
-const SYSTEM_MAPPING_NEXT_STEP: Record<Exclude<SystemMappingState, "confirmed">, string> = {
+export const SYSTEM_MAPPING_NEXT_STEP: Record<Exclude<SystemMappingState, "confirmed">, string> = {
   ambiguous:
     "Over a share SYSTEM arrives as the computer account of the machine it runs on; ask " +
     "about that computer account to get an answer about it.",
@@ -1029,9 +1029,14 @@ export function cautions(explanation: AccessExplanationResponse): Caution[] {
     });
   }
 
+  // One condition can occur more than once — two ACL trustees whose membership nobody
+  // collected are two findings — and a caution id is a React key, so a repeat is numbered.
+  const seen = new Map<string, number>();
   for (const warning of explanation.warnings) {
+    const occurrence = (seen.get(warning.condition) ?? 0) + 1;
+    seen.set(warning.condition, occurrence);
     notes.push({
-      id: `finding-${warning.condition}`,
+      id: occurrence === 1 ? `finding-${warning.condition}` : `finding-${warning.condition}-${occurrence}`,
       headline: findingHeadline(warning),
       detail: warning.message,
       severity: warning.may_overstate || warning.may_understate ? "warning" : "info",

@@ -8,7 +8,7 @@ Normative. A client may rely on everything stated here.
 
 | Response | Schema | Route |
 | --- | --- | --- |
-| Access explanation | [`access-explanation.schema.json`](v1/derived/access-explanation.schema.json) | `GET /api/v1/access/explain` |
+| Access explanation (with hop `evidence` and the `investigation` summary since 1.1) | [`access-explanation.schema.json`](v1/derived/access-explanation.schema.json) | `GET /api/v1/access/explain` |
 | Causal path page | [`access-paths.schema.json`](v1/derived/access-paths.schema.json) | `GET /api/v1/access/paths` |
 | Group resource impact | [`resource-impact.schema.json`](v1/derived/resource-impact.schema.json) | `GET /api/v1/groups/{identifier}/resource-impact` |
 | Change feed, summary, timeline, comparison | `openapi.json` | `GET /api/v1/changes`, `/summary`, `/timeline`, `/compare` |
@@ -230,6 +230,44 @@ remove.
 `membership` reports how many principals a change would affect, and `membership.complete`
 says whether that count is exact. When it is `false` the counts are **lower** bounds; the
 real blast radius is larger, never smaller.
+
+## `evidence` and `investigation` (contract 1.1)
+
+Two additive fields on `GET /api/v1/access/explain` (ADG-DEMO-02). Neither takes part in
+the answer; both are about reading it.
+
+**`evidence`** is one entry per edge of `graph`, in graph order, saying how that hop is
+known. `basis` is `observed` (a stored row a collector reported, with the collector of the
+last observing run, the first and last observing run and instant, and the stored row's key),
+`assumed` (a SID Windows places in the token, which nothing reports), `projected` (an NTFS
+entry projected from an ancestor because this directory was never read), or `unrecorded`
+(no stored row backs the hop). `last_observed_at` can be older than the latest run: current
+state keeps a row until a complete scan of its scope proves it gone.
+
+**`investigation`** is the explanation summarized as the questions an investigator asks,
+computed by the engine (`app.access_engine.investigate`) from the verdict, the paths and the
+removal targets, and nothing else:
+
+* `presence` — `present` (granted), `absent` (denied or no_grant), `undetermined`
+  (indeterminate). Never `absent` while `verdict.conclusive` is false.
+* `primary_routes` — the strongest **contributing** route on each layer, NTFS first; two over
+  SMB, because both ACLs must allow a right. Each carries `route` (`direct`, `group`,
+  `assumed`, `ownership`) and `placement` (`explicit`, `inherited`, `owner`) — two axes, so
+  "inherited" never has to mean both "through a group" and "set on a parent" — and the
+  measured `removal_effect` of its first removable link.
+* `open_questions` — every finding with a `state` (`confirmed`, `ambiguous`, `missing`,
+  `conflicting`, as ADG-DEMO-01 defined them for SYSTEM, plus `assumed`, `derived`,
+  `context`) and an `impact`. **`impact` is decided by direction alone:** on a granted answer
+  a finding that may overstate is `presence` (the access could narrow to nothing) and one that
+  may only understate is `extent` (the access stands; it could be wider); without access only a
+  finding that could hide a grant is `presence`. `state` is a display classification and a
+  client must not derive impact from it.
+* `next_steps` — a closed vocabulary of codes (`resolve_trustee_identity`,
+  `collect_group_membership`, `settle_system_mapping`, `review_redundant_entry`, …), each
+  naming the principal or route it is about. The client words them.
+
+The architecture and the reviewer walkthrough are in
+[`docs/demo/access-investigation.md`](../demo/access-investigation.md).
 
 ## Versioning
 

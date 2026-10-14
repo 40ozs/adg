@@ -272,6 +272,14 @@ answer does not show. The resolver cannot see this for itself — it needs a dat
 the service supplies it (`unobserved_trustee_findings`), for every ACL trustee that is
 unmatched, is or might be a group, and has no membership edges.
 
+"Might be a group" includes every SID whose kind no run established: no principal record
+at all, **or a record of kind `unresolved`** (ADG-DEMO-02). The second is a row that exists
+only to say that no authority could resolve the SID, so it carries no more knowledge of the
+kind than a missing row; treating it as "not a group" ruled the subject out of an orphaned
+SID on no evidence and could leave an answer `certain` where it is a lower bound. The same
+line `SubjectFacts.resolved` draws for the subject (`services/access.py`,
+`_could_contain_members`).
+
 ---
 
 ## 7. Keeping the queries bounded

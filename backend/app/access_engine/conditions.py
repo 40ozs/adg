@@ -98,8 +98,10 @@ class AccessCondition(StrEnum):
     nameable, which is the orphaned-SID finding."""
 
     TRUSTEE_MEMBERSHIP_UNOBSERVED = "trustee_membership_unobserved"
-    """An entry names a group ADG holds no membership edges for. "Not a member" cannot be
-    concluded from that, so a principal may hold rights this answer does not show."""
+    """An entry names a group ADG holds no membership edges for, or a SID whose kind no run
+    established (no record, or a record of kind ``unresolved``) and which could therefore be
+    one. "Not a member" cannot be concluded from that, so a principal may hold rights this
+    answer does not show."""
 
     # -- the subject and its token -----------------------------------------------------
 
@@ -244,8 +246,8 @@ CONDITION_DESCRIPTIONS: Final[dict[AccessCondition, str]] = {
         "An entry names a SID no run has described. The grant is real; who holds it is not known."
     ),
     AccessCondition.TRUSTEE_MEMBERSHIP_UNOBSERVED: (
-        "An entry names a group whose membership ADG has never collected, so nobody can be "
-        "ruled out of it."
+        "An entry names a group whose membership ADG has never collected, or a SID nothing "
+        "has identified, so nobody can be ruled out of it."
     ),
     AccessCondition.SUBJECT_UNRESOLVED: (
         "No run has described this principal, so its memberships may be incomplete and its "

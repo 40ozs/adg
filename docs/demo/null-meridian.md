@@ -374,6 +374,12 @@ reaches `\\NM-ENG-FS01\Engineering\Runbooks\Payments-Legacy`, whose only grant i
 Engineering → Engineering-FS → Share_Engineering_Modify` — and through seven groups via
 `APP-GitHub-Users`.
 
+**The guided investigation (ADG-DEMO-02).** The demo guide opens with one access question
+built on scenarios C and H: *why does Fatima Gordon have access to*
+`\\NM-ENG-FS01\Engineering\Projects\Apollo`? Served by `GET /api/v1/demo` as
+`investigations`, answered by the real engine, and read on `/access/investigate`. See
+[access-investigation.md](access-investigation.md).
+
 **H — A safe first clean-up.** `Proj-Zephyr-RW` has had no members since the project ended in
 2019 and still holds Modify on both Zephyr project folders and the 2019 archive. The empty-group rule reports it; removing
 the entry changes nobody's access, which a simulation confirms.

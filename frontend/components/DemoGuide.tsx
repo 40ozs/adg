@@ -1,9 +1,16 @@
 import type { JSX } from "react";
 import Link from "next/link";
 
-import type { DemoGeneration, DemoOverview, DemoPolicyEntry, DemoScenario } from "@/lib/contracts";
+import type {
+  DemoGeneration,
+  DemoInvestigation,
+  DemoOverview,
+  DemoPolicyEntry,
+  DemoScenario,
+} from "@/lib/contracts";
 import { explainHref } from "@/lib/explanation";
 import { principalHrefForKey } from "@/lib/identity";
+import { investigateHref, SECTION } from "@/lib/investigation";
 import { directoryHref } from "@/lib/resources";
 
 /**
@@ -46,6 +53,10 @@ export function DemoScenarioList({ scenarios }: { scenarios: DemoScenario[] }): 
                       <Link href={explainHref(subject.sid, scenario.resource)}>
                         explain their access to this folder
                       </Link>
+                      {" · "}
+                      <Link href={investigateHref(subject.sid, scenario.resource)}>
+                        investigate it step by step
+                      </Link>
                     </>
                   )}
                 </li>
@@ -55,6 +66,85 @@ export function DemoScenarioList({ scenarios }: { scenarios: DemoScenario[] }): 
         </li>
       ))}
     </ol>
+  );
+}
+
+/**
+ * The reviewer's five minutes, in order. Each step names the section of the investigation
+ * page it is about and links straight to it, so the walkthrough and the page cannot drift
+ * into describing different screens.
+ */
+export const WALKTHROUGH: readonly { step: string; section: string | null }[] = [
+  { step: "Open the seeded investigation with “Investigate access” above.", section: null },
+  { step: "Read the access question at the top of the page.", section: SECTION.question },
+  {
+    step: "Inspect what ADG evaluated: the effective access, its certainty, and both ACLs.",
+    section: SECTION.observed,
+  },
+  {
+    step: "Read the route that carries the access on each ACL — direct entry or group membership, explicit or inherited.",
+    section: SECTION.routes,
+  },
+  {
+    step: "Open “Evidence for hop …” under any hop: which collector observed it, in which scan, and when.",
+    section: SECTION.routes,
+  },
+  {
+    step: "Inspect what ADG could not confirm, and whether it affects the conclusion.",
+    section: SECTION.openQuestions,
+  },
+  { step: "Read the investigation summary: seven questions, seven answers.", section: SECTION.summary },
+  { step: "Follow the suggested next investigative action.", section: SECTION.nextSteps },
+];
+
+export function DemoInvestigationList({
+  investigations,
+}: {
+  investigations: DemoInvestigation[];
+}): JSX.Element | null {
+  if (investigations.length === 0) {
+    return null;
+  }
+  return (
+    <section aria-labelledby="demo-investigation" className="card demo-investigation">
+      <h2 id="demo-investigation">Start here: a guided access investigation</h2>
+      {investigations.map((item) => {
+        const href = investigateHref(item.principal.sid, item.resource, {
+          access_path: item.access_path,
+        });
+        return (
+          <div key={item.key}>
+            <h3>{item.title}</h3>
+            <p>
+              <strong>{item.question}</strong>
+            </p>
+            <p>{item.summary}</p>
+            <p>
+              <Link className="button" href={href}>
+                Investigate access
+              </Link>{" "}
+              <span className="muted">
+                Synthetic data · scenarios {item.scenarios.join(" and ")} below ·{" "}
+                <Link href={principalHrefForKey(item.principal.sid)}>{item.principal.name}</Link> ·{" "}
+                <Link href={directoryHref(item.resource)}>the folder</Link>
+              </span>
+            </p>
+            <h4 id={`walkthrough-${item.key}`}>The five-minute walkthrough</h4>
+            <ol className="demo-walkthrough" aria-labelledby={`walkthrough-${item.key}`}>
+              {WALKTHROUGH.map((entry, index) => (
+                <li key={entry.step}>
+                  {entry.section === null || index === 0 ? (
+                    entry.step
+                  ) : (
+                    <Link href={`${href}#${entry.section}`}>{entry.step}</Link>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
@@ -142,6 +232,8 @@ export function DemoGuide({ overview }: { overview: DemoOverview }): JSX.Element
         seed <code>{dataset.seed}</code>). No Active Directory, file server or collector is
         connected, and nothing here can change real infrastructure.
       </p>
+
+      <DemoInvestigationList investigations={overview.investigations ?? []} />
 
       <h2>Scenarios</h2>
       <DemoScenarioList scenarios={overview.scenarios} />

@@ -35,6 +35,7 @@ import {
   outcomeWording,
   structureRows,
 } from "@/lib/explanation";
+import { investigationSummary, nextStepWording, routeHops } from "@/lib/investigation";
 
 interface Schema {
   type?: string;
@@ -434,6 +435,25 @@ describe("the captured response body", () => {
     expect(example.evidence?.map((item) => item.edge_id)).toEqual(
       example.graph.edges.map((edge) => edge.id),
     );
+  });
+
+  it("words its investigation end to end", () => {
+    const investigation = example.investigation;
+    expect(investigation).toBeDefined();
+    if (investigation === undefined || investigation === null) {
+      return;
+    }
+    expect(investigationSummary(example, investigation)).toHaveLength(7);
+    for (const step of investigation.next_steps) {
+      expect(nextStepWording(step, example, investigation).text.length).toBeGreaterThan(0);
+    }
+    for (const route of investigation.primary_routes) {
+      const path = example.paths.find((item) => item.id === route.path_id);
+      expect(path, `route ${route.path_id} is not a path`).toBeDefined();
+      if (path !== undefined) {
+        expect(routeHops(example, path)).toHaveLength(path.edges.length);
+      }
+    }
   });
 
   it("has nothing to warn about when every route is a real one", () => {

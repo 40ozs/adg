@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 
 import { EXPLAIN_PATH } from "@/lib/explanation";
+import { INVESTIGATE_PATH } from "@/lib/investigation";
 import styles from "@/components/explanation.module.css";
 
 /**
@@ -13,24 +14,35 @@ import styles from "@/components/explanation.module.css";
  * Both fields are required because the API requires both. An access route that answers
  * about everybody when a parameter is omitted is the Cartesian product of the estate
  * wearing a query string, and this form must not look like one.
+ *
+ * `mode` picks where the same question goes: the full explanation, or the guided
+ * investigation (ADG-DEMO-02). One request either way; only the reading order differs.
  */
 export function ExplainLauncher({
   principal = "",
   resource = "",
   host = "",
   accessPath = "remote_smb",
+  mode = "explain",
 }: {
   principal?: string;
   resource?: string;
   host?: string;
   accessPath?: string;
+  mode?: "explain" | "investigate";
 }): JSX.Element {
+  // Both launchers can sit on one page (/access), and an id must be unique in a document.
+  const id = (field: string): string => `${mode}-${field}`;
   return (
-    <form className={styles.launcher} method="get" action={EXPLAIN_PATH}>
+    <form
+      className={styles.launcher}
+      method="get"
+      action={mode === "investigate" ? INVESTIGATE_PATH : EXPLAIN_PATH}
+    >
       <div className={styles.launcherField}>
-        <label htmlFor="explain-principal">Principal</label>
+        <label htmlFor={id("principal")}>Principal</label>
         <input
-          id="explain-principal"
+          id={id("principal")}
           name="principal"
           required
           defaultValue={principal}
@@ -43,9 +55,9 @@ export function ExplainLauncher({
       </div>
 
       <div className={styles.launcherField}>
-        <label htmlFor="explain-resource">Directory</label>
+        <label htmlFor={id("resource")}>Directory</label>
         <input
-          id="explain-resource"
+          id={id("resource")}
           name="resource"
           required
           defaultValue={resource}
@@ -55,16 +67,16 @@ export function ExplainLauncher({
       </div>
 
       <div className={styles.launcherField}>
-        <label htmlFor="explain-host">Host (optional)</label>
-        <input id="explain-host" name="host" defaultValue={host} placeholder="fs01" />
+        <label htmlFor={id("host")}>Host (optional)</label>
+        <input id={id("host")} name="host" defaultValue={host} placeholder="fs01" />
         <span className="muted">
           Scopes a bare SID to one computer, when the principal is a local group.
         </span>
       </div>
 
       <div className={styles.launcherField}>
-        <label htmlFor="explain-access-path">Access path</label>
-        <select id="explain-access-path" name="access_path" defaultValue={accessPath}>
+        <label htmlFor={id("access-path")}>Access path</label>
+        <select id={id("access-path")} name="access_path" defaultValue={accessPath}>
           <option value="remote_smb">Over the network (share ACL and NTFS ACL)</option>
           <option value="local">On the console (NTFS ACL only)</option>
         </select>
@@ -76,7 +88,7 @@ export function ExplainLauncher({
 
       <div>
         <button className="button" type="submit">
-          Explain this access
+          {mode === "investigate" ? "Investigate this access" : "Explain this access"}
         </button>
       </div>
     </form>

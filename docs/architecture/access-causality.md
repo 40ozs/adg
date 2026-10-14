@@ -229,6 +229,14 @@ measured in `tests/db/test_access_paths_api.py`, not merely asserted here.
 
 ---
 
+### Read as an investigation (ADG-DEMO-02)
+
+`/explain` also carries the explanation summarized as an investigation — the route that
+carries the access on each layer, the measured effect of removing it, and which open
+questions reach the conclusion — and the provenance of every graph edge. Both are derived
+from this module's output without a second evaluation; see
+[`docs/demo/access-investigation.md`](../demo/access-investigation.md).
+
 ## 7. What this does not do
 
 1. **It explains one principal against one resource.** There is no bulk shape, deliberately:

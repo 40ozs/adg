@@ -254,7 +254,7 @@ export function RemovalPanel({
   const sufficient = sufficientRemovals(explanation);
 
   return (
-    <div className="card">
+    <div className="card" id="removals">
       <h2>What a removal would do</h2>
 
       {warning !== null && (

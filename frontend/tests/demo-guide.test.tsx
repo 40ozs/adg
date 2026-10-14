@@ -13,10 +13,10 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import DemoPage from "@/app/demo/page";
-import { DemoGuide, DemoScenarioList } from "@/components/DemoGuide";
+import { DemoGuide, DemoInvestigationList, DemoScenarioList, WALKTHROUGH } from "@/components/DemoGuide";
 import * as adg from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
-import type { DemoOverview, DemoScenario, RuntimeInfo } from "@/lib/contracts";
+import type { DemoInvestigation, DemoOverview, DemoScenario, RuntimeInfo } from "@/lib/contracts";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -51,6 +51,20 @@ const scenarioH: DemoScenario = {
   resource: "\\\\NM-ENG-FS01\\Engineering\\Projects\\Zephyr",
   subjects: [],
   related_resources: ["\\\\NM-ENG-FS01\\Projects\\Zephyr"],
+};
+
+const FATIMA = "S-1-5-21-3949361974-1583827165-633756269-1323";
+const APOLLO = "\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo";
+
+const apollo: DemoInvestigation = {
+  key: "apollo",
+  title: "Why can a long-tenured engineer still modify the Apollo project folder?",
+  question: `Why does Fatima Gordon have access to ${APOLLO}?`,
+  principal: { kind: "person", name: "Fatima Gordon", sid: FATIMA },
+  resource: APOLLO,
+  access_path: "remote_smb",
+  summary: "Named directly, and through five nested groups; two things ADG cannot confirm.",
+  scenarios: ["C", "H"],
 };
 
 const overview: DemoOverview = {
@@ -129,6 +143,66 @@ describe("the scenario list", () => {
     render(<DemoScenarioList scenarios={[]} />);
 
     expect(screen.getByText(/defines no guided scenarios/)).toBeInTheDocument();
+  });
+});
+
+describe("the guided investigation (ADG-DEMO-02)", () => {
+  it("starts from the dataset's question, without a SID to look up", () => {
+    render(<DemoInvestigationList investigations={[apollo]} />);
+
+    const card = screen.getByRole("region", { name: "Start here: a guided access investigation" });
+    expect(within(card).getByText(apollo.question)).toBeInTheDocument();
+    const start = within(card).getByRole("link", { name: "Investigate access" });
+    const href = new URL(start.getAttribute("href") ?? "", "http://x");
+    expect(href.pathname).toBe("/access/investigate");
+    expect(href.searchParams.get("principal")).toBe(FATIMA);
+    expect(href.searchParams.get("resource")).toBe(APOLLO);
+    expect(href.searchParams.get("access_path")).toBe("remote_smb");
+    expect(within(card).getByText(/Synthetic data/)).toBeInTheDocument();
+  });
+
+  it("walks a reviewer through eight steps, each linked to its section of the page", () => {
+    render(<DemoInvestigationList investigations={[apollo]} />);
+
+    const steps = within(
+      screen.getByRole("list", { name: "The five-minute walkthrough" }),
+    ).getAllByRole("listitem");
+    expect(steps).toHaveLength(8);
+    expect(WALKTHROUGH).toHaveLength(8);
+    const anchors = steps
+      .slice(1)
+      .map((step) => new URL(within(step).getByRole("link").getAttribute("href") ?? "", "http://x").hash);
+    expect(anchors).toEqual([
+      "#question",
+      "#observed-access",
+      "#access-routes",
+      "#access-routes",
+      "#open-questions",
+      "#investigation-summary",
+      "#next-steps",
+    ]);
+  });
+
+  it("renders nothing for a server that offers no investigation", () => {
+    const { container } = render(<DemoInvestigationList investigations={[]} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("leads the guide, above the scenarios", () => {
+    render(<DemoGuide overview={{ ...overview, investigations: [apollo] }} />);
+
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+    expect(headings.indexOf("Start here: a guided access investigation")).toBeLessThan(
+      headings.indexOf("Scenarios"),
+    );
+  });
+
+  it("offers each scenario person a step-by-step investigation too", () => {
+    render(<DemoScenarioList scenarios={[scenarioF]} />);
+
+    const href = hrefOf("investigate it step by step");
+    expect(href?.startsWith("/access/investigate?")).toBe(true);
   });
 });
 
