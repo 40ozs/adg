@@ -382,10 +382,10 @@ That commit is `6196eaa` plus this report and its evidence: 11 documentation fil
 * Frontend: lint, types, tests, build;
 * Docker Compose configuration.
 
-CI run 63 on `6196eaa` itself passed Collector, Frontend, Compose, and the backend's lint,
-types and unit tests. Its database step was still running on its runner more than 30
-minutes after it started, while run 64's identical step had already passed. Its final
-conclusion is on the run page.
+CI run 63 on the code head `6196eaa` itself
+([run](https://github.com/40ozs/adg/actions/runs/38644401684)) also **passed every job**,
+database tests included. It completed at 22:36 UTC; its database step ran longer on its
+runner than run 64's identical one.
 
 ## 7. ADG-DEMO-01 regression status
 
