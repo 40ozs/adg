@@ -36,10 +36,12 @@ that grants nothing today.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 from collections.abc import Sequence
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
 from app.access_engine import AccessPath, RightsMask
@@ -55,6 +57,8 @@ from app.api.pagination import (
     normalize_limit,
 )
 from app.changes import (
+    COMPARISON_WINDOW_MS,
+    MAX_COMPARISON_WINDOW_MS,
     AceEdit,
     ChangeAction,
     ChangeComparison,
@@ -67,6 +71,8 @@ from app.changes import (
     ChangeSeverity,
     ChangeSignificance,
     ChangeSummary,
+    ComparisonBudget,
+    ComparisonOutcome,
     Correlation,
     ObjectChange,
     ObjectChanges,
@@ -75,11 +81,14 @@ from app.changes import (
 )
 from app.changes.correlation import key_of
 from app.changes.impact import AccessDelta, MembershipDelta
+from app.changes.service import COMPARISON_CEILING
 from app.contracts.v1.common import ObservationKind
 from app.domain import DomainValidationError
 from app.history.model import ChangeWindow, ObjectVersion
 
 router = APIRouter(prefix="/api/v1/changes", tags=["changes"])
+
+logger = logging.getLogger("adg.changes")
 impact_router = APIRouter(prefix="/api/v1/changes", tags=["changes"])
 
 __all__ = ["impact_router", "router"]
@@ -390,6 +399,34 @@ class TimelineResponse(BaseModel):
     )
 
 
+class ComparedThroughView(BaseModel):
+    """The boundary a comparison cut at the per-side ceiling compared up to."""
+
+    kind: str
+    key: str
+
+
+class ComparisonScopeView(BaseModel):
+    """What the caller asked to compare, echoed so a partial answer names its own question."""
+
+    target: str | None = None
+    key: str | None = None
+    kinds: list[str] = Field(default_factory=list)
+
+
+class RecoveryActionView(BaseModel):
+    """One supported way to get a complete comparison after an incomplete one."""
+
+    action: Literal["narrow_kind", "retry_standard_window"]
+    label: str
+    parameters: dict[str, str] = Field(
+        description="Query parameters to send to /api/v1/changes/compare, merged over the "
+        "original request's."
+    )
+    objects_at_from: int | None = None
+    objects_at_to: int | None = None
+
+
 class ComparisonResponse(BaseModel):
     """What is different between two instants."""
 
@@ -413,8 +450,49 @@ class ComparisonResponse(BaseModel):
             "the strength of nobody having looked."
         )
     )
-    truncated: bool
+    truncated: bool = Field(
+        description="True whenever outcome is not complete. Kept for existing clients."
+    )
     summary: SummaryResponse
+    comparison_id: UUID = Field(
+        description="This attempt. Logged with the outcome, and named by a retry's retry_of."
+    )
+    outcome: Literal["complete", "incomplete", "timed_out", "cancelled"] = Field(
+        description=(
+            "complete: every object covering either instant inside the scope was compared. "
+            "incomplete: more objects lie in scope than one comparison reads per side; both "
+            "sides were cut at compared_through and nothing after it was compared. "
+            "timed_out: the interactive window ran out; no change list is presented. "
+            "cancelled: the caller went away (logged; never delivered)."
+        )
+    )
+    complete: bool
+    recovered: bool = Field(
+        description="A complete comparison that retried an earlier attempt (retry_of)."
+    )
+    retry_of: UUID | None = None
+    stopped_in: Literal["read", "classify", "ordering"] | None = Field(
+        default=None, description="The phase a timed-out or cancelled comparison stopped in."
+    )
+    compared_through: ComparedThroughView | None = None
+    requested_scope: ComparisonScopeView
+    window_ms: int = Field(description="The interactive window this comparison ran inside.")
+    elapsed_ms: int
+    objects_per_side: int = Field(description="The per-side object ceiling.")
+    objects_read_from: int
+    objects_read_to: int
+    differences_found: int = Field(
+        description="Objects that differed, before significance filtering. Known even when a "
+        "timed-out comparison presents no list."
+    )
+    recovery: list[RecoveryActionView] = Field(
+        default_factory=list,
+        description=(
+            "What the caller can do instead when the comparison did not complete: compare "
+            "one kind of object, or retry inside the standard window. Each carries the query "
+            "parameters to send, including retry_of."
+        ),
+    )
 
 
 class AccessSideView(BaseModel):
@@ -618,6 +696,7 @@ async def object_timeline(
     ),
 )
 async def compare_instants(
+    request: Request,
     session: Session,
     at_from: Annotated[dt.datetime, Query(alias="from", description="The earlier instant.")],
     at_to: Annotated[dt.datetime, Query(alias="to", description="The later instant.")],
@@ -629,19 +708,86 @@ async def compare_instants(
     kind: KindQuery = None,
     significance: SignificanceQuery = None,
     min_severity: SeverityQuery = ChangeSeverity.INFO,
+    time_budget_ms: Annotated[
+        int | None,
+        Query(
+            ge=1,
+            le=MAX_COMPARISON_WINDOW_MS,
+            description=(
+                f"The interactive window, in milliseconds. Default {COMPARISON_WINDOW_MS}; "
+                f"at most {MAX_COMPARISON_WINDOW_MS}, under the web tier's 10-second request "
+                "timeout. A comparison past it stops with outcome timed_out."
+            ),
+        ),
+    ] = None,
+    retry_of: Annotated[
+        UUID | None,
+        Query(description="The comparison_id of the attempt this one recovers from."),
+    ] = None,
 ) -> ComparisonResponse:
     scope = _scope(
         server=server, share=share, directory=directory, principal=principal, group=group
+    )
+    kinds = frozenset(kind) if kind else None
+    comparison_id = uuid4()
+    budget = ComparisonBudget(
+        objects_per_side=COMPARISON_CEILING,
+        window_ms=time_budget_ms or COMPARISON_WINDOW_MS,
     )
     comparison = await ChangeService(session).compare(
         _aware(at_from, "from"),
         _aware(at_to, "to"),
         scope=scope,
-        kinds=frozenset(kind) if kind else None,
+        kinds=kinds,
         significance=_significance(significance),
         min_severity=min_severity,
+        budget=budget,
+        should_stop=request.is_disconnected,
     )
-    return _comparison_view(comparison)
+    view = _comparison_view(comparison, comparison_id=comparison_id, retry_of=retry_of, kinds=kinds)
+    _log_comparison(view, scope=scope)
+    return view
+
+
+def _log_comparison(view: ComparisonResponse, *, scope: ChangeScope | None) -> None:
+    """One structured line per comparison: enough to diagnose it, nothing it compared.
+
+    Identifiers of the question (instants, scope, kinds) and measurements of the work; never
+    a change, a version, an ACE or any state that was read.
+    """
+    logger.info(
+        "changes.compare",
+        extra={
+            "comparison_id": str(view.comparison_id),
+            "retry_of": str(view.retry_of) if view.retry_of else None,
+            "at_from": view.at_from.isoformat(),
+            "at_to": view.at_to.isoformat(),
+            "requested_scope": (
+                f"{scope.target.value}:{scope.key}" if scope is not None else "estate"
+            ),
+            "requested_kinds": view.requested_scope.kinds,
+            "effective_scope": (
+                f"through {view.compared_through.kind}:{view.compared_through.key}"
+                if view.compared_through is not None
+                else "whole scope"
+                if view.outcome in ("complete", "incomplete")
+                else "none presented"
+            ),
+            "outcome": view.outcome,
+            "complete": view.complete,
+            "recovered": view.recovered,
+            "stopped_in": view.stopped_in,
+            "window_ms": view.window_ms,
+            "elapsed_ms": view.elapsed_ms,
+            "objects_per_side": view.objects_per_side,
+            "objects_read_from": view.objects_read_from,
+            "objects_read_to": view.objects_read_to,
+            "differences_found": view.differences_found,
+            "changes_returned": len(view.changes),
+            "recovery_offered": [item.action for item in view.recovery],
+            "cached": False,
+        },
+    )
 
 
 @impact_router.get(
@@ -963,7 +1109,13 @@ def _timeline_view(changes: ObjectChanges) -> TimelineResponse:
     )
 
 
-def _comparison_view(comparison: ChangeComparison) -> ComparisonResponse:
+def _comparison_view(
+    comparison: ChangeComparison,
+    *,
+    comparison_id: UUID,
+    retry_of: UUID | None,
+    kinds: frozenset[ObservationKind] | None,
+) -> ComparisonResponse:
     return ComparisonResponse(
         at_from=comparison.at_from,
         at_to=comparison.at_to,
@@ -976,7 +1128,80 @@ def _comparison_view(comparison: ChangeComparison) -> ComparisonResponse:
         unobserved_at_to=comparison.unobserved_at_to,
         truncated=comparison.truncated,
         summary=_summary_view(comparison.summary),
+        comparison_id=comparison_id,
+        outcome=comparison.outcome.value,
+        complete=comparison.complete,
+        recovered=comparison.complete and retry_of is not None,
+        retry_of=retry_of,
+        stopped_in=comparison.stopped_in.value if comparison.stopped_in else None,
+        compared_through=(
+            ComparedThroughView(
+                kind=comparison.compared_through[0].value, key=comparison.compared_through[1]
+            )
+            if comparison.compared_through is not None
+            else None
+        ),
+        requested_scope=ComparisonScopeView(
+            target=comparison.scope.target.value if comparison.scope else None,
+            key=comparison.scope.key if comparison.scope else None,
+            kinds=sorted(item.value for item in kinds) if kinds else [],
+        ),
+        window_ms=comparison.budget.window_ms,
+        elapsed_ms=comparison.elapsed_ms,
+        objects_per_side=comparison.budget.objects_per_side,
+        objects_read_from=comparison.objects_read_from,
+        objects_read_to=comparison.objects_read_to,
+        differences_found=comparison.differences_found,
+        recovery=_recovery(comparison, comparison_id),
     )
+
+
+def _recovery(comparison: ChangeComparison, comparison_id: UUID) -> list[RecoveryActionView]:
+    """The supported ways to a complete answer, for a comparison that did not complete.
+
+    Real requests, each with its parameters: nothing here relabels the answer that was
+    given. A shortened window is offered back at the standard one; a scope too large to
+    read in one comparison is offered one kind of object at a time, for each kind that fits.
+    """
+    if comparison.complete or comparison.outcome is ComparisonOutcome.CANCELLED:
+        return []
+    # A retry is always made inside the standard window: a shortened one is what stopped
+    # this attempt, and carrying it into the narrower request would stop that one too.
+    standard = {"time_budget_ms": str(COMPARISON_WINDOW_MS), "retry_of": str(comparison_id)}
+    actions: list[RecoveryActionView] = []
+    if (
+        comparison.outcome is ComparisonOutcome.TIMED_OUT
+        and comparison.budget.window_ms < COMPARISON_WINDOW_MS
+    ):
+        actions.append(
+            RecoveryActionView(
+                action="retry_standard_window",
+                label=(f"Retry inside the standard {COMPARISON_WINDOW_MS / 1000:g}-second window"),
+                parameters=dict(standard),
+            )
+        )
+    for narrower in comparison.narrower:
+        actions.append(
+            RecoveryActionView(
+                action="narrow_kind",
+                label=f"Compare only {KIND_LABELS.get(narrower.kind, narrower.kind.value)}",
+                parameters={**standard, "kind": narrower.kind.value},
+                objects_at_from=narrower.objects_at_from,
+                objects_at_to=narrower.objects_at_to,
+            )
+        )
+    return actions
+
+
+KIND_LABELS: dict[ObservationKind, str] = {
+    ObservationKind.PRINCIPAL: "identities",
+    ObservationKind.MEMBERSHIP_EDGE: "group memberships",
+    ObservationKind.SERVER: "servers",
+    ObservationKind.SMB_SHARE: "shares",
+    ObservationKind.SMB_ACE: "share permission entries",
+    ObservationKind.NTFS_RESOURCE: "folders",
+    ObservationKind.NTFS_ACE: "folder permission entries",
+}
 
 
 def _access_side(at: dt.datetime, answer: Any) -> AccessSideView:

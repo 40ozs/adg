@@ -1,6 +1,59 @@
 {
   "components": {
     "schemas": {
+      "ComparisonSeedView": {
+        "description": "One point-in-time comparison the demo offers as a recovery drill (ADG-DEMO-03).\n\nTwo instants and a launch window, and nothing about the result: the page sends them to\n``GET /api/v1/changes/compare`` like any other comparison.",
+        "properties": {
+          "at_from": {
+            "format": "date-time",
+            "title": "At From",
+            "type": "string"
+          },
+          "at_to": {
+            "format": "date-time",
+            "title": "At To",
+            "type": "string"
+          },
+          "drill_window_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A deliberately short interactive window to launch with, in milliseconds.",
+            "title": "Drill Window Ms"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "question",
+          "at_from",
+          "at_to",
+          "summary"
+        ],
+        "title": "ComparisonSeedView",
+        "type": "object"
+      },
       "DatasetView": {
         "properties": {
           "company_name": {
@@ -57,6 +110,14 @@
           "baseline_generations": {
             "title": "Baseline Generations",
             "type": "integer"
+          },
+          "comparisons": {
+            "description": "Point-in-time comparisons to run as a recovery drill, chosen by the dataset.",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSeedView"
+            },
+            "title": "Comparisons",
+            "type": "array"
           },
           "dataset": {
             "$ref": "#/components/schemas/DatasetView"

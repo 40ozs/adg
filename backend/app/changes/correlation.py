@@ -49,7 +49,7 @@ rendered as noise.
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -276,7 +276,10 @@ def _summary(
 
 
 async def ordering_materiality(
-    session: AsyncSession, changes: Sequence[ObjectChange]
+    session: AsyncSession,
+    changes: Sequence[ObjectChange],
+    *,
+    checkpoint: Callable[[], Awaitable[None]] | None = None,
 ) -> dict[ChangeKey, bool | None]:
     """Whether each order-only ACE change actually moved the normalized ACL.
 
@@ -286,6 +289,11 @@ async def ordering_materiality(
 
     Returns one entry per candidate. Candidates that could not be reconstructed map to
     ``None``.
+
+    ``checkpoint`` is awaited before each reconstruction, which is two to four statements.
+    A caller with a deadline (a point-in-time comparison, ADG-DEMO-03) raises from it to
+    stop; nothing here catches that, so an interrupted pass returns nothing rather than a
+    map in which the unreached candidates silently read as undetermined.
     """
     candidates = [change for change in changes if _is_order_only(change)]
     if not candidates:
@@ -308,6 +316,8 @@ async def ordering_materiality(
         ).append(change)
 
     for (kind, container, was, now), members in groups.items():
+        if checkpoint is not None:
+            await checkpoint()
         verdict = await _acl_moved(reader, kind, container, was, now)
         for change in members:
             answers[key_of(change)] = verdict

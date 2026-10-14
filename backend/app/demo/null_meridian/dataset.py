@@ -14,6 +14,8 @@ Contract member            Source
 ``risk_configuration()``   :data:`.risk.DEMO_RISK_CONFIGURATION`
 ``scenarios()``            :func:`.scenarios.golden_scenarios` (A-H)
 ``investigations()``       :func:`.scenarios.investigations` (the Apollo access question)
+``comparisons()``          the first scan against the latest, as a recovery drill
+                           (ADG-DEMO-03); instants are the generations' own risk-pass times
 ``probes()``               the objects scenarios A-H and the scan history are about, named
                            by canon identifiers and checked in current state on every reset
 =========================  ============================================================
@@ -36,6 +38,7 @@ from app.demo.null_meridian.scenarios import golden_scenarios, investigations
 from app.demo_mode.datasets import (
     CANONICAL_DATASET,
     CanonicalProbe,
+    DemoComparison,
     DemoDatasetMetadata,
     DemoInvestigation,
     DemoScenario,
@@ -125,6 +128,39 @@ class NullMeridianDataset:
     @cached_property
     def _investigations(self) -> tuple[DemoInvestigation, ...]:
         return tuple(_investigation(item) for item in investigations(self._canon))
+
+    def comparisons(self) -> Sequence[DemoComparison]:
+        """The recovery drill: the whole estate, first scan against latest (ADG-DEMO-03).
+
+        Both instants are the dataset's own (each generation's risk-pass time, after every
+        run of it has closed), so the comparison is a pure function of the canon. Estate
+        wide it reads more objects per instant than one comparison does, so it can never
+        be complete in one request; the drill also launches it inside a 1 ms window, which
+        no host reads two sides of thousands of versions within, so it stops at its first
+        checkpoint every time. What the reviewer is shown is the real comparison doing the
+        real thing.
+        """
+        first, latest = GENERATIONS[0], GENERATIONS[-1]
+        return (
+            DemoComparison(
+                key="first-to-latest",
+                title="What is different between the first scan and the latest?",
+                question=(
+                    f"What is different across the estate between {first.day.isoformat()} "
+                    f"and {latest.day.isoformat()}?"
+                ),
+                at_from=first.evaluated_at,
+                at_to=latest.evaluated_at,
+                drill_window_ms=1,
+                summary=(
+                    "The estate-wide comparison of ADG's first and latest scans, launched "
+                    "inside a deliberately short interactive window. ADG stops, says so, "
+                    "presents no partial list as an answer, and offers the comparisons that "
+                    "can finish: the same question inside the standard window, or one kind "
+                    "of object at a time."
+                ),
+            ),
+        )
 
     def probes(self) -> Sequence[CanonicalProbe]:
         return self._probes

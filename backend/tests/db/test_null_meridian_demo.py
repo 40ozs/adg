@@ -896,6 +896,155 @@ class TestTheAccessInvestigation:
         assert "settle_system_mapping" not in [step["code"] for step in local["next_steps"]]
 
 
+class TestTheCoverageAndRecoveryDemo:
+    r"""ADG-DEMO-03: collection coverage beside the numbers, and a comparison that recovers.
+
+    Asked of the reset estate through the same routes the pages call. The history leaves
+    exactly two scopes incomplete -- NM-FS-03's g3 NTFS scan could not reach the server, and
+    NM-MIG-FS01's was partial -- and everything here is read off those two facts.
+    """
+
+    APOLLO = r"\\NM-ENG-FS01\Engineering\Projects\Apollo"
+
+    async def coverage(self, api: AsyncClient, **params: str) -> dict[str, Any]:
+        response = await api.get("/api/v1/collection/coverage", params=params)
+        assert response.status_code == 200, response.text
+        body: dict[str, Any] = response.json()
+        return body
+
+    async def compare(self, api: AsyncClient, **params: str) -> dict[str, Any]:
+        response = await api.get("/api/v1/changes/compare", params=params)
+        assert response.status_code == 200, response.text
+        body: dict[str, Any] = response.json()
+        return body
+
+    async def test_coverage_names_the_two_scopes_the_history_left_incomplete(
+        self, api: AsyncClient
+    ) -> None:
+        body = await self.coverage(api)
+
+        assert body["expectation"] == "dataset"
+        assert {item["collector"]: item["state"] for item in body["collectors"]} == {
+            "active_directory": "reported",
+            "local_groups": "reported",
+            "ntfs": "reported",
+            "smb": "reported",
+        }
+        assert body["verdict"] == "incomplete"
+        assert body["counts"] == {
+            "scopes": 100,
+            "collected": 98,
+            "partial": 1,
+            "unavailable": 1,
+            "failed": 0,
+            "running": 0,
+            "stale": 1,
+            "never_collected": 0,
+            "returned_nothing": 0,
+        }
+        incomplete = {
+            item["label"]: item for item in body["scopes"] if item["state"] != "collected"
+        }
+        assert set(incomplete) == {"ntfs (NM-FS-03)", "ntfs (NM-MIG-FS01)"}
+        fs03 = incomplete["ntfs (NM-FS-03)"]
+        assert fs03["state"] == "unavailable"
+        assert fs03["evidence"] == "stale"
+        assert fs03["failure_codes"] == ["host_unreachable"]
+        assert fs03["evidence_collected_at"].startswith(GENERATIONS[1].day.isoformat())
+        assert incomplete["ntfs (NM-MIG-FS01)"]["state"] == "partial"
+
+    async def test_the_apollo_answer_reads_only_complete_scopes(self, api: AsyncClient) -> None:
+        relevant = (await self.coverage(api, resource=self.APOLLO))["relevant"]
+
+        assert sorted(item["label"] for item in relevant["scopes"]) == [
+            "active_directory (nullmeridian.info)",
+            "local_groups (NM-ENG-FS01)",
+            "ntfs (NM-ENG-FS01)",
+            "smb (NM-ENG-FS01)",
+        ]
+        assert relevant["complete"] is True
+        assert relevant["could_change_answer"] is False
+        assert relevant["incomplete_elsewhere"] == 2
+
+    async def test_the_investigation_keeps_its_own_uncertainty(self, api: AsyncClient) -> None:
+        """Coverage is context beside the answer; it changes nothing in it."""
+        [seed] = investigations()
+        response = await api.get(
+            "/api/v1/access/explain",
+            params={"principal": seed["person"]["sid"], "resource": self.APOLLO},
+        )
+        body = response.json()
+
+        assert response.status_code == 200, response.text
+        assert body["verdict"]["outcome"] == "granted"
+        assert body["verdict"]["certainty"] == "at_least"
+
+    async def test_the_risk_totals_carry_their_coverage_and_snapshot(
+        self, api: AsyncClient
+    ) -> None:
+        body = (await api.get("/api/v1/risks/summary")).json()
+        interpretation = body["interpretation"]
+
+        assert body["total"] == 9386
+        assert body["severity_counts"]["critical"] == 3
+        assert interpretation["reading"] == "incomplete"
+        assert interpretation["exhaustive"] is False
+        assert interpretation["basis_current"] is True
+        assert interpretation["evaluated_basis"] == body["collection"]["snapshot"]["token"]
+        assert len(interpretation["reasons"]) == 1
+        held = {item["scope"]: item for item in interpretation["held"]}
+        assert held["ntfs (NM-FS-03)"]["evidence"] == "stale"
+        assert held["ntfs (NM-FS-03)"]["open_findings"] == 189
+        assert held["ntfs (NM-FS-03)"]["evidence_collected_at"].startswith(
+            GENERATIONS[1].day.isoformat()
+        )
+
+    async def test_the_comparison_drill_times_out_then_recovers_to_complete(
+        self, api: AsyncClient
+    ) -> None:
+        demo = (await api.get("/api/v1/demo")).json()
+        [drill] = demo["comparisons"]
+        window = {"from": drill["at_from"], "to": drill["at_to"]}
+
+        started = await self.compare(api, **window, time_budget_ms=str(drill["drill_window_ms"]))
+        assert started["outcome"] == "timed_out"
+        assert started["complete"] is False
+        assert started["changes"] == []
+        actions = {item["action"]: item for item in started["recovery"]}
+        assert set(actions) == {"retry_standard_window", "narrow_kind"}
+
+        retried = await self.compare(
+            api, **window, **actions["retry_standard_window"]["parameters"]
+        )
+        assert retried["outcome"] == "incomplete"
+        assert retried["complete"] is False
+        assert retried["retry_of"] == started["comparison_id"]
+        assert retried["recovered"] is False
+        assert retried["compared_through"]["kind"] == "membership_edge"
+        assert retried["objects_read_to"] == 5000
+        # Cut at one key on both sides: nothing observed at the later instant reads as unseen.
+        assert retried["unobserved_at_to"] == 0
+        narrower = {
+            item["parameters"]["kind"]: item
+            for item in retried["recovery"]
+            if item["action"] == "narrow_kind"
+        }
+        assert "membership_edge" not in narrower
+        assert (narrower["ntfs_ace"]["objects_at_from"], narrower["ntfs_ace"]["objects_at_to"]) == (
+            3947,
+            4124,
+        )
+
+        finished = await self.compare(api, **window, **narrower["ntfs_ace"]["parameters"])
+        assert finished["outcome"] == "complete"
+        assert finished["complete"] is True
+        assert finished["recovered"] is True
+        assert finished["retry_of"] == retried["comparison_id"]
+        assert finished["requested_scope"]["kinds"] == ["ntfs_ace"]
+        assert finished["differences_found"] == 221
+        assert finished["recovery"] == []
+
+
 class TestTheBoundary:
     def test_a_production_deployment_is_refused(self) -> None:
         production = build_settings(environment="test", database_url=DEMO_URL)

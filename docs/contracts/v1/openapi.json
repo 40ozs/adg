@@ -3732,6 +3732,25 @@
         "title": "CommentRequirement",
         "type": "string"
       },
+      "ComparedThroughView": {
+        "description": "The boundary a comparison cut at the per-side ceiling compared up to.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "ComparedThroughView",
+        "type": "object"
+      },
       "ComparisonResponse": {
         "description": "What is different between two instants.",
         "properties": {
@@ -3752,12 +3771,93 @@
             "title": "Changes",
             "type": "array"
           },
+          "compared_through": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComparedThroughView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comparison_id": {
+            "description": "This attempt. Logged with the outcome, and named by a retry's retry_of.",
+            "format": "uuid",
+            "title": "Comparison Id",
+            "type": "string"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "differences_found": {
+            "description": "Objects that differed, before significance filtering. Known even when a timed-out comparison presents no list.",
+            "title": "Differences Found",
+            "type": "integer"
+          },
           "edits": {
             "items": {
               "$ref": "#/components/schemas/AceEditView"
             },
             "title": "Edits",
             "type": "array"
+          },
+          "elapsed_ms": {
+            "title": "Elapsed Ms",
+            "type": "integer"
+          },
+          "objects_per_side": {
+            "description": "The per-side object ceiling.",
+            "title": "Objects Per Side",
+            "type": "integer"
+          },
+          "objects_read_from": {
+            "title": "Objects Read From",
+            "type": "integer"
+          },
+          "objects_read_to": {
+            "title": "Objects Read To",
+            "type": "integer"
+          },
+          "outcome": {
+            "description": "complete: every object covering either instant inside the scope was compared. incomplete: more objects lie in scope than one comparison reads per side; both sides were cut at compared_through and nothing after it was compared. timed_out: the interactive window ran out; no change list is presented. cancelled: the caller went away (logged; never delivered).",
+            "enum": [
+              "complete",
+              "incomplete",
+              "timed_out",
+              "cancelled"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "recovered": {
+            "description": "A complete comparison that retried an earlier attempt (retry_of).",
+            "title": "Recovered",
+            "type": "boolean"
+          },
+          "recovery": {
+            "description": "What the caller can do instead when the comparison did not complete: compare one kind of object, or retry inside the standard window. Each carries the query parameters to send, including retry_of.",
+            "items": {
+              "$ref": "#/components/schemas/RecoveryActionView"
+            },
+            "title": "Recovery",
+            "type": "array"
+          },
+          "requested_scope": {
+            "$ref": "#/components/schemas/ComparisonScopeView"
+          },
+          "retry_of": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry Of"
           },
           "scope_key": {
             "anyOf": [
@@ -3781,10 +3881,28 @@
             ],
             "title": "Scope Target"
           },
+          "stopped_in": {
+            "anyOf": [
+              {
+                "enum": [
+                  "read",
+                  "classify",
+                  "ordering"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The phase a timed-out or cancelled comparison stopped in.",
+            "title": "Stopped In"
+          },
           "summary": {
             "$ref": "#/components/schemas/SummaryResponse"
           },
           "truncated": {
+            "description": "True whenever outcome is not complete. Kept for existing clients.",
             "title": "Truncated",
             "type": "boolean"
           },
@@ -3802,6 +3920,11 @@
             "description": "Objects covered at the earlier instant and by no version at the later one. Counted, never reported as removals: reporting these would revoke access on the strength of nobody having looked.",
             "title": "Unobserved At To",
             "type": "integer"
+          },
+          "window_ms": {
+            "description": "The interactive window this comparison ran inside.",
+            "title": "Window Ms",
+            "type": "integer"
           }
         },
         "required": [
@@ -3813,9 +3936,56 @@
           "unobserved_at_from",
           "unobserved_at_to",
           "truncated",
-          "summary"
+          "summary",
+          "comparison_id",
+          "outcome",
+          "complete",
+          "recovered",
+          "requested_scope",
+          "window_ms",
+          "elapsed_ms",
+          "objects_per_side",
+          "objects_read_from",
+          "objects_read_to",
+          "differences_found"
         ],
         "title": "ComparisonResponse",
+        "type": "object"
+      },
+      "ComparisonScopeView": {
+        "description": "What the caller asked to compare, echoed so a partial answer names its own question.",
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "title": "ComparisonScopeView",
         "type": "object"
       },
       "ConclusionImpact": {
@@ -11757,6 +11927,60 @@
           "summary"
         ],
         "title": "ReconciliationDriftView",
+        "type": "object"
+      },
+      "RecoveryActionView": {
+        "description": "One supported way to get a complete comparison after an incomplete one.",
+        "properties": {
+          "action": {
+            "enum": [
+              "narrow_kind",
+              "retry_standard_window"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "objects_at_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objects At From"
+          },
+          "objects_at_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objects At To"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Query parameters to send to /api/v1/changes/compare, merged over the original request's.",
+            "title": "Parameters",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action",
+          "label",
+          "parameters"
+        ],
+        "title": "RecoveryActionView",
         "type": "object"
       },
       "RefusedAffirmationView": {
@@ -20909,6 +21133,45 @@
               "$ref": "#/components/schemas/ChangeSeverity",
               "default": "info",
               "description": "Minimum severity, by the severity ordering and not alphabetically."
+            }
+          },
+          {
+            "description": "The interactive window, in milliseconds. Default 4000; at most 8000, under the web tier's 10-second request timeout. A comparison past it stops with outcome timed_out.",
+            "in": "query",
+            "name": "time_budget_ms",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 8000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The interactive window, in milliseconds. Default 4000; at most 8000, under the web tier's 10-second request timeout. A comparison past it stops with outcome timed_out.",
+              "title": "Time Budget Ms"
+            }
+          },
+          {
+            "description": "The comparison_id of the attempt this one recovers from.",
+            "in": "query",
+            "name": "retry_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The comparison_id of the attempt this one recovers from.",
+              "title": "Retry Of"
             }
           },
           {

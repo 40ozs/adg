@@ -50,11 +50,13 @@ from dataclasses import dataclass
 from typing import Any, Final
 
 from sqlalchemy import (
+    DateTime,
     Select,
     Text,
     and_,
     any_,
     bindparam,
+    collate,
     func,
     literal,
     or_,
@@ -339,36 +341,51 @@ class ChangeRepository:
 
         What bounds the *start* of an object that has no predecessor of its own. An ACE's
         rights are part of its identity, so an entry that was added is a new object with no
-        earlier version — but the ACL it joined was read at a known instant, and the entry
+        earlier version -- but the ACL it joined was read at a known instant, and the entry
         therefore appeared after it. Without this, every ACL addition would report no change
         window at all and leave a client with only the instant somebody looked, which is the
         rendering ADR-0019 exists to prevent.
 
-        Batched by ``(kind, instant)``: one query per distinct instant, which in practice is
-        one per scan, because a scan confirms everything it read at the same moment.
+        **One statement, whatever was asked.** It was one query per distinct
+        ``(kind, instant)`` on the reasoning that a scan confirms everything at one moment.
+        That holds for one scan; a comparison across three scan generations of a real estate
+        holds a distinct instant per server and per run, and ADG-DEMO-03 measured 253 such
+        queries in one Null Meridian comparison -- the larger part of its statement count.
+        Every wanted ``(kind, container, instant)`` is now passed as three parallel arrays
+        and answered by one correlated ``max`` each, on ``ix_object_versions_container``.
         """
         if not wanted:
             return {}
-        answers: dict[tuple[ObservationKind, str, dt.datetime], dt.datetime] = {}
-        grouped: dict[tuple[ObservationKind, dt.datetime], list[str]] = {}
-        for kind, container, moment in wanted:
-            grouped.setdefault((kind, moment), []).append(container)
-        for (kind, moment), containers in grouped.items():
-            statement = (
-                select(
-                    object_versions.c.container_key,
-                    func.max(object_versions.c.last_seen_at).label("confirmed"),
-                )
-                .where(
-                    object_versions.c.object_kind == kind.value,
-                    object_versions.c.container_key
-                    == any_(bindparam("containers", sorted(set(containers)), type_=ARRAY(Text))),
-                    object_versions.c.last_seen_at < moment,
-                )
-                .group_by(object_versions.c.container_key)
+        rows = sorted({(kind.value, container, moment) for kind, container, moment in wanted})
+        asked = (
+            func.unnest(
+                bindparam("kinds", [row[0] for row in rows], type_=ARRAY(Text)),
+                bindparam("containers", [row[1] for row in rows], type_=ARRAY(Text)),
+                bindparam(
+                    "moments", [row[2] for row in rows], type_=ARRAY(DateTime(timezone=True))
+                ),
             )
-            for row in (await self._session.execute(statement)).mappings():
-                answers[(kind, row["container_key"], moment)] = row["confirmed"]
+            .table_valued("kind", "container", "moment")
+            .render_derived(name="asked")
+        )
+        confirmed = (
+            select(func.max(object_versions.c.last_seen_at))
+            .where(
+                object_versions.c.object_kind == asked.c.kind,
+                object_versions.c.container_key == asked.c.container,
+                object_versions.c.last_seen_at < asked.c.moment,
+            )
+            .scalar_subquery()
+        )
+        statement = select(
+            asked.c.kind, asked.c.container, asked.c.moment, confirmed.label("confirmed")
+        )
+        answers: dict[tuple[ObservationKind, str, dt.datetime], dt.datetime] = {}
+        for row in (await self._session.execute(statement)).mappings():
+            if row["confirmed"] is not None:
+                answers[(ObservationKind(row["kind"]), row["container"], row["moment"])] = row[
+                    "confirmed"
+                ]
         return answers
 
     # ----------------------------------------------------------- point-in-time sets
@@ -385,9 +402,15 @@ class ChangeRepository:
 
         The set a point-in-time *comparison* is built from. Tombstones are kept rather than
         filtered, because a tombstone at one end and a state at the other is a real finding
-        — "a reconciled scan proved this was gone, and now it is back" — while an object
+        -- "a reconciled scan proved this was gone, and now it is back" -- while an object
         with no version at all at that instant is a gap in observation and is counted
         separately by the caller. Filtering here would merge the two.
+
+        Ordered by ``(kind, key)`` under the ``"C"`` collation: byte order, which is code
+        point order, which is the order Python compares the same strings in. A comparison
+        cut at the ceiling aligns the two sides on a key boundary in Python
+        (:meth:`app.changes.ChangeService.compare`), and a database collation that ordered
+        keys differently from that comparison would misplace the boundary.
         """
         statement: Select[Any] = select(*VERSION_COLUMNS).where(
             object_versions.c.valid_from <= moment,
@@ -395,10 +418,36 @@ class ChangeRepository:
         )
         statement = _restrict(statement, kinds=kinds, scope=scope)
         statement = statement.order_by(
-            object_versions.c.object_kind, object_versions.c.object_key
+            collate(object_versions.c.object_kind, "C"), collate(object_versions.c.object_key, "C")
         ).limit(limit + 1)
         rows = (await self._session.execute(statement)).mappings().all()
         return tuple(version_from_row(row) for row in rows[:limit]), len(rows) > limit
+
+    async def present_counts(
+        self,
+        moment: dt.datetime,
+        *,
+        kinds: frozenset[ObservationKind] | None = None,
+        scope: ChangeScope | None = None,
+    ) -> dict[ObservationKind, int]:
+        """How many versions of each kind cover ``moment`` inside a scope, in one statement.
+
+        What a comparison that stopped early offers as narrower scopes: a kind whose count
+        fits the per-side ceiling at both instants is one the caller can compare completely.
+        """
+        statement: Select[Any] = (
+            select(object_versions.c.object_kind, func.count().label("objects"))
+            .where(
+                object_versions.c.valid_from <= moment,
+                or_(object_versions.c.valid_to.is_(None), object_versions.c.valid_to > moment),
+            )
+            .group_by(object_versions.c.object_kind)
+        )
+        statement = _restrict(statement, kinds=kinds, scope=scope)
+        return {
+            ObservationKind(row["object_kind"]): int(row["objects"])
+            for row in (await self._session.execute(statement)).mappings()
+        }
 
     # ------------------------------------------------------------------- internals
 

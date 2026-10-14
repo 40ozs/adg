@@ -29,11 +29,13 @@ from app.auth.roles import Capability
 from app.config import Settings
 from app.demo_mode.datasets import (
     DatasetUnavailable,
+    DemoComparison,
     DemoInvestigation,
     DemoScenario,
     SyntheticDataset,
     baseline_generations,
     cached_dataset,
+    dataset_comparisons,
     dataset_investigations,
     dataset_scenarios,
 )
@@ -113,6 +115,37 @@ class InvestigationSeedView(BaseModel):
         )
 
 
+class ComparisonSeedView(BaseModel):
+    """One point-in-time comparison the demo offers as a recovery drill (ADG-DEMO-03).
+
+    Two instants and a launch window, and nothing about the result: the page sends them to
+    ``GET /api/v1/changes/compare`` like any other comparison.
+    """
+
+    key: str
+    title: str
+    question: str
+    at_from: dt.datetime
+    at_to: dt.datetime
+    drill_window_ms: int | None = Field(
+        default=None,
+        description="A deliberately short interactive window to launch with, in milliseconds.",
+    )
+    summary: str
+
+    @classmethod
+    def of(cls, item: DemoComparison) -> ComparisonSeedView:
+        return cls(
+            key=item.key,
+            title=item.title,
+            question=item.question,
+            at_from=item.at_from,
+            at_to=item.at_to,
+            drill_window_ms=item.drill_window_ms,
+            summary=item.summary,
+        )
+
+
 class PolicyView(BaseModel):
     method: str
     path: str
@@ -134,6 +167,10 @@ class DemoView(BaseModel):
         default_factory=list,
         description="Guided access investigations to start from: one principal and one "
         "folder each, chosen by the dataset.",
+    )
+    comparisons: list[ComparisonSeedView] = Field(
+        default_factory=list,
+        description="Point-in-time comparisons to run as a recovery drill, chosen by the dataset.",
     )
     mutation_policy: list[PolicyView]
 
@@ -186,6 +223,7 @@ async def demo_overview(request: Request) -> DemoView:
         next_generation=pending[0].name if pending else None,
         scenarios=[ScenarioView.of(item) for item in dataset_scenarios(dataset)],
         investigations=[InvestigationSeedView.of(item) for item in dataset_investigations(dataset)],
+        comparisons=[ComparisonSeedView.of(item) for item in dataset_comparisons(dataset)],
         mutation_policy=[
             PolicyView(
                 method=method,

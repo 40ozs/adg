@@ -43,8 +43,10 @@ beyond it, with the scope suggested in the message, rather than accepted and ser
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Sequence
-from dataclasses import dataclass, field
+import time
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass, field, replace
+from enum import StrEnum
 from typing import Final
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,13 +71,20 @@ from app.history.model import ObjectVersion
 from app.history.service import HistoryService
 
 __all__ = [
+    "COMPARISON_CEILING",
+    "COMPARISON_WINDOW_MS",
     "DEFAULT_ACTIONS",
     "DEFAULT_SIGNIFICANCE",
+    "MAX_COMPARISON_WINDOW_MS",
     "MAX_UNSCOPED_WINDOW",
     "ChangeComparison",
     "ChangeFeed",
     "ChangeFilter",
     "ChangeService",
+    "ComparisonBudget",
+    "ComparisonOutcome",
+    "ComparisonPhase",
+    "NarrowerScope",
     "ObjectChanges",
 ]
 
@@ -98,6 +107,77 @@ it."""
 
 COMPARISON_CEILING: Final = 5_000
 """Objects one point-in-time comparison reads **per side**."""
+
+COMPARISON_WINDOW_MS: Final = 4_000
+"""The interactive window a comparison answers inside, by default (ADG-DEMO-03).
+
+A comparison past its window stops and says so (:attr:`ComparisonOutcome.TIMED_OUT`) rather
+than running until the web tier's own request timeout abandons it -- which the user saw as
+"ADG could not reach its API", an outage, for what was a question too large to answer
+interactively. Under half the web tier's 10-second timeout, so the server's typed answer
+always arrives first, with room for the bounded classification after the last checkpoint
+and for serialization."""
+
+MAX_COMPARISON_WINDOW_MS: Final = 8_000
+"""The longest window a caller may ask for. Still under the web tier's 10 seconds."""
+
+
+_clock: Callable[[], float] = time.perf_counter
+"""The comparison's monotonic clock. Module-level so a test can make time pass on demand."""
+
+
+class ComparisonOutcome(StrEnum):
+    """How a comparison ended. Only :attr:`COMPLETE` is a whole answer."""
+
+    COMPLETE = "complete"
+    """Every object covering either instant inside the scope was compared."""
+
+    INCOMPLETE = "incomplete"
+    """More objects lie inside the scope than one comparison reads per side. Both sides were
+    cut at the same key, every object up to it was compared, and nothing after it was:
+    ``compared_through`` names the boundary. A change after the boundary is not absent, it
+    is unexamined."""
+
+    TIMED_OUT = "timed_out"
+    """The interactive window ran out before the comparison finished. No change list is
+    presented -- a list from an interrupted classification would carry significances it had
+    not finished deciding -- only what was read and how far it got."""
+
+    CANCELLED = "cancelled"
+    """The caller went away. Nothing is presented; the outcome exists for the log."""
+
+
+class ComparisonPhase(StrEnum):
+    """Where a comparison was when it stopped."""
+
+    READ = "read"
+    CLASSIFY = "classify"
+    ORDERING = "ordering"
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonBudget:
+    """What one comparison may spend: objects per side, and wall-clock milliseconds."""
+
+    objects_per_side: int = COMPARISON_CEILING
+    window_ms: int = COMPARISON_WINDOW_MS
+
+
+@dataclass(frozen=True, slots=True)
+class NarrowerScope:
+    """A kind of object the caller could compare completely on its own."""
+
+    kind: ObservationKind
+    objects_at_from: int
+    objects_at_to: int
+
+
+class _Interrupted(Exception):
+    def __init__(self, outcome: ComparisonOutcome, phase: ComparisonPhase) -> None:
+        super().__init__(outcome.value)
+        self.outcome = outcome
+        self.phase = phase
+
 
 DEFAULT_ACTIONS: Final[frozenset[ChangeAction]] = frozenset(
     {ChangeAction.ADDED, ChangeAction.MODIFIED, ChangeAction.REMOVED}
@@ -239,7 +319,29 @@ class ChangeComparison:
     report access as revoked on the strength of nobody having looked."""
 
     truncated: bool
+    """True whenever :attr:`outcome` is not ``complete``. Kept for the clients that read it."""
+
     summary: ChangeSummary
+    outcome: ComparisonOutcome = ComparisonOutcome.COMPLETE
+    stopped_in: ComparisonPhase | None = None
+    compared_through: tuple[ObservationKind, str] | None = None
+    """The last ``(kind, key)`` compared when the per-side ceiling cut the comparison."""
+
+    objects_read_from: int = 0
+    objects_read_to: int = 0
+    differences_found: int = 0
+    """Objects that differed between the instants, before significance filtering. Known even
+    when a timed-out comparison presents no list."""
+
+    budget: ComparisonBudget = field(default_factory=ComparisonBudget)
+    elapsed_ms: int = 0
+    narrower: tuple[NarrowerScope, ...] = ()
+    """Kinds that fit the per-side ceiling at both instants, offered when the comparison did
+    not complete."""
+
+    @property
+    def complete(self) -> bool:
+        return self.outcome is ComparisonOutcome.COMPLETE
 
 
 @dataclass
@@ -416,6 +518,9 @@ class ChangeService:
         kinds: frozenset[ObservationKind] | None = None,
         significance: frozenset[ChangeSignificance] = DEFAULT_SIGNIFICANCE,
         min_severity: ChangeSeverity = ChangeSeverity.INFO,
+        budget: ComparisonBudget | None = None,
+        clock: Callable[[], float] | None = None,
+        should_stop: Callable[[], Awaitable[bool]] | None = None,
     ) -> ChangeComparison:
         """What is different between two instants. See the module docstring.
 
@@ -423,6 +528,23 @@ class ChangeService:
         version at one of them is counted in ``unobserved_at_from`` or ``unobserved_at_to``
         and reported in neither direction, because a gap in observation is not a change and
         rendering it as one is the single failure mode this product exists to prevent.
+
+        **Bounded, and typed when it stops** (ADG-DEMO-03). Two bounds, each with its own
+        outcome:
+
+        * the per-side object ceiling -- when either side exceeds it, both sides are cut at
+          the *same* key (the smaller of the two last keys read), so every object up to the
+          boundary is compared and nothing past it is (``incomplete``). Cutting each side at
+          its own ceiling, as this did before, compared two different key ranges: objects
+          past one side's cut read as "unobserved" there, and in the other direction as
+          additions;
+        * the interactive window -- checked between phases and between ACL
+          reconstructions; past it the comparison stops (``timed_out``) and presents no
+          list.
+
+        ``should_stop`` is awaited at the same checkpoints; a caller that has gone away
+        (the API passes ``request.is_disconnected``) ends the work (``cancelled``) instead
+        of letting it run to completion for nobody.
         """
         if at_to <= at_from:
             raise DomainValidationError(
@@ -435,12 +557,60 @@ class ChangeService:
                 "apart; narrow the interval, or name a scope and compare any two instants.",
                 field="at_from",
             )
+        limits = budget or ComparisonBudget(
+            objects_per_side=COMPARISON_CEILING, window_ms=COMPARISON_WINDOW_MS
+        )
+        tick = clock or _clock
+        started = tick()
+
+        def elapsed_ms() -> int:
+            return int((tick() - started) * 1000)
+
+        async def checkpoint(phase: ComparisonPhase) -> None:
+            if should_stop is not None and await should_stop():
+                raise _Interrupted(ComparisonOutcome.CANCELLED, phase)
+            if elapsed_ms() >= limits.window_ms:
+                raise _Interrupted(ComparisonOutcome.TIMED_OUT, phase)
+
         earlier, cut_earlier = await self._repository.present_at(
-            at_from, kinds=kinds, scope=scope, limit=COMPARISON_CEILING
+            at_from, kinds=kinds, scope=scope, limit=limits.objects_per_side
         )
         later, cut_later = await self._repository.present_at(
-            at_to, kinds=kinds, scope=scope, limit=COMPARISON_CEILING
+            at_to, kinds=kinds, scope=scope, limit=limits.objects_per_side
         )
+        boundary = _aligned_boundary(earlier, cut_earlier, later, cut_later)
+        if boundary is not None:
+            earlier = tuple(version for version in earlier if _identity(version) <= boundary)
+            later = tuple(version for version in later if _identity(version) <= boundary)
+
+        def stopped(interrupted: _Interrupted, differences: int) -> ChangeComparison:
+            return ChangeComparison(
+                at_from=at_from,
+                at_to=at_to,
+                scope=scope,
+                changes=(),
+                correlation=correlate(()),
+                unchanged=0,
+                unobserved_at_from=0,
+                unobserved_at_to=0,
+                truncated=True,
+                summary=SummaryTally().finish(at_from, at_to),
+                outcome=interrupted.outcome,
+                stopped_in=interrupted.phase,
+                # Nothing was compared to completion, so no boundary is claimed.
+                compared_through=None,
+                objects_read_from=len(earlier),
+                objects_read_to=len(later),
+                differences_found=differences,
+                budget=limits,
+                elapsed_ms=elapsed_ms(),
+            )
+
+        try:
+            await checkpoint(ComparisonPhase.READ)
+        except _Interrupted as interrupted:
+            return await self._with_narrower(stopped(interrupted, 0), kinds)
+
         was = {(version.kind, version.key): version for version in earlier}
         now = {(version.kind, version.key): version for version in later}
 
@@ -466,30 +636,38 @@ class ChangeService:
                 continue
             pairs.append((before, after))
 
-        unmatched = [after for before, after in pairs if before is None]
-        coverage = await self._container_coverage(unmatched)
-        confirmations = await self._container_confirmations(unmatched)
+        try:
+            await checkpoint(ComparisonPhase.CLASSIFY)
+            unmatched = [after for before, after in pairs if before is None]
+            coverage = await self._container_coverage(unmatched)
+            confirmations = await self._container_confirmations(unmatched)
 
-        def build(
-            before: ObjectVersion | None, after: ObjectVersion, material: bool | None
-        ) -> ObjectChange:
-            fresh = before is None
-            return classify(
-                after.kind,
-                after.key,
-                before,
-                after,
-                container_observed_before=(
-                    self._container_observed(after, coverage) if fresh else None
-                ),
-                container_confirmed_at=(
-                    self._container_confirmed(after, confirmations) if fresh else None
-                ),
-                ordering_material=material,
+            def build(
+                before: ObjectVersion | None, after: ObjectVersion, material: bool | None
+            ) -> ObjectChange:
+                fresh = before is None
+                return classify(
+                    after.kind,
+                    after.key,
+                    before,
+                    after,
+                    container_observed_before=(
+                        self._container_observed(after, coverage) if fresh else None
+                    ),
+                    container_confirmed_at=(
+                        self._container_confirmed(after, confirmations) if fresh else None
+                    ),
+                    ordering_material=material,
+                )
+
+            changes = [build(before, after, None) for before, after in pairs]
+            materiality = await ordering_materiality(
+                self._session,
+                changes,
+                checkpoint=lambda: checkpoint(ComparisonPhase.ORDERING),
             )
-
-        changes = [build(before, after, None) for before, after in pairs]
-        materiality = await ordering_materiality(self._session, changes)
+        except _Interrupted as interrupted:
+            return await self._with_narrower(stopped(interrupted, len(pairs)), kinds)
         if materiality:
             changes = [
                 build(change.before, change.after, materiality.get(key_of(change)))
@@ -505,9 +683,9 @@ class ChangeService:
             tally.count(change, returned=admitted)
             if admitted:
                 kept.append(change)
-        tally.truncated = cut_earlier or cut_later
+        tally.truncated = boundary is not None
         ordered = tuple(sorted(kept, key=lambda change: change.at, reverse=True))
-        return ChangeComparison(
+        comparison = ChangeComparison(
             at_from=at_from,
             at_to=at_to,
             scope=scope,
@@ -516,9 +694,52 @@ class ChangeService:
             unchanged=unchanged,
             unobserved_at_from=unobserved_at_from,
             unobserved_at_to=unobserved_at_to,
-            truncated=cut_earlier or cut_later,
+            truncated=boundary is not None,
             summary=tally.finish(at_from, at_to),
+            outcome=(
+                ComparisonOutcome.INCOMPLETE if boundary is not None else ComparisonOutcome.COMPLETE
+            ),
+            compared_through=boundary,
+            objects_read_from=len(earlier),
+            objects_read_to=len(later),
+            differences_found=len(pairs),
+            budget=limits,
+            elapsed_ms=elapsed_ms(),
         )
+        return await self._with_narrower(comparison, kinds)
+
+    async def _with_narrower(
+        self, comparison: ChangeComparison, kinds: frozenset[ObservationKind] | None
+    ) -> ChangeComparison:
+        """Attach the kinds the caller could compare completely, when it did not complete.
+
+        Two counting statements, run only for a comparison that stopped. A kind is offered
+        when it fits the per-side ceiling at both instants; offering the one kind that was
+        already asked for would send the caller round in a circle, so a request for a
+        single kind is offered nothing here (the scope fields remain).
+        """
+        if comparison.complete or comparison.outcome is ComparisonOutcome.CANCELLED:
+            return comparison
+        before = await self._repository.present_counts(
+            comparison.at_from, kinds=kinds, scope=comparison.scope
+        )
+        after = await self._repository.present_counts(
+            comparison.at_to, kinds=kinds, scope=comparison.scope
+        )
+        present = sorted(set(before) | set(after), key=lambda kind: kind.value)
+        if len(present) < 2:
+            return comparison
+        ceiling = comparison.budget.objects_per_side
+        narrower = tuple(
+            NarrowerScope(
+                kind=kind,
+                objects_at_from=before.get(kind, 0),
+                objects_at_to=after.get(kind, 0),
+            )
+            for kind in present
+            if max(before.get(kind, 0), after.get(kind, 0)) <= ceiling
+        )
+        return replace(comparison, narrower=narrower)
 
     # ------------------------------------------------------------------- internals
 
@@ -648,3 +869,36 @@ def _sibling_ace_changes(version: ObjectVersion, page: Sequence[ObjectVersion]) 
         for other in page
         if other.kind is ObservationKind.NTFS_ACE and other.container_key == version.key
     )
+
+
+def _identity(version: ObjectVersion) -> tuple[str, str]:
+    """A version's place in the comparison order: ``(kind, key)`` as plain strings.
+
+    Plain ``str`` comparison is code-point order, which is the ``"C"`` collation the
+    repository sorts by (:meth:`app.changes.repository.ChangeRepository.present_at`).
+    """
+    return (version.kind.value, version.key)
+
+
+def _aligned_boundary(
+    earlier: Sequence[ObjectVersion],
+    cut_earlier: bool,
+    later: Sequence[ObjectVersion],
+    cut_later: bool,
+) -> tuple[ObservationKind, str] | None:
+    """The last ``(kind, key)`` both sides were read through, or ``None`` when neither was cut.
+
+    A side that was cut holds every object up to its last key and none after; a side that
+    was not cut holds every object. So the smaller of the cut sides' last keys is the
+    largest key both sides hold completely, and comparing only up to it compares like with
+    like.
+    """
+    ends = [
+        _identity(side[-1])
+        for side, cut in ((earlier, cut_earlier), (later, cut_later))
+        if cut and side
+    ]
+    if not ends:
+        return None
+    kind, key = min(ends)
+    return (ObservationKind(kind), key)

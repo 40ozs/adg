@@ -61,19 +61,26 @@ from app.changes.repository import ChangeRepository, VersionCursor
 from app.changes.rules import RULES, ChangeFacts, Rule, RuleOutcome, evaluate
 from app.changes.scope import ChangeScope, ScopeTarget
 from app.changes.service import (
+    COMPARISON_WINDOW_MS,
     DEFAULT_ACTIONS,
     DEFAULT_SIGNIFICANCE,
+    MAX_COMPARISON_WINDOW_MS,
     ChangeComparison,
     ChangeFeed,
     ChangeFilter,
     ChangeService,
+    ComparisonBudget,
+    ComparisonOutcome,
+    ComparisonPhase,
     ObjectChanges,
 )
 
 __all__ = [
+    "COMPARISON_WINDOW_MS",
     "DEFAULT_ACTIONS",
     "DEFAULT_SIGNIFICANCE",
     "FIELD_SIGNIFICANCE",
+    "MAX_COMPARISON_WINDOW_MS",
     "RULES",
     "SEVERITY_ORDER",
     "AccessDelta",
@@ -92,6 +99,9 @@ __all__ = [
     "ChangeSeverity",
     "ChangeSignificance",
     "ChangeSummary",
+    "ComparisonBudget",
+    "ComparisonOutcome",
+    "ComparisonPhase",
     "Correlation",
     "FieldDelta",
     "FieldSignificance",
