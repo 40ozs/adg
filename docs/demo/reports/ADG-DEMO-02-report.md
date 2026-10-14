@@ -303,7 +303,7 @@ session), Node 22.22, Chromium 1194 (pre-installed). The commands are CI's
 | --- | --- |
 | `TestTheAccessInvestigation` (10, new: seed, observed access, both routes, hop order, five-group chain, measured removals, per-hop provenance, open questions and impact, next steps, determinism, SYSTEM through the summary) + `TestTheSystemExplanation` (2) + `TestTheGoldenScenariosThroughTheApi` (11) on a real Null Meridian reset | **23 passed** |
 | `test_explanation_api.py` + `test_access_paths_api.py` (examples recaptured under 1.1; the query-cost pin now names the one provenance statement) | **61 passed** |
-| `pytest -m smoke` (full DB suite) | **running when this report was first committed**; result recorded in the follow-up commit |
+| `pytest -m smoke` (full DB suite), on `6196eaa` | **1236 passed, 1 xfailed**, exit 0, 28m52s (prerequisite at `b949735`: 1226 passed, 1 xfailed; +10 = `TestTheAccessInvestigation`; the xfail is the same pre-existing one). Includes `test_system_mapping_api.py` (10), `TestTheSystemExplanation` (2) and `TestRepeatability` (a second reset reproducing the fingerprint) |
 
 PostgreSQL was stopped when the container started. It was started with
 `pg_ctlcluster 16 main start`, and the CI role and databases were created. That is an
