@@ -17,11 +17,11 @@ from typing import Final, Protocol
 
 from app.domain.graph import TraversalLimits, TruncationReason
 from app.domain.relationships import (
+    RELATIONSHIP_TAXONOMY,
     AdjacencyDirection,
     CollectionStatus,
     DerivationClass,
     NodeRef,
-    RELATIONSHIP_TAXONOMY,
     RelationshipConfidence,
     RelationshipCurrency,
     RelationshipType,
@@ -90,7 +90,10 @@ def _semantics() -> Mapping[RelationshipType, TraversalSemantics]:
                 TraversalClass.FILE_CONTROL,
                 True,
                 True,
-                note="Current NTFS control relationship with exactly the meaning GRAPH-01B derived.",
+                note=(
+                    "Current NTFS control relationship with exactly the meaning "
+                    "GRAPH-01B derived."
+                ),
             )
         elif relationship_type in semantic_aliases:
             result[relationship_type] = TraversalSemantics(
@@ -511,7 +514,10 @@ async def alternate_paths(
                     diagnostics.truncation.add(TruncationReason.MAX_NODES)
                     break
                 unique_nodes.add(next_node)
-                candidate = RelationshipPath((*state.nodes, next_node), (*state.edges, relationship))
+                candidate = RelationshipPath(
+                    (*state.nodes, next_node),
+                    (*state.edges, relationship),
+                )
                 if next_node == target:
                     key = tuple(edge.relationship_id for edge in candidate.edges)
                     if key not in found_keys:
@@ -638,8 +644,10 @@ async def explore_neighbors(
         for relationship_type, semantics in TRAVERSAL_SEMANTICS.items()
         if semantics.neighbor_visible
     )
-    selected_types = visible_types if relationship_types is None else frozenset(
-        relationship_types & visible_types
+    selected_types = (
+        visible_types
+        if relationship_types is None
+        else frozenset(relationship_types & visible_types)
     )
     visited: set[NodeRef] = {root}
     frontier: list[NodeRef] = [root]

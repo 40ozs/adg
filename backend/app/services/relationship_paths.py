@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.graph import TraversalLimits
 from app.domain.relationship_paths import (
     TRAVERSAL_SEMANTICS,
-    AlternatePathsResult,
     NeighborResult,
     RelationshipPath,
     ReverseReachabilityResult,
@@ -30,7 +29,13 @@ from app.domain.relationship_paths import (
     reverse_reachability,
     shortest_path,
 )
-from app.domain.relationships import AdjacencyDirection, NodeRef, ProjectionStatus, RelationshipType, StoredRelationship
+from app.domain.relationships import (
+    AdjacencyDirection,
+    NodeRef,
+    ProjectionStatus,
+    RelationshipType,
+    StoredRelationship,
+)
 from app.relationships.projector import ProjectionState, RelationshipProjector
 from app.repositories.relationship_paths import RelationshipPathRepository
 

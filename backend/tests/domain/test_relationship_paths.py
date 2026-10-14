@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Sequence
 from uuid import UUID
 
 import pytest
 
 from app.domain.graph import TraversalLimits, TruncationReason
 from app.domain.relationship_paths import (
+    TRAVERSAL_SEMANTICS,
     AdjacencyBatch,
     PathState,
-    TRAVERSAL_SEMANTICS,
     TraversalClass,
     TraversalPolicy,
     alternate_paths,
@@ -61,18 +62,19 @@ def relationship(
     scope: RelationshipScope | None = None,
     evidence_state: EvidenceState = EvidenceState.PRESENT,
 ) -> StoredRelationship:
+    evidence_kind = (
+        EvidenceKind.NTFS_ACE
+        if relationship_type
+        in {
+            RelationshipType.GENERIC_ALL,
+            RelationshipType.GENERIC_WRITE,
+            RelationshipType.WRITE_DACL,
+            RelationshipType.WRITE_OWNER,
+        }
+        else EvidenceKind.MEMBERSHIP_EDGE
+    )
     evidence = StoredEvidence(
-        kind=(
-            EvidenceKind.NTFS_ACE
-            if relationship_type
-            in {
-                RelationshipType.GENERIC_ALL,
-                RelationshipType.GENERIC_WRITE,
-                RelationshipType.WRITE_DACL,
-                RelationshipType.WRITE_OWNER,
-            }
-            else EvidenceKind.MEMBERSHIP_EDGE
-        ),
+        kind=evidence_kind,
         key=f"evidence:{relationship_type.value}:{source.key}:{target.key}",
         role=EvidenceRole.PREMISE,
         first_observed_at=NOW,
@@ -81,10 +83,9 @@ def relationship(
         last_observed_run_id=RUN,
         state=evidence_state,
     )
+    support_seed = f"{relationship_type.value}:{source.key}:{target.key}"
     support = RelationshipSupport(
-        support_key=f"{relationship_type.value}:{source.key}:{target.key}".encode().hex()[:64].ljust(
-            64, "0"
-        ),
+        support_key=support_seed.encode().hex()[:64].ljust(64, "0"),
         derivation_class=derivation_class,
         rule=DerivationRule("test.path", 1),
         qualifiers=frozenset(),
@@ -109,13 +110,13 @@ def relationship(
 
 
 class FakeProvider:
-    def __init__(self, relationships: list[StoredRelationship]) -> None:
+    def __init__(self, relationships: Sequence[StoredRelationship]) -> None:
         self.relationships = list(relationships)
         self.calls = 0
 
     async def adjacent_many(
         self,
-        nodes: list[NodeRef] | tuple[NodeRef, ...],
+        nodes: Sequence[NodeRef],
         direction: AdjacencyDirection,
         *,
         types: frozenset[RelationshipType] | None,
@@ -148,7 +149,8 @@ class FakeProvider:
 
 @pytest.mark.anyio
 async def test_direct_shortest_path() -> None:
-    alice, admins = principal("S-1-5-21-1-1001"), principal("S-1-5-21-1-512")
+    alice = principal("S-1-5-21-1-1001")
+    admins = principal("S-1-5-21-1-512")
     edge = relationship(RelationshipType.MEMBER_OF, alice, admins)
     result = await shortest_path(
         FakeProvider([edge]),
@@ -217,21 +219,21 @@ async def test_membership_can_continue_to_supported_ntfs_control() -> None:
 @pytest.mark.anyio
 async def test_equal_length_tie_is_deterministic_across_input_order() -> None:
     alice = principal("S-1-5-21-1-1001")
-    a = principal("S-1-5-21-1-2001")
-    b = principal("S-1-5-21-1-2002")
+    group_a = principal("S-1-5-21-1-2001")
+    group_b = principal("S-1-5-21-1-2002")
     target = resource(r"\\fs01\payroll")
     edges = [
-        relationship(RelationshipType.MEMBER_OF, alice, a),
-        relationship(RelationshipType.MEMBER_OF, alice, b),
+        relationship(RelationshipType.MEMBER_OF, alice, group_a),
+        relationship(RelationshipType.MEMBER_OF, alice, group_b),
         relationship(
             RelationshipType.WRITE_DACL,
-            a,
+            group_a,
             target,
             derivation_class=DerivationClass.DETERMINISTICALLY_DERIVED,
         ),
         relationship(
             RelationshipType.WRITE_DACL,
-            b,
+            group_b,
             target,
             derivation_class=DerivationClass.DETERMINISTICALLY_DERIVED,
         ),
@@ -272,20 +274,18 @@ async def test_source_equals_target_is_zero_hop_path() -> None:
 
 @pytest.mark.anyio
 async def test_cycle_terminates_without_removing_the_edges() -> None:
-    a, b, target = (
-        principal("S-1-5-21-1-1001"),
-        principal("S-1-5-21-1-1002"),
-        principal("S-1-5-21-1-1003"),
-    )
+    source = principal("S-1-5-21-1-1001")
+    cycle = principal("S-1-5-21-1-1002")
+    target = principal("S-1-5-21-1-1003")
     provider = FakeProvider(
         [
-            relationship(RelationshipType.MEMBER_OF, a, b),
-            relationship(RelationshipType.MEMBER_OF, b, a),
+            relationship(RelationshipType.MEMBER_OF, source, cycle),
+            relationship(RelationshipType.MEMBER_OF, cycle, source),
         ]
     )
     result = await shortest_path(
         provider,
-        a,
+        source,
         target,
         policy=TraversalPolicy.SUPPORTED,
         limits=TraversalLimits(max_depth=8),
@@ -297,17 +297,18 @@ async def test_cycle_terminates_without_removing_the_edges() -> None:
 
 @pytest.mark.anyio
 async def test_unknown_currency_is_not_absent() -> None:
-    a, b = principal("S-1-5-21-1-1001"), principal("S-1-5-21-1-1002")
+    source = principal("S-1-5-21-1-1001")
+    target = principal("S-1-5-21-1-1002")
     edge = relationship(
         RelationshipType.MEMBER_OF,
-        a,
-        b,
+        source,
+        target,
         evidence_state=EvidenceState.MISSING,
     )
     result = await shortest_path(
         FakeProvider([edge]),
-        a,
-        b,
+        source,
+        target,
         policy=TraversalPolicy.SUPPORTED,
         limits=TraversalLimits(),
     )
@@ -318,17 +319,18 @@ async def test_unknown_currency_is_not_absent() -> None:
 
 @pytest.mark.anyio
 async def test_measured_absent_relationship_is_not_current() -> None:
-    a, b = principal("S-1-5-21-1-1001"), principal("S-1-5-21-1-1002")
+    source = principal("S-1-5-21-1-1001")
+    target = principal("S-1-5-21-1-1002")
     edge = relationship(
         RelationshipType.MEMBER_OF,
-        a,
-        b,
+        source,
+        target,
         evidence_state=EvidenceState.ABSENT,
     )
     result = await shortest_path(
         FakeProvider([edge]),
-        a,
-        b,
+        source,
+        target,
         policy=TraversalPolicy.SUPPORTED,
         limits=TraversalLimits(),
     )
@@ -446,15 +448,15 @@ async def test_local_specializations_are_not_double_hopped() -> None:
 @pytest.mark.anyio
 async def test_alternate_paths_are_simple_deterministic_and_capped() -> None:
     source = principal("S-1-5-21-1-1001")
-    a = principal("S-1-5-21-1-2001")
-    b = principal("S-1-5-21-1-2002")
+    group_a = principal("S-1-5-21-1-2001")
+    group_b = principal("S-1-5-21-1-2002")
     target = principal("S-1-5-21-1-3001")
     edges = [
-        relationship(RelationshipType.MEMBER_OF, source, a),
-        relationship(RelationshipType.MEMBER_OF, source, b),
-        relationship(RelationshipType.MEMBER_OF, a, target),
-        relationship(RelationshipType.MEMBER_OF, b, target),
-        relationship(RelationshipType.MEMBER_OF, a, source),
+        relationship(RelationshipType.MEMBER_OF, source, group_a),
+        relationship(RelationshipType.MEMBER_OF, source, group_b),
+        relationship(RelationshipType.MEMBER_OF, group_a, target),
+        relationship(RelationshipType.MEMBER_OF, group_b, target),
+        relationship(RelationshipType.MEMBER_OF, group_a, source),
     ]
     result = await alternate_paths(
         FakeProvider(edges),
@@ -511,18 +513,18 @@ async def test_neighbor_exploration_can_show_informational_edge() -> None:
 
 @pytest.mark.anyio
 async def test_max_depth_is_reported_instead_of_silent_no_path() -> None:
-    a = principal("S-1-5-21-1-1001")
-    b = principal("S-1-5-21-1-1002")
-    c = principal("S-1-5-21-1-1003")
+    source = principal("S-1-5-21-1-1001")
+    middle = principal("S-1-5-21-1-1002")
+    target = principal("S-1-5-21-1-1003")
     result = await shortest_path(
         FakeProvider(
             [
-                relationship(RelationshipType.MEMBER_OF, a, b),
-                relationship(RelationshipType.MEMBER_OF, b, c),
+                relationship(RelationshipType.MEMBER_OF, source, middle),
+                relationship(RelationshipType.MEMBER_OF, middle, target),
             ]
         ),
-        a,
-        c,
+        source,
+        target,
         policy=TraversalPolicy.SUPPORTED,
         limits=TraversalLimits(max_depth=1),
     )
