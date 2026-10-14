@@ -43,6 +43,7 @@ from app.api import (
     demo,
     governance,
     graph,
+    graph_paths,
     groups,
     health,
     meta,
@@ -84,6 +85,12 @@ def build_api_router(settings: Settings) -> APIRouter:
     # Collected facts. One capability per area.
     api_router.include_router(
         graph.router, dependencies=[Depends(requires(Capability.IDENTITIES_READ))]
+    )
+    # GRAPH-01C composes collected security relationships into privilege routes. That
+    # reveals access meaning, not merely identity, so it reuses the existing ACCESS_READ
+    # disclosure boundary rather than inventing a parallel role model.
+    api_router.include_router(
+        graph_paths.router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
     )
     api_router.include_router(
         resources.router, dependencies=[Depends(requires(Capability.RESOURCES_READ))]
