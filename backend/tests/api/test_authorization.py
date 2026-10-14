@@ -228,6 +228,22 @@ ROUTE_CAPABILITIES: dict[tuple[str, str], str | None] = {
     ("GET", "/api/v1/access/principals/{identifier}/resources"): Capability.ACCESS_READ.value,
     (
         "GET",
+        "/api/v1/access/principals/{identifier}/directory-access",
+    ): Capability.ACCESS_READ.value,
+    (
+        "GET",
+        "/api/v1/access/principals/{identifier}/directory-access/tree",
+    ): Capability.ACCESS_READ.value,
+    (
+        "GET",
+        "/api/v1/access/principals/{identifier}/directory-access/exceptions",
+    ): Capability.ACCESS_READ.value,
+    (
+        "GET",
+        "/api/v1/access/principals/{identifier}/directory-access/export",
+    ): Capability.ACCESS_READ.value,
+    (
+        "GET",
         "/api/v1/access/principals/{identifier}/resources/{resource}",
     ): Capability.ACCESS_READ.value,
     ("GET", "/api/v1/access/resources/{resource}/principals"): Capability.ACCESS_READ.value,

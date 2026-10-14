@@ -72,6 +72,8 @@ vi.mock("@/lib/api/adg", () => ({
   fetchTrusteeShares: vi.fn(),
   fetchAccessibleShares: vi.fn(),
   fetchAccessibleResources: vi.fn(),
+  fetchDirectoryAccess: vi.fn(),
+  fetchDirectoryAccessTree: vi.fn(),
   fetchResourcePrincipals: vi.fn(),
   fetchServer: vi.fn(),
   fetchServerShares: vi.fn(),
@@ -266,7 +268,8 @@ describe("a user's page", () => {
       }),
     );
 
-    render(await principalPage(ADA.key, "directories"));
+    // The flat listing is Directory access's All paths reading; the summary is the default.
+    render(await principalPage(ADA.key, "directories", { mode: "paths" }));
 
     expect(screen.getByText(/directories on this page/)).toBeInTheDocument();
     expect(screen.getByText(/not a total for the estate/)).toBeInTheDocument();

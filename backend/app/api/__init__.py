@@ -41,6 +41,7 @@ from app.api import (
     changes,
     collection,
     demo,
+    directory_access,
     governance,
     graph,
     groups,
@@ -90,6 +91,11 @@ def build_api_router(settings: Settings) -> APIRouter:
     )
     api_router.include_router(
         access.router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
+    )
+    # Directory access is the same access answer as /access/principals/{id}/resources,
+    # grouped into roots, so it carries the same capability.
+    api_router.include_router(
+        directory_access.router, dependencies=[Depends(requires(Capability.ACCESS_READ))]
     )
     # A group's resource impact is an access answer about many resources at once, so it
     # requires ACCESS_READ and not the IDENTITIES_READ that the rest of /api/v1/groups

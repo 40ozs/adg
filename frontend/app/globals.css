@@ -887,3 +887,139 @@ th[aria-sort] .sort-button {
 th[aria-sort] .sort-indicator {
   opacity: 1;
 }
+
+/*
+ * Directory access (ADG-DIRECTORY-ACCESS-01).
+ *
+ * Summary rows stay one line: a long UNC path is an `.identifier` (ellipsis, full value in
+ * the title and in the text a copy takes), and nothing in a closed row wraps. A root's
+ * exceptions open inside their cell on demand, which is the only time a row grows.
+ */
+.directory-summary tbody td,
+.directory-summary tbody th {
+  white-space: nowrap;
+}
+
+/* Positioned, so the visually hidden note in a cell stays inside the table's scroller. */
+.directory-summary tbody th {
+  position: relative;
+}
+
+.directory-summary td:first-child .identifier {
+  max-width: 11rem;
+}
+
+.directory-summary tbody th .identifier {
+  max-width: 13rem;
+}
+
+/* The two count columns are the point of the table; their headers wrap so they fit. */
+.directory-summary thead .sort-button {
+  white-space: normal;
+  text-align: left;
+}
+
+.directory-summary thead th {
+  vertical-align: bottom;
+}
+
+.directory-filters select {
+  max-width: 14rem;
+}
+
+.directory-exports {
+  font-size: 0.9rem;
+}
+
+.root-exceptions > summary {
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.root-exceptions[open] > summary {
+  font-weight: 600;
+}
+
+.exceptions-panel {
+  white-space: normal;
+  min-width: 24rem;
+  max-width: 40rem;
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+}
+
+.exception-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.exception-list li {
+  padding: 0.15rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.directory-tree .tree-level {
+  list-style: none;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.directory-tree > .tree-level {
+  padding-left: 0;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  white-space: nowrap;
+}
+
+.tree-node .identifier {
+  max-width: 24rem;
+}
+
+.tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tree-leaf {
+  border-color: transparent;
+  background: none;
+  cursor: default;
+}
+
+.tree-reachable > .tree-node .tree-access {
+  font-weight: 600;
+}
+
+.tree-count,
+.tree-hidden {
+  font-size: 0.85rem;
+}
+
+.button-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}

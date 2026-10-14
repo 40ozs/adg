@@ -47,6 +47,8 @@ import type {
   PrincipalDetail,
   PrincipalListResponse,
   PrincipalResourcesResponse,
+  DirectoryAccessResponse,
+  DirectoryTreeResponse,
   QueueResponse,
   RawNtfsAclResponse,
   RawShareAclResponse,
@@ -97,6 +99,10 @@ export const USED_PATHS = [
   "/api/v1/groups/{identifier}/effective-members",
   "/api/v1/access/principals/{identifier}/shares",
   "/api/v1/access/principals/{identifier}/resources",
+  "/api/v1/access/principals/{identifier}/directory-access",
+  "/api/v1/access/principals/{identifier}/directory-access/tree",
+  "/api/v1/access/principals/{identifier}/directory-access/exceptions",
+  "/api/v1/access/principals/{identifier}/directory-access/export",
   "/api/v1/access/resources/{resource}/principals",
   "/api/v1/changes",
   "/api/v1/changes/summary",
@@ -380,6 +386,40 @@ export function fetchAccessibleResources(
   return apiRequest<PrincipalResourcesResponse>(
     `/api/v1/access/principals/${segment(identifier)}/resources`,
     { token, query },
+  );
+}
+
+/** Filters the directory-access summary applies on the server, across every root. */
+export interface DirectoryAccessQuery extends PageQuery {
+  q?: string;
+  access?: string;
+  share?: string;
+}
+
+/**
+ * Where a principal's access begins inside the shares: access roots, each with its
+ * reachable descendants and exceptions. Filters run on the server before paging.
+ */
+export function fetchDirectoryAccess(
+  token: string,
+  identifier: string,
+  query: DirectoryAccessQuery = {},
+): Promise<ApiResult<DirectoryAccessResponse>> {
+  return apiRequest<DirectoryAccessResponse>(
+    `/api/v1/access/principals/${segment(identifier)}/directory-access`,
+    { token, query: { ...query } },
+  );
+}
+
+/** One level of the directory-access tree: the share roots, or the children of `parent`. */
+export function fetchDirectoryAccessTree(
+  token: string,
+  identifier: string,
+  query: PageQuery & { parent?: string } = {},
+): Promise<ApiResult<DirectoryTreeResponse>> {
+  return apiRequest<DirectoryTreeResponse>(
+    `/api/v1/access/principals/${segment(identifier)}/directory-access/tree`,
+    { token, query: { ...query } },
   );
 }
 

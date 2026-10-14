@@ -11,6 +11,7 @@ import type {
   RightsView,
   TokenView,
 } from "@/lib/contracts";
+import { directoryAccessHref } from "@/lib/directoryAccess";
 import { explainHref } from "@/lib/explanation";
 import { ambiguousLabels, chainPrincipals, principalLabel } from "@/lib/identity";
 import { directoryHref, shareHref } from "@/lib/resources";
@@ -63,6 +64,7 @@ export function ResourceAccessTable({
   items,
   subject,
   explainFor,
+  directoryAccessFor,
 }: {
   items: readonly ResourceAccessView[];
   /** "share" or "directory" — what each row names. */
@@ -75,7 +77,13 @@ export function ResourceAccessTable({
    * a link to the wrong pair — an explanation of the wrong principal is worse than no link.
    */
   explainFor?: string;
+  /**
+   * On the share listing, the principal whose Directory access each share links to — the
+   * same principal's summary, filtered to that share, without leaving the principal.
+   */
+  directoryAccessFor?: string;
 }): JSX.Element {
+  const inside = subject === "share" ? directoryAccessFor : undefined;
   return (
     <SortableTable
       className="access-table"
@@ -86,6 +94,7 @@ export function ResourceAccessTable({
         { label: "Rights" },
         { label: "Narrower layer", className: "muted" },
         ...(explainFor !== undefined ? [{ label: "Why", sortable: false }] : []),
+        ...(inside !== undefined ? [{ label: "Inside", sortable: false }] : []),
       ]}
       rows={items.map((item) => {
         const name =
@@ -129,6 +138,24 @@ export function ResourceAccessTable({
                   <Link key="explain" href={explainHref(explainFor, item.resource.key)}>
                     Explain
                   </Link>,
+                ]
+              : []),
+            ...(inside !== undefined
+              ? [
+                  item.share ? (
+                    <Link
+                      key="inside"
+                      href={directoryAccessHref(inside, { share: item.share.key })}
+                      prefetch={false}
+                      title="Where inside this share the principal's access begins and changes"
+                    >
+                      Directory access
+                    </Link>
+                  ) : (
+                    <span key="inside" className="muted">
+                      —
+                    </span>
+                  ),
                 ]
               : []),
           ],
