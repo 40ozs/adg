@@ -226,10 +226,11 @@ def assert_no_contradiction(body: dict[str, Any]) -> None:
     """The invariant the demo broke, stated over the wire format a client actually reads."""
     verdict = body["verdict"]
     state = mapping(body)["detail"]["state"]
+    assert verdict["certainty"] != "certain", "no SYSTEM token here is complete"
+    assert verdict["outcome"] in ("granted", "indeterminate"), "never a conclusive negative"
+    assert verdict["may_understate"]
     if state != "confirmed":
-        assert verdict["certainty"] != "certain"
-        assert verdict["outcome"] in ("granted", "indeterminate")
-        assert verdict["may_understate"] and verdict["may_overstate"]
+        assert verdict["may_overstate"]
     if verdict["outcome"] == "no_grant" and body["effective"]["ntfs"]["granted_by"]:
         assert "No entry on either ACL names it" not in verdict["reason"]
     if body["access_path"] == "remote_smb":
@@ -273,7 +274,7 @@ class TestTheDemoQuestion:
         assert detail["last_observed_at"].startswith("2026-09-14T09:00:00")
         assert body["subject"]["display_name"] == "SYSTEM"
         assert body["verdict"]["outcome"] == "granted"
-        assert body["verdict"]["certainty"] == "certain"
+        assert body["verdict"]["certainty"] == "at_least"
         assert subject_matched(body) == [SYSTEM]
 
     async def test_the_authenticated_variant_grants_only_what_every_session_carries(

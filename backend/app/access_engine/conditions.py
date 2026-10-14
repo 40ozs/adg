@@ -137,7 +137,9 @@ class AccessCondition(StrEnum):
     SYSTEM_MAPPING_CONFIRMED = "system_mapping_confirmed"
     """The subject is SYSTEM, a collector described it as the well-known SYSTEM principal,
     and the access path is local: it is the LocalSystem account of the host holding the
-    ACL, which is exactly the identity an entry naming SYSTEM there grants to."""
+    ACL, which is exactly the identity an entry naming SYSTEM there grants to. The identity
+    is settled; the token is not complete, because LocalSystem's real token also carries
+    groups (``BUILTIN\\Administrators`` among them) that ADG does not model for it."""
 
     SYSTEM_MAPPING_AMBIGUOUS = "system_mapping_ambiguous"
     """The subject is SYSTEM and the access path is a share. No network logon carries
@@ -272,7 +274,9 @@ CONDITION_DESCRIPTIONS: Final[dict[AccessCondition, str]] = {
     AccessCondition.SYSTEM_MAPPING_CONFIRMED: (
         "SYSTEM (S-1-5-18) is confirmed: a collector described it as the well-known SYSTEM "
         "principal, and on local access it is the LocalSystem account of the host that "
-        "holds this ACL — the identity an entry naming SYSTEM here grants to."
+        "holds this ACL — the identity an entry naming SYSTEM here grants to. Its real "
+        "token also carries groups, BUILTIN\\Administrators among them, that this answer "
+        "does not apply, so its rights may be wider than reported."
     ),
     AccessCondition.SYSTEM_MAPPING_AMBIGUOUS: (
         "SYSTEM (S-1-5-18) is ambiguous over a share. No network logon carries S-1-5-18: a "
@@ -371,8 +375,10 @@ The three unsettled ``SYSTEM_MAPPING_*`` conditions are in **both** sets, for th
 ``SUBJECT_UNRESOLVED`` is: an identity nobody can name has unknown grants and unknown
 restrictions. Being in the understating set is what keeps an empty answer for them
 ``indeterminate`` rather than a conclusive "no access". ``SYSTEM_MAPPING_CONFIRMED`` is in
-neither: it records which identity was meant and where the description came from, and it
-qualifies nothing.
+the understating set alone: the identity is settled, but the token holds ``S-1-5-18`` and
+not the groups LocalSystem's real token carries, so an ACL granting
+``BUILTIN\\Administrators`` reaches SYSTEM without this answer showing it. No SYSTEM answer is
+therefore ever a conclusive negative.
 """
 
 UNDERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
@@ -384,6 +390,7 @@ UNDERSTATING_CONDITIONS: Final[frozenset[AccessCondition]] = frozenset(
         AccessCondition.ACE_COUNT_MISMATCH,
         AccessCondition.ACL_TRUNCATED,
         AccessCondition.NTFS_ACL_NOT_OBSERVED,
+        AccessCondition.SYSTEM_MAPPING_CONFIRMED,
         AccessCondition.SYSTEM_MAPPING_AMBIGUOUS,
         AccessCondition.SYSTEM_MAPPING_MISSING,
         AccessCondition.SYSTEM_MAPPING_CONFLICTING,

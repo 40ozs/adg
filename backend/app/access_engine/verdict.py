@@ -138,6 +138,11 @@ _UNSETTLED_SYSTEM: Final[dict[tuple[AccessOutcome, SystemMapping], str]] = {
         "Rights survive, but a collector's description of S-1-5-18 contradicts what Windows "
         "defines it to be, so which identity holds them is disputed."
     ),
+    (AccessOutcome.INDETERMINATE, SystemMapping.CONFIRMED): (
+        "No rights were established, and this is not a finding of no access. This is the "
+        "host's own LocalSystem account, and its token carries groups, BUILTIN\\Administrators "
+        "among them, that this answer does not apply."
+    ),
     (AccessOutcome.INDETERMINATE, SystemMapping.AMBIGUOUS): (
         "No rights were established, and this is not a finding of no access. Over a share "
         "SYSTEM is the computer account of whichever machine it runs on, and nothing in "
@@ -152,10 +157,12 @@ _UNSETTLED_SYSTEM: Final[dict[tuple[AccessOutcome, SystemMapping], str]] = {
         "description of S-1-5-18 contradicts what Windows defines it to be."
     ),
 }
-"""The sentence for an answer about a SYSTEM whose mapping is not confirmed.
+"""The sentence for an answer about SYSTEM where the general one would mislead.
 
-Only ``granted`` and ``indeterminate`` appear: an unsettled mapping widens the certainty
-both ways, so an empty answer for one can never be ``denied`` or ``no_grant``.
+Only ``granted`` and ``indeterminate`` appear: every mapping state understates, so an empty
+answer about SYSTEM is never ``denied`` or ``no_grant``. A confirmed mapping keeps the
+general ``granted`` sentence, which is true of it; its empty answer gets its own, because
+"a gap in collection" is not why it is empty.
 """
 
 
@@ -172,15 +179,15 @@ def describe_verdict(outcome: AccessOutcome, access: EffectiveAccess) -> str:
 
     * ``no_grant`` where a layer's own entries named the principal and granted it rights —
       "no entry names it" sat beside the entry that did;
-    * an answer about a SYSTEM whose :class:`SystemMapping` is not confirmed, where "this
-      principal holds rights" or "a gap in collection" would state an identity, or a cause,
-      the evidence does not support.
+    * an answer about SYSTEM, where "this principal holds rights" would name an identity the
+      :class:`SystemMapping` did not confirm, and "a gap in collection" a cause that is not
+      the one.
     """
     mapping = access.token.system_mapping
-    if mapping is not None and mapping is not SystemMapping.CONFIRMED:
-        unsettled = _UNSETTLED_SYSTEM.get((outcome, mapping))
-        if unsettled is not None:
-            return unsettled
+    if mapping is not None:
+        specific = _UNSETTLED_SYSTEM.get((outcome, mapping))
+        if specific is not None:
+            return specific
     if outcome is AccessOutcome.NO_GRANT:
         ntfs = not access.ntfs.rights.is_empty
         share = access.share is not None and not access.share.rights.is_empty

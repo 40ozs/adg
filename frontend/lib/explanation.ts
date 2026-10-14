@@ -177,6 +177,12 @@ export function systemMapping(explanation: AccessExplanationResponse): SystemMap
   return null;
 }
 
+/** Why a confirmed SYSTEM with nothing established is still not "no access". */
+const CONFIRMED_SYSTEM_EMPTY =
+  "SYSTEM is this host's own LocalSystem account, and its token carries groups — " +
+  "BUILTIN\\Administrators among them — that this answer does not apply. No right was " +
+  "established for SYSTEM's own SID, and this is not a finding of no access.";
+
 /** What would settle an unconfirmed SYSTEM mapping. One sentence per state. */
 const SYSTEM_MAPPING_NEXT_STEP: Record<Exclude<SystemMappingState, "confirmed">, string> = {
   ambiguous:
@@ -196,15 +202,18 @@ const SYSTEM_MAPPING_NEXT_STEP: Record<Exclude<SystemMappingState, "confirmed">,
  * `outcomeWording` words an outcome in general. Two answers make the general guidance
  * false, and this is where they are caught — always from the response's own facts:
  *
- * - **A SYSTEM subject whose mapping is not confirmed.** "Collection could be hiding a
- *   right" is not why an ambiguous SYSTEM has no answer, and "at least one right
- *   survives" names an account the engine could not name.
+ * - **A SYSTEM subject.** "Collection could be hiding a right" is not why SYSTEM has no
+ *   answer — its mapping, or the groups its token carries, are — and "at least one right
+ *   survives" names an account the engine could not name unless the mapping is confirmed.
  * - **`no_grant` where one layer granted.** "Nothing on either ACL reaches this principal"
  *   would sit beside the entry that did.
  */
 export function explanationWording(explanation: AccessExplanationResponse): OutcomeWording {
   const base = outcomeWording(explanation.verdict);
   const mapping = systemMapping(explanation);
+  if (mapping?.state === "confirmed" && explanation.verdict.outcome === "indeterminate") {
+    return { ...base, guidance: CONFIRMED_SYSTEM_EMPTY };
+  }
   if (mapping !== null && mapping.state !== "confirmed") {
     const next = SYSTEM_MAPPING_NEXT_STEP[mapping.state];
     const guidance =
@@ -945,11 +954,14 @@ export function cautions(explanation: AccessExplanationResponse): Caution[] {
       id: "inconclusive",
       headline: "This answer does not support a negative conclusion",
       detail:
-        mapping !== null && mapping.state !== "confirmed"
-          ? `No right was established, and which identity SYSTEM stands for here is ` +
-            `${mapping.state}. Do not record this as 'no access'.`
-          : "No right was established and collection is incomplete in a direction that " +
-            "could hide one. Do not record this as 'no access'.",
+        mapping === null
+          ? "No right was established and collection is incomplete in a direction that " +
+            "could hide one. Do not record this as 'no access'."
+          : mapping.state === "confirmed"
+            ? "No right was established for SYSTEM's own SID, and LocalSystem's token " +
+              "carries groups this answer does not apply. Do not record this as 'no access'."
+            : `No right was established, and which identity SYSTEM stands for here is ` +
+              `${mapping.state}. Do not record this as 'no access'.`,
       severity: "warning",
     });
   }

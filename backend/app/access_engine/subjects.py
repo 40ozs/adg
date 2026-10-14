@@ -161,14 +161,17 @@ class SystemMapping(StrEnum):
     in :data:`SYSTEM_MAPPING_CONDITIONS` reports it. The verdict sentence, the explanation
     and the UI all derive from it; none of them re-derives the mapping.
 
-    Only :attr:`CONFIRMED` may be stated as a mapping. The other three never support a
-    conclusive negative answer: their conditions widen the certainty in both directions, so
-    an empty result is ``indeterminate`` rather than ``no_grant``.
+    Only :attr:`CONFIRMED` may be stated as a mapping. The other three widen the certainty
+    in both directions. None of the four supports a conclusive negative: even a confirmed
+    LocalSystem holds groups its token here does not carry, so its condition understates,
+    and an empty result for any SYSTEM subject is ``indeterminate`` rather than
+    ``no_grant``.
     """
 
     CONFIRMED = "confirmed"
     """Local access, and a collector described ``S-1-5-18`` as the well-known SYSTEM
-    principal. The subject is the LocalSystem account of the host that holds the ACL."""
+    principal. The subject is the LocalSystem account of the host that holds the ACL. The
+    rights are a lower bound: its groups are not modeled."""
 
     AMBIGUOUS = "ambiguous"
     """Access over a share. A network logon never carries ``S-1-5-18``; SYSTEM arrives as the

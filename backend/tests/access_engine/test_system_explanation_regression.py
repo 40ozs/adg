@@ -228,12 +228,15 @@ class TestNoContradictionAnywhereInTheMatrix:
         )
 
         assert_consistent(access, verdict, explanation)
+        assert verdict.outcome not in (AccessOutcome.NO_GRANT, AccessOutcome.DENIED)
+        assert access.certainty is not AccessCertainty.CERTAIN, "no SYSTEM token is complete"
         confirmed = DESCRIPTIONS[description] is PrincipalKind.WELL_KNOWN
         if confirmed:
             assert subject_matches(access) == ["ntfs:S-1-5-18"]
+            assert verdict.may_understate and not verdict.may_overstate
         else:
-            assert access.certainty is not AccessCertainty.CERTAIN, (
-                "an undescribed or disputed SYSTEM is not a certain answer"
+            assert verdict.may_understate and verdict.may_overstate, (
+                "an undescribed or disputed SYSTEM is bounded in neither direction"
             )
 
 

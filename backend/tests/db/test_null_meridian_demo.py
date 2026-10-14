@@ -612,7 +612,7 @@ class TestTheSystemExplanation:
         assert detail["described_as"] == "well_known"
         assert detail["last_observed_run_id"] is not None
         assert body["verdict"]["outcome"] == "granted"
-        assert body["verdict"]["certainty"] == "certain"
+        assert body["verdict"]["certainty"] == "at_least"
         assert body["effective"]["rights"]["label"] == "Full Control"
         assert [e["trustee"]["key"] for e in body["effective"]["ntfs"]["granted_by"]] == [
             "S-1-5-18"

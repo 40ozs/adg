@@ -96,10 +96,23 @@ describe("the wording agrees with the evidence", () => {
     },
   );
 
-  it("leaves a confirmed mapping's wording exactly as the outcome's", () => {
+  it("leaves a confirmed mapping's granted wording exactly as the outcome's", () => {
     const data = systemLocally();
 
     expect(explanationWording(data)).toEqual(outcomeWording(data.verdict));
+  });
+
+  it("never words an empty confirmed answer as a gap in collection, nor as a no", () => {
+    const data = { ...systemOverShare(), access_path: "local", warnings: [systemMappingFinding("confirmed")] };
+    const wording = explanationWording(data);
+    const note = cautions(data).find((entry) => entry.id === "inconclusive");
+
+    expect(wording.word).toBe("Unknown");
+    expect(wording.guidance).toContain("LocalSystem");
+    expect(wording.guidance).toContain("not a finding of no access");
+    expect(wording.guidance).not.toMatch(COLLECTION_GAP);
+    expect(note?.detail).toContain("LocalSystem");
+    expect(note?.detail).not.toMatch(COLLECTION_GAP);
   });
 
   it("does not say nothing reached the principal when the NTFS ACL granted it", () => {

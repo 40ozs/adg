@@ -641,12 +641,13 @@ export function systemMappingFinding(
   state: "confirmed" | "ambiguous" | "missing" | "conflicting",
   describedAs: string | null = "well_known",
 ): FindingView {
-  const unsettled = state !== "confirmed";
   return finding({
     condition: `system_mapping_${state}`,
     message: `SYSTEM (S-1-5-18) is ${state}.`,
-    may_overstate: unsettled,
-    may_understate: unsettled,
+    // Every state understates (LocalSystem's groups are not modeled); only the unsettled
+    // ones overstate. The same direction sets the engine publishes.
+    may_overstate: state !== "confirmed",
+    may_understate: true,
     detail: {
       state,
       subject_sid: SYSTEM_SID,

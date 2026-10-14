@@ -221,22 +221,23 @@ class TestExactlyOneFindingReportsTheState:
             )
         }
 
-    def test_only_the_confirmed_state_qualifies_nothing(self) -> None:
+    def test_every_state_understates_and_only_unsettled_ones_overstate(self) -> None:
+        """No SYSTEM answer is ever a conclusive negative; only a settled identity is bounded."""
         for state, condition in SYSTEM_MAPPING_CONDITIONS.items():
-            settled = state is SystemMapping.CONFIRMED
-            assert (condition in OVERSTATING_CONDITIONS) is not settled
-            assert (condition in UNDERSTATING_CONDITIONS) is not settled
+            assert condition in UNDERSTATING_CONDITIONS
+            assert (condition in OVERSTATING_CONDITIONS) is (state is not SystemMapping.CONFIRMED)
 
 
 class TestConfirmed:
     """Local access to a SYSTEM a collector described as the well-known principal."""
 
-    def test_the_entry_naming_system_grants_and_the_answer_is_certain(self) -> None:
+    def test_the_entry_naming_system_grants_and_the_rights_are_a_lower_bound(self) -> None:
         access = resolve(system(), AccessPath.LOCAL)
         verdict = classify_access(access)
 
         assert verdict.outcome is AccessOutcome.GRANTED
-        assert access.certainty is AccessCertainty.CERTAIN
+        assert verdict.is_conclusive
+        assert access.certainty is AccessCertainty.AT_LEAST, "LocalSystem's groups are unmodeled"
         assert access.rights.value & FULL_CONTROL == FULL_CONTROL
         assert [applied.entry.trustee_key for applied in access.ntfs.granted_by] == [SYSTEM_SID]
         assert verdict.reason == describe_outcome(AccessOutcome.GRANTED)
@@ -260,13 +261,23 @@ class TestConfirmed:
         assert {path.chain for path in explanation.contributing} == {(SYSTEM_SID,)}
         assert any(path.ace_position == 0 for path in explanation.contributing)
 
-    def test_a_confirmed_system_with_nothing_on_the_acl_is_a_conclusive_no_grant(self) -> None:
-        access = resolve(system(), AccessPath.LOCAL, resource=dacl(allow(ALICE, MODIFY)))
+    def test_an_acl_naming_only_the_servers_administrators_is_not_a_no(self) -> None:
+        """LocalSystem is in BUILTIN\\Administrators. ADG does not model that, so it must not
+        conclude SYSTEM is shut out of a directory only the administrators may reach."""
+        access = resolve(
+            system(), AccessPath.LOCAL, resource=dacl(allow(FS01_ADMINS, FULL_CONTROL))
+        )
         verdict = classify_access(access)
 
-        assert verdict.outcome is AccessOutcome.NO_GRANT
-        assert verdict.is_conclusive
-        assert verdict.reason == describe_outcome(AccessOutcome.NO_GRANT)
+        assert verdict.outcome is AccessOutcome.INDETERMINATE
+        assert not verdict.is_conclusive
+        assert "LocalSystem" in verdict.reason
+        assert verdict.reason != describe_outcome(AccessOutcome.INDETERMINATE)
+
+    def test_nothing_on_the_acl_is_still_not_a_conclusive_no(self) -> None:
+        access = resolve(system(), AccessPath.LOCAL, resource=dacl(allow(ALICE, MODIFY)))
+
+        assert classify_access(access).outcome is AccessOutcome.INDETERMINATE
 
 
 class TestAmbiguous:
