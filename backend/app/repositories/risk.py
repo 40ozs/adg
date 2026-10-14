@@ -71,6 +71,7 @@ from app.models.schema import (
     scan_run_scopes,
     scan_runs,
 )
+from app.repositories.basis import CollectionBasisRepository
 from app.risk_engine import (
     AceFacts,
     AclProvenanceFacts,
@@ -768,11 +769,15 @@ class RiskFindingRepository:
         source_run_id: UUID | None = None,
     ) -> UUID:
         evaluation_id = uuid4()
+        # Which collected state this pass reads, recorded with it, so a report can say later
+        # whether its counts still describe the estate ADG holds (ADG-DEMO-03).
+        basis = await CollectionBasisRepository(self._session).current()
         await self._session.execute(
             sa.insert(risk_evaluations).values(
                 evaluation_id=evaluation_id,
                 trigger=trigger.value,
                 source_run_id=source_run_id,
+                basis_token=basis.token,
                 configuration_version=configuration_version,
                 scope_complete=scope.complete,
                 scope_resource_keys=_scope_list(scope.complete, scope.resource_keys),
@@ -1242,6 +1247,9 @@ class FindingCoverage:
     rules_skipped: tuple[str, ...]
     truncation: str | None
     evaluation_id: UUID | None
+    basis_token: str | None = None
+    """The collection basis token the evaluation read, or ``None`` when it predates the
+    record (migration 0018) or nothing has run."""
 
     @property
     def has_ever_run(self) -> bool:
@@ -1431,7 +1439,39 @@ class RiskReportRepository:
             rules_skipped=tuple(row.rules_skipped or ()),
             truncation=row.error,
             evaluation_id=row.evaluation_id,
+            basis_token=row.basis_token,
         )
+
+    async def open_findings_on_servers(self, servers: Sequence[str]) -> dict[str, int]:
+        r"""Open findings whose folder or share lies on each named server, in one statement.
+
+        What a coverage report shows beside a scope whose latest scan did not deliver: the
+        findings ADG still holds there, from that scope's last successful scan. They stay
+        open -- a failed scan closes nothing -- and the count is the proof that a source
+        failing did not turn its findings into zero. Keys are casefolded
+        (``\\server\path``, ``server|share``), so the match is a prefix test, which
+        ``starts_with`` makes without treating the backslash as a ``LIKE`` escape.
+        """
+        wanted = sorted({server.casefold() for server in servers if server})
+        if not wanted:
+            return {}
+        columns = [
+            sa.func.count()
+            .filter(
+                sa.or_(
+                    sa.func.starts_with(risk_findings.c.resource_key, f"\\\\{server}\\"),
+                    sa.func.starts_with(risk_findings.c.share_key, f"{server}|"),
+                )
+            )
+            .label(f"s{index}")
+            for index, server in enumerate(wanted)
+        ]
+        row = (
+            await self._session.execute(
+                sa.select(*columns).where(risk_findings.c.status == RiskFindingStatus.OPEN.value)
+            )
+        ).one()
+        return {server: int(row[index]) for index, server in enumerate(wanted)}
 
     async def evaluations(self, *, limit: int = 20) -> tuple[Mapping[str, Any], ...]:
         rows = (

@@ -52,13 +52,15 @@ consequence of a scan run completing; see ``docs/operations/risk-rules.md``.
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import AwareDatetime, BaseModel, Field
 
-from app.api.deps import PRINTABLE_IDENTIFIER, Session
+from app.api.caching import basis_view
+from app.api.collection import CoverageSummaryView, coverage_summary_view
+from app.api.deps import PRINTABLE_IDENTIFIER, RequestSettings, Session
 from app.api.pagination import (
     MAX_LIMIT,
     PageInfo,
@@ -66,10 +68,11 @@ from app.api.pagination import (
     encode_offset_cursor,
     normalize_limit,
 )
-from app.auth.dependencies import requires
+from app.auth.dependencies import CurrentPrincipal, requires
 from app.auth.roles import Capability
 from app.config import Settings, get_settings
 from app.domain import DomainValidationError
+from app.domain.coverage import DOMAIN_WIDE_COLLECTORS, interpret_totals
 from app.repositories.risk import (
     FindingCoverage,
     FindingQuery,
@@ -88,6 +91,7 @@ from app.risk_engine import (
     describe_qualifier,
     reproduce,
 )
+from app.services.coverage import collection_coverage
 
 router = APIRouter(prefix="/api/v1/risks", tags=["risks"])
 
@@ -298,6 +302,52 @@ class FindingDetailView(BaseModel):
     reproduction_note: str
 
 
+class HeldFindingsView(BaseModel):
+    """Open findings ADG still holds for a scope whose latest scan did not deliver."""
+
+    scope: str
+    server: str
+    evidence: Literal["stale", "none", "current"]
+    evidence_collected_at: dt.datetime | None
+    open_findings: int = Field(
+        description=(
+            "Open findings on this server's folders and shares. A failed scan closes nothing, "
+            "so these stay counted from the server's last successful scan."
+        )
+    )
+
+
+class TotalsInterpretationView(BaseModel):
+    """Whether the counts beside it may be read as totals, and every reason they may not."""
+
+    reading: Literal["not_evaluated", "partial", "incomplete", "stale", "complete"] = Field(
+        description=(
+            "complete: a full evaluation over complete collection of the snapshot that is "
+            "still current, so the counts are totals. Anything else is the least trustworthy "
+            "of the reasons listed."
+        )
+    )
+    exhaustive: bool = Field(description="True only when the reading is complete.")
+    reasons: list[str] = Field(default_factory=list)
+    evaluated_basis: str | None = Field(
+        default=None,
+        description="The collection basis token the last evaluation read; null when unknown.",
+    )
+    basis_current: bool | None = Field(
+        default=None,
+        description=(
+            "Whether that is the collected state that is current now. Null when the "
+            "evaluation predates the record, so nobody can say."
+        ),
+    )
+    held: list[HeldFindingsView] = Field(
+        default_factory=list,
+        description=(
+            "Per server-scoped scope that is not current, the open findings still held there."
+        ),
+    )
+
+
 class RiskSummaryResponse(BaseModel):
     """The dashboard's header: counts, coverage and configuration."""
 
@@ -307,6 +357,15 @@ class RiskSummaryResponse(BaseModel):
     rule_counts: dict[str, int]
     status_counts: dict[str, int]
     total: int
+    collection: CoverageSummaryView | None = Field(
+        default=None,
+        description=(
+            "Collection coverage beside the counts (ADG-DEMO-03). Null for a caller who may "
+            "not read collector status, in which case the interpretation below is still "
+            "computed from it."
+        ),
+    )
+    interpretation: TotalsInterpretationView | None = None
 
 
 class FindingsResponse(BaseModel):
@@ -433,7 +492,12 @@ CursorQuery = Annotated[str | None, Query(max_length=512)]
     summary="Severity counts, coverage and rule configuration",
     dependencies=[READ],
 )
-async def risk_summary(session: Session, settings: SettingsDep) -> RiskSummaryResponse:
+async def risk_summary(
+    session: Session,
+    settings: SettingsDep,
+    application: RequestSettings,
+    principal: CurrentPrincipal,
+) -> RiskSummaryResponse:
     """The header a risk dashboard opens with.
 
     Counts over every open finding, and the two things that decide whether those counts mean
@@ -442,6 +506,27 @@ async def risk_summary(session: Session, settings: SettingsDep) -> RiskSummaryRe
     configuration = settings.risk_configuration
     report = RiskReportRepository(session)
     page = await report.page(FindingQuery(), limit=0)
+    collection = await collection_coverage(session, application)
+    interpretation = interpret_totals(
+        has_ever_run=page.coverage.has_ever_run,
+        evaluation_complete=page.coverage.complete,
+        evaluation_trigger=page.coverage.trigger.value if page.coverage.trigger else None,
+        truncation=page.coverage.truncation,
+        evaluated_basis=page.coverage.basis_token,
+        current_basis=collection.basis.token,
+        coverage=collection.report,
+    )
+    held_scopes = [
+        scope
+        for scope in collection.report.scopes
+        if scope.target is not None
+        and scope.collector not in DOMAIN_WIDE_COLLECTORS
+        and not scope.is_complete
+    ]
+    held_counts = await report.open_findings_on_servers(
+        [scope.target or "" for scope in held_scopes]
+    )
+    readable = principal.can(Capability.COLLECTORS_READ)
     return RiskSummaryResponse(
         coverage=_coverage_view(page.coverage),
         configuration=_configuration_view(configuration),
@@ -449,6 +534,30 @@ async def risk_summary(session: Session, settings: SettingsDep) -> RiskSummaryRe
         rule_counts=page.rule_counts,
         status_counts={key.value: value for key, value in page.status_counts.items()},
         total=page.total,
+        collection=(
+            coverage_summary_view(collection.report, basis_view(collection.basis))
+            if readable
+            else None
+        ),
+        interpretation=TotalsInterpretationView(
+            reading=interpretation.reading.value,
+            exhaustive=interpretation.exhaustive,
+            reasons=list(interpretation.reasons),
+            evaluated_basis=page.coverage.basis_token,
+            basis_current=interpretation.basis_current,
+            held=[
+                HeldFindingsView(
+                    scope=scope.label,
+                    server=scope.target or "",
+                    evidence=scope.evidence.value,
+                    evidence_collected_at=scope.evidence_collected_at,
+                    open_findings=held_counts.get((scope.target or "").casefold(), 0),
+                )
+                for scope in held_scopes
+            ]
+            if readable
+            else [],
+        ),
     )
 
 

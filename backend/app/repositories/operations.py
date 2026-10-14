@@ -1,4 +1,4 @@
-"""Reading collector operations: five statements, whatever the estate holds.
+"""Reading collector operations: a fixed number of statements, whatever the estate holds.
 
 The collector status page asks five things at once — the latest run of each scope, the last
 success of each scope, the last failure of each scope, how many of every object is
@@ -19,7 +19,9 @@ per scope — is the N+1 this module exists to avoid.
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Sequence
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -214,6 +216,29 @@ class OperationsRepository:
             )
             for row in rows
         )
+
+    async def failure_codes(self, run_ids: Sequence[str]) -> dict[str, tuple[str, ...]]:
+        """The distinct error codes each named run reported, in one statement.
+
+        Asked for the latest run of each scope that failed, so the coverage report can tell
+        a target nobody could reach from one that refused the collector
+        (:data:`app.domain.coverage.UNREACHABLE_ERROR_CODES`).
+        """
+        if not run_ids:
+            return {}
+        statement = (
+            select(
+                scan_run_errors.c.run_id,
+                func.array_agg(scan_run_errors.c.code.distinct()).label("codes"),
+            )
+            .where(scan_run_errors.c.run_id.in_([UUID(item) for item in run_ids]))
+            .group_by(scan_run_errors.c.run_id)
+        )
+        rows = (await self._session.execute(statement)).mappings().all()
+        return {
+            str(row["run_id"]): tuple(sorted(str(code) for code in (row["codes"] or [])))
+            for row in rows
+        }
 
 
 def _moment(value: Any) -> dt.datetime | None:

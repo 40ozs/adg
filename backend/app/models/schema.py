@@ -1915,6 +1915,17 @@ risk_evaluations = Table(
     Column("findings_reopened", Integer, nullable=False, server_default="0"),
     Column("findings_resolved", Integer, nullable=False, server_default="0"),
     Column("error", Text, nullable=True),
+    # The collection basis token read as the pass started: which collected state its counts
+    # describe. NULL on passes recorded before 0018, and read as "unknown", never "current".
+    Column(
+        "basis_token",
+        Text,
+        nullable=True,
+        comment=(
+            "The collection basis token read as the evaluation started: which collected "
+            "state its counts describe. NULL on evaluations recorded before it existed."
+        ),
+    ),
     _timestamp("started_at"),
     _timestamp("completed_at", nullable=True),
     _enum_check("trigger", RiskEvaluationTrigger),

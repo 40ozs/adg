@@ -206,6 +206,7 @@ ROUTE_CAPABILITIES: dict[tuple[str, str], str | None] = {
     ("GET", "/api/v1/scan-runs/{run_id}"): Capability.COLLECTORS_READ.value,
     ("GET", "/api/v1/collection/status"): Capability.COLLECTORS_READ.value,
     ("GET", "/api/v1/collection/operations"): Capability.COLLECTORS_READ.value,
+    ("GET", "/api/v1/collection/coverage"): Capability.COLLECTORS_READ.value,
     # Identities.
     ("GET", "/api/v1/principals/{identifier}"): Capability.IDENTITIES_READ.value,
     ("GET", "/api/v1/principals/{identifier}/groups"): Capability.IDENTITIES_READ.value,

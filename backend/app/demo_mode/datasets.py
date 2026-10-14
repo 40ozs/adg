@@ -56,6 +56,12 @@ Optional members, read with ``getattr`` so a dataset declares only what it has:
     one folder, one access path -- so a reviewer can start a guided investigation without
     looking up a SID. Served on ``GET /api/v1/demo`` beside the scenarios and, like them,
     display-only: the answer is whatever the real access engine computes for the pair.
+``comparisons()``
+    :class:`DemoComparison` values: point-in-time comparisons the demo offers as a recovery
+    drill (ADG-DEMO-03) -- two instants of the dataset's own history, and optionally a
+    deliberately short interactive window to launch with, so the comparison stops the same
+    way every time and the reviewer can see what ADG does when one cannot finish. Display
+    only: the comparison is the real one, run by ``GET /api/v1/changes/compare``.
 
 **generations() is called often** -- by the demo overview on every request -- so a dataset
 should build its transcripts once and return the same tuple thereafter.
@@ -94,6 +100,7 @@ __all__ = [
     "CanonicalProbe",
     "DatasetEntry",
     "DatasetUnavailable",
+    "DemoComparison",
     "DemoDatasetMetadata",
     "DemoInvestigation",
     "DemoScenario",
@@ -103,6 +110,8 @@ __all__ = [
     "SyntheticDataset",
     "baseline_generations",
     "cached_dataset",
+    "dataset_comparisons",
+    "dataset_expected_collectors",
     "dataset_investigations",
     "dataset_scenarios",
     "load_dataset",
@@ -194,6 +203,22 @@ class DemoInvestigation:
     """Keys of the :class:`DemoScenario` walkthroughs this one belongs to."""
 
 
+@dataclass(frozen=True, slots=True)
+class DemoComparison:
+    """One point-in-time comparison the dataset offers as a recovery drill. Display-only."""
+
+    key: str
+    title: str
+    question: str
+    at_from: dt.datetime
+    at_to: dt.datetime
+    drill_window_ms: int | None = None
+    """A deliberately short interactive window to launch with, in milliseconds. Reading the
+    two instants takes longer than this on any host, so the comparison stops at its first
+    checkpoint every time. ``None`` launches inside the standard window."""
+    summary: str = ""
+
+
 ProbeKind = Literal["principal", "membership", "share", "share_ace", "ntfs_resource", "ntfs_ace"]
 
 
@@ -254,6 +279,31 @@ def dataset_investigations(dataset: SyntheticDataset) -> tuple[DemoInvestigation
     """The dataset's optional :class:`DemoInvestigation` questions, or none."""
     supplier = getattr(dataset, "investigations", None)
     return tuple(supplier()) if callable(supplier) else ()
+
+
+def dataset_comparisons(dataset: SyntheticDataset) -> tuple[DemoComparison, ...]:
+    """The dataset's optional :class:`DemoComparison` drills, or none."""
+    supplier = getattr(dataset, "comparisons", None)
+    return tuple(supplier()) if callable(supplier) else ()
+
+
+def dataset_expected_collectors(dataset: SyntheticDataset) -> tuple[str, ...]:
+    """The collector kinds the dataset's own scan history runs, in name order.
+
+    A demo estate's expectation is not configured separately: every collector its
+    generations post a run for is one the estate is supposed to have, so a kind among them
+    that has no run in the database (an earlier reset point, a generation not yet applied)
+    is "expected and missing" rather than "not configured" (:mod:`app.domain.coverage`).
+    """
+    return tuple(
+        sorted(
+            {
+                transcript.collector
+                for generation in dataset.generations()
+                for transcript in generation.transcripts
+            }
+        )
+    )
 
 
 class DatasetUnavailable(LookupError):

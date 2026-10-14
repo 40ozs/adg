@@ -12,20 +12,33 @@ API and the UI. It is kept cheap because it sits on the path of every screen.
 scope, what each run failed to deliver, how many objects are actually stored, and every
 reported error grouped by code. It costs five statements and no other screen waits on it, so
 it is its own route rather than more fields on ``/status``.
+
+``/coverage`` is the reviewer's form of the same records (ADG-DEMO-03): each scope's latest
+attempt and the age of the evidence ADG holds for it, the collectors this estate expects and
+whether each has reported, and the snapshot the counts describe. Given ``resource`` it also
+names the scopes one answer about that folder reads, and whether an incomplete scope could
+change it. It is what sits beside a risk total and an access investigation.
 """
 
 from __future__ import annotations
 
 import datetime as dt
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
-from app.api.deps import Session
+from app.api.caching import BasisView, basis_view
+from app.api.deps import RequestSettings, Session
 from app.auth.dependencies import requires
 from app.auth.roles import Capability
 from app.domain.collection import CollectorCoverage, assess_collection
+from app.domain.coverage import (
+    CoverageReport,
+    KindCoverage,
+    ScopeCoverage,
+    server_of_resource,
+)
 from app.domain.operations import (
     ErrorGroup,
     ObjectCounts,
@@ -35,6 +48,7 @@ from app.domain.operations import (
 )
 from app.ingestion.service import IngestionService
 from app.repositories.operations import OperationsRepository
+from app.services.coverage import collection_coverage
 
 router = APIRouter(prefix="/api/v1/collection", tags=["collection"])
 
@@ -325,6 +339,263 @@ async def collection_operations(session: Session) -> CollectionOperationsRespons
         counts=_counts_view(report.counts),
         errors=[_error_view(group) for group in report.errors],
         total_errors=report.total_errors,
+    )
+
+
+# ---------------------------------------------------------------------------
+# The reviewer's view (ADG-DEMO-03).
+# ---------------------------------------------------------------------------
+
+ScopeStateLiteral = Literal["collected", "partial", "unavailable", "failed", "running"]
+EvidenceLiteral = Literal["current", "stale", "none"]
+VerdictLiteral = Literal["complete", "partial", "incomplete", "none"]
+
+
+class ScopeCoverageView(BaseModel):
+    """One scope: what its latest attempt did, and how old the evidence ADG holds is."""
+
+    collector: str
+    target: str | None
+    label: str
+    state: ScopeStateLiteral = Field(
+        description=(
+            "What the latest run did: collected (complete), partial, unavailable (the target "
+            "could not be reached), failed, or running."
+        )
+    )
+    evidence: EvidenceLiteral = Field(
+        description=(
+            "What ADG holds: current (from the latest run), stale (the latest attempt "
+            "delivered nothing; the rows are from an earlier run), or none."
+        )
+    )
+    attempted_at: dt.datetime
+    evidence_collected_at: dt.datetime | None
+    observations: int = Field(description="Observations the latest run applied.")
+    returned_nothing: bool = Field(
+        description=(
+            "Collected completely and the scan found nothing. The only state in which an "
+            "empty result means 'checked, and nothing is there'."
+        )
+    )
+    failure_codes: list[str] = Field(default_factory=list)
+    sentence: str
+
+
+class CollectorKindView(BaseModel):
+    collector: str
+    expected: bool
+    state: Literal["reported", "not_collected", "not_configured"] = Field(
+        description=(
+            "reported; not_collected (expected for this estate, never reported); or "
+            "not_configured (not expected, never reported -- ADG cannot tell an intentional "
+            "omission from a collector nobody set up)."
+        )
+    )
+    scopes: int
+    collected: int
+
+
+class CoverageCountsView(BaseModel):
+    """Counts of scopes, never a percentage: scopes are not equal in size."""
+
+    scopes: int
+    collected: int
+    partial: int
+    unavailable: int
+    failed: int
+    running: int
+    stale: int = Field(description="Scopes whose evidence is from an earlier run.")
+    never_collected: int
+    returned_nothing: int = Field(description="Collected completely, and found nothing.")
+
+
+class CoverageSummaryView(BaseModel):
+    """The line that sits beside a number, and what it is made of."""
+
+    verdict: VerdictLiteral
+    complete: bool
+    headline: str
+    counts: CoverageCountsView
+    concerns: list[str] = Field(default_factory=list)
+    snapshot: BasisView = Field(description="The collected state these scopes describe.")
+
+
+class RelevantCoverageView(BaseModel):
+    """The scopes one answer about a folder reads, and whether they could change it."""
+
+    resource: str
+    server: str | None
+    verdict: VerdictLiteral
+    complete: bool
+    headline: str
+    scopes: list[ScopeCoverageView]
+    incomplete_elsewhere: int = Field(
+        description="Scopes that are not complete and that this answer does not read."
+    )
+    could_change_answer: bool = Field(
+        description=(
+            "True when a scope this answer reads is not complete: a change ADG has not "
+            "collected could change it. Separate from the answer's own certainty."
+        )
+    )
+    statement: str
+
+
+class CollectionCoverageResponse(CoverageSummaryView):
+    """How complete the collected evidence is, scope by scope."""
+
+    health: Literal["no_data", "healthy", "incomplete", "failed"] = Field(
+        description="The same verdict /status returns, folded from the same runs."
+    )
+    expectation: Literal["configured", "dataset", "none"] = Field(
+        description=(
+            "Where the expected collector set came from: ADG_EXPECTED_COLLECTORS, the demo "
+            "dataset's scan history, or nowhere."
+        )
+    )
+    collectors: list[CollectorKindView]
+    scopes: list[ScopeCoverageView]
+    relevant: RelevantCoverageView | None = None
+
+
+def scope_coverage_view(scope: ScopeCoverage) -> ScopeCoverageView:
+    return ScopeCoverageView(
+        collector=scope.collector,
+        target=scope.target,
+        label=scope.label,
+        state=scope.state.value,
+        evidence=scope.evidence.value,
+        attempted_at=scope.attempted_at,
+        evidence_collected_at=scope.evidence_collected_at,
+        observations=scope.observations,
+        returned_nothing=scope.returned_nothing,
+        failure_codes=list(scope.failure_codes),
+        sentence=scope.sentence,
+    )
+
+
+def _kind_view(kind: KindCoverage) -> CollectorKindView:
+    return CollectorKindView(
+        collector=kind.collector,
+        expected=kind.expected,
+        state=kind.state.value,
+        scopes=kind.scopes,
+        collected=kind.collected,
+    )
+
+
+def coverage_counts_view(report: CoverageReport) -> CoverageCountsView:
+    from app.domain.coverage import ScopeState
+
+    return CoverageCountsView(
+        scopes=len(report.scopes),
+        collected=report.collected,
+        partial=report.count(ScopeState.PARTIAL),
+        unavailable=report.count(ScopeState.UNAVAILABLE),
+        failed=report.count(ScopeState.FAILED),
+        running=report.count(ScopeState.RUNNING),
+        stale=report.stale,
+        never_collected=report.never_collected,
+        returned_nothing=report.returned_nothing,
+    )
+
+
+def coverage_summary_view(report: CoverageReport, snapshot: BasisView) -> CoverageSummaryView:
+    return CoverageSummaryView(
+        verdict=report.verdict.value,
+        complete=report.complete,
+        headline=report.headline,
+        counts=coverage_counts_view(report),
+        concerns=list(report.concerns),
+        snapshot=snapshot,
+    )
+
+
+def relevant_coverage_view(report: CoverageReport, resource: str) -> RelevantCoverageView:
+    server = server_of_resource(resource)
+    relevant = report.for_server(server)
+    read = {(scope.collector, scope.target) for scope in relevant.scopes}
+    elsewhere = sum(
+        1
+        for scope in report.scopes
+        if not scope.is_complete and (scope.collector, scope.target) not in read
+    )
+    incomplete = [scope for scope in relevant.scopes if not scope.is_complete]
+    if not relevant.scopes:
+        statement = (
+            "No collector has reported a scope this answer reads, so nothing about it has "
+            "been collected."
+        )
+    elif not incomplete:
+        statement = (
+            f"Every scope this answer reads was collected completely in its latest scan "
+            f"({', '.join(scope.label for scope in relevant.scopes)})."
+        )
+        if elsewhere:
+            statement += (
+                f" {elsewhere} scope(s) elsewhere in the estate are not complete. None of "
+                "them holds this folder, its share, its server's local groups or the "
+                "directory, so they cannot change this answer."
+            )
+    else:
+        statement = (
+            "Not every scope this answer reads is complete: "
+            + " ".join(scope.sentence for scope in incomplete)
+            + " The answer is computed from what ADG holds; a change it has not collected "
+            "could change it."
+        )
+    return RelevantCoverageView(
+        resource=resource,
+        server=server,
+        verdict=relevant.verdict.value,
+        complete=relevant.complete,
+        headline=relevant.headline,
+        scopes=[scope_coverage_view(scope) for scope in relevant.scopes],
+        incomplete_elsewhere=elsewhere,
+        could_change_answer=bool(incomplete) or not relevant.scopes,
+        statement=statement,
+    )
+
+
+@router.get(
+    "/coverage",
+    response_model=CollectionCoverageResponse,
+    summary="How complete the collected evidence is, scope by scope, and for one folder",
+    dependencies=[Depends(requires(Capability.COLLECTORS_READ))],
+)
+async def collection_coverage_report(
+    session: Session,
+    settings: RequestSettings,
+    resource: Annotated[
+        str | None,
+        Query(
+            max_length=2048,
+            description="A UNC path. Adds the scopes an answer about this folder reads.",
+        ),
+    ] = None,
+) -> CollectionCoverageResponse:
+    """Coverage for a reviewer, in five statements.
+
+    A failed or unavailable scope is reported with the age of the evidence ADG still holds
+    for it; a scope that was collected and found nothing is reported as exactly that. The
+    two are never the same row.
+    """
+    coverage = await collection_coverage(session, settings)
+    report = coverage.report
+    snapshot = basis_view(coverage.basis)
+    summary = coverage_summary_view(report, snapshot)
+    return CollectionCoverageResponse(
+        **summary.model_dump(),
+        health=coverage.status.health.value,
+        expectation=coverage.expectation,
+        collectors=[_kind_view(kind) for kind in report.kinds],
+        scopes=[scope_coverage_view(scope) for scope in report.scopes],
+        relevant=(
+            relevant_coverage_view(report, resource.strip())
+            if resource is not None and resource.strip()
+            else None
+        ),
     )
 
 

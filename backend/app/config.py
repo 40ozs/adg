@@ -196,6 +196,16 @@ class Settings(BaseSettings):
     **after** the ingestion transaction has committed, and both the function and its call
     site swallow failures into a log line."""
 
+    # --- Collection coverage -----------------------------------------------------------
+    #
+    # Which collector kinds this estate is supposed to run. ADG cannot otherwise tell a
+    # collector nobody configured from one that has never reported, so a kind that is
+    # expected and has never reported makes collection coverage incomplete (and every risk
+    # total "not exhaustive"), while one that is not expected is reported as not
+    # configured. Empty means no expectation; a demo deployment uses its dataset's own.
+    expected_collectors: str = ""
+    """Comma-separated collector kinds: any of active_directory, smb, ntfs, local_groups."""
+
     # --- Remediation -------------------------------------------------------------------
     #
     # ADG describes changes and performs none of them. These three settings say what the
@@ -325,6 +335,11 @@ class Settings(BaseSettings):
         return _parse_group_role_map(self.oidc_group_role_map)
 
     @property
+    def expected_collector_kinds(self) -> tuple[str, ...]:
+        """The configured expected collector kinds, validated at startup, in name order."""
+        return _parse_expected_collectors(self.expected_collectors)
+
+    @property
     def collector_key_map(self) -> dict[str, str]:
         """Key id -> secret, as validated at startup. Empty when none are configured."""
         return _parse_collector_keys(self.collector_api_keys)
@@ -337,6 +352,12 @@ class Settings(BaseSettings):
         if normalized not in allowed:
             raise ValueError(f"ADG_LOG_LEVEL must be one of {sorted(allowed)}; received {value!r}.")
         return normalized
+
+    @field_validator("expected_collectors")
+    @classmethod
+    def _validate_expected_collectors(cls, value: str) -> str:
+        _parse_expected_collectors(value)
+        return value
 
     @field_validator("runtime_mode", mode="before")
     @classmethod
@@ -627,6 +648,24 @@ def _parse_collector_keys(raw: str) -> dict[str, str]:
             )
         keys[key_id.strip()] = secret.strip()
     return keys
+
+
+def _parse_expected_collectors(raw: str) -> tuple[str, ...]:
+    from app.domain.observation import CollectorKind
+
+    known = {kind.value for kind in CollectorKind}
+    kinds: set[str] = set()
+    for entry in raw.split(","):
+        candidate = entry.strip().casefold()
+        if not candidate:
+            continue
+        if candidate not in known:
+            raise ValueError(
+                f"ADG_EXPECTED_COLLECTORS names unknown collector {candidate!r}. Valid "
+                f"collectors: {', '.join(sorted(known))}."
+            )
+        kinds.add(candidate)
+    return tuple(sorted(kinds))
 
 
 def build_settings(**overrides: Any) -> Settings:

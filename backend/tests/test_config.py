@@ -105,3 +105,18 @@ class TestTheChangePlanSigningKey:
         assert "ADG_REMEDIATION_SIGNING_KEY" in message
         assert str(MIN_SIGNING_KEY_LENGTH) in message
         assert "Get-Random" in message
+
+
+class TestTheExpectedCollectors:
+    """ADG-DEMO-03: which collector kinds this estate is supposed to run."""
+
+    def test_none_by_default(self) -> None:
+        assert build_settings().expected_collector_kinds == ()
+
+    def test_listed_kinds_are_normalized_and_ordered(self) -> None:
+        settings = build_settings(expected_collectors=" ntfs, SMB ,active_directory,ntfs")
+        assert settings.expected_collector_kinds == ("active_directory", "ntfs", "smb")
+
+    def test_an_unknown_kind_is_a_startup_error_that_names_the_valid_ones(self) -> None:
+        with pytest.raises(ValidationError, match="local_groups"):
+            build_settings(expected_collectors="ntfs,sharepoint")

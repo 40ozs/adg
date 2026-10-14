@@ -3261,6 +3261,101 @@
         "title": "CheckpointView",
         "type": "object"
       },
+      "CollectionCoverageResponse": {
+        "description": "How complete the collected evidence is, scope by scope.",
+        "properties": {
+          "collectors": {
+            "items": {
+              "$ref": "#/components/schemas/CollectorKindView"
+            },
+            "title": "Collectors",
+            "type": "array"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "concerns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Concerns",
+            "type": "array"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CoverageCountsView"
+          },
+          "expectation": {
+            "description": "Where the expected collector set came from: ADG_EXPECTED_COLLECTORS, the demo dataset's scan history, or nowhere.",
+            "enum": [
+              "configured",
+              "dataset",
+              "none"
+            ],
+            "title": "Expectation",
+            "type": "string"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "health": {
+            "description": "The same verdict /status returns, folded from the same runs.",
+            "enum": [
+              "no_data",
+              "healthy",
+              "incomplete",
+              "failed"
+            ],
+            "title": "Health",
+            "type": "string"
+          },
+          "relevant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RelevantCoverageView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeCoverageView"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/BasisView",
+            "description": "The collected state these scopes describe."
+          },
+          "verdict": {
+            "enum": [
+              "complete",
+              "partial",
+              "incomplete",
+              "none"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "complete",
+          "headline",
+          "counts",
+          "snapshot",
+          "health",
+          "expectation",
+          "collectors",
+          "scopes"
+        ],
+        "title": "CollectionCoverageResponse",
+        "type": "object"
+      },
       "CollectionMode": {
         "description": "What a run set out to read.\n\nThe three values are not three degrees of thoroughness; they are three different\n*claims about coverage*, and only the last two make one.",
         "enum": [
@@ -3589,6 +3684,45 @@
         "title": "CollectorKind",
         "type": "string"
       },
+      "CollectorKindView": {
+        "properties": {
+          "collected": {
+            "title": "Collected",
+            "type": "integer"
+          },
+          "collector": {
+            "title": "Collector",
+            "type": "string"
+          },
+          "expected": {
+            "title": "Expected",
+            "type": "boolean"
+          },
+          "scopes": {
+            "title": "Scopes",
+            "type": "integer"
+          },
+          "state": {
+            "description": "reported; not_collected (expected for this estate, never reported); or not_configured (not expected, never reported -- ADG cannot tell an intentional omission from a collector nobody set up).",
+            "enum": [
+              "reported",
+              "not_collected",
+              "not_configured"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "collector",
+          "expected",
+          "state",
+          "scopes",
+          "collected"
+        ],
+        "title": "CollectorKindView",
+        "type": "object"
+      },
       "CommentRequirement": {
         "description": "How firmly a campaign insists that a decision explain itself.\n\nBoth values only ever **add** to the rule the database already enforces: every decision\nbut ``certify`` must carry a rationale, checked by\n``ck_review_decisions_reason_required``. There is deliberately no value making a\nrationale optional for a revocation — a campaign setting must not be able to switch off\nan invariant that exists so the person who loses access can be told why — so what is\nconfigurable is whether the campaign *also* demands one for the expected answer.",
         "enum": [
@@ -3725,6 +3859,108 @@
           "marks_anything_sensitive"
         ],
         "title": "ConfigurationView",
+        "type": "object"
+      },
+      "CoverageCountsView": {
+        "description": "Counts of scopes, never a percentage: scopes are not equal in size.",
+        "properties": {
+          "collected": {
+            "title": "Collected",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "never_collected": {
+            "title": "Never Collected",
+            "type": "integer"
+          },
+          "partial": {
+            "title": "Partial",
+            "type": "integer"
+          },
+          "returned_nothing": {
+            "description": "Collected completely, and found nothing.",
+            "title": "Returned Nothing",
+            "type": "integer"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          },
+          "scopes": {
+            "title": "Scopes",
+            "type": "integer"
+          },
+          "stale": {
+            "description": "Scopes whose evidence is from an earlier run.",
+            "title": "Stale",
+            "type": "integer"
+          },
+          "unavailable": {
+            "title": "Unavailable",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scopes",
+          "collected",
+          "partial",
+          "unavailable",
+          "failed",
+          "running",
+          "stale",
+          "never_collected",
+          "returned_nothing"
+        ],
+        "title": "CoverageCountsView",
+        "type": "object"
+      },
+      "CoverageSummaryView": {
+        "description": "The line that sits beside a number, and what it is made of.",
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "concerns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Concerns",
+            "type": "array"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CoverageCountsView"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/BasisView",
+            "description": "The collected state these scopes describe."
+          },
+          "verdict": {
+            "enum": [
+              "complete",
+              "partial",
+              "incomplete",
+              "none"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "complete",
+          "headline",
+          "counts",
+          "snapshot"
+        ],
+        "title": "CoverageSummaryView",
         "type": "object"
       },
       "CoverageView": {
@@ -6740,6 +6976,54 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HeldFindingsView": {
+        "description": "Open findings ADG still holds for a scope whose latest scan did not deliver.",
+        "properties": {
+          "evidence": {
+            "enum": [
+              "stale",
+              "none",
+              "current"
+            ],
+            "title": "Evidence",
+            "type": "string"
+          },
+          "evidence_collected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Collected At"
+          },
+          "open_findings": {
+            "description": "Open findings on this server's folders and shares. A failed scan closes nothing, so these stay counted from the server's last successful scan.",
+            "title": "Open Findings",
+            "type": "integer"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "server": {
+            "title": "Server",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "server",
+          "evidence",
+          "evidence_collected_at",
+          "open_findings"
+        ],
+        "title": "HeldFindingsView",
         "type": "object"
       },
       "HopEvidenceView": {
@@ -11600,6 +11884,78 @@
         "title": "RelatedFindingView",
         "type": "object"
       },
+      "RelevantCoverageView": {
+        "description": "The scopes one answer about a folder reads, and whether they could change it.",
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "could_change_answer": {
+            "description": "True when a scope this answer reads is not complete: a change ADG has not collected could change it. Separate from the answer's own certainty.",
+            "title": "Could Change Answer",
+            "type": "boolean"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "incomplete_elsewhere": {
+            "description": "Scopes that are not complete and that this answer does not read.",
+            "title": "Incomplete Elsewhere",
+            "type": "integer"
+          },
+          "resource": {
+            "title": "Resource",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeCoverageView"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "server": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "complete",
+              "partial",
+              "incomplete",
+              "none"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource",
+          "server",
+          "verdict",
+          "complete",
+          "headline",
+          "scopes",
+          "incomplete_elsewhere",
+          "could_change_answer",
+          "statement"
+        ],
+        "title": "RelevantCoverageView",
+        "type": "object"
+      },
       "RemediationAction": {
         "description": "A change somebody might make in Windows as a result of a decision.\n\nEvery member is a **proposal**. ADG performs none of them: the application is read-only\ntoward the estate (SECURITY.md), ``Capability.REMEDIATION_EXECUTE`` is held by no role,\nand nothing in the governance package can reach a Windows API.",
         "enum": [
@@ -12264,11 +12620,32 @@
       "RiskSummaryResponse": {
         "description": "The dashboard's header: counts, coverage and configuration.",
         "properties": {
+          "collection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageSummaryView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Collection coverage beside the counts (ADG-DEMO-03). Null for a caller who may not read collector status, in which case the interpretation below is still computed from it."
+          },
           "configuration": {
             "$ref": "#/components/schemas/ConfigurationView"
           },
           "coverage": {
             "$ref": "#/components/schemas/CoverageView"
+          },
+          "interpretation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TotalsInterpretationView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rule_counts": {
             "additionalProperties": {
@@ -13347,6 +13724,104 @@
           "key"
         ],
         "title": "ScopeBody",
+        "type": "object"
+      },
+      "ScopeCoverageView": {
+        "description": "One scope: what its latest attempt did, and how old the evidence ADG holds is.",
+        "properties": {
+          "attempted_at": {
+            "format": "date-time",
+            "title": "Attempted At",
+            "type": "string"
+          },
+          "collector": {
+            "title": "Collector",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "What ADG holds: current (from the latest run), stale (the latest attempt delivered nothing; the rows are from an earlier run), or none.",
+            "enum": [
+              "current",
+              "stale",
+              "none"
+            ],
+            "title": "Evidence",
+            "type": "string"
+          },
+          "evidence_collected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Collected At"
+          },
+          "failure_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failure Codes",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "observations": {
+            "description": "Observations the latest run applied.",
+            "title": "Observations",
+            "type": "integer"
+          },
+          "returned_nothing": {
+            "description": "Collected completely and the scan found nothing. The only state in which an empty result means 'checked, and nothing is there'.",
+            "title": "Returned Nothing",
+            "type": "boolean"
+          },
+          "sentence": {
+            "title": "Sentence",
+            "type": "string"
+          },
+          "state": {
+            "description": "What the latest run did: collected (complete), partial, unavailable (the target could not be reached), failed, or running.",
+            "enum": [
+              "collected",
+              "partial",
+              "unavailable",
+              "failed",
+              "running"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "required": [
+          "collector",
+          "target",
+          "label",
+          "state",
+          "evidence",
+          "attempted_at",
+          "evidence_collected_at",
+          "observations",
+          "returned_nothing",
+          "sentence"
+        ],
+        "title": "ScopeCoverageView",
         "type": "object"
       },
       "ScopeInput": {
@@ -16468,6 +16943,73 @@
           "membership_complete"
         ],
         "title": "TokenView",
+        "type": "object"
+      },
+      "TotalsInterpretationView": {
+        "description": "Whether the counts beside it may be read as totals, and every reason they may not.",
+        "properties": {
+          "basis_current": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether that is the collected state that is current now. Null when the evaluation predates the record, so nobody can say.",
+            "title": "Basis Current"
+          },
+          "evaluated_basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The collection basis token the last evaluation read; null when unknown.",
+            "title": "Evaluated Basis"
+          },
+          "exhaustive": {
+            "description": "True only when the reading is complete.",
+            "title": "Exhaustive",
+            "type": "boolean"
+          },
+          "held": {
+            "description": "Per server-scoped scope that is not current, the open findings still held there.",
+            "items": {
+              "$ref": "#/components/schemas/HeldFindingsView"
+            },
+            "title": "Held",
+            "type": "array"
+          },
+          "reading": {
+            "description": "complete: a full evaluation over complete collection of the snapshot that is still current, so the counts are totals. Anything else is the least trustworthy of the reasons listed.",
+            "enum": [
+              "not_evaluated",
+              "partial",
+              "incomplete",
+              "stale",
+              "complete"
+            ],
+            "title": "Reading",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reading",
+          "exhaustive"
+        ],
+        "title": "TotalsInterpretationView",
         "type": "object"
       },
       "TraversalView": {
@@ -20962,6 +21504,75 @@
         "summary": "Every transition of one object",
         "tags": [
           "changes"
+        ]
+      }
+    },
+    "/api/v1/collection/coverage": {
+      "get": {
+        "description": "Coverage for a reviewer, in five statements.\n\nA failed or unavailable scope is reported with the age of the evidence ADG still holds\nfor it; a scope that was collected and found nothing is reported as exactly that. The\ntwo are never the same row.",
+        "operationId": "collection_coverage_report_api_v1_collection_coverage_get",
+        "parameters": [
+          {
+            "description": "A UNC path. Adds the scopes an answer about this folder reads.",
+            "in": "query",
+            "name": "resource",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 2048,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A UNC path. Adds the scopes an answer about this folder reads.",
+              "title": "Resource"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionCoverageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "How complete the collected evidence is, scope by scope, and for one folder",
+        "tags": [
+          "collection"
         ]
       }
     },
