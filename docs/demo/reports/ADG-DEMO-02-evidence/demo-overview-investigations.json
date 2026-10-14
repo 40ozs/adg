@@ -1,0 +1,33 @@
+{
+  "status": 200,
+  "dataset": "null-meridian-v1",
+  "investigations": [
+    {
+      "key": "apollo",
+      "title": "Why can a long-tenured engineer still modify the Apollo project folder?",
+      "question": "Why does Fatima Gordon have access to \\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo?",
+      "principal": {
+        "kind": "person",
+        "name": "Fatima Gordon",
+        "sid": "S-1-5-21-3949361974-1583827165-633756269-1323"
+      },
+      "resource": "\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo",
+      "access_path": "remote_smb",
+      "summary": "Fatima Gordon is named directly on the Apollo folder from their early years on the project, and also reaches it through five nested engineering groups. ADG shows which route actually carries the access on each ACL, where each hop was observed, and two things it cannot confirm: what the orphaned SID of a former employee (lhansen) on the same ACLs is, and who is in Proj-Zephyr-RW, whose membership was never collected. Neither can take the established access away; both mean the rights shown are a lower bound.",
+      "scenarios": [
+        "C",
+        "H"
+      ]
+    }
+  ],
+  "scenario_keys": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H"
+  ]
+}
