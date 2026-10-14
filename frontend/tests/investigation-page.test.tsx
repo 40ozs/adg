@@ -27,7 +27,11 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("@/lib/auth/current", () => ({ currentViewer: vi.fn() }));
-vi.mock("@/lib/api/adg", () => ({ fetchCollectionStatus: vi.fn(), fetchRuntime: vi.fn() }));
+vi.mock("@/lib/api/adg", () => ({
+  fetchCollectionCoverage: vi.fn(),
+  fetchCollectionStatus: vi.fn(),
+  fetchRuntime: vi.fn(),
+}));
 vi.mock("@/lib/api/explain", () => ({ fetchAccessExplanation: vi.fn() }));
 
 import * as adg from "@/lib/api/adg";
@@ -44,6 +48,7 @@ import {
   systemConflictingInvestigated,
   systemOverShareInvestigated,
 } from "./investigation-factories";
+import { apolloCoverage, fs03Coverage } from "./coverage-factories";
 
 const VIEWER = {
   status: "signed-in" as const,
@@ -98,6 +103,7 @@ beforeEach(() => {
   vi.mocked(currentViewer).mockResolvedValue(VIEWER);
   vi.mocked(adg.fetchCollectionStatus).mockResolvedValue(ok(HEALTHY));
   vi.mocked(adg.fetchRuntime).mockResolvedValue(ok(DEMO));
+  vi.mocked(adg.fetchCollectionCoverage).mockResolvedValue(ok(apolloCoverage()));
 });
 
 describe("1. the question", () => {
@@ -378,6 +384,7 @@ describe("keyboard and landmarks", () => {
       /What ADG could not confirm/,
       /Investigation summary/,
       /What to inspect next/,
+      /How complete is the evidence behind this answer/,
     ]) {
       expect(section(name)).toBeInTheDocument();
     }
@@ -391,5 +398,72 @@ describe("keyboard and landmarks", () => {
     await user.tab();
     expect(document.activeElement).toBe(links[0]);
     expect(links.every((link) => link.getAttribute("tabindex") !== "-1")).toBe(true);
+  });
+});
+
+describe("7. how complete the evidence behind the answer is (ADG-DEMO-03)", () => {
+  it("asks for the scopes this folder's answer reads, once", async () => {
+    await open();
+
+    expect(adg.fetchCollectionCoverage).toHaveBeenCalledTimes(1);
+    expect(adg.fetchCollectionCoverage).toHaveBeenCalledWith("token", { resource: APOLLO_PATH });
+  });
+
+  it("names the collectors that supplied the evidence, each with its state in words", async () => {
+    await open();
+    const panel = section(/How complete is the evidence behind this answer/);
+    const scopes = within(panel).getByRole("list", { name: "Collection scopes this answer reads" });
+
+    const items = within(scopes).getAllByRole("listitem").map((item) => item.textContent ?? "");
+    expect(items).toHaveLength(4);
+    expect(items[0]).toContain("active_directory (nullmeridian.info)");
+    expect(items.every((item) => item.includes("Collected"))).toBe(true);
+    expect(items.join(" ")).toContain("ntfs (NM-ENG-FS01)");
+  });
+
+  it("says the incomplete scopes elsewhere cannot change this answer, and names them", async () => {
+    await open();
+    const panel = section(/How complete is the evidence behind this answer/);
+
+    expect(
+      within(panel).getByText("Missing collection elsewhere cannot change this answer."),
+    ).toBeInTheDocument();
+    const elsewhere = within(panel).getByRole("list", {
+      name: "Incomplete scopes this answer does not read",
+    });
+    expect(elsewhere.textContent).toContain("ntfs (NM-FS-03): the latest scan could not reach its target");
+    expect(elsewhere.textContent).toContain("Unavailable");
+    expect(within(panel).getByText(/98 of 100 collection scopes collected completely/)).toBeInTheDocument();
+  });
+
+  it("says plainly when an incomplete scope could change the answer", async () => {
+    vi.mocked(adg.fetchCollectionCoverage).mockResolvedValue(ok(fs03Coverage()));
+    await open();
+    const panel = section(/How complete is the evidence behind this answer/);
+
+    expect(
+      within(panel).getByText("Missing or older collection could change this answer."),
+    ).toBeInTheDocument();
+    expect(within(panel).getByText(/Older evidence, from the scan of 2026-09-17/)).toBeInTheDocument();
+  });
+
+  it("leaves the answer's own certainty to the answer", async () => {
+    await open();
+    const panel = section(/How complete is the evidence behind this answer/);
+
+    expect(within(panel).getByText(/Context beside the answer, not part of it/)).toBeInTheDocument();
+    // Section 1 still states the engine's certainty, unchanged by coverage.
+    expect(section(/What ADG evaluated/).textContent).toMatch(/at least|lower bound/i);
+  });
+
+  it("renders the investigation unchanged when coverage cannot be read", async () => {
+    vi.mocked(adg.fetchCollectionCoverage).mockResolvedValue({
+      ok: false,
+      failure: { kind: "forbidden", status: 403, message: "No collectors:read." },
+    });
+    await open();
+
+    expect(screen.queryByRole("region", { name: /How complete is the evidence/ })).toBeNull();
+    expect(section(/What ADG evaluated/)).toBeInTheDocument();
   });
 });

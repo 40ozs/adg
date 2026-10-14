@@ -60,8 +60,10 @@ const EXPECTED_DEMO: Record<string, string[]> = {
     "baseline_generations",
     "next_generation",
     "scenarios",
+    "comparisons",
     "mutation_policy",
   ],
+  ComparisonSeedView: ["key", "title", "question", "at_from", "at_to", "drill_window_ms", "summary"],
   DatasetView: [
     "key",
     "company_name",
@@ -116,7 +118,19 @@ const EXPECTED: Record<string, string[]> = {
     "rule_counts",
     "status_counts",
     "total",
+    // ADG-DEMO-03: the collection behind the counts, and whether they may be read as totals.
+    "collection",
+    "interpretation",
   ],
+  TotalsInterpretationView: [
+    "reading",
+    "exhaustive",
+    "reasons",
+    "evaluated_basis",
+    "basis_current",
+    "held",
+  ],
+  HeldFindingsView: ["scope", "server", "evidence", "evidence_collected_at", "open_findings"],
   CoverageView: [
     "has_ever_run",
     "evaluated_at",
@@ -274,6 +288,85 @@ const EXPECTED: Record<string, string[]> = {
   ],
   DevelopmentLoginResponse: ["access_token", "token_type", "expires_at", "principal", "warning"],
   CollectionStatusResponse: ["health", "summary", "concerns", "collectors"],
+  // ADG-DEMO-03: collection coverage for a reviewer.
+  CollectionCoverageResponse: [
+    "verdict",
+    "complete",
+    "headline",
+    "counts",
+    "concerns",
+    "snapshot",
+    "health",
+    "expectation",
+    "collectors",
+    "scopes",
+    "relevant",
+  ],
+  CoverageSummaryView: ["verdict", "complete", "headline", "counts", "concerns", "snapshot"],
+  CoverageCountsView: [
+    "scopes",
+    "collected",
+    "partial",
+    "unavailable",
+    "failed",
+    "running",
+    "stale",
+    "never_collected",
+    "returned_nothing",
+  ],
+  ScopeCoverageView: [
+    "collector",
+    "target",
+    "label",
+    "state",
+    "evidence",
+    "attempted_at",
+    "evidence_collected_at",
+    "observations",
+    "returned_nothing",
+    "failure_codes",
+    "sentence",
+  ],
+  CollectorKindView: ["collector", "expected", "state", "scopes", "collected"],
+  RelevantCoverageView: [
+    "resource",
+    "server",
+    "verdict",
+    "complete",
+    "headline",
+    "scopes",
+    "incomplete_elsewhere",
+    "could_change_answer",
+    "statement",
+  ],
+  // ADG-DEMO-03: how a point-in-time comparison ended, and what to do about it.
+  ComparisonResponse: [
+    "at_from",
+    "at_to",
+    "changes",
+    "edits",
+    "unchanged",
+    "unobserved_at_from",
+    "unobserved_at_to",
+    "truncated",
+    "summary",
+    "comparison_id",
+    "outcome",
+    "complete",
+    "recovered",
+    "retry_of",
+    "stopped_in",
+    "compared_through",
+    "requested_scope",
+    "window_ms",
+    "elapsed_ms",
+    "objects_per_side",
+    "objects_read_from",
+    "objects_read_to",
+    "differences_found",
+    "recovery",
+  ],
+  RecoveryActionView: ["action", "label", "parameters", "objects_at_from", "objects_at_to"],
   CollectorCoverageView: [
     "collector",
     "status",
@@ -888,5 +981,31 @@ describe("the collection status", () => {
       | undefined;
 
     expect(schema?.enum?.sort()).toEqual(["failed", "healthy", "incomplete", "no_data"].sort());
+  });
+});
+
+describe("the coverage and comparison vocabulary (ADG-DEMO-03)", () => {
+  // Each is a TypeScript union the wording in `lib/coverage.ts` switches on. A value the API
+  // can send and the union cannot hold would fall through to a default -- and the defaults
+  // there separate "nothing was collected" from "collected, found nothing", and "the whole
+  // comparison" from "part of it".
+  it.each([
+    ["ScopeCoverageView", "state", ["collected", "failed", "partial", "running", "unavailable"]],
+    ["ScopeCoverageView", "evidence", ["current", "none", "stale"]],
+    ["CoverageSummaryView", "verdict", ["complete", "incomplete", "none", "partial"]],
+    ["CollectorKindView", "state", ["not_collected", "not_configured", "reported"]],
+    [
+      "TotalsInterpretationView",
+      "reading",
+      ["complete", "incomplete", "not_evaluated", "partial", "stale"],
+    ],
+    ["ComparisonResponse", "outcome", ["cancelled", "complete", "incomplete", "timed_out"]],
+    ["RecoveryActionView", "action", ["narrow_kind", "retry_standard_window"]],
+  ])("declares exactly the %s.%s values the union allows", (name, field, expected) => {
+    const schema = document.components.schemas[name]?.properties?.[field] as
+      | { enum?: string[] }
+      | undefined;
+
+    expect(schema?.enum?.slice().sort()).toEqual(expected);
   });
 });

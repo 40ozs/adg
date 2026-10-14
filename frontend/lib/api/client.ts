@@ -17,12 +17,20 @@ import "server-only";
 
 import { resolveServerApiUrl } from "@/lib/config";
 
-/** Why a request did not produce data. */
+/**
+ * Why a request did not produce data.
+ *
+ * `timeout` is the request outliving its own deadline, and is kept apart from `unreachable`
+ * on purpose (ADG-DEMO-03): an API that answered nothing in time for a question too large to
+ * answer interactively is not an API that is down, and rendering the one as the other sends a
+ * reader looking for an outage that is not there.
+ */
 export type FailureKind =
   | "unauthenticated"
   | "forbidden"
   | "not_found"
   | "invalid_request"
+  | "timeout"
   | "unreachable"
   | "server_error";
 
@@ -93,6 +101,18 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       signal: options.signal ?? AbortSignal.timeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     });
   } catch (error) {
+    if (isTimeout(error)) {
+      const limit = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+      return {
+        ok: false,
+        failure: {
+          kind: "timeout",
+          status: null,
+          message: `The ADG API did not answer within ${limit / 1000} seconds.`,
+          detail: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
     return {
       ok: false,
       failure: {
@@ -121,6 +141,16 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   return { ok: false, failure: await describeFailure(response) };
+}
+
+/** Whether a fetch rejected because its own deadline (`AbortSignal.timeout`) passed. */
+function isTimeout(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error as { name: unknown }).name === "TimeoutError"
+  );
 }
 
 async function describeFailure(response: Response): Promise<ApiFailure> {

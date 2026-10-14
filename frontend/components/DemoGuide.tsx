@@ -2,6 +2,7 @@ import type { JSX } from "react";
 import Link from "next/link";
 
 import type {
+  DemoComparison,
   DemoGeneration,
   DemoInvestigation,
   DemoOverview,
@@ -11,6 +12,7 @@ import type {
 import { explainHref } from "@/lib/explanation";
 import { principalHrefForKey } from "@/lib/identity";
 import { investigateHref, SECTION } from "@/lib/investigation";
+import { hrefWith } from "@/lib/paging";
 import { directoryHref } from "@/lib/resources";
 
 /**
@@ -148,6 +150,106 @@ export function DemoInvestigationList({
   );
 }
 
+/**
+ * The second walkthrough (ADG-DEMO-03): how complete the evidence is, and what ADG does when a
+ * comparison cannot finish inside its interactive window. Ten steps, four about coverage and
+ * six about recovery; the first five link into the real pages, and the rest happen on the
+ * comparison page, through the actions it offers.
+ */
+export const COVERAGE_WALKTHROUGH: readonly { step: string; target: "risks" | "coverage" | "collectors" | "answer" | "drill" | null }[] = [
+  { step: "View the risk totals, and how ADG says they may be read.", target: "risks" },
+  { step: "Inspect the collection coverage beside the counts.", target: "coverage" },
+  {
+    step: "Identify the unavailable source: one server's folder scan could not reach it, and ADG still holds its older evidence.",
+    target: "collectors",
+  },
+  {
+    step: "Return to the access investigation: its answer stands, and the incomplete scopes cannot change it.",
+    target: "answer",
+  },
+  { step: "Launch the synthetic comparison drill.", target: "drill" },
+  { step: "Observe the timed-out state: no partial list is presented as the answer.", target: null },
+  { step: "Open “Diagnostics” to inspect the reason: the window, how far it got, what it read.", target: null },
+  {
+    step: "Choose a supported recovery action: retry inside the standard window. It stops again, this time as incomplete, at a named boundary.",
+    target: null,
+  },
+  {
+    step: "Choose “Compare only folder permission entries”: a narrower comparison that fits.",
+    target: null,
+  },
+  { step: "Confirm the final result is marked complete, and that it recovered the earlier attempt.", target: null },
+];
+
+export function DemoCoverageAndRecovery({
+  investigations,
+  comparisons,
+}: {
+  investigations: DemoInvestigation[];
+  comparisons: DemoComparison[];
+}): JSX.Element | null {
+  const [drill] = comparisons;
+  if (drill === undefined) {
+    return null;
+  }
+  const [investigation] = investigations;
+  const drillHref = hrefWith("/changes/compare", {
+    from: drill.at_from,
+    to: drill.at_to,
+    time_budget_ms: drill.drill_window_ms === null ? null : String(drill.drill_window_ms),
+  });
+  const targets: Record<string, string | null> = {
+    risks: "/risks#risk-reading",
+    coverage: "/risks#risk-coverage",
+    collectors: "/collectors",
+    answer:
+      investigation === undefined
+        ? null
+        : `${investigateHref(investigation.principal.sid, investigation.resource, {
+            access_path: investigation.access_path,
+          })}#${SECTION.coverage}`,
+    drill: drillHref,
+  };
+  return (
+    <section aria-labelledby="demo-coverage-recovery" className="card demo-investigation">
+      <h2 id="demo-coverage-recovery">Then: how complete is the evidence, and what if a comparison cannot finish?</h2>
+      <p>
+        A number is only as good as the collection behind it. ADG shows, beside every risk total
+        and every access answer, which collection scopes the evidence came from, which are
+        incomplete, and whether that could change the conclusion. And when a comparison cannot
+        finish inside its interactive window, ADG stops, says so, and offers comparisons that can.
+      </p>
+      <h3>{drill.title}</h3>
+      <p>
+        <strong>{drill.question}</strong>
+      </p>
+      <p>{drill.summary}</p>
+      <p>
+        <Link className="button" href={drillHref}>
+          Run the comparison drill
+        </Link>{" "}
+        <span className="muted">
+          Synthetic data ·{" "}
+          {drill.drill_window_ms === null
+            ? "standard interactive window"
+            : `launched inside a deliberately short ${drill.drill_window_ms} ms window`}
+        </span>
+      </p>
+      <h4 id="walkthrough-coverage-recovery">Coverage, then recovery</h4>
+      <ol className="demo-walkthrough" aria-labelledby="walkthrough-coverage-recovery">
+        {COVERAGE_WALKTHROUGH.map((entry) => {
+          const href = entry.target === null ? null : targets[entry.target];
+          return (
+            <li key={entry.step}>
+              {href === null || href === undefined ? entry.step : <Link href={href}>{entry.step}</Link>}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
 export function DemoGenerationList({
   generations,
   baseline,
@@ -234,6 +336,10 @@ export function DemoGuide({ overview }: { overview: DemoOverview }): JSX.Element
       </p>
 
       <DemoInvestigationList investigations={overview.investigations ?? []} />
+      <DemoCoverageAndRecovery
+        investigations={overview.investigations ?? []}
+        comparisons={overview.comparisons ?? []}
+      />
 
       <h2>Scenarios</h2>
       <DemoScenarioList scenarios={overview.scenarios} />

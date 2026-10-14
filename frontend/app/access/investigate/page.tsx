@@ -1,10 +1,11 @@
 import type { JSX } from "react";
 
-import { fetchCollectionStatus, fetchRuntime } from "@/lib/api/adg";
+import { fetchCollectionCoverage, fetchCollectionStatus, fetchRuntime } from "@/lib/api/adg";
 import { fetchAccessExplanation } from "@/lib/api/explain";
 import { currentViewer } from "@/lib/auth/current";
 import { classify, coverageCaveat } from "@/lib/state";
 import { CoverageCaveat, StateMessage } from "@/components/Banners";
+import { AnswerCoveragePanel } from "@/components/Coverage";
 import { CautionPanel } from "@/components/Explanation";
 import { ExplainLauncher } from "@/components/ExplainLauncher";
 import {
@@ -66,7 +67,7 @@ export default async function AccessInvestigationPage({
   }
 
   const token = viewer.session.accessToken;
-  const [coverage, result] = await Promise.all([
+  const [coverage, result, answerCoverage] = await Promise.all([
     fetchCollectionStatus(token),
     fetchAccessExplanation(token, {
       principal,
@@ -74,6 +75,9 @@ export default async function AccessInvestigationPage({
       host: host === "" ? undefined : host,
       access_path: accessPath,
     }),
+    // ADG-DEMO-03: the scopes this answer reads, and whether an incomplete one could change
+    // it. Context beside the answer; a failure here leaves the investigation as it was.
+    fetchCollectionCoverage(token, { resource }),
   ]);
   const coverageData = coverage.ok ? coverage.data : null;
   const state = classify(result, {
@@ -124,6 +128,8 @@ export default async function AccessInvestigationPage({
           <NextStepsPanel explanation={explanation} investigation={investigation} />
         </>
       )}
+
+      {answerCoverage.ok && <AnswerCoveragePanel coverage={answerCoverage.data} />}
 
       <details className="card">
         <summary>Every caveat on this answer, as the full explanation lists them</summary>

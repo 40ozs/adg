@@ -76,6 +76,8 @@ export const SECTION = {
   openQuestions: "open-questions",
   summary: "investigation-summary",
   nextSteps: "next-steps",
+  /** ADG-DEMO-03: the collection behind the answer (`AnswerCoveragePanel`). */
+  coverage: "collection-coverage",
 } as const;
 
 /* ------------------------------------------------------------------ the question */

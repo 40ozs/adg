@@ -94,6 +94,8 @@ function fromFailure<T>(failure: ApiFailure): ViewState<T> {
 
 function headlineFor(failure: ApiFailure): string {
   switch (failure.kind) {
+    case "timeout":
+      return "ADG did not answer in time";
     case "unreachable":
       return "ADG could not reach its API";
     case "not_found":

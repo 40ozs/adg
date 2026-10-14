@@ -4,10 +4,12 @@ import Link from "next/link";
 import { fetchFinding, fetchFindings, fetchRiskRules, fetchRiskSummary } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import type { FindingSummaryView, RiskRuleView } from "@/lib/contracts";
+import { isExhaustive } from "@/lib/coverage";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation } from "@/lib/paging";
 import { SEVERITIES } from "@/lib/risks";
 import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
+import { RiskCoverageLine, RiskTotalsReading } from "@/components/Coverage";
 import { PagePosition, Pager } from "@/components/Pager";
 import {
   CoverageBanner,
@@ -109,7 +111,14 @@ export default async function RisksPage({
         records it matched on. Nothing here is a score, and severities are never added up.
       </p>
 
-      {summary.ok && <CoverageBanner coverage={summary.data.coverage} />}
+      {/* How the counts may be read (ADG-DEMO-03): evaluation *and* collection. A server
+          older than that sends no interpretation, and the evaluation-only banner stands. */}
+      {summary.ok &&
+        (summary.data.interpretation ? (
+          <RiskTotalsReading summary={summary.data} />
+        ) : (
+          <CoverageBanner coverage={summary.data.coverage} />
+        ))}
 
       {summary.ok && (
         <RiskSummaryStrip
@@ -119,6 +128,13 @@ export default async function RisksPage({
           shownStatuses={statuses}
           configuration={summary.data.configuration}
           rules={catalog}
+        />
+      )}
+
+      {summary.ok && summary.data.collection && (
+        <RiskCoverageLine
+          collection={summary.data.collection}
+          exhaustive={isExhaustive(summary.data)}
         />
       )}
 

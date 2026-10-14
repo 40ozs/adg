@@ -26,6 +26,7 @@ import type {
   ChangeTimelineResponse,
   ChangesResponse,
   CollectionOperations,
+  CollectionCoverage,
   CollectionStatus,
   DecisionView,
   DemoOverview,
@@ -178,6 +179,18 @@ export function developmentLogin(username: string): Promise<ApiResult<Developmen
 
 export function fetchCollectionStatus(token: string): Promise<ApiResult<CollectionStatus>> {
   return apiRequest<CollectionStatus>("/api/v1/collection/status", { token });
+}
+
+/**
+ * Collection coverage for a reviewer (ADG-DEMO-03): each scope's latest attempt and the age of
+ * the evidence held for it. With `resource`, also the scopes one answer about that folder
+ * reads, and whether an incomplete one could change it.
+ */
+export function fetchCollectionCoverage(
+  token: string,
+  query: { resource?: string } = {},
+): Promise<ApiResult<CollectionCoverage>> {
+  return apiRequest<CollectionCoverage>("/api/v1/collection/coverage", { token, query });
 }
 
 /**
@@ -444,8 +457,15 @@ export function compareInstants(
     kind?: string[];
     significance?: string[];
     min_severity?: string;
+    /** The server's interactive window, in milliseconds (at most 8,000). */
+    time_budget_ms?: string;
+    /** The `comparison_id` of the attempt this one recovers from. */
+    retry_of?: string;
   },
 ): Promise<ApiResult<ChangeComparisonResponse>> {
+  // The client's own deadline stays the default ten seconds, above the server's largest
+  // window (eight): the server always answers first, with a typed outcome, and a client
+  // timeout is reported as one rather than as an outage.
   return apiRequest<ChangeComparisonResponse>("/api/v1/changes/compare", { token, query });
 }
 

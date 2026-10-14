@@ -49,6 +49,7 @@ vi.mock("@/lib/api/adg", () => ({
 import * as adg from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import RisksPage from "@/app/risks/page";
+import { completeRiskSummary, riskSummary } from "./coverage-factories";
 
 const ok = <T,>(data: T): ApiResult<T> => ({ ok: true, data });
 
@@ -404,5 +405,79 @@ describe("the evidence drawer", () => {
     expect(
       screen.getByRole("row", { name: /Everyone can reach this resource/ }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("collection coverage beside the totals (ADG-DEMO-03)", () => {
+  it("does not call the counts totals while a source is unavailable", async () => {
+    vi.mocked(adg.fetchRiskSummary).mockResolvedValue(ok(riskSummary()));
+
+    await renderPage();
+
+    const heading = screen.getByRole("heading", { name: "These counts are not exhaustive" });
+    // Announced: the reading sits in a status region, not only in the visual layout.
+    expect(heading.closest("[role=status]")).not.toBeNull();
+    expect(screen.queryByText(/A full pass covered the estate/i)).toBeNull();
+    expect(screen.queryByText(/these counts are totals/i)).toBeNull();
+  });
+
+  it("shows the coverage line, the verdict in words, and the snapshot beside the counts", async () => {
+    vi.mocked(adg.fetchRiskSummary).mockResolvedValue(ok(riskSummary()));
+
+    await renderPage();
+    const line = screen.getByRole("region", { name: "Collection behind these counts" });
+
+    expect(line.textContent).toContain(
+      "Coverage: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence",
+    );
+    expect(within(line).getByText("Incomplete")).toBeInTheDocument();
+    expect(within(line).getByText("Not exhaustive:")).toBeInTheDocument();
+    expect(line.textContent).toContain("Collected state 3f2a9c41d07e · 300 collector runs");
+  });
+
+  it("keeps the counts beside it: a failed source did not turn its findings into zero", async () => {
+    vi.mocked(adg.fetchRiskSummary).mockResolvedValue(ok(riskSummary()));
+
+    await renderPage();
+    const held = screen.getByRole("list", { name: "Findings held from older evidence" });
+
+    expect(held.textContent).toContain("ntfs (NM-FS-03)");
+    expect(held.textContent).toContain("189 open finding(s)");
+    expect(held.textContent).toContain("Older evidence, from the scan of 2026-09-17");
+    // A partial scope's evidence is current; it is a coverage concern, not held evidence.
+    expect(held.textContent).not.toContain("NM-MIG-FS01");
+  });
+
+  it("names the incomplete scopes one disclosure away", async () => {
+    vi.mocked(adg.fetchRiskSummary).mockResolvedValue(ok(riskSummary()));
+
+    await renderPage();
+    const line = screen.getByRole("region", { name: "Collection behind these counts" });
+    const disclosure = within(line).getByText("Which scopes are not complete (2)");
+
+    expect(disclosure.tagName).toBe("SUMMARY");
+    expect(line.textContent).toContain("ntfs (NM-FS-03): the latest scan could not reach its target");
+    expect(within(line).getByRole("link", { name: /collector status page/ })).toHaveAttribute(
+      "href",
+      "/collectors",
+    );
+  });
+
+  it("calls the counts totals only when evaluation and collection are both complete", async () => {
+    vi.mocked(adg.fetchRiskSummary).mockResolvedValue(ok(completeRiskSummary()));
+
+    await renderPage();
+
+    expect(screen.getByRole("heading", { name: "These counts are totals" })).toBeInTheDocument();
+    const line = screen.getByRole("region", { name: "Collection behind these counts" });
+    expect(within(line).getByText("Exhaustive:")).toBeInTheDocument();
+    expect(within(line).getByText("Complete")).toBeInTheDocument();
+  });
+
+  it("falls back to the evaluation-only banner for a server older than the coverage block", async () => {
+    await renderPage();
+
+    expect(screen.getByText(/A full pass covered the estate/i)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Collection behind these counts" })).toBeNull();
   });
 });

@@ -11,6 +11,8 @@
  * `tests/contracts/test_openapi_snapshot.py` keeps it current.
  */
 
+import type { BasisView } from "@/lib/derived";
+
 /** Roles and capabilities are strings on the wire; the backend owns the vocabulary. */
 export type Capability =
   | "resources:read"
@@ -127,6 +129,23 @@ export interface DemoPolicyEntry {
 }
 
 /** `GET /api/v1/demo` — served only by a demo deployment (`openapi.demo.json`). */
+/**
+ * One point-in-time comparison the demo offers as a recovery drill (ADG-DEMO-03).
+ *
+ * Two instants of the dataset's own history and a launch window; the comparison itself is the
+ * real one, run by `GET /api/v1/changes/compare`.
+ */
+export interface DemoComparison {
+  key: string;
+  title: string;
+  question: string;
+  at_from: string;
+  at_to: string;
+  /** A deliberately short interactive window to launch with, in milliseconds. */
+  drill_window_ms: number | null;
+  summary: string;
+}
+
 export interface DemoOverview {
   runtime_mode: "demo";
   dataset: DemoDataset;
@@ -136,6 +155,8 @@ export interface DemoOverview {
   scenarios: DemoScenario[];
   /** Absent from a server older than ADG-DEMO-02. */
   investigations?: DemoInvestigation[];
+  /** Absent from a server older than ADG-DEMO-03. */
+  comparisons?: DemoComparison[];
   mutation_policy: DemoPolicyEntry[];
 }
 
@@ -180,6 +201,84 @@ export interface CollectionStatus {
   summary: string;
   concerns: string[];
   collectors: CollectorCoverage[];
+}
+
+/**
+ * Collection coverage for a reviewer: `GET /api/v1/collection/coverage` (ADG-DEMO-03).
+ *
+ * The same per-scope run records the operator page reads, worded for somebody looking at a
+ * number. Two facts per scope, never merged: what the latest attempt did (`state`) and how old
+ * the evidence ADG holds is (`evidence`). `returned_nothing` is the only "checked, and nothing
+ * is there"; a failed or unavailable scope is never it.
+ */
+export type ScopeState = "collected" | "partial" | "unavailable" | "failed" | "running";
+export type EvidenceAge = "current" | "stale" | "none";
+export type CoverageVerdict = "complete" | "partial" | "incomplete" | "none";
+
+export interface ScopeCoverage {
+  collector: string;
+  target: string | null;
+  label: string;
+  state: ScopeState;
+  evidence: EvidenceAge;
+  attempted_at: string;
+  evidence_collected_at: string | null;
+  observations: number;
+  returned_nothing: boolean;
+  failure_codes: string[];
+  sentence: string;
+}
+
+export interface CollectorKindCoverage {
+  collector: string;
+  expected: boolean;
+  state: "reported" | "not_collected" | "not_configured";
+  scopes: number;
+  collected: number;
+}
+
+/** Counts of scopes. Never a percentage: scopes are not equal in size. */
+export interface CoverageCounts {
+  scopes: number;
+  collected: number;
+  partial: number;
+  unavailable: number;
+  failed: number;
+  running: number;
+  stale: number;
+  never_collected: number;
+  returned_nothing: number;
+}
+
+export interface CoverageSummary {
+  verdict: CoverageVerdict;
+  complete: boolean;
+  headline: string;
+  counts: CoverageCounts;
+  concerns: string[];
+  /** The collected state these scopes describe. */
+  snapshot: BasisView;
+}
+
+/** The scopes one answer about a folder reads, and whether an incomplete one could change it. */
+export interface RelevantCoverage {
+  resource: string;
+  server: string | null;
+  verdict: CoverageVerdict;
+  complete: boolean;
+  headline: string;
+  scopes: ScopeCoverage[];
+  incomplete_elsewhere: number;
+  could_change_answer: boolean;
+  statement: string;
+}
+
+export interface CollectionCoverage extends CoverageSummary {
+  health: CollectionHealth;
+  expectation: "configured" | "dataset" | "none";
+  collectors: CollectorKindCoverage[];
+  scopes: ScopeCoverage[];
+  relevant: RelevantCoverage | null;
 }
 
 /**
@@ -904,6 +1003,22 @@ export interface ChangeTimelineResponse {
   truncated: boolean;
 }
 
+/**
+ * How a comparison ended (ADG-DEMO-03). Only `complete` is a whole answer: `incomplete` was
+ * compared up to `compared_through` and no further; `timed_out` presents no list at all;
+ * `cancelled` is never delivered (the caller had gone) and exists for the log.
+ */
+export type ComparisonOutcome = "complete" | "incomplete" | "timed_out" | "cancelled";
+
+/** One supported way to a complete comparison, as the query parameters to send. */
+export interface ComparisonRecoveryAction {
+  action: "narrow_kind" | "retry_standard_window";
+  label: string;
+  parameters: Record<string, string>;
+  objects_at_from: number | null;
+  objects_at_to: number | null;
+}
+
 export interface ChangeComparisonResponse {
   at_from: string;
   at_to: string;
@@ -916,6 +1031,23 @@ export interface ChangeComparisonResponse {
   unobserved_at_to: number;
   truncated: boolean;
   summary: ChangeSummaryResponse;
+  // ADG-DEMO-03. Optional because a server older than it sends none of them; `truncated` is
+  // then the only signal, and is read as "incomplete".
+  comparison_id?: string;
+  outcome?: ComparisonOutcome;
+  complete?: boolean;
+  recovered?: boolean;
+  retry_of?: string | null;
+  stopped_in?: "read" | "classify" | "ordering" | null;
+  compared_through?: { kind: string; key: string } | null;
+  requested_scope?: { target: string | null; key: string | null; kinds: string[] };
+  window_ms?: number;
+  elapsed_ms?: number;
+  objects_per_side?: number;
+  objects_read_from?: number;
+  objects_read_to?: number;
+  differences_found?: number;
+  recovery?: ComparisonRecoveryAction[];
 }
 
 export interface AccessSideView {
@@ -1448,6 +1580,28 @@ export interface FindingDetailView {
   reproduction_note: string;
 }
 
+/** How a risk total may be read (ADG-DEMO-03). Only `complete` is a total. */
+export type TotalsReading = "not_evaluated" | "partial" | "incomplete" | "stale" | "complete";
+
+/** Open findings still held for a server scope whose latest scan did not deliver. */
+export interface HeldFindings {
+  scope: string;
+  server: string;
+  evidence: EvidenceAge;
+  evidence_collected_at: string | null;
+  open_findings: number;
+}
+
+export interface TotalsInterpretation {
+  reading: TotalsReading;
+  exhaustive: boolean;
+  reasons: string[];
+  evaluated_basis: string | null;
+  /** Null when the evaluation predates the record, so nobody can say. */
+  basis_current: boolean | null;
+  held: HeldFindings[];
+}
+
 export interface RiskSummaryResponse {
   coverage: RiskCoverageView;
   configuration: RiskConfigurationView;
@@ -1455,6 +1609,9 @@ export interface RiskSummaryResponse {
   rule_counts: Record<string, number>;
   status_counts: Record<string, number>;
   total: number;
+  /** Collection coverage beside the counts. Absent from a server older than ADG-DEMO-03. */
+  collection?: CoverageSummary | null;
+  interpretation?: TotalsInterpretation | null;
 }
 
 export interface FindingsResponse {

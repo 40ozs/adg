@@ -13,10 +13,23 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import DemoPage from "@/app/demo/page";
-import { DemoGuide, DemoInvestigationList, DemoScenarioList, WALKTHROUGH } from "@/components/DemoGuide";
+import {
+  COVERAGE_WALKTHROUGH,
+  DemoCoverageAndRecovery,
+  DemoGuide,
+  DemoInvestigationList,
+  DemoScenarioList,
+  WALKTHROUGH,
+} from "@/components/DemoGuide";
 import * as adg from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
-import type { DemoInvestigation, DemoOverview, DemoScenario, RuntimeInfo } from "@/lib/contracts";
+import type {
+  DemoComparison,
+  DemoInvestigation,
+  DemoOverview,
+  DemoScenario,
+  RuntimeInfo,
+} from "@/lib/contracts";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -266,5 +279,75 @@ describe("the page", () => {
 
     expect(screen.getByText(/not a demo environment/)).toBeInTheDocument();
     expect(adg.fetchDemoOverview).not.toHaveBeenCalled();
+  });
+});
+
+const drill: DemoComparison = {
+  key: "first-to-latest",
+  title: "What is different between the first scan and the latest?",
+  question: "What is different across the estate between 2026-09-03 and 2026-10-01?",
+  at_from: "2026-09-03T06:00:00Z",
+  at_to: "2026-10-01T06:00:00Z",
+  drill_window_ms: 1,
+  summary: "The estate-wide comparison of ADG's first and latest scans.",
+};
+
+describe("coverage and recovery (ADG-DEMO-03)", () => {
+  function card(): HTMLElement {
+    return screen.getByRole("region", {
+      name: "Then: how complete is the evidence, and what if a comparison cannot finish?",
+    });
+  }
+
+  it("launches the dataset's comparison drill inside its short window", () => {
+    render(<DemoCoverageAndRecovery investigations={[apollo]} comparisons={[drill]} />);
+
+    const launch = within(card()).getByRole("link", { name: "Run the comparison drill" });
+    const href = new URL(launch.getAttribute("href") ?? "", "http://x");
+    expect(href.pathname).toBe("/changes/compare");
+    expect(href.searchParams.get("from")).toBe(drill.at_from);
+    expect(href.searchParams.get("to")).toBe(drill.at_to);
+    expect(href.searchParams.get("time_budget_ms")).toBe("1");
+    expect(within(card()).getByText(drill.question)).toBeInTheDocument();
+    expect(within(card()).getByText(/deliberately short 1 ms window/)).toBeInTheDocument();
+  });
+
+  it("walks ten steps: four on coverage, six on recovery, the first five linked", () => {
+    render(<DemoCoverageAndRecovery investigations={[apollo]} comparisons={[drill]} />);
+
+    const steps = within(
+      screen.getByRole("list", { name: "Coverage, then recovery" }),
+    ).getAllByRole("listitem");
+    expect(steps).toHaveLength(10);
+    expect(COVERAGE_WALKTHROUGH).toHaveLength(10);
+    const links = steps.map((step) => within(step).queryByRole("link")?.getAttribute("href") ?? null);
+    expect(links.slice(0, 3)).toEqual(["/risks#risk-reading", "/risks#risk-coverage", "/collectors"]);
+    const answer = new URL(links[3] ?? "", "http://x");
+    expect(answer.pathname).toBe("/access/investigate");
+    expect(answer.hash).toBe("#collection-coverage");
+    expect(answer.searchParams.get("principal")).toBe(FATIMA);
+    expect(new URL(links[4] ?? "", "http://x").pathname).toBe("/changes/compare");
+    expect(links.slice(5)).toEqual([null, null, null, null, null]);
+    expect(steps[9].textContent).toContain("marked complete");
+  });
+
+  it("renders nothing for a server that offers no drill", () => {
+    const { container } = render(
+      <DemoCoverageAndRecovery investigations={[apollo]} comparisons={[]} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("follows the investigation in the guide", () => {
+    render(<DemoGuide overview={{ ...overview, investigations: [apollo], comparisons: [drill] }} />);
+
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+    const investigation = headings.indexOf("Start here: a guided access investigation");
+    const coverage = headings.indexOf(
+      "Then: how complete is the evidence, and what if a comparison cannot finish?",
+    );
+    expect(investigation).toBeGreaterThanOrEqual(0);
+    expect(coverage).toBe(investigation + 1);
   });
 });
