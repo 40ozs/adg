@@ -2,9 +2,10 @@
 
 Reads the same per-scope records the collector operations page reads
 (:class:`app.repositories.operations.OperationsRepository`), so the coverage beside a risk
-total and the operator's scope table can never be two different answers. Five statements,
-whatever the estate holds: the latest run, the last success and the last failure of every
-scope, the error codes of the latest runs that failed, and the collection basis.
+total and the operator's scope table can never be two different answers. At most five
+statements, whatever the estate holds: the latest run, the last success and the last failure
+of every scope, the error codes of the latest runs that failed (only when one did), and the
+collection basis.
 """
 
 from __future__ import annotations

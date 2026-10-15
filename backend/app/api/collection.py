@@ -575,7 +575,7 @@ async def collection_coverage_report(
         ),
     ] = None,
 ) -> CollectionCoverageResponse:
-    """Coverage for a reviewer, in five statements.
+    """Coverage for a reviewer, in at most five statements.
 
     A failed or unavailable scope is reported with the age of the evidence ADG still holds
     for it; a scope that was collected and found nothing is reported as exactly that. The
