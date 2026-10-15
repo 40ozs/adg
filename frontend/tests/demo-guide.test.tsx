@@ -32,8 +32,17 @@ import type {
 } from "@/lib/contracts";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...rest}>
+  default: ({
+    href,
+    children,
+    prefetch,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+    prefetch?: boolean;
+  }) => (
+    <a href={href} data-prefetch={prefetch === undefined ? undefined : String(prefetch)} {...rest}>
       {children}
     </a>
   ),
@@ -308,6 +317,8 @@ describe("coverage and recovery (ADG-DEMO-03)", () => {
     expect(href.searchParams.get("from")).toBe(drill.at_from);
     expect(href.searchParams.get("to")).toBe(drill.at_to);
     expect(href.searchParams.get("time_budget_ms")).toBe("1");
+    // A real comparison: never run speculatively by a prefetch.
+    expect(launch).toHaveAttribute("data-prefetch", "false");
     expect(within(card()).getByText(drill.question)).toBeInTheDocument();
     expect(within(card()).getByText(/deliberately short 1 ms window/)).toBeInTheDocument();
   });

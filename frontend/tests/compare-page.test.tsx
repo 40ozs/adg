@@ -19,12 +19,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiResult } from "@/lib/api/client";
 import type { ChangeComparisonResponse } from "@/lib/contracts";
 
+const linkStatus = vi.hoisted(() => ({ pending: false }));
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    <a href={href} data-prefetch={String(prefetch)} {...rest}>
       {children}
     </a>
   ),
+  useLinkStatus: () => ({ pending: linkStatus.pending }),
 }));
 vi.mock("@/lib/auth/current", () => ({ currentViewer: vi.fn() }));
 vi.mock("@/lib/api/adg", () => ({ compareInstants: vi.fn() }));
@@ -32,7 +43,6 @@ vi.mock("@/lib/api/adg", () => ({ compareInstants: vi.fn() }));
 import * as adg from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import ComparePage from "@/app/changes/compare/page";
-import ComparisonRunning from "@/app/changes/compare/loading";
 import { DRILL, fromAnOlderServer, incomplete, recovered, timedOut } from "./coverage-factories";
 
 const VIEWER = {
@@ -120,21 +130,37 @@ describe("start: the request the page makes", () => {
     });
   });
 
-  it("announces the running state while the comparison renders", () => {
-    render(<ComparisonRunning />);
-    const status = screen.getByRole("status");
+  it("announces the running state on the action that started it", async () => {
+    linkStatus.pending = true;
+    try {
+      await open(ok(timedOut()));
+    } finally {
+      linkStatus.pending = false;
+    }
+    const actions = within(outcome()).getByRole("navigation", { name: "Recovery actions" });
+    const [retry] = within(actions).getAllByRole("link");
+    const running = within(retry).getByRole("status");
 
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(status).toHaveAttribute("aria-busy", "true");
-    expect(status.textContent).toContain("Comparing");
+    expect(running).toHaveAttribute("aria-live", "polite");
+    expect(running.textContent).toBe(" — comparing…");
+  });
+
+  it("never prefetches a recovery: each one is a real comparison", async () => {
+    await open(ok(timedOut()));
+    const actions = within(outcome()).getByRole("navigation", { name: "Recovery actions" });
+
+    for (const link of within(actions).getAllByRole("link")) {
+      expect(link).toHaveAttribute("data-prefetch", "false");
+    }
   });
 });
 
 describe("timed out: stated, nothing presented, recovery offered", () => {
   it("says it timed out, in words and a symbol, as an announced status", async () => {
     await open(ok(timedOut()));
-    const status = within(outcome()).getByRole("status");
+    const [status] = within(outcome()).getAllByRole("status");
 
+    expect(status).toHaveClass("banner");
     expect(status).toHaveAttribute("aria-live", "polite");
     expect(status.textContent).toContain("Timed out");
     expect(status.textContent).toContain("⏱");
@@ -228,7 +254,7 @@ describe("incomplete: the part compared, labelled as a part", () => {
 describe("recovered: complete, and says so", () => {
   it("is marked complete and recovered", async () => {
     await open(ok(recovered()), { from: DRILL.at_from, to: DRILL.at_to, kind: "ntfs_ace" });
-    const status = within(outcome()).getByRole("status");
+    const [status] = within(outcome()).getAllByRole("status");
 
     expect(status.textContent).toContain("Complete");
     expect(status.textContent).toContain("✓");
@@ -255,7 +281,8 @@ describe("failures are typed", () => {
       { from: DRILL.at_from, to: DRILL.at_to, time_budget_ms: "8000" },
     );
 
-    const status = screen.getByRole("status");
+    const [status] = screen.getAllByRole("status");
+    expect(status).toHaveClass("banner");
     expect(status.textContent).toContain("Timed out — no comparison is presented");
     expect(screen.queryByText("ADG could not reach its API")).toBeNull();
     const retry = within(status).getByRole("link", { name: "Retry inside the standard window" });

@@ -225,7 +225,7 @@ export function DemoCoverageAndRecovery({
       </p>
       <p>{drill.summary}</p>
       <p>
-        <Link className="button" href={drillHref}>
+        <Link className="button" href={drillHref} prefetch={false}>
           Run the comparison drill
         </Link>{" "}
         <span className="muted">

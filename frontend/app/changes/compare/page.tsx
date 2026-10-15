@@ -10,6 +10,7 @@ import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
 import { ChangeSummaryStrip, ChangeTimeline } from "@/components/Changes";
 import { ComparisonOutcomePanel, NarrowComparisonForm } from "@/components/Comparison";
+import { ComparisonLink } from "@/components/ComparisonLink";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 
 const PATH = "/changes/compare";
@@ -231,8 +232,9 @@ function ClientTimeout({ retryHref }: { retryHref: string }): JSX.Element {
       <p>
         The comparison did not answer within this page&apos;s ten-second limit. That is a
         question too large to answer interactively, not an outage, and nothing partial is shown
-        as an answer. <Link href={retryHref}>Retry inside the standard window</Link>, or narrow
-        the scope below.
+        as an answer.{" "}
+        <ComparisonLink href={retryHref}>Retry inside the standard window</ComparisonLink>, or
+        narrow the scope below.
       </p>
     </div>
   );

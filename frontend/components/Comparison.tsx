@@ -1,5 +1,4 @@
 import type { JSX } from "react";
-import Link from "next/link";
 
 import type { ChangeComparisonResponse } from "@/lib/contracts";
 import {
@@ -10,6 +9,7 @@ import {
   outcomeWords,
   recoveryLabel,
 } from "@/lib/coverage";
+import { ComparisonLink } from "@/components/ComparisonLink";
 import { StateBadge } from "@/components/Coverage";
 
 /**
@@ -46,7 +46,7 @@ export function ComparisonOutcomePanel({
           <ul>
             {recovery.map((action) => (
               <li key={`${action.action}-${action.parameters.kind ?? ""}`}>
-                <Link href={hrefFor(action.parameters)}>{recoveryLabel(action)}</Link>
+                <ComparisonLink href={hrefFor(action.parameters)}>{recoveryLabel(action)}</ComparisonLink>
               </li>
             ))}
           </ul>
