@@ -612,7 +612,8 @@ GitHub Actions on `claude/tender-curie-vw3iss`:
   Backend (lint, types, unit, **database tests** 23:39–00:03 UTC), Frontend (lint, types,
   tests, build), Collector (Pester, `windows-latest`), Docker Compose configuration.
 * **Run 69** on `413ded4` (frontend included) ([run](https://github.com/40ozs/adg/actions/runs/38658153994)):
-  *database tests still running at this commit (frontend, collector, compose and backend unit jobs passed); final result recorded in the next commit.*
+  **every job passed** — Backend (lint, types, unit, **database tests** 00:11–00:40 UTC), Frontend
+  (lint, types, tests, build), Collector (Pester), Docker Compose configuration.
 * **Runs 70 and 71 failed** — on `c709a51` ([run](https://github.com/40ozs/adg/actions/runs/38658840603))
   and on the first report commit `d4a7a19` ([run](https://github.com/40ozs/adg/actions/runs/38658922806)):
   1 of 6,133 unit tests, `tests/contracts/test_openapi_snapshot.py::test_the_snapshot_is_current`.
@@ -623,9 +624,12 @@ GitHub Actions on `claude/tender-curie-vw3iss`:
   frontend contract test rerun green before pushing. A real failure in this change, not a
   flake; no test was skipped or changed to pass.
 * **Run 72** on the code head `95f47ae` ([run](https://github.com/40ozs/adg/actions/runs/38659592991)):
-  *running at this commit; final result recorded in the next commit.*
-* The final report commit triggers its own run (documentation only); its result is in the
-  final response, not here.
+  **every job passed** — Backend (lint, types, unit tests 00:22:46–00:25:48, **database tests**
+  00:25:48–00:54:37 UTC), Frontend (lint, types, tests, build), Collector (Pester,
+  `windows-latest`), Docker Compose configuration. This is the CI result for the code head.
+* Run 73 (`ac505ed`, an interim report commit) and the final report commit's own run are
+  documentation-only heads over the same code; their results are in the final response, not
+  here.
 
 ---
 
