@@ -1,0 +1,117 @@
+# ADG-NEXT16-RECONCILE-01: ancestry and tree-equivalence transcript
+# Every block is a git command run in the repository at the reconciliation commit, with its output.
+# R = reconciliation merge 1a9b1e8d9ed552ede07dc3047219b1735f12edd4
+# V = validated Next 16 integration aff70e85f0e81ff5ad2241f7219d87237575b5f3 (claude/beautiful-knuth-3zruji)
+# M = main 32da1aecbc83a195f9db0849ec4dd5f652cc8bde
+# B = original Next 16 base 744c2efe89fb17f49cdfe640ebe5afd7d18253af
+
+$ git merge-base M V
+744c2efe89fb17f49cdfe640ebe5afd7d18253af
+
+$ git log --format='%H %an | %s' B..M      # main-only commits
+32da1aecbc83a195f9db0849ec4dd5f652cc8bde Claude | Record CI run 77 on main in ADG-DEMO-PUBLIC-MERGE-01
+04390d7f6824baed2b2fe3b022adeaaf4fa505cb Claude | Record ADG-DEMO-PUBLIC-MERGE-01: the public demo line on main
+
+$ git diff --name-status B M               # what main-only commits change
+A	docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md
+
+$ git log --reverse --format='%H %an | %s' B..V   # integration-only commits
+af94e2e8911dc822ca9ce2a701dfd797ff34742f 40ozs | frontend: Next.js 16.4.0 and React 19.3, webpack build
+501c1367e575efb51fedfe2353187024359acd52 Claude | frontend: Next.js 16.4.1, the October 14 security release
+aff70e85f0e81ff5ad2241f7219d87237575b5f3 Claude | Record ADG-NEXT16-POST-DEMO-INTEGRATION-01: report and evidence
+
+$ git diff --name-status B V               # what integration-only commits change
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/README.md
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/aggregate-runs.py
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/browser-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/candidate-overlap.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/ci-run-80-backend.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/demo-01-ui.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-gate.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-comparison-recovered.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-investigation-desktop.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-risks-coverage-phone.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-system-over-share.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-unresolved-principal.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/stream-delay-proxy.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md
+M	frontend/eslint.config.mjs
+M	frontend/package-lock.json
+M	frontend/package.json
+M	frontend/tsconfig.json
+
+$ comm -12 <(git diff --name-only B M | sort) <(git diff --name-only B V | sort)   # paths both sides changed
+(none)
+
+$ git merge-tree --write-tree M V          # write-free trial of the merge
+d9da6070f3fcc5fca9fed9c24c4a2a45c6b4d2fa
+
+# Trial replay (discarded): cherry-pick -x af94e2e 501c136 aff70e8 onto M in a throwaway worktree
+# produced af64ac4, 9f87f1b, bab0049 with tree d9da6070f3fcc5fca9fed9c24c4a2a45c6b4d2fa: the same tree as the merge.
+
+$ git log -1 --format='commit %H%nparents %P%ntree %T' R
+commit 1a9b1e8d9ed552ede07dc3047219b1735f12edd4
+parents 32da1aecbc83a195f9db0849ec4dd5f652cc8bde aff70e85f0e81ff5ad2241f7219d87237575b5f3
+tree d9da6070f3fcc5fca9fed9c24c4a2a45c6b4d2fa
+
+$ git diff --name-status V R               # every difference between the validated tree and the reconciled tree
+A	docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md
+
+$ git rev-parse R:docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md M:docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md
+6a1e7618b88488470eedbd93ce30e5f8d635dfd9
+6a1e7618b88488470eedbd93ce30e5f8d635dfd9
+
+$ git rev-parse R:docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md V:docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md
+c518519bd5e1badabcf770f471a1d3828b898c26
+c518519bd5e1badabcf770f471a1d3828b898c26
+
+# Top-level tree entries: object id in R, V and M
+.dockerignore              R ee7e9ec278e7  V ee7e9ec278e7  M ee7e9ec278e7
+.editorconfig              R 5ffbd104ec1f  V 5ffbd104ec1f  M 5ffbd104ec1f
+.env.example               R 0ba2b59d88ed  V 0ba2b59d88ed  M 0ba2b59d88ed
+.gitattributes             R e9f3d77ca4b2  V e9f3d77ca4b2  M e9f3d77ca4b2
+.github                    R 6ecb3f1fb779  V 6ecb3f1fb779  M 6ecb3f1fb779
+.gitignore                 R ddf7d99981b0  V ddf7d99981b0  M ddf7d99981b0
+README.md                  R 458821c3b551  V 458821c3b551  M 458821c3b551
+SECURITY.md                R 7fa625875bd9  V 7fa625875bd9  M 7fa625875bd9
+backend                    R b6220277c9b7  V b6220277c9b7  M b6220277c9b7
+collector                  R 644d8cc1a095  V 644d8cc1a095  M 644d8cc1a095
+database                   R 1e5bd9a65420  V 1e5bd9a65420  M 1e5bd9a65420
+docker-compose.demo.yml    R f4a68a924b20  V f4a68a924b20  M f4a68a924b20
+docker-compose.yml         R e6e1ca50055d  V e6e1ca50055d  M e6e1ca50055d
+docker                     R b5b83ce5b090  V b5b83ce5b090  M b5b83ce5b090
+docs                       R f2c42abfd4db  V bd05fe135fbd  M 7c70f139586f
+frontend                   R 192949e351ce  V 192949e351ce  M c4c7b9ffba46
+scripts                    R 4ccb5732ea78  V 4ccb5732ea78  M 4ccb5732ea78
+
+$ git diff --name-status M R               # what the reconciliation brings to main
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/README.md
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/aggregate-runs.py
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/browser-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/candidate-overlap.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/ci-run-80-backend.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/demo-01-ui.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-gate.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-comparison-recovered.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-investigation-desktop.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-risks-coverage-phone.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-system-over-share.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-unresolved-principal.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/stream-delay-proxy.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md
+M	frontend/eslint.config.mjs
+M	frontend/package-lock.json
+M	frontend/package.json
+M	frontend/tsconfig.json
+
+$ git diff --stat M R -- ':!docs'           # outside docs/
+ frontend/eslint.config.mjs |   8 +-
+ frontend/package-lock.json | 634 ++++++++++++++++++++++++++-------------------
+ frontend/package.json      |  15 +-
+ frontend/tsconfig.json     |   4 +-
+ 4 files changed, 384 insertions(+), 277 deletions(-)
+
+$ git merge-base --is-ancestor M R && git merge-base --is-ancestor V R
+both true: main fast-forwards to R, and R contains the validated commits unchanged

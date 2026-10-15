@@ -1,0 +1,13 @@
+# CI run 84 (https://github.com/40ozs/adg/actions/runs/38784880690), job 'Backend (lint, types, tests)', head 1a9b1e8d9ed552ede07dc3047219b1735f12edd4
+# Every line of the 957-line job log was scanned; these are the gate result lines and the step commands, verbatim.
+# ruff format --check runs inside the 'ruff check' step. The 36 PostgreSQL 'ERROR:' lines in the log are the service container's record of the constraint tests' deliberate violations.
+2026-10-15T18:21:21.6888157Z ##[group]Run python -m pip install --upgrade pip
+2026-10-15T18:21:37.2576636Z ##[group]Run python -m ruff check .
+2026-10-15T18:21:37.3983802Z All checks passed!
+2026-10-15T18:21:37.5229744Z 412 files already formatted
+2026-10-15T18:21:37.5274587Z ##[group]Run python -m mypy app tests
+2026-10-15T18:21:52.8510852Z Success: no issues found in 411 source files
+2026-10-15T18:21:52.8929449Z ##[group]Run python -m pytest -q -m "not smoke"
+2026-10-15T18:24:46.7819931Z 6121 passed, 12 skipped, 1273 deselected, 7 warnings in 170.76s (0:02:50)
+2026-10-15T18:24:47.7746195Z ##[group]Run python -m pytest -q -m smoke
+2026-10-15T18:53:28.1295875Z 1272 passed, 6133 deselected, 1 xfailed, 67 warnings in 1717.87s (0:28:37)
