@@ -237,7 +237,7 @@ were run from a fresh clone on Linux (Ubuntu 24.04) for
 | Tool | Version |
 | --- | --- |
 | Python | 3.11 or later (CI uses 3.13) |
-| Node.js | 20 or later (CI uses 22) |
+| Node.js | 20.9 or later, as Next.js 16 requires (CI uses 22) |
 | PostgreSQL | 16 |
 
 ### 1. A PostgreSQL role and a demo database
@@ -453,7 +453,7 @@ The synthetic demo needs none of the Windows tooling below; see [Run the demo](#
 | Windows | 10/11 or Server 2019+ | Collectors require Windows. |
 | PowerShell | 7.x | `pwsh`. Windows PowerShell 5.1 only where a module requires it. |
 | Python | 3.11+ | Backend. |
-| Node.js | 20+ | Frontend. |
+| Node.js | 20.9+ | Frontend (Next.js 16). |
 | Docker Desktop | current | PostgreSQL, API, and web containers. |
 
 ## First-time setup (Windows)
