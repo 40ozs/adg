@@ -1,0 +1,205 @@
+{
+  "base": "http://localhost:3000",
+  "passed": 39,
+  "total": 39,
+  "results": [
+    {
+      "name": "README: /login offers the auditor account",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: the header pill says Demo environment before sign-in",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "sign in as auditor",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "guide: pill reads Synthetic enterprise data · Null Meridian",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: footer marks the page as fictional",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "guide: /demo says no directory, file server or collector is connected",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "README step 2: 'Start here: a guided access investigation'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "README step 8: 'Run the comparison drill' is offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "guide W3.1: the drill says it is a deliberately short 1 ms window",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.1: the heading is the question",
+      "ok": true,
+      "detail": "Why does Fatima Gordon have access to \\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo?"
+    },
+    {
+      "name": "W1.1: a note says the scenario is synthetic",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.2: granted (Access present), Modify, at_least, over the network",
+      "ok": true,
+      "detail": "1. What ADG evaluated\n\nThe observed answer, before any explanation of it.\n\nPrincipal\nFatima Gordon\nS-1-5-21-3949361974-1583827165-633756269-1323\nResource\n\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo · share Engineering\nEffective access\nAccess present\nThis principal holds rights on this object.\nEffectiv"
+    },
+    {
+      "name": "W1.3: NTFS route is a direct entry set explicitly on the folder",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.3: share route runs through ENG-Mobile to share entry #3",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.3: 'Every other route ADG found' disclosure exists",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.3: the other routes include an inherited one through the engineering groups",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.4: 'Evidence for hop N' disclosures exist",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.4: hop evidence names the collector and the scans",
+      "ok": true,
+      "detail": "Evidence for hop 1: Observed by the NTFS collector\n\nA collector reported this relationship; its provenance is below.\n\nCollector\nNTFS collector (System.IO.DirectoryInfo.GetAccessControl)\nFirst observed\n2026-09-03 03:12 UTC run d2df0d45-5261-5806-8a31-c48f84d9a808\nLast observed\n2026-10-01 03:12 UTC ru"
+    },
+    {
+      "name": "W1.5: lhansen and Proj-Zephyr-RW are missing evidence that does not affect the conclusion",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1.6: the summary says the rights are a lower bound",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1 optional: section 6 reads four collected scopes and says elsewhere cannot change it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1: 'Investigate a different pair' is offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W1 aside: SYSTEM over SMB is Not determined, mapping ambiguous, never No access",
+      "ok": true,
+      "detail": "1. What ADG evaluated\n\nThe observed answer, before any explanation of it.\n\nPrincipal\nSYSTEM\nS-1-5-18\nResource\n\\\\NM-FS-01\\Shared · share Shared\nEffective access\nNot determined\nNo rights were established, and this is not a finding of no access. Over a share SYSTEM is the computer account of whichever "
+    },
+    {
+      "name": "W2.2: 'These counts are not exhaustive'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W2.5: 189 open findings on NM-FS-03 stay counted",
+      "ok": true,
+      "detail": "These counts are not exhaustive\n\nCollection is incomplete: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence. Findings for scopes that were not read completely can be missing, and findings held for a scope whose latest scan failed date from its last successful scan.\n\nFindings a failed scan could not re-check are still counted, from the scan tha"
+    },
+    {
+      "name": "W2.1: 3 critical, 8 high, 1,957 medium, 423 low, 6,995 informational",
+      "ok": true,
+      "detail": "critical 3\nhigh 8\nmedium 1957\nlow 423\ninformational 6995"
+    },
+    {
+      "name": "W2.3: the coverage line is a count of scopes",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W2.6: 'Not exhaustive:' beside the counts",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W2.4: 'Which scopes are not complete (2)'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W2.4: NM-FS-03 could not be reached and holds the 2026-09-17 scan; NM-MIG-FS01 partial",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W2.4: /collectors names NM-FS-03",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.2: 'Timed out — no comparison is presented'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.2: Diagnostics is offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.3: 'Retry inside the standard 4-second window' is offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.4: 'Compare only folder permission entries (3,947 → 4,124 objects)' is offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.3: 'Incomplete — this is not the whole comparison', 5,000 per instant",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.5: 'Complete — this comparison recovered the earlier attempt'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "W3.5: 221 differences",
+      "ok": true,
+      "detail": "How this comparison ended\n✓ complete Complete — this comparison recovered the earlier attempt\n\nEvery object covering either instant inside the scope was compared. It took 636 ms.\n\nDiagnostics\nComparison 9350415b-3500-46e7-9890-e6a198f39250\nRetry of 92e995d5-72af-4238-9b35-c89eaa44e35f\nWindow 4-second; ran 636 ms\nObjects read: 3,947 at the earlier instant, 4,124 at the later\nObjects that differed: "
+    },
+    {
+      "name": "no application console errors (the favicon 404 is pre-existing and excluded)",
+      "ok": true,
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+    }
+  ],
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+  ]
+}

@@ -1,0 +1,10 @@
+Demo reset: Null Meridian (null-meridian-v1, seed null-meridian-v1) into adg_demo (initialized).
+generations: g1, g2, g3 (canonical baseline)
+runs: 300 {'failed': 2, 'partial': 1, 'succeeded': 297}; observations applied: 41756
+  g1-ntfs-nm-sec-fs01: failed
+  g3-ntfs-nm-fs-03: failed
+  g3-ntfs-nm-mig-fs01: partial
+probes: 23/23 present
+risk pass: 9666 matched, 9386 open, dated 2026-10-01T06:00:00+00:00
+fingerprint: 228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0
+duration: 160.6s (ingestion 110.4s)

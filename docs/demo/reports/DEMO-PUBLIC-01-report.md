@@ -1,0 +1,596 @@
+# DEMO-PUBLIC-01 — ADG repository presentation and public demo readiness
+
+## 1. Overall verdict
+
+**`READY_FOR_ADG_PUBLIC_DEMO_REVIEW_WITH_LIMITATIONS`**
+
+A reviewer with no project context can now find out what ADG is, why the problem is hard,
+and where to look, from the top of the README. From there they can run the synthetic demo
+with commands that were run from a fresh clone, follow three walkthroughs (access
+investigation, coverage and risk, comparison failure and recovery), and jump straight to the
+source and tests behind each claim. Every acceptance criterion is met. Four limitations
+remain, none of which weakens a claim the demo makes:
+
+* the Docker Compose demo path was not run here (no Docker in this environment);
+* there is no hosted demo for this branch line;
+* one of five browser runs saw an intermittent React #418 hydration error. This is a known
+  upstream issue in Next.js 15.5, fixed on an unmerged branch;
+* the reviewer documentation lives on this branch line, and `main` still shows the old
+  README until the line is merged (§16).
+
+This prompt changed no code, no tests and no generated contract.
+
+## 2. Public repository suitability
+
+**`PUBLIC_REPO_READY_WITH_LIMITATIONS`**
+
+The scan in §10 found no credential, private key, token, employer name, customer data,
+production hostname or real directory object. It covered the tree, every remote branch and
+all 143 commits of history. Every committed screenshot and evidence file shows synthetic
+Null Meridian or reference-estate data only. The synthetic-data declaration was therefore
+added (README, demo guide).
+
+These are the owner's decisions before changing visibility, not sanitization work:
+
+1. **No `LICENSE` file.** Public visibility would make the code readable but grant no reuse
+   rights. Whether to add a license is the owner's call; none was added here.
+2. **Commit metadata** carries the owner's name and personal email address as author and
+   committer, plus `Claude-Session` links in commit trailers. This is normal for a public
+   GitHub repository, but it becomes public with it.
+3. **Unmerged deploy branches** (`deploy/*`, `integration/*`, `fix/*`, `claude/adoring-cannon`,
+   `claude/compassionate-hamilton`, `claude/wizardly-gates`) name the owner's own staging
+   hosts on `onrender.com` and `workers.dev`, and describe the hosting setup. They state
+   explicitly that the database project reference and pooler host were kept out of the
+   repository, and the scan agrees. Making the repository public publishes those branches
+   too.
+4. **The synthetic domain `nullmeridian.info`** is under a real top-level domain, not a
+   reserved one (`.example`, `.test`, `.invalid`). Whether a third party has registered it
+   could not be checked (no DNS in this environment). Changing it would change the dataset
+   canon, its fingerprint and every piece of evidence, so it was not changed (§10.4).
+5. **Dependency advisories:** `npm install` reports 16 (2 critical, 10 high, 4 moderate).
+   The critical and high ones are in test and build tooling (`vitest`, `tinypool`, `vite`,
+   the `eslint-config-next` glob chain, `postcss`, `source-map-js`) and in `sharp`. `next`
+   itself has one moderate advisory (cache poisoning of SSG/ISR pages). Every ADG route
+   builds as server-rendered on demand (`ƒ`), which suggests it does not apply; that was not
+   verified further. Dependency upgrades are outside this prompt. The unmerged Next 16 branch
+   (§14) moves `next` forward.
+
+No employer-derived code or private implementation detail was found. The repository's own
+documents describe ADG as a demo and reference application on synthetic data. Code
+provenance is something only the owner can attest to; nothing in the repository contradicts
+it.
+
+## 3. Repository state
+
+| | |
+| --- | --- |
+| Repository | `40ozs/adg`. This session started in `40ozs/ao`; `40ozs/adg` was attached and cloned to `/home/user/adg` |
+| Branch | `claude/amazing-bell-q42027` (this session's push-allowed branch) |
+| Desired canonical branch | `feature/DEMO-PUBLIC-01-adg-presentation`. Renaming is a ref operation: `git push origin claude/amazing-bell-q42027:feature/DEMO-PUBLIC-01-adg-presentation` |
+| Starting SHA | `dd9f794e3d0d0c8f6b42fa74202b07dd2b2713d8`, the head of `claude/tender-curie-vw3iss` (ADG-DEMO-03, verdict `READY_FOR_ADG_DEMO_REVIEW_WITH_LIMITATIONS`). The branch was created at it; nothing else is on it |
+| Final code SHA | `95f47ae` (ADG-DEMO-03's code head). This prompt changed no code, tests or generated contract |
+| Commits | `b661417` documentation (README, demo guide, architecture, three anchor fixes) → the commit adding this report and its evidence |
+| Ending SHA | the commit adding this report: `git log -1 origin/claude/amazing-bell-q42027`; stated in the final response |
+| Working tree | clean after the final commit |
+| `origin/main` | `1ab01a2`, unchanged. It is an ancestor of this branch, so the DEMO-01 → DEMO-PUBLIC-01 line merges as a fast-forward |
+
+**Prior work reconciled from the repository, not from session storage.** Read before
+editing:
+
+* the ADG-DEMO-01, ADG-DEMO-02 and ADG-DEMO-03 reports and evidence directories;
+* `docs/demo/access-investigation.md` and `coverage-and-recovery.md`;
+* the README, `docs/architecture/` (system overview, demo mode), the ADRs, `.env.example`,
+  the Compose files, the CI workflow, the runbook;
+* the demo reset and seed commands, the OpenAPI artifacts and the test layout;
+* every remote head (§14).
+
+## 4. Reviewer path
+
+The ten-to-fifteen-minute journey, written in the README (*What to look at first*) and in
+detail in [`docs/demo/README.md`](../README.md):
+
+| # | Step | Route / anchor |
+| --- | --- | --- |
+| 1 | Sign in as `auditor`, open the demo guide | `/login`, `/demo` |
+| 2 | **Investigate access**: *Why does Fatima Gordon have access to `\\NM-ENG-FS01\Engineering\Projects\Apollo`?* | `/access/investigate` |
+| 3 | Result: granted, Modify, `at_least`, over SMB | section 1 `#observed-access` |
+| 4 | Direct NTFS entry, share route through `ENG-Mobile`, the inherited route under *Every other route ADG found* | section 2 `#access-routes` |
+| 5 | Provenance: **Evidence for hop N** | section 2 |
+| 6 | Missing evidence: `NULLMERIDIAN\lhansen`, `Proj-Zephyr-RW`; neither affects the conclusion | section 3 `#open-questions` |
+| 7 | Coverage beside the answer and beside the risk totals: *not exhaustive*, 189 findings on `NM-FS-03` still counted | section 6 `#collection-coverage`; `/risks#risk-reading`, `#risk-coverage` |
+| 8 | **Run the comparison drill**: `timed_out` → retry → `incomplete` → **Compare only folder permission entries** → complete, recovered | `/demo` → `/changes/compare` |
+
+Every label, route and number in this path was checked in a browser against a stack built
+from a fresh clone: 39 of 39 checks ([`docs-walkthrough.json`](DEMO-PUBLIC-01-evidence/docs-walkthrough.json)).
+
+## 5. README changes
+
+The README now opens with a reviewer section. The existing 680-line product reference is kept
+below a `# Product reference` divider. It is unchanged except for two lines: the demo-mode
+command block now says it runs from `backend/` with the virtual environment, and
+*Prerequisites* now says the demo needs none of the Windows tooling. That paragraph is the
+one all 13 unmerged branches edit. Keeping it in place means the new README merges cleanly
+with every one of them (verified, §14).
+
+Structure of the new top:
+
+1. Synthetic-data declaration (verbatim from the prompt, adapted only in punctuation).
+2. What ADG is: one paragraph.
+3. Reviewer links: demo guide, run the demo, architecture, code to review, representative
+   tests, design decisions, demo reports, limitations.
+4. *What problem it demonstrates*: incomplete and contradictory evidence, and how ADG keeps
+   the uncertainty in the answer.
+5. *What to look at first*: the eight-step path, with real UI names.
+6. *What is technically interesting*.
+7. *Code to review*: access logic, evidence and uncertainty, risk and coverage, comparison
+   and recovery, UI. Each is a table of real paths and symbols.
+8. *Representative tests*: 24 tests, one sentence each (§8).
+9. *Key design decisions*: six decisions, each linked to ADRs and reports (§7).
+10. *Run the demo*: requirements, PostgreSQL, backend, frontend, open the demo, Docker
+    alternative (marked not run here), running the tests.
+11. *Known limitations*: the accepted product limitations, plus the collectors that have never
+    met a real domain.
+12. *Demo reports and evidence*.
+
+Also new or changed:
+
+* [`docs/demo/README.md`](../README.md) is the single demo-guide entry: three walkthroughs, the
+  tests and reports behind each claim, and the limitations.
+* The two existing walkthrough pages link back to it.
+* Three pre-existing broken anchors were fixed: one in `docs/architecture/mvp-capabilities.md`,
+  two in `docs/collectors/ad.md`.
+
+**Part 11 (demo nature in the UI): no UI change was needed, and none was made.** The
+application already marks every page in demo mode, verified in the browser runs:
+
+* a persistent header pill, *Demo environment · Synthetic enterprise data · Null Meridian*,
+  shown before sign-in, whose panel says no production Active Directory or file server is
+  connected;
+* a footer line, *Demo environment: the organization and its data are fictional, and no
+  directory or file server is connected*;
+* the `/demo` statement that no Active Directory, file server or collector is connected;
+* a *Synthetic scenario* note on the investigation;
+* the drill labelled *launched inside a deliberately short 1 ms window*;
+* an `X-ADG-Runtime-Mode: demo` header on every API response.
+
+The comparison page itself shows the window (*its 1 ms window*) but does not repeat that it is
+a drill. The guide says so one click earlier, and adding a banner was judged not worth a UI
+change in a documentation prompt.
+
+## 6. Architecture
+
+The existing architecture document was extended rather than duplicated:
+[`docs/architecture/system-overview.md` § The reviewer view: from collection to screen](../../architecture/system-overview.md#the-reviewer-view-from-collection-to-screen).
+The repository uses `text` diagrams throughout and no Mermaid, so this one is `text` too.
+
+```text
+synthetic collectors / sources      demo/null_meridian, demo_mode/ingest.py (real /scan-runs routes)
+ → collection runs / evidence       ingestion/service.py, history/writer.py, scan_runs, object_versions
+ → identity + access model          services/access.py (A), access_engine/subjects.py build_token (A),
+                                    evaluation.py, resolver.py certainty_of (B)
+ → path derivation                  access_engine/causality.py explain_access
+ → access explanation               verdict.py, investigation.py investigate, repositories/provenance.py
+ → risk evaluation                  risk_engine/engine.py evaluate (+ basis per pass, migration 0018)
+ → coverage / completeness          domain/coverage.py assess_coverage (C), interpret_totals
+ → comparison / recovery            changes/service.py ChangeService.compare (D), api/changes.py _recovery
+ → API                              FastAPI app/api/*
+ → reviewer UI                      Next.js /demo, /access/investigate, /risks, /collectors, /changes/compare
+```
+
+| Marker | Where it is decided |
+| --- | --- |
+| A, ambiguity enters | `AccessService._coverage_findings` / `_could_contain_members` (unresolved SIDs, uncollected groups); `build_token` / `system_mapping_of` (SYSTEM's one mapping state) |
+| B, `at_least` / provisional | `certainty_of` over the condition directions; `investigation._impact` (`extent` vs `presence`) |
+| C, collection freshness enters | `assess_coverage` (scope state × evidence age), `interpret_totals` (how risk totals may be read) |
+| D, typed comparison outcome | `ChangeService.compare` (`complete` / `incomplete` / `timed_out` / `cancelled`); recovery in `api/changes.py` |
+
+## 7. Representative source
+
+The README's *Code to review* section. Every path is linked and checked (§13.6):
+
+* **Access logic:** `access_engine/subjects.py` (`build_token`, `system_mapping_of`),
+  `evaluation.py` (`evaluate_acl`), `rights.py`, `resolver.py` (`resolve_access`,
+  `certainty_of`), `verdict.py`, `causality.py` (`explain_access`), `investigation.py`
+  (`investigate`), `services/access.py`.
+* **Evidence and uncertainty:** `conditions.py` (`AccessCondition`, the overstating and
+  understating sets), `SystemMapping`, `EvidenceState`, `ConclusionImpact`,
+  `_could_contain_members`, `frontend/lib/identity.ts` (`isUnresolved`),
+  `repositories/provenance.py`, `domain/collection.py`, `domain/operations.py`.
+* **Risk and coverage:** `risk_engine/engine.py`, `rules.py`, `domain/coverage.py`
+  (`assess_coverage`, `interpret_totals`), `services/coverage.py`, `api/risks.py`, migration
+  `0018_risk_evaluation_basis.py`.
+* **Comparison and recovery:** `changes/service.py` (`ChangeService.compare`,
+  `_aligned_boundary`, `COMPARISON_CEILING`, `COMPARISON_WINDOW_MS`, `ComparisonOutcome`),
+  `api/changes.py` (`compare_instants`, `_recovery`, the `changes.compare` log line),
+  `NullMeridianDataset.comparisons`.
+* **UI:** the investigation page, risks page and comparison page; `Coverage.tsx`,
+  `Comparison.tsx`, `ComparisonLink.tsx`, `Explanation.tsx`, `DemoGuide.tsx`, `Banners.tsx`;
+  `lib/investigation.ts`, `lib/coverage.ts`, `lib/explanation.ts`.
+
+Design decisions summarized for reviewers (README *Key design decisions*):
+
+* preserve uncertainty (ADR-0011, ADR-0015, ADG-DEMO-01 §4);
+* lower-bound access semantics (ADR-0011, ADG-DEMO-02 §4);
+* evidence-aware risk totals (ADR-0018, ADR-0023, ADG-DEMO-03 §3–4);
+* bounded interactive comparisons (ADR-0012, ADG-DEMO-03 §6);
+* recovery by narrower scope, with no job system (ADR-0020, ADG-DEMO-03 §6.2);
+* demo as a deployment boundary (ADR-0039).
+
+Each is described as a decision made in ADG, not as universal practice. No new ADR was
+written: the DEMO-03 decisions are recorded in its report, and the next free ADR number
+(0040) is already used by the unmerged GRAPH branches.
+
+## 8. Representative tests
+
+Listed in the README with one sentence each. All 24 were run by exact node ID or name:
+
+* the backend unit ones from the fresh clone: 22 node IDs, 57 cases with parametrization, all
+  passed;
+* the PostgreSQL ones (§9);
+* the frontend ones by file: 121 passed.
+
+| Demo | Test | Proves |
+| --- | --- | --- |
+| 01 | `test_system_mapping.py::TestAmbiguous::test_the_default_question_is_indeterminate_not_no_grant` | SYSTEM over a share is ambiguous: "not determined", never "no grant" |
+| 01 | `test_system_mapping.py::TestMissing::test_no_token_is_invented_for_it` | missing SYSTEM evidence invents no token |
+| 01 | `test_system_mapping.py::TestConflicting::test_both_sides_and_the_provenance_are_preserved` | conflicting evidence is kept, with both sides |
+| 01 | `test_system_mapping.py::TestConfirmed::test_an_acl_naming_only_the_servers_administrators_is_not_a_no` | no unsupported definite negative, even when confirmed |
+| 01 | `test_system_explanation_regression.py::TestNoContradictionAnywhereInTheMatrix` | no contradiction across the whole matrix (46 of 52 failed before the fix) |
+| 01 | `test_system_mapping_api.py::TestConflictingEvidence::test_the_conflict_and_its_provenance_reach_the_client` | the state survives DB → API → schema |
+| 01 | `system-mapping.test.tsx` "a SID a run saw and could not resolve" | unresolved identities render unresolved |
+| 02 | `TestTheAccessInvestigation::test_the_ntfs_route_is_the_direct_entry_and_the_share_route_a_group` | the canonical primary routes |
+| 02 | `TestTheAccessInvestigation::test_the_inherited_route_through_five_groups_is_shown_in_order_and_redundant` | inherited versus direct |
+| 02 | `TestTheAccessInvestigation::test_every_hop_carries_its_collector_and_scan` | provenance |
+| 02 | `TestTheAccessInvestigation::test_access_is_observed_and_qualified_not_certain` | `at_least` lower bound |
+| 02 | `TestTheAccessInvestigation::test_what_cannot_be_confirmed_is_named_and_does_not_reach_the_conclusion` | missing evidence and its impact |
+| 02 | `test_unidentified_trustees.py::test_a_record_saying_nothing_resolved_the_sid_could_be_a_group` | an unresolved trustee cannot support certainty |
+| 02 | `test_investigation.py::TestWhetherAnOpenQuestionReachesTheConclusion::test_an_unread_share_acl_could_take_a_grant_away` | uncertainty that *does* affect the conclusion is `presence` |
+| 03 | `test_coverage.py::TestZeroFindingsIsNotMissingCollection::test_the_two_zeros_never_share_a_verdict` | failed collection ≠ zero findings |
+| 03 | `test_collection_coverage.py::TestAFailedSourceDoesNotLowerRisk::test_findings_on_a_server_whose_scan_failed_stay_open_and_counted` | findings stay counted after a failed scan |
+| 03 | `test_coverage.py::TestReadingRiskTotals::test_every_reason_is_listed_and_the_worst_one_wins` | risk completeness state |
+| 03 | `test_collection_coverage.py::TestTheCoverageReport::test_a_server_that_failed_after_a_success_holds_stale_evidence`, `TestAnExpectedCollectorThatNeverReported::test_is_not_collected_and_makes_coverage_incomplete` | stale and incomplete coverage |
+| 03 | `test_comparison_bounds.py::TestTheInteractiveWindow::test_past_the_window_after_reading_it_stops_and_presents_nothing` | timeout state, nothing presented |
+| 03 | `test_comparison_bounds.py::TestTheSidesAreCutAtTheSameKey::test_objects_past_the_shorter_cut_are_not_called_unobserved` | no partial-as-complete |
+| 03 | `test_comparison_bounds.py::TestTheApi::test_timeout_then_recovery_then_a_complete_recovered_comparison` | narrowed recovery |
+| 03 | `TestTheCoverageAndRecoveryDemo::test_the_comparison_drill_times_out_then_recovers_to_complete` | recovered completion on a real reset |
+| 03 | `compare-page.test.tsx` "reads an older server's truncated comparison as incomplete, never complete" | the UI never shows partial as complete |
+| 03 | `risks-page.test.tsx` "calls the counts totals only when evaluation and collection are both complete" | the UI says "not exhaustive" |
+
+## 9. Setup validation
+
+**Method.** A fresh local clone of this branch at `b661417` was made into an empty directory.
+It had no `.env`, no virtual environment and no `node_modules`. The README's *Run the demo*
+steps were then run in order. The same Ubuntu 24.04 container ran it, with Python 3.13.16,
+Node 22.22, PostgreSQL 16 and Chromium 1194.
+
+| Documented step | Run? | Result |
+| --- | --- | --- |
+| PostgreSQL role and `adg_demo` | yes, as the `postgres` OS user (`su postgres -c psql …`; `psql -U postgres` needs a password or peer login on other hosts) | `adg_demo` dropped and recreated empty with the documented `CREATE DATABASE`. The documented `CREATE ROLE` had already been run at the start of the session, so its second run reported "already exists" |
+| `cp .env.example .env` | yes | the template was sufficient: nothing else needed setting |
+| `python3 -m venv .venv`, `pip install -e ".[dev]"` | yes | installed (no pip upgrade needed) |
+| `export ADG_RUNTIME_MODE=demo`, `ADG_DATABASE_URL=…/adg_demo` | yes | — |
+| `python -m app.demo_mode reset` | yes | exit 0 in 163 s. 300 runs (297 succeeded, 2 failed, 1 partial, all by design); 41,756 observations; 23/23 probes; 9,386 open findings; fingerprint **`228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0`**, equal to ADG-DEMO-02 and -03 ([`fresh-clone-reset.txt`](DEMO-PUBLIC-01-evidence/fresh-clone-reset.txt)) |
+| `python -m app.demo_mode verify` | yes | exit 0 in 10 s |
+| `python -m app` | yes | `/health/ready` ready, `runtime_mode: demo`, `data_source: synthetic`; responses carry `X-ADG-Runtime-Mode: demo` |
+| `npm install`, `npm run build`, `npm run start` | yes | installed (16 advisories, §2); built; served |
+| `npm run dev` (the stated alternative) | yes | `/login` 200, dev sign-in 200, `/demo` 200 with the guide |
+| Open `/login`, sign in as `auditor`, `/demo` | yes, in Chromium | the full reviewer path, 39/39 checks (§4) |
+| Representative unit tests (README command) | yes | **229 passed** |
+| Representative PostgreSQL tests (README command) | yes | **58 passed** in 4m47s, reading the database URL from the copied `.env` |
+| Representative frontend tests (README command) | yes | **121 passed** (5 files) |
+| Docker Compose demo | **no** | no Docker in this environment. CI validates only the base Compose file (`docker compose config -q`), not the demo overlay |
+
+**What remains unproven:**
+
+* the Docker path;
+* macOS and Windows hosts (the Windows-native scripts are the product's, not the demo's);
+* a clone from GitHub itself rather than from the local repository (the content is identical:
+  the same commit);
+* a PostgreSQL that needs password authentication for the `postgres` superuser. Those two
+  `psql` lines may need `-h localhost` or `sudo -u postgres` on other hosts.
+
+## 10. Synthetic / public scan
+
+This was a pattern-based review, not a formal security audit. No secret value is reproduced
+here.
+
+### 10.1 Scanned
+
+* **Tree:** 925 tracked files on this branch.
+* **History:** all 143 commits on every branch (`git log --all -p`), and the file names ever
+  committed.
+* **Unmerged branches:** the diff of all 13 against their merge base.
+* **Images:** all 18 committed screenshots, viewed. Tall images were cropped to read them.
+* **Evidence:** the JSON, JSONL and scripts in `docs/demo/reports/` and `docs/handoffs/`.
+
+### 10.2 Patterns
+
+* **Private keys and cloud or SaaS tokens:** PEM headers, `AKIA…`, `ghp_`/`gho_`/
+  `github_pat_`, `xox?-`, `sk-…`, `AIza…`.
+* **JWTs.**
+* **Quoted password, secret and key literals.**
+* **Connection strings with credentials.**
+* **Secret-bearing files:** `.env`, `.pem`, `.key`, `.pfx`, `.p12`, dumps, logs.
+* **Hosts:** every URL host, and every domain-shaped token.
+* **Employer and confidentiality markers:** employer, workplace, confidential, proprietary,
+  NDA.
+* **Personal email domains.**
+* **Absolute paths:** `/home/…`, `/Users/…`, `C:\Users\…`, `/root/…`.
+* **Auth material in evidence:** `Authorization` headers, cookies, tokens.
+
+### 10.3 Findings
+
+| Area | Classification | Notes |
+| --- | --- | --- |
+| Credentials, keys, tokens | **safe** | None. The only JWT-shaped string is a test fixture (`{"alg":"HS256"}` / `{"sub":"alice"}` / `signature`). Password and secret literals are test fixtures (`a-fixed-secret-for-these-tests-only`, …). The database passwords present are the documented local defaults (`adg_dev_password`, and the CI throwaway `adg_ci_password` in the workflow and the DEMO-03 measurement scripts) |
+| Secret-bearing files | **safe** | Only `.env.example` and `frontend/.env.example` (templates, placeholders) have ever been committed |
+| Hosts and domains | **safe** | `localhost`, `testserver`, `127.0.0.1`, RFC 2606 names (`corp.example.com`, `*.example.*`, `*.invalid`, `*.test`), `adg.local` (schema `$id` and module metadata), public Microsoft Entra endpoint templates with `<tenant-id>`, `github.com/40ozs/adg` CI links, and the synthetic `nullmeridian.info` (§10.4) |
+| Identities | **safe** | Null Meridian names are drawn from independent given and family name pools by the seed (`app/demo/null_meridian/names.py`). `test_no_identifier_comes_from_outside_the_canon` forbids borrowed tenants, `contoso`/`fabrikam`, `@gmail`/`@outlook` and any domain but the canon's. The reference estate uses `corp.example.com` and fixture names. The UI accounts shown are the development accounts (`Development Auditor`, `Development Administrator`) |
+| Screenshots (18) | **safe** | Synthetic data, dev accounts and `localhost` only. `docs/handoffs/adg-demo-integration-01-risks.png` shows the pre-DEMO-03 wording ("these counts are totals"). It is historical evidence, kept, and not linked from the reviewer path |
+| Logs and telemetry | **safe** | `compare-telemetry.jsonl` holds comparison identifiers and measurements only |
+| Absolute paths | **safe** | `/home/user/adg` (the generic cloud-container clone path in two reports) and `/opt/pw-browsers/…` (the container's Chromium, in the browser scripts). Neither identifies a person or a private host |
+| `nullmeridian.info` | **uncertain / manual review** | A real TLD rather than a reserved one; registration unverified (§2.4) |
+| Commit metadata | **uncertain / manual review** | The owner's name and personal email address; `Claude-Session` links (§2.2) |
+| Unmerged deploy branches | **uncertain / manual review** | The owner's staging hostnames and hosting configuration; secrets are referenced only as GitHub Actions secret names (§2.3) |
+| Requires sanitization | none | — |
+| Requires exclusion | none | — |
+
+### 10.4 Sanitizations and declarations
+
+No sanitization was needed, and nothing was rewritten or removed. The synthetic-data
+declaration was added to the top of the README and to the demo guide, after the scan.
+`nullmeridian.info` was deliberately **not** changed:
+
+* it is part of the seeded canon;
+* the canon module states that any change requires a new seed (`null-meridian-v2`);
+* it would change the reset fingerprint and every committed piece of evidence;
+* nothing suggests it is anybody's real data.
+
+## 11. Contract state
+
+| | |
+| --- | --- |
+| Explanation contract | **`1.1`** (`CONTRACT_VERSION` in `backend/app/api/caching.py`; `"const": "1.1"` in all three derived schemas). Not downgraded |
+| OpenAPI regeneration | `python -m app.contracts.openapi` and `python -m app.contracts.derived` regenerated `openapi.json`, `openapi.demo.json` and the three derived schemas: **byte-identical** to the committed files (`git status` clean). No route description changed: this prompt edited no docstring |
+| Backend contract tests | `tests/contracts`: **611 passed, 109 skipped** (as in ADG-DEMO-03) |
+| Frontend contract test | `contracts.test.ts`: **465 passed** |
+
+## 12. Regression status
+
+Nothing in the engine, API or UI changed, so these confirm the branch is intact. Every count
+equals the one its report recorded.
+
+**ADG-DEMO-01 (SYSTEM correctness): passing.**
+
+* engine set (`test_system_explanation_regression` + `test_system_mapping` + `test_resolver`):
+  **145 passed**;
+* UI set (`system-mapping`, `explanation`, `explanation-views`, `identity`): **171 passed**;
+* `test_system_mapping_api.py` and `TestTheSystemExplanation`: in the full PostgreSQL suite
+  (§13.2) and the representative DB run;
+* browser (DEMO-02 script): SYSTEM over a share *Not determined* / *Ambiguous*, never
+  "No access"; locally *Confirmed*.
+
+**ADG-DEMO-02 (access investigation): passing.**
+
+* engine `test_investigation` + `test_unidentified_trustees`: **102 passed**; dataset seed:
+  **6 passed**;
+* UI `explanation-page` + `explanation-contract`: **112 passed**; `investigation` +
+  `investigation-page` + `demo-guide`: **68 passed**;
+* `TestTheAccessInvestigation`: in the full suite and the representative DB run;
+* browser: **29 of 29** checks, on the fresh-clone stack;
+* the reset fingerprint is unchanged.
+
+**ADG-DEMO-03 (coverage, timeout, recovery): passing.**
+
+* `test_coverage.py`: **26 passed**; drill dataset: **6 passed**; `test_config.py`: **16
+  passed**;
+* UI `coverage.test.ts`: **29 passed**; `compare-page`: **18 passed**; `risks-page` + `risks`:
+  **38 passed**;
+* `test_collection_coverage`, `test_comparison_bounds` and `TestTheCoverageAndRecoveryDemo`:
+  in the full suite and the representative DB run;
+* browser: **39/39, 39/39 and 38/39** over three runs. The one failure was the console check,
+  which saw React #418 (§13.4).
+
+## 13. Full validation
+
+All gates ran in this container on the starting tree (`dd9f794`, code `95f47ae`), which this
+prompt did not change, except where marked as the fresh clone.
+
+### 13.1 Backend
+
+| Gate | Result |
+| --- | --- |
+| `ruff check .` | **passed** |
+| `ruff format --check .` | **passed** (412 files) |
+| `mypy app tests` | **passed** (411 source files) |
+| `pytest -m "not smoke"` (full unit suite) | **6,009 passed, 124 skipped, 1,273 deselected** (equal to ADG-DEMO-03) |
+| `tests/access_engine` | **694 passed, 1 skipped** |
+
+### 13.2 PostgreSQL
+
+PostgreSQL 16 was stopped when the container started. It was started with
+`pg_ctlcluster 16 main start`, and the role and databases were created: an environment step.
+
+| Gate | Result |
+| --- | --- |
+| `pytest -m smoke` (full DB suite) | **1,272 passed, 1 xfailed**, exit 0, 45m24s (04:27–05:13 UTC). Equal to ADG-DEMO-03's 1,272 passed / 1 xfailed; the only `xfail` marker in `tests/db` is the pre-existing one in `test_access_performance.py`. It ran beside the fresh-clone reset, builds and browser runs, hence slower than ADG-DEMO-03's 31m48s. Includes `TestRepeatability` (a second reset reproducing the fingerprint), every SYSTEM, investigation, coverage and comparison class |
+| Representative DB tests (README command, fresh clone) | **58 passed**, exit 0, 4m47s: `test_system_mapping_api` 10, `test_collection_coverage` 18, `test_comparison_bounds` 13, `TestTheSystemExplanation` 2, `TestTheAccessInvestigation` 10, `TestTheCoverageAndRecoveryDemo` 5. The 13 PostgreSQL tests the README cites resolve by exact node ID (`--collect-only`) |
+
+### 13.3 Frontend
+
+| Gate | Result |
+| --- | --- |
+| `npm run lint` | **passed** |
+| `npm run typecheck` | **passed** |
+| `npm run test` | **1,361 passed** (38 files; equal to ADG-DEMO-03) |
+| `npm run build` | **passed**, in the session clone and in the fresh clone |
+
+### 13.4 Browser
+
+There is no browser-test framework, and none was added. The two existing evidence scripts ran
+unchanged against the fresh-clone stack. One new one-off script checks the documentation's
+claims ([`docs-walkthrough.script.js`](DEMO-PUBLIC-01-evidence/docs-walkthrough.script.js)).
+Results are in [`browser-runs.json`](DEMO-PUBLIC-01-evidence/browser-runs.json).
+
+| Run | Result |
+| --- | --- |
+| DEMO-PUBLIC-01 documentation walkthrough: every label, route and number the README and the demo guide cite | **39/39** |
+| ADG-DEMO-03 walkthrough: coverage, risk reading, drill, keyboard, 390 px, console | **38/39**, then **39/39**, **39/39** |
+| ADG-DEMO-02 walkthrough: investigation, keyboard, SYSTEM, 390 px, console | **29/29** |
+
+Covered across these runs:
+
+* **Investigation walkthrough:** the routes, the provenance, the open questions and the
+  summary.
+* **Coverage display and risk interpretation:** *not exhaustive*, 189 findings held on
+  `NM-FS-03`, the scope counts.
+* **Comparison and recovery:** `timed_out` → `incomplete` → complete, recovered.
+* **Responsive presentation:** no horizontal scroll at 390 px on `/risks`, the investigation,
+  and the comparison in all three outcomes.
+* **Keyboard:** Tab and Enter reach and open the hop evidence, the incomplete-scopes
+  disclosure and Diagnostics.
+* **Console errors:** none from the application in four of five runs.
+
+**The one failure.** In the first ADG-DEMO-03 run, the console check saw
+`Minified React error #418` (a hydration mismatch). Every content check in that run passed.
+This is a known, intermittent upstream issue:
+
+* `docs/handoffs/adg-ui-edge-01.md` §5 on the unmerged `integration/ADG-UI-EDGE-01` branch
+  reproduced it 2 times in 3, on several routes;
+* it traced it to the react-dom canary that Next.js 15.5 bundles;
+* the unmerged `fix/ADG-NEXT16-REACT418-01` upgrade to Next 16.4.0 removed it (0 in 224
+  reloads, per that branch's handoff).
+
+This branch runs Next 15.5.25. The DEMO-02 and DEMO-03 runs recorded no #418, which is
+consistent with an intermittent issue. It is recorded here, not fixed: the fix is a framework
+upgrade on another branch (§14, §16). The `/favicon.ico` 404 is pre-existing and recorded by
+both scripts.
+
+### 13.5 Contract
+
+See §11: regenerated byte-identical; 611 passed / 109 skipped; 465 passed; contract `1.1`.
+
+### 13.6 Documentation
+
+* **Links:** a link checker that resolves repository-relative Markdown links and GitHub
+  heading anchors ran over all 140 tracked Markdown files: **0 broken** (550 links). Before this prompt
+  there were three, all fixed (§5).
+* **Test paths and names:** every test cited in the README exists. They were run by node ID
+  or by file (§8).
+* **Commands:** the setup and test commands were run (§9).
+* **Routes and UI labels:** checked in the browser (§4).
+* **Reports:** every report referenced exists.
+
+### 13.7 CI
+
+GitHub Actions runs on every push (`.github/workflows/ci.yml`: backend lint, types, unit and
+**database** tests; frontend lint, types, tests and build; the Collector Pester suite on
+`windows-latest`; `docker compose config`). This branch's first push is the documentation and
+this report over ADG-DEMO-03's code head, which ADG-DEMO-03 recorded green in CI run 72. The
+result for this branch is recorded below once it completes.
+
+## 14. Parallel branches and integration hazards
+
+Fresh `git fetch` of every head, then write-free trial merges (`git merge-tree --write-tree`)
+against both the starting SHA and this branch's documentation commit.
+
+* **21 remote heads:** `main`, this prompt's start (`claude/tender-curie-vw3iss`) and 19
+  others. 6 of those are already contained: the DEMO-02 and DEMO-01 heads, the Demo
+  integration head, `dazzling-keller`, `inspiring-volta` and `vibrant-gates`.
+* **13 unmerged**, the same 13 ADG-DEMO-03 recorded, with the same conflict set. **The new
+  README adds no conflict:** the result is identical before and after this branch's
+  documentation commit.
+  * **11 conflict in `frontend/app/identities/principal/page.tsx`**: `adoring-cannon`,
+    `compassionate-hamilton`, `deploy/ADG-FREE-STAGING-01`, `feature/ADG-GRAPH-01A`,
+    `-01B`, `-01C-path-engine`, `-01C-path-engine-claude`, `fix/ADG-NEXT16-REACT418-01`,
+    `fix/ADG-UI-COMPACT-IDENTITY-01`, `integration/ADG-NEXT16-UI-02`,
+    `integration/ADG-UI-EDGE-01`. Resolution, per ADG-DEMO-01 §1: take the newer page
+    structure and reapply the `isUnresolved(principal)` banner.
+  * **3 also conflict in `docs/contracts/v1/openapi.json`**: `adoring-cannon`,
+    `compassionate-hamilton`, `feature/ADG-GRAPH-01C-path-engine-claude`. Resolution is
+    mechanical and must not pick a side: merge the source, regenerate
+    (`python -m app.contracts.openapi`, `python -m app.contracts.derived`), then run
+    `tests/contracts` and the frontend `contracts.test.ts`.
+  * **2 merge cleanly**: `claude/wizardly-gates-6yjdxp`, `deploy/ADG-FREE-EDGE-SSR-03`.
+* **Migrations, still relevant.** This line adds `0018_risk_evaluation_basis`
+  (`down_revision = 0017_deployment_marker`). `feature/ADG-GRAPH-01A/01B/01C` add
+  `0018_graph_relationships` on the same parent (and `0019_graph_derivation` on top). The
+  filenames differ, so there is no textual conflict, but a merge yields **two Alembic heads**.
+  `alembic upgrade heads` (what the demo reset and the test fixture run) applies both, and a
+  one-line merge revision linearizes them, as `0012` and `0014` did. **Neither accepted
+  migration should be renumbered.** No test asserts a single head.
+* **Do they touch demo or public files?**
+  * All 13 edit one README paragraph (a link to a staging deployment guide), and all 13 edit
+    `docs/architecture/demo-mode.md`. Neither was changed here.
+  * The GRAPH branches add ADRs 0040–0042 and edit `docs/decisions/README.md`. Neither was
+    touched here.
+  * None touches `docs/demo/`.
+* **Do they block public review?** No. Public review is of this branch line, which merges into
+  `main` as a fast-forward.
+* **Must any be integrated first?** No. Each needs the resolutions above when it is
+  integrated. Nothing was merged here.
+
+## 15. Known limitations
+
+**Accepted product limitations** (from ADG-DEMO-01, -02 and -03; disclosed in the README and
+the demo guide):
+
+1. Expected collectors are declared by collector kind, not per server.
+2. "Stale" means the latest scan delivered nothing while an earlier one did. It is not an age
+   threshold.
+3. The page-wide collection-health banner was not redesigned.
+4. An estate-wide demo comparison cannot finish inside one interactive request.
+5. The supported recovery is narrowing the scope.
+6. Comparison bounds rely on in-process checkpoints, not a background job system.
+7. Remote-database behavior was modeled with injected latency, not measured on hosted
+   production infrastructure.
+8. Browser validation uses one-off evidence scripts, not a committed browser-test framework.
+9. SYSTEM over a share is never resolved to a computer account; `NETWORK SERVICE` and
+   `LOCAL SERVICE` are not specially handled.
+10. The Active Directory and SMB collectors have never met a real domain
+    (`docs/release/known-limitations.md`).
+
+**Environment-validation limitations** (this prompt):
+
+1. The Docker Compose demo was not run; there is no Docker here.
+2. One Linux container only; not macOS or Windows. The fresh clone was local, not from GitHub.
+3. The `psql -U postgres` lines were run as the `postgres` OS user; other hosts may need
+   `-h localhost` or `sudo -u postgres`.
+4. React #418 was seen intermittently, in 1 of 5 browser runs (§13.4).
+5. Collector Pester tests and `docker compose config` are not run locally (no Windows, no
+   Docker). CI runs both (§13.7).
+
+**Repository-publication limitations:**
+
+1. No `LICENSE` file.
+2. Commit metadata carries the owner's name and email.
+3. Unmerged deploy branches name the owner's staging hosts.
+4. `nullmeridian.info` registration is unverified.
+5. There are 16 npm advisories, mostly in tooling.
+6. **`main` (the default branch a visitor sees) still has the pre-DEMO README.** The reviewer
+   documentation is on this branch line until it is merged.
+7. There is no hosted demo for this line. The staging deployments described on the unmerged
+   deploy branches run an older tree (pre-DEMO-01) and were not linked.
+
+## 16. Recommendation
+
+**Next step: merge and review.** Review this branch line, then merge it to `main`. The line is
+ADG-DEMO-01 → -02 → -03 → DEMO-PUBLIC-01, and `main` is its ancestor, so the merge is a
+fast-forward. A visitor to the repository then sees the reviewer README. Then, in order:
+
+1. **Owner decisions before making the repository public (§2):**
+   * a license;
+   * whether the unmerged deploy branches should be public as they are;
+   * whether the synthetic domain should stay;
+   * accept or address the npm advisories.
+
+   None of these needs sanitization of the tree as it stands.
+2. **Local clean-clone validation on a reviewer-like machine:** run the Docker Compose demo
+   path, and the README steps on macOS. Those are the paths not exercised here.
+3. **Hosted-demo validation**, if a hosted demo is wanted:
+   * rebuild a staging deployment from this line rather than the older deploy branches;
+   * take the Next 16 upgrade (`fix/ADG-NEXT16-REACT418-01`) through integration for #418;
+   * re-measure the comparison window against the hosted database (ADG-DEMO-03 §12);
+   * add the Alembic merge revision if the GRAPH branches land first (§14).
+
+A private walkthrough is not required: nothing in the repository makes public review unsafe.

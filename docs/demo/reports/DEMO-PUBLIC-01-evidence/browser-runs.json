@@ -1,0 +1,45 @@
+{
+  "stack": "fresh clone of claude/amazing-bell-q42027 at b661417: API in demo mode on a reset adg_demo (fingerprint 228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0) and next start of the production build (Next.js 15.5.25), Chromium 1194",
+  "scripts": {
+    "ADG-DEMO-03": "docs/demo/reports/ADG-DEMO-03-evidence/browser-walkthrough.script.js (unchanged)",
+    "ADG-DEMO-02": "docs/demo/reports/ADG-DEMO-02-evidence/browser-walkthrough.script.js (unchanged)",
+    "DEMO-PUBLIC-01": "docs/demo/reports/DEMO-PUBLIC-01-evidence/docs-walkthrough.script.js"
+  },
+  "runs": [
+    {
+      "run": "ADG-DEMO-03 walkthrough, run 1",
+      "passed": 38,
+      "total": 39,
+      "failed": [
+        {
+          "name": "no console errors from the application",
+          "detail": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings. || "
+        }
+      ]
+    },
+    {
+      "run": "ADG-DEMO-03 walkthrough, run 2",
+      "passed": 39,
+      "total": 39,
+      "failed": []
+    },
+    {
+      "run": "ADG-DEMO-03 walkthrough, run 3",
+      "passed": 39,
+      "total": 39,
+      "failed": []
+    },
+    {
+      "run": "ADG-DEMO-02 walkthrough",
+      "passed": 29,
+      "total": 29,
+      "failed": []
+    },
+    {
+      "run": "DEMO-PUBLIC-01 documentation walkthrough",
+      "passed": 39,
+      "total": 39,
+      "failed": []
+    }
+  ]
+}
