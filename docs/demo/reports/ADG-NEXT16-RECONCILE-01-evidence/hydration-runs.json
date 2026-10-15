@@ -1,0 +1,1211 @@
+{
+ "runs": [
+  {
+   "run": "R1-control-next16",
+   "label": "reconcile control: next-16.4.1 direct + foreign node",
+   "control": true,
+   "base": "http://localhost:3000",
+   "rounds": 1,
+   "started": "2026-10-15T21:50:34.170Z",
+   "finished": "2026-10-15T21:52:00.882Z",
+   "full_document_loads": 62,
+   "client_transitions": 19,
+   "total": {
+    "records": 81,
+    "with418": 62,
+    "events418": 62,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 0,
+    "failedSteps": 0
+   },
+   "phases": {
+    "fresh": {
+     "records": 17,
+     "with418": 17,
+     "events418": 17,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "reload": {
+     "records": 34,
+     "with418": 34,
+     "events418": 34,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "nav": {
+     "records": 20,
+     "with418": 1,
+     "events418": 1,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "keys": {
+     "records": 3,
+     "with418": 3,
+     "events418": 3,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "phone": {
+     "records": 7,
+     "with418": 7,
+     "events418": 7,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    }
+   },
+   "loads_with_418": [
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "home",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "demo guide",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "investigation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "access explanation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "risks",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "collectors",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "comparison drill: timed out",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "comparison: folder permission entries",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "identities",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "principal: Fatima Gordon",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "principal: unresolved SID",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "status",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "changes",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "search",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "resources",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "home",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "home",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "demo guide",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "demo guide",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "investigation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "investigation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+     "ready_state": [
+      "complete"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "access explanation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "access explanation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "risks",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "risks",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "collectors",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "collectors",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison drill: timed out",
+     "ready_state": [
+      "complete"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison drill: timed out",
+     "ready_state": [
+      "complete"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: folder permission entries",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: folder permission entries",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "identities",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "identities",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "principal: Fatima Gordon",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "principal: Fatima Gordon",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "principal: unresolved SID",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "principal: unresolved SID",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "status",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "status",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "changes",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "changes",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "search",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "search",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "resources",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "resources",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "nav",
+     "route": "demo guide (start)",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "keys",
+     "route": "investigation: hop evidence",
+     "ready_state": [
+      "complete"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "keys",
+     "route": "risks: incomplete scopes",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "keys",
+     "route": "comparison: Diagnostics",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "demo guide",
+     "ready_state": [
+      "complete"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "investigation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "risks",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "comparison drill: timed out",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "comparison: folder permission entries",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "principal: unresolved SID",
+     "ready_state": [
+      "interactive"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    }
+   ],
+   "other_errors": [],
+   "failed_steps": [],
+   "phone_overflow": [],
+   "known_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ],
+   "loads": [
+    "1|fresh|home|1176ms|418x1|other x0|ok",
+    "1|fresh|demo guide|1064ms|418x1|other x0|ok",
+    "1|fresh|investigation: Fatima Gordon -> Apollo|1271ms|418x1|other x0|ok",
+    "1|fresh|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1032ms|418x1|other x0|ok",
+    "1|fresh|access explanation: Fatima Gordon -> Apollo|1168ms|418x1|other x0|ok",
+    "1|fresh|risks|1235ms|418x1|other x0|ok",
+    "1|fresh|collectors|1102ms|418x1|other x0|ok",
+    "1|fresh|comparison drill: timed out|1340ms|418x1|other x0|ok",
+    "1|fresh|comparison: incomplete|2351ms|418x1|other x0|ok",
+    "1|fresh|comparison: folder permission entries|2204ms|418x1|other x0|ok",
+    "1|fresh|identities|944ms|418x1|other x0|ok",
+    "1|fresh|principal: Fatima Gordon|994ms|418x1|other x0|ok",
+    "1|fresh|principal: unresolved SID|974ms|418x1|other x0|ok",
+    "1|fresh|status|987ms|418x1|other x0|ok",
+    "1|fresh|changes|1036ms|418x1|other x0|ok",
+    "1|fresh|search|1000ms|418x1|other x0|ok",
+    "1|fresh|resources|1039ms|418x1|other x0|ok",
+    "1|reload|home|953ms|418x1|other x0|ok",
+    "1|reload|home|930ms|418x1|other x0|ok",
+    "1|reload|demo guide|1028ms|418x1|other x0|ok",
+    "1|reload|demo guide|1012ms|418x1|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|1248ms|418x1|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|1067ms|418x1|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|989ms|418x1|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|989ms|418x1|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|1087ms|418x1|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|1097ms|418x1|other x0|ok",
+    "1|reload|risks|1214ms|418x1|other x0|ok",
+    "1|reload|risks|1034ms|418x1|other x0|ok",
+    "1|reload|collectors|1218ms|418x1|other x0|ok",
+    "1|reload|collectors|1087ms|418x1|other x0|ok",
+    "1|reload|comparison drill: timed out|1444ms|418x1|other x0|ok",
+    "1|reload|comparison drill: timed out|1623ms|418x1|other x0|ok",
+    "1|reload|comparison: incomplete|2171ms|418x1|other x0|ok",
+    "1|reload|comparison: incomplete|2012ms|418x1|other x0|ok",
+    "1|reload|comparison: folder permission entries|2037ms|418x1|other x0|ok",
+    "1|reload|comparison: folder permission entries|2311ms|418x1|other x0|ok",
+    "1|reload|identities|955ms|418x1|other x0|ok",
+    "1|reload|identities|944ms|418x1|other x0|ok",
+    "1|reload|principal: Fatima Gordon|994ms|418x1|other x0|ok",
+    "1|reload|principal: Fatima Gordon|955ms|418x1|other x0|ok",
+    "1|reload|principal: unresolved SID|931ms|418x1|other x0|ok",
+    "1|reload|principal: unresolved SID|947ms|418x1|other x0|ok",
+    "1|reload|status|968ms|418x1|other x0|ok",
+    "1|reload|status|927ms|418x1|other x0|ok",
+    "1|reload|changes|998ms|418x1|other x0|ok",
+    "1|reload|changes|985ms|418x1|other x0|ok",
+    "1|reload|search|960ms|418x1|other x0|ok",
+    "1|reload|search|950ms|418x1|other x0|ok",
+    "1|reload|resources|998ms|418x1|other x0|ok",
+    "1|reload|resources|1011ms|418x1|other x0|ok",
+    "1|nav|demo guide (start)|972ms|418x1|other x0|ok",
+    "1|nav|guide -> investigation|488ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|314ms|418x0|other x0|ok",
+    "1|nav|guide -> risk totals|544ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|308ms|418x0|other x0|ok",
+    "1|nav|Forward -> risk totals|318ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|308ms|418x0|other x0|ok",
+    "1|nav|guide -> comparison drill (timed out)|889ms|418x0|other x0|ok",
+    "1|nav|drill -> retry (incomplete)|669ms|418x0|other x0|ok",
+    "1|nav|retry -> folder permission entries (recovered)|977ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /|389ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /resources|368ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /identities|342ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /access|356ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /risks|503ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /changes|350ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /simulations|370ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /governance|353ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /collectors|518ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /settings|392ms|418x0|other x0|ok",
+    "1|keys|investigation: hop evidence|1686ms|418x1|other x0|ok",
+    "1|keys|risks: incomplete scopes|1346ms|418x1|other x0|ok",
+    "1|keys|comparison: Diagnostics|1680ms|418x1|other x0|ok",
+    "1|phone|demo guide|1118ms|418x1|other x0|ok",
+    "1|phone|investigation: Fatima Gordon -> Apollo|1225ms|418x1|other x0|ok",
+    "1|phone|risks|1123ms|418x1|other x0|ok",
+    "1|phone|comparison drill: timed out|1697ms|418x1|other x0|ok",
+    "1|phone|comparison: incomplete|2023ms|418x1|other x0|ok",
+    "1|phone|comparison: folder permission entries|2009ms|418x1|other x0|ok",
+    "1|phone|principal: unresolved SID|942ms|418x1|other x0|ok"
+   ]
+  },
+  {
+   "run": "R2-next16-40ms",
+   "label": "reconcile: next-16.4.1 40ms stream delay",
+   "control": false,
+   "base": "http://localhost:3100",
+   "rounds": 1,
+   "started": "2026-10-15T21:52:02.555Z",
+   "finished": "2026-10-15T21:55:35.972Z",
+   "full_document_loads": 96,
+   "client_transitions": 19,
+   "total": {
+    "records": 115,
+    "with418": 0,
+    "events418": 0,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 0,
+    "failedSteps": 0
+   },
+   "phases": {
+    "fresh": {
+     "records": 17,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "reload": {
+     "records": 68,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "nav": {
+     "records": 20,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "keys": {
+     "records": 3,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "phone": {
+     "records": 7,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    }
+   },
+   "loads_with_418": [],
+   "other_errors": [],
+   "failed_steps": [],
+   "phone_overflow": [],
+   "known_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3100/favicon.ico"
+   ],
+   "loads": [
+    "1|fresh|home|1474ms|418x0|other x0|ok",
+    "1|fresh|demo guide|1704ms|418x0|other x0|ok",
+    "1|fresh|investigation: Fatima Gordon -> Apollo|1894ms|418x0|other x0|ok",
+    "1|fresh|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1534ms|418x0|other x0|ok",
+    "1|fresh|access explanation: Fatima Gordon -> Apollo|1806ms|418x0|other x0|ok",
+    "1|fresh|risks|1647ms|418x0|other x0|ok",
+    "1|fresh|collectors|1542ms|418x0|other x0|ok",
+    "1|fresh|comparison drill: timed out|1666ms|418x0|other x0|ok",
+    "1|fresh|comparison: incomplete|2743ms|418x0|other x0|ok",
+    "1|fresh|comparison: folder permission entries|3374ms|418x0|other x0|ok",
+    "1|fresh|identities|1440ms|418x0|other x0|ok",
+    "1|fresh|principal: Fatima Gordon|1475ms|418x0|other x0|ok",
+    "1|fresh|principal: unresolved SID|1447ms|418x0|other x0|ok",
+    "1|fresh|status|1397ms|418x0|other x0|ok",
+    "1|fresh|changes|1538ms|418x0|other x0|ok",
+    "1|fresh|search|1455ms|418x0|other x0|ok",
+    "1|fresh|resources|1860ms|418x0|other x0|ok",
+    "1|reload|home|1445ms|418x0|other x0|ok",
+    "1|reload|home|1419ms|418x0|other x0|ok",
+    "1|reload|home|1425ms|418x0|other x0|ok",
+    "1|reload|home|1457ms|418x0|other x0|ok",
+    "1|reload|demo guide|1729ms|418x0|other x0|ok",
+    "1|reload|demo guide|1727ms|418x0|other x0|ok",
+    "1|reload|demo guide|1753ms|418x0|other x0|ok",
+    "1|reload|demo guide|1703ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|2085ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|2074ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|1899ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|1949ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1585ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1555ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1561ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1549ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|1827ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|1813ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|1815ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|1745ms|418x0|other x0|ok",
+    "1|reload|risks|1775ms|418x0|other x0|ok",
+    "1|reload|risks|1597ms|418x0|other x0|ok",
+    "1|reload|risks|1583ms|418x0|other x0|ok",
+    "1|reload|risks|1630ms|418x0|other x0|ok",
+    "1|reload|collectors|1648ms|418x0|other x0|ok",
+    "1|reload|collectors|1558ms|418x0|other x0|ok",
+    "1|reload|collectors|1565ms|418x0|other x0|ok",
+    "1|reload|collectors|1553ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1843ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|2069ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1625ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1611ms|418x0|other x0|ok",
+    "1|reload|comparison: incomplete|2722ms|418x0|other x0|ok",
+    "1|reload|comparison: incomplete|2790ms|418x0|other x0|ok",
+    "1|reload|comparison: incomplete|2903ms|418x0|other x0|ok",
+    "1|reload|comparison: incomplete|2680ms|418x0|other x0|ok",
+    "1|reload|comparison: folder permission entries|3447ms|418x0|other x0|ok",
+    "1|reload|comparison: folder permission entries|3608ms|418x0|other x0|ok",
+    "1|reload|comparison: folder permission entries|4297ms|418x0|other x0|ok",
+    "1|reload|comparison: folder permission entries|3668ms|418x0|other x0|ok",
+    "1|reload|identities|1435ms|418x0|other x0|ok",
+    "1|reload|identities|1410ms|418x0|other x0|ok",
+    "1|reload|identities|1400ms|418x0|other x0|ok",
+    "1|reload|identities|1413ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1449ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1433ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1425ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1433ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1466ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1419ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1447ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1422ms|418x0|other x0|ok",
+    "1|reload|status|1416ms|418x0|other x0|ok",
+    "1|reload|status|1407ms|418x0|other x0|ok",
+    "1|reload|status|1413ms|418x0|other x0|ok",
+    "1|reload|status|1403ms|418x0|other x0|ok",
+    "1|reload|changes|1557ms|418x0|other x0|ok",
+    "1|reload|changes|1531ms|418x0|other x0|ok",
+    "1|reload|changes|1559ms|418x0|other x0|ok",
+    "1|reload|changes|1564ms|418x0|other x0|ok",
+    "1|reload|search|1425ms|418x0|other x0|ok",
+    "1|reload|search|1419ms|418x0|other x0|ok",
+    "1|reload|search|1419ms|418x0|other x0|ok",
+    "1|reload|search|1436ms|418x0|other x0|ok",
+    "1|reload|resources|1885ms|418x0|other x0|ok",
+    "1|reload|resources|1843ms|418x0|other x0|ok",
+    "1|reload|resources|1902ms|418x0|other x0|ok",
+    "1|reload|resources|1861ms|418x0|other x0|ok",
+    "1|nav|demo guide (start)|1705ms|418x0|other x0|ok",
+    "1|nav|guide -> investigation|4915ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|326ms|418x0|other x0|ok",
+    "1|nav|guide -> risk totals|1951ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|317ms|418x0|other x0|ok",
+    "1|nav|Forward -> risk totals|309ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|312ms|418x0|other x0|ok",
+    "1|nav|guide -> comparison drill (timed out)|1023ms|418x0|other x0|ok",
+    "1|nav|drill -> retry (incomplete)|8366ms|418x0|other x0|ok",
+    "1|nav|retry -> folder permission entries (recovered)|12577ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /|630ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /resources|655ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /identities|505ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /access|577ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /risks|1750ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /changes|543ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /simulations|487ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /governance|540ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /collectors|1456ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /settings|539ms|418x0|other x0|ok",
+    "1|keys|investigation: hop evidence|2200ms|418x0|other x0|ok",
+    "1|keys|risks: incomplete scopes|2075ms|418x0|other x0|ok",
+    "1|keys|comparison: Diagnostics|1997ms|418x0|other x0|ok",
+    "1|phone|demo guide|1498ms|418x0|other x0|ok",
+    "1|phone|investigation: Fatima Gordon -> Apollo|1781ms|418x0|other x0|ok",
+    "1|phone|risks|1613ms|418x0|other x0|ok",
+    "1|phone|comparison drill: timed out|1653ms|418x0|other x0|ok",
+    "1|phone|comparison: incomplete|2749ms|418x0|other x0|ok",
+    "1|phone|comparison: folder permission entries|3362ms|418x0|other x0|ok",
+    "1|phone|principal: unresolved SID|1425ms|418x0|other x0|ok"
+   ]
+  },
+  {
+   "run": "R3-main-next15-40ms",
+   "label": "reconcile baseline: main 32da1ae next-15.5.25 40ms stream delay",
+   "control": false,
+   "base": "http://localhost:3100",
+   "rounds": 1,
+   "started": "2026-10-15T21:56:59.777Z",
+   "finished": "2026-10-15T22:03:55.414Z",
+   "full_document_loads": 96,
+   "client_transitions": 19,
+   "total": {
+    "records": 115,
+    "with418": 14,
+    "events418": 14,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 0,
+    "failedSteps": 0
+   },
+   "phases": {
+    "fresh": {
+     "records": 17,
+     "with418": 1,
+     "events418": 1,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "reload": {
+     "records": 68,
+     "with418": 10,
+     "events418": 10,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "nav": {
+     "records": 20,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "keys": {
+     "records": 3,
+     "with418": 0,
+     "events418": 0,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    },
+    "phone": {
+     "records": 7,
+     "with418": 3,
+     "events418": 3,
+     "withHydrationFamily": 0,
+     "withOtherErrors": 0,
+     "failedSteps": 0
+    }
+   },
+   "loads_with_418": [
+    {
+     "round": 1,
+     "phase": "fresh",
+     "route": "comparison: folder permission entries",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "demo guide",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "demo guide",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "demo guide",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "access explanation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "comparison: folder permission entries",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "reload",
+     "route": "resources",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "demo guide",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "investigation: Fatima Gordon -> Apollo",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    },
+    {
+     "round": 1,
+     "phase": "phone",
+     "route": "comparison: incomplete",
+     "ready_state": [
+      "loading"
+     ],
+     "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    }
+   ],
+   "other_errors": [],
+   "failed_steps": [],
+   "phone_overflow": [],
+   "known_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3100/favicon.ico"
+   ],
+   "loads": [
+    "1|fresh|home|1498ms|418x0|other x0|ok",
+    "1|fresh|demo guide|2092ms|418x0|other x0|ok",
+    "1|fresh|investigation: Fatima Gordon -> Apollo|6122ms|418x0|other x0|ok",
+    "1|fresh|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1816ms|418x0|other x0|ok",
+    "1|fresh|access explanation: Fatima Gordon -> Apollo|2767ms|418x0|other x0|ok",
+    "1|fresh|risks|6027ms|418x0|other x0|ok",
+    "1|fresh|collectors|3537ms|418x0|other x0|ok",
+    "1|fresh|comparison drill: timed out|1961ms|418x0|other x0|ok",
+    "1|fresh|comparison: incomplete|11191ms|418x0|other x0|ok",
+    "1|fresh|comparison: folder permission entries|14748ms|418x1|other x0|ok",
+    "1|fresh|identities|1474ms|418x0|other x0|ok",
+    "1|fresh|principal: Fatima Gordon|1654ms|418x0|other x0|ok",
+    "1|fresh|principal: unresolved SID|1567ms|418x0|other x0|ok",
+    "1|fresh|status|1364ms|418x0|other x0|ok",
+    "1|fresh|changes|1368ms|418x0|other x0|ok",
+    "1|fresh|search|1396ms|418x0|other x0|ok",
+    "1|fresh|resources|1598ms|418x0|other x0|ok",
+    "1|reload|home|1358ms|418x0|other x0|ok",
+    "1|reload|home|1360ms|418x0|other x0|ok",
+    "1|reload|home|1358ms|418x0|other x0|ok",
+    "1|reload|home|1367ms|418x0|other x0|ok",
+    "1|reload|demo guide|2101ms|418x0|other x0|ok",
+    "1|reload|demo guide|2088ms|418x1|other x0|ok",
+    "1|reload|demo guide|2070ms|418x1|other x0|ok",
+    "1|reload|demo guide|2105ms|418x1|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|6211ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|6243ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|6076ms|418x0|other x0|ok",
+    "1|reload|investigation: Fatima Gordon -> Apollo|5984ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1717ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1716ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1737ms|418x0|other x0|ok",
+    "1|reload|investigation: SYSTEM over \\\\NM-FS-01\\Shared|1781ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|2803ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|2722ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|2803ms|418x0|other x0|ok",
+    "1|reload|access explanation: Fatima Gordon -> Apollo|2829ms|418x1|other x0|ok",
+    "1|reload|risks|6595ms|418x0|other x0|ok",
+    "1|reload|risks|5700ms|418x0|other x0|ok",
+    "1|reload|risks|5715ms|418x0|other x0|ok",
+    "1|reload|risks|5722ms|418x0|other x0|ok",
+    "1|reload|collectors|3334ms|418x0|other x0|ok",
+    "1|reload|collectors|3237ms|418x0|other x0|ok",
+    "1|reload|collectors|3311ms|418x0|other x0|ok",
+    "1|reload|collectors|3283ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1909ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1740ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1732ms|418x0|other x0|ok",
+    "1|reload|comparison drill: timed out|1763ms|418x0|other x0|ok",
+    "1|reload|comparison: incomplete|11509ms|418x1|other x0|ok",
+    "1|reload|comparison: incomplete|11209ms|418x1|other x0|ok",
+    "1|reload|comparison: incomplete|11481ms|418x1|other x0|ok",
+    "1|reload|comparison: incomplete|11534ms|418x1|other x0|ok",
+    "1|reload|comparison: folder permission entries|14540ms|418x0|other x0|ok",
+    "1|reload|comparison: folder permission entries|14490ms|418x1|other x0|ok",
+    "1|reload|comparison: folder permission entries|14625ms|418x0|other x0|ok",
+    "1|reload|comparison: folder permission entries|14158ms|418x0|other x0|ok",
+    "1|reload|identities|1466ms|418x0|other x0|ok",
+    "1|reload|identities|1387ms|418x0|other x0|ok",
+    "1|reload|identities|1371ms|418x0|other x0|ok",
+    "1|reload|identities|1405ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1630ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1563ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1587ms|418x0|other x0|ok",
+    "1|reload|principal: Fatima Gordon|1551ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1513ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1496ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1511ms|418x0|other x0|ok",
+    "1|reload|principal: unresolved SID|1496ms|418x0|other x0|ok",
+    "1|reload|status|1378ms|418x0|other x0|ok",
+    "1|reload|status|1349ms|418x0|other x0|ok",
+    "1|reload|status|1348ms|418x0|other x0|ok",
+    "1|reload|status|1335ms|418x0|other x0|ok",
+    "1|reload|changes|1372ms|418x0|other x0|ok",
+    "1|reload|changes|1361ms|418x0|other x0|ok",
+    "1|reload|changes|1361ms|418x0|other x0|ok",
+    "1|reload|changes|1351ms|418x0|other x0|ok",
+    "1|reload|search|1374ms|418x0|other x0|ok",
+    "1|reload|search|1364ms|418x0|other x0|ok",
+    "1|reload|search|1349ms|418x0|other x0|ok",
+    "1|reload|search|1356ms|418x0|other x0|ok",
+    "1|reload|resources|1569ms|418x0|other x0|ok",
+    "1|reload|resources|1570ms|418x0|other x0|ok",
+    "1|reload|resources|1573ms|418x1|other x0|ok",
+    "1|reload|resources|1570ms|418x0|other x0|ok",
+    "1|nav|demo guide (start)|2067ms|418x0|other x0|ok",
+    "1|nav|guide -> investigation|4975ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|312ms|418x0|other x0|ok",
+    "1|nav|guide -> risk totals|4787ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|309ms|418x0|other x0|ok",
+    "1|nav|Forward -> risk totals|310ms|418x0|other x0|ok",
+    "1|nav|Back -> guide|308ms|418x0|other x0|ok",
+    "1|nav|guide -> comparison drill (timed out)|1436ms|418x0|other x0|ok",
+    "1|nav|drill -> retry (incomplete)|9337ms|418x0|other x0|ok",
+    "1|nav|retry -> folder permission entries (recovered)|12596ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /|665ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /resources|848ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /identities|625ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /access|673ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /risks|4812ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /changes|643ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /simulations|620ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /governance|636ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /collectors|2354ms|418x0|other x0|ok",
+    "1|nav|Primary nav -> /settings|637ms|418x0|other x0|ok",
+    "1|keys|investigation: hop evidence|6303ms|418x0|other x0|ok",
+    "1|keys|risks: incomplete scopes|5912ms|418x0|other x0|ok",
+    "1|keys|comparison: Diagnostics|2092ms|418x0|other x0|ok",
+    "1|phone|demo guide|2036ms|418x1|other x0|ok",
+    "1|phone|investigation: Fatima Gordon -> Apollo|6012ms|418x1|other x0|ok",
+    "1|phone|risks|5959ms|418x0|other x0|ok",
+    "1|phone|comparison drill: timed out|2542ms|418x0|other x0|ok",
+    "1|phone|comparison: incomplete|11314ms|418x1|other x0|ok",
+    "1|phone|comparison: folder permission entries|14616ms|418x0|other x0|ok",
+    "1|phone|principal: unresolved SID|1638ms|418x0|other x0|ok"
+   ]
+  }
+ ]
+}

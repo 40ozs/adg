@@ -1,0 +1,11 @@
+# CI run 87 (https://github.com/40ozs/adg/actions/runs/38811542694), job "Backend (lint, types, tests)"
+# on 1309146587cf0c97d49e334a8054bcaccfd5ec57, the ADG-NEXT16-RECONCILE-01 merge. The gate result lines, verbatim from the job log.
+2026-10-15T21:40:10.3468806Z ##[group]Run python -m ruff check .
+2026-10-15T21:40:10.4877143Z All checks passed!
+2026-10-15T21:40:10.6153079Z 412 files already formatted
+2026-10-15T21:40:10.6204344Z ##[group]Run python -m mypy app tests
+2026-10-15T21:40:26.7190681Z Success: no issues found in 411 source files
+2026-10-15T21:40:26.7606852Z ##[group]Run python -m pytest -q -m "not smoke"
+2026-10-15T21:43:25.6300158Z 6121 passed, 12 skipped, 1273 deselected, 7 warnings in 175.25s (0:02:55)
+2026-10-15T21:43:26.6700216Z ##[group]Run python -m pytest -q -m smoke
+2026-10-15T22:13:29.0806582Z 1272 passed, 6133 deselected, 1 xfailed, 67 warnings in 1799.82s (0:29:59)

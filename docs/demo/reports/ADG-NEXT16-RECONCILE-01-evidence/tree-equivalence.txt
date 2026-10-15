@@ -1,0 +1,116 @@
+# ADG-NEXT16-RECONCILE-01: tree-equivalence proof
+# Generated with git from the reconciliation merge commit. Every command is shown with its output.
+
+$ git rev-parse origin/main origin/claude/beautiful-knuth-3zruji
+32da1aecbc83a195f9db0849ec4dd5f652cc8bde
+aff70e85f0e81ff5ad2241f7219d87237575b5f3
+
+$ git merge-base origin/main origin/claude/beautiful-knuth-3zruji
+744c2efe89fb17f49cdfe640ebe5afd7d18253af
+
+$ git diff --name-status 744c2ef 32da1ae      # main since the merge base
+A	docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md
+
+$ git diff --name-status 744c2ef aff70e8      # the Next16 integration since the merge base
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/README.md
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/aggregate-runs.py
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/browser-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/candidate-overlap.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/ci-run-80-backend.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/demo-01-ui.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-gate.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-comparison-recovered.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-investigation-desktop.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-risks-coverage-phone.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-system-over-share.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-unresolved-principal.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/stream-delay-proxy.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md
+M	frontend/eslint.config.mjs
+M	frontend/package-lock.json
+M	frontend/package.json
+M	frontend/tsconfig.json
+
+$ git merge-tree --write-tree 32da1ae aff70e8 # write-free trial merge: run before the merge too, same tree
+d9da6070f3fcc5fca9fed9c24c4a2a45c6b4d2fa
+(exit 0: no conflict)
+
+$ git cat-file -p 1309146 | head -3
+tree d9da6070f3fcc5fca9fed9c24c4a2a45c6b4d2fa
+parent 32da1aecbc83a195f9db0849ec4dd5f652cc8bde
+parent aff70e85f0e81ff5ad2241f7219d87237575b5f3
+
+$ git diff --name-status aff70e8 1309146    # the validated Next16 tree vs the reconciled tree
+A	docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md
+
+$ git diff --name-status 32da1ae 1309146    # current main vs the reconciled tree
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/README.md
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/aggregate-runs.py
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/browser-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/candidate-overlap.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/ci-run-80-backend.txt
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/demo-01-ui.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-gate.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-runs.json
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-comparison-recovered.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-investigation-desktop.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-risks-coverage-phone.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-system-over-share.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/next16-unresolved-principal.png
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/stream-delay-proxy.script.js
+A	docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md
+M	frontend/eslint.config.mjs
+M	frontend/package-lock.json
+M	frontend/package.json
+M	frontend/tsconfig.json
+
+$ git diff --name-only 744c2ef 1309146 -- . ':!docs'   # everything outside docs/ since the merge base
+frontend/eslint.config.mjs
+frontend/package-lock.json
+frontend/package.json
+frontend/tsconfig.json
+
+$ git diff --stat 501c136 1309146 -- . ':!docs'        # the code head vs the reconciled tree, outside docs/
+(empty: identical)
+
+# Blob identity of both durable reports
+docs/demo/reports/ADG-DEMO-PUBLIC-MERGE-01-report.md  reconciled=6a1e7618b88488470eedbd93ce30e5f8d635dfd9  main=6a1e7618b88488470eedbd93ce30e5f8d635dfd9
+docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-report.md  reconciled=c518519bd5e1badabcf770f471a1d3828b898c26  aff70e8=c518519bd5e1badabcf770f471a1d3828b898c26
+docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence  reconciled=1e990d85ee9792f5030f9845493a977b7a8339d8  aff70e8=1e990d85ee9792f5030f9845493a977b7a8339d8
+
+# Subtree hashes, reconciled vs aff70e8
+frontend  192949e351ceb6e3218c712b78640dcc76da240e  EQUAL
+backend  b6220277c9b7b185a8259e58955044406c44f142  EQUAL
+database  1e5bd9a6542084265aaa6ae2394d3ce355c618a1  EQUAL
+collector  644d8cc1a095c855095b0ecd26985c7be125d803  EQUAL
+scripts  4ccb5732ea781797b1bc14dd1f176d84266883d8  EQUAL
+docker  b5b83ce5b090029d0c1a59db65ff87a2f4af1cad  EQUAL
+.github  6ecb3f1fb77971de2bd7e2eeb859f8835d8f0b67  EQUAL
+docs/contracts  8ae1113896d0dadb01ce854bfce4d2c06cb535ad  EQUAL
+docs/architecture  6cb9dfe4e36e687bb4934e8a6c7c9ef643a7ecf5  EQUAL
+docs/demo/README.md  8d39015e628675b7b12c28e322082575754b23aa  EQUAL
+README.md  458821c3b551e14957fb51e9e8df794942a6458c  EQUAL
+docker-compose.yml  e6e1ca50055d85ce316031adbcdc0bba4c23d83f  EQUAL
+docker-compose.demo.yml  f4a68a924b20c1090ad447a33bb94340249cf9db  EQUAL
+.env.example  0ba2b59d88ed8a645dc98917fe01d565995189b7  EQUAL
+
+# Excluded lanes: is each head an ancestor of the reconciled commit, and how many of its commits are not in it
+fix/ADG-NEXT16-REACT418-01 @ 04663bc  ancestor=no  not-contained=19
+integration/ADG-NEXT16-UI-02 @ 3e26e4a  ancestor=no  not-contained=26
+fix/ADG-UI-COMPACT-IDENTITY-01 @ f50e8f2  ancestor=no  not-contained=20
+integration/ADG-UI-EDGE-01 @ 4212f13  ancestor=no  not-contained=17
+deploy/ADG-FREE-STAGING-01 @ 3e26e4a  ancestor=no  not-contained=26
+deploy/ADG-FREE-EDGE-SSR-03 @ 57bbbaa  ancestor=no  not-contained=9
+feature/ADG-GRAPH-01A-domain-model @ 676d48f  ancestor=no  not-contained=28
+feature/ADG-GRAPH-01B-relationship-derivation @ e2efd74  ancestor=no  not-contained=31
+feature/ADG-GRAPH-01C-path-engine @ ace1108  ancestor=no  not-contained=39
+feature/ADG-GRAPH-01C-path-engine-claude @ d2211f1  ancestor=no  not-contained=35
+claude/adoring-cannon-7gh2pf @ 511ab22  ancestor=no  not-contained=38
+claude/compassionate-hamilton-3sh5db @ 8259ed3  ancestor=no  not-contained=32
+claude/wizardly-gates-6yjdxp @ cedca60  ancestor=no  not-contained=1
+66ca201 (the framework source commit) ancestor=no -- integrated as its cherry-pick af94e2e, by design
+
+# Remote heads newly contained by the reconciled commit that origin/main does not contain
+origin/claude/beautiful-knuth-3zruji
+origin/claude/gallant-turing-aj7rf1   (this reconciliation branch itself, pushed at 1309146)
