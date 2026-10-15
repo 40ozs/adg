@@ -1,0 +1,166 @@
+# Candidate overlap with public-demo main (write-free trial merges, git merge-tree --write-tree)
+# main = 744c2efe89fb17f49cdfe640ebe5afd7d18253af; merge-base of every candidate = 1ab01a2058a8cb6d090bf5abeb6971b4b2ee33af
+
+## origin/fix/ADG-NEXT16-REACT418-01 = 04663bcdcf190c480fcefb88b5a9550636d28d94
+ahead of main: 19 commits; files changed vs merge-base: 105 (backend: 16; database/, which holds the migrations: 0)
+textual conflicts merging into main:
+  frontend/app/identities/principal/page.tsx
+files both sides changed since the merge-base:
+  README.md
+  backend/app/api/access.py
+  backend/app/services/access.py
+  backend/tests/api/test_authorization.py
+  docs/contracts/v1/derived/access-explanation.schema.json
+  docs/contracts/v1/derived/resource-impact.schema.json
+  docs/contracts/v1/openapi.json
+  frontend/app/identities/principal/page.tsx
+  frontend/components/Explanation.tsx
+  frontend/components/Identity.tsx
+  frontend/lib/api/adg.ts
+  frontend/lib/contracts.ts
+  frontend/lib/identity.ts
+  frontend/tests/contracts.test.ts
+  frontend/tests/demo-guide.test.tsx
+  frontend/tests/risks-page.test.tsx
+
+## origin/integration/ADG-NEXT16-UI-02 = 3e26e4ad3fd351b5a8e956ae392ce8088ac485d1
+ahead of main: 26 commits; files changed vs merge-base: 109 (backend: 16; database/, which holds the migrations: 0)
+textual conflicts merging into main:
+  frontend/app/identities/principal/page.tsx
+files both sides changed since the merge-base:
+  README.md
+  backend/app/api/access.py
+  backend/app/services/access.py
+  backend/tests/api/test_authorization.py
+  docs/contracts/v1/derived/access-explanation.schema.json
+  docs/contracts/v1/derived/resource-impact.schema.json
+  docs/contracts/v1/openapi.json
+  frontend/app/identities/principal/page.tsx
+  frontend/components/Explanation.tsx
+  frontend/components/Identity.tsx
+  frontend/lib/api/adg.ts
+  frontend/lib/contracts.ts
+  frontend/lib/identity.ts
+  frontend/tests/contracts.test.ts
+  frontend/tests/demo-guide.test.tsx
+  frontend/tests/risks-page.test.tsx
+
+## Files of integration/ADG-NEXT16-UI-02 by origin (vs merge-base)
+UI-UPDATE-01/COMPACT README.md
+UI-UPDATE-01/COMPACT backend/app/api/access.py
+UI-UPDATE-01/COMPACT backend/app/api/graph.py
+UI-UPDATE-01/COMPACT backend/app/repositories/__init__.py
+UI-UPDATE-01/COMPACT backend/app/repositories/membership.py
+UI-UPDATE-01/COMPACT backend/app/services/access.py
+UI-UPDATE-01/COMPACT backend/app/simulation/repositories.py
+UI-UPDATE-01/COMPACT backend/tests/api/test_authorization.py
+UI-UPDATE-01/COMPACT backend/tests/db/test_access_api.py
+UI-UPDATE-01/COMPACT backend/tests/db/test_graph_api.py
+UI-UPDATE-01/COMPACT backend/tests/db/test_query_cost.py
+UI-UPDATE-01/COMPACT backend/tests/history/test_repository_coverage.py
+UI-UPDATE-01/COMPACT backend/tests/simulation/test_repository_coverage.py
+UI-UPDATE-01/COMPACT docs/architecture/demo-mode.md
+UI-UPDATE-01/COMPACT docs/contracts/v1/derived/access-explanation.schema.json
+UI-UPDATE-01/COMPACT docs/contracts/v1/derived/resource-impact.schema.json
+UI-UPDATE-01/COMPACT docs/contracts/v1/openapi.json
+UI-UPDATE-01/COMPACT frontend/app/collectors/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/globals.css
+UI-UPDATE-01/COMPACT frontend/app/governance/items/[itemId]/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/identities/groups/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/identities/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/identities/principal/[key]/[[...view]]/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/identities/principal/[key]/data.ts
+UI-UPDATE-01/COMPACT frontend/app/identities/principal/[key]/layout.tsx
+UI-UPDATE-01/COMPACT frontend/app/identities/principal/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/identities/users/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/login/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/resources/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/resources/server/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/risks/alerts/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/search/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/settings/page.tsx
+UI-UPDATE-01/COMPACT frontend/app/status/page.tsx
+UI-UPDATE-01/COMPACT frontend/components/DecisionForm.tsx
+UI-UPDATE-01/COMPACT frontend/components/DirectoryTabs.tsx
+UI-UPDATE-01/COMPACT frontend/components/EffectiveAccess.tsx
+UI-UPDATE-01/COMPACT frontend/components/Explanation.tsx
+UI-UPDATE-01/COMPACT frontend/components/ExplanationExplorer.tsx
+UI-UPDATE-01/COMPACT frontend/components/Facts.tsx
+UI-UPDATE-01/COMPACT frontend/components/FilterToggle.tsx
+UI-UPDATE-01/COMPACT frontend/components/Governance.tsx
+UI-UPDATE-01/COMPACT frontend/components/Identity.tsx
+UI-UPDATE-01/COMPACT frontend/components/PrincipalDirectory.tsx
+UI-UPDATE-01/COMPACT frontend/components/PrincipalViewTabs.tsx
+UI-UPDATE-01/COMPACT frontend/components/RawAcl.tsx
+UI-UPDATE-01/COMPACT frontend/components/Risks.tsx
+UI-UPDATE-01/COMPACT frontend/components/Simulation.tsx
+UI-UPDATE-01/COMPACT frontend/components/SimulationDetail.tsx
+UI-UPDATE-01/COMPACT frontend/components/SortableTable.tsx
+UI-UPDATE-01/COMPACT frontend/components/Watches.tsx
+UI-UPDATE-01/COMPACT frontend/lib/api/adg.ts
+UI-UPDATE-01/COMPACT frontend/lib/auth/current.ts
+UI-UPDATE-01/COMPACT frontend/lib/contracts.ts
+UI-UPDATE-01/COMPACT frontend/lib/identity.ts
+UI-UPDATE-01/COMPACT frontend/lib/sort.ts
+UI-UPDATE-01/COMPACT frontend/tests/alerts-page.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/changes-views.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/collectors-page.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/components.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/contracts.test.ts
+UI-UPDATE-01/COMPACT frontend/tests/demo-guide.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/demo-indicator.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/directory.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/explanation-page.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/explanation-views.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/governance-views.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/identity.test.ts
+UI-UPDATE-01/COMPACT frontend/tests/pages.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/risks-page.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/simulation-views.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/simulations-page.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/sort.test.ts
+UI-UPDATE-01/COMPACT frontend/tests/sortable-table.test.tsx
+UI-UPDATE-01/COMPACT frontend/tests/views.test.tsx
+deploy/staging       .dockerignore
+deploy/staging       .github/workflows/cloudflare-staging.yml
+deploy/staging       backend/app/main.py
+deploy/staging       backend/app/origin_gate.py
+deploy/staging       backend/tests/demo_mode/test_boundary.py
+deploy/staging       backend/tests/test_origin_gate.py
+deploy/staging       docker/Dockerfile.render
+deploy/staging       docs/deployment/cloudflare-demo.md
+deploy/staging       frontend/.gitignore
+deploy/staging       frontend/cloudflare/assets.mjs
+deploy/staging       frontend/cloudflare/checks/browser.mjs
+deploy/staging       frontend/cloudflare/checks/navigation.mjs
+deploy/staging       frontend/cloudflare/checks/null_meridian_fingerprint.py
+deploy/staging       frontend/cloudflare/checks/smoke.mjs
+deploy/staging       frontend/cloudflare/environment.ts
+deploy/staging       frontend/cloudflare/routing.ts
+deploy/staging       frontend/cloudflare/tsconfig.json
+deploy/staging       frontend/cloudflare/worker.ts
+deploy/staging       frontend/next.config.mjs
+deploy/staging       frontend/render/gate.ts
+deploy/staging       frontend/tests/cloudflare/environment.test.ts
+deploy/staging       frontend/tests/cloudflare/routing.test.ts
+deploy/staging       frontend/tests/render/gate.test.ts
+deploy/staging       frontend/wrangler.jsonc
+framework (+deploy)  frontend/eslint.config.mjs
+framework (+deploy)  frontend/package-lock.json
+framework (+deploy)  frontend/package.json
+framework (+deploy)  frontend/tsconfig.json
+handoff docs         docs/handoffs/adg-cloudflare-demo-01.md
+handoff docs         docs/handoffs/adg-free-edge-ssr-03.md
+handoff docs         docs/handoffs/adg-free-public-staging-02.md
+handoff docs         docs/handoffs/adg-next16-react418-01.md
+handoff docs         docs/handoffs/adg-next16-ui-integration-02.md
+handoff docs         docs/handoffs/adg-ui-update-01.md
+
+## The framework commit alone: 66ca201 changes
+   frontend/eslint.config.mjs |   8 +-
+   frontend/package-lock.json | 410 +++++++++++++++++++++++++++++----------------
+   frontend/package.json      |  15 +-
+   frontend/tsconfig.json     |   4 +-
+   4 files changed, 278 insertions(+), 159 deletions(-)
+main changed none of these four files since the merge-base:
+  (no output above = untouched)

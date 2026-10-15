@@ -1,0 +1,12 @@
+# CI run 80 (https://github.com/40ozs/adg/actions/runs/38761041680), job 'Backend (lint, types, tests)', head 501c1367e575efb51fedfe2353187024359acd52
+# Every line of the 920-line job log was scanned; these are the gate result lines and the step commands, verbatim.
+2026-10-15T15:31:29.6485255Z ##[group]Run python -m pip install --upgrade pip
+2026-10-15T15:31:46.9908642Z ##[group]Run python -m ruff check .
+2026-10-15T15:31:47.1400786Z All checks passed!
+2026-10-15T15:31:47.2624495Z 412 files already formatted
+2026-10-15T15:31:47.2665889Z ##[group]Run python -m mypy app tests
+2026-10-15T15:32:04.3411966Z Success: no issues found in 411 source files
+2026-10-15T15:32:04.3842792Z ##[group]Run python -m pytest -q -m "not smoke"
+2026-10-15T15:35:10.3763398Z 6121 passed, 12 skipped, 1273 deselected, 7 warnings in 182.17s (0:03:02)
+2026-10-15T15:35:11.7109192Z ##[group]Run python -m pytest -q -m smoke
+2026-10-15T16:06:44.0013653Z 1272 passed, 6133 deselected, 1 xfailed, 67 warnings in 1889.53s (0:31:29)
