@@ -1,0 +1,217 @@
+{
+ "stack": "API in demo mode on the reset adg_demo (fingerprint 228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0) and next start of a clean clone of claude/beautiful-knuth-3zruji at 501c136 (Next.js 16.4.1, built with next build --webpack), Chromium 141 (Playwright 1.56.1). The stream-delay runs go through stream-delay-proxy.script.js at 40 ms per chunk.",
+ "scripts": {
+  "ADG-DEMO-02": "docs/demo/reports/ADG-DEMO-02-evidence/browser-walkthrough.script.js (unchanged)",
+  "ADG-DEMO-03": "docs/demo/reports/ADG-DEMO-03-evidence/browser-walkthrough.script.js (unchanged)",
+  "DEMO-PUBLIC-01": "docs/demo/reports/DEMO-PUBLIC-01-evidence/docs-walkthrough.script.js (unchanged)",
+  "DEMO-01 UI": "docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/demo-01-ui.script.js"
+ },
+ "runs": [
+  {
+   "run": "ADG-DEMO-02 walkthrough run 1",
+   "at_utc": "17:16:00",
+   "exit": 0,
+   "passed": 29,
+   "total": 29,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-02 walkthrough run 2",
+   "at_utc": "17:16:03",
+   "exit": 0,
+   "passed": 29,
+   "total": 29,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-02 walkthrough run 3",
+   "at_utc": "17:16:07",
+   "exit": 0,
+   "passed": 29,
+   "total": 29,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-03 walkthrough run 1",
+   "at_utc": "17:16:22",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-03 walkthrough run 2",
+   "at_utc": "17:16:34",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-03 walkthrough run 3",
+   "at_utc": "17:16:47",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-03 walkthrough run 4",
+   "at_utc": "17:17:00",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "ADG-DEMO-03 walkthrough run 5",
+   "at_utc": "17:17:13",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "DEMO-PUBLIC-01 docs walkthrough run 1",
+   "at_utc": "17:17:19",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": null,
+   "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ],
+   "known": []
+  },
+  {
+   "run": "DEMO-PUBLIC-01 docs walkthrough run 2",
+   "at_utc": "17:17:24",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": null,
+   "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ],
+   "known": []
+  },
+  {
+   "run": "DEMO-PUBLIC-01 docs walkthrough run 3",
+   "at_utc": "17:17:29",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": null,
+   "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ],
+   "known": []
+  },
+  {
+   "run": "DEMO-PUBLIC-01 docs walkthrough via stream-delay-40ms run 1",
+   "at_utc": "17:17:58",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": null,
+   "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3100/favicon.ico"
+   ],
+   "known": []
+  },
+  {
+   "run": "DEMO-PUBLIC-01 docs walkthrough via stream-delay-40ms run 2",
+   "at_utc": "17:18:29",
+   "exit": 0,
+   "passed": 39,
+   "total": 39,
+   "failed": [],
+   "console_check": null,
+   "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3100/favicon.ico"
+   ],
+   "known": []
+  },
+  {
+   "run": "DEMO-01 UI check run 1",
+   "at_utc": "17:18:33",
+   "exit": 0,
+   "passed": 15,
+   "total": 15,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  },
+  {
+   "run": "DEMO-01 UI check run 2",
+   "at_utc": "17:18:37",
+   "exit": 0,
+   "passed": 15,
+   "total": 15,
+   "failed": [],
+   "console_check": true,
+   "console_errors": null,
+   "known": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+   ]
+  }
+ ],
+ "baseline_for_reference": {
+  "run": "DEMO-01 UI check against main (Next.js 15.5.25), before the switch",
+  "passed": 15,
+  "total": 15,
+  "failed": []
+ },
+ "totals": {
+  "runs": 15,
+  "checks_passed": 507,
+  "checks": 507
+ }
+}
