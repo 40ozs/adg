@@ -32,7 +32,7 @@ The unit of that judgement is a **scope** â€” one collector against one target â
 collector kind. Phase 6D changed it: with the old rule a later successful NTFS scan of one
 file server superseded a failed scan of another, the banner read `healthy`, and a whole
 server's worth of "nothing is there" became readable as an answer. See
-[Known limits](#known-limits), item 1, for what the current rule still does not cover.
+[Known limits](#what-it-does-not-do) (under "What it does not do"), item 1, for what the current rule still does not cover.
 
 ---
 

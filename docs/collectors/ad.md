@@ -18,7 +18,7 @@ Two properties define this collector and both are load bearing:
   explanation of Alice's access and the thing an administrator has to change to remove it;
   a flattened set answers "can she?" but not "why, and what do I take away?".
 * **It never requires Domain Admin.** Read access to the directory is enough, and any
-  authenticated domain account has that by default. See [Privileges](#privileges).
+  authenticated domain account has that by default. See [Privileges](#3-privileges).
 
 ---
 
@@ -30,7 +30,7 @@ Two properties define this collector and both are load bearing:
 | .NET assemblies | `System.DirectoryServices.Protocols`, present on any Windows host with .NET |
 | RSAT / `ActiveDirectory` module | **not required** |
 | Network | LDAP to a domain controller: TCP 389 (signed and sealed) or 636 (LDAPS) |
-| Account | any account that can read the directory; see [Privileges](#privileges) |
+| Account | any account that can read the directory; see [Privileges](#3-privileges) |
 
 The RSAT `ActiveDirectory` module is deliberately not used. `System.DirectoryServices.Protocols`
 is present without installing a Windows feature, it exposes paging and ranged retrieval

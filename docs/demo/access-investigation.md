@@ -1,5 +1,7 @@
 # The guided access investigation (ADG-DEMO-02)
 
+Part of the [ADG demo guide](README.md) (Walkthrough 1). This page is the detailed account.
+
 > **Synthetic.** Every identity, group, folder, SID and scan here is generated Null Meridian
 > demo data. None of it describes a real person, organization or system.
 

@@ -15,6 +15,91 @@ ADG audits and governs access to Windows file shares. It answers, with evidence:
 5. Which access conditions are risky or anomalous?
 6. What would happen if a membership or ACL entry were removed?
 
+## The reviewer view: from collection to screen
+
+This is the path one answer in the synthetic demo takes, named by the modules that implement
+each stage (paths are under `backend/app/` unless stated otherwise). The stages are drawn as
+one column in reading order. Risk evaluation, coverage and comparison each read the stored
+evidence directly rather than one another's output.
+
+```text
+ SYNTHETIC COLLECTORS / SOURCES            (production: native Windows collectors, collector/)
+   demo/null_meridian/                     the generated estate: 3 scans × 100 collector runs
+   demo_mode/ingest.py, providers.py       SyntheticObservationSource posts each run through
+                                           the real POST /api/v1/scan-runs routes, in process
+                 │
+                 ▼
+ COLLECTION RUNS / NORMALIZED EVIDENCE
+   contracts/v1, ingestion/service.py      contract validation, idempotent batches
+   history/writer.py                       versioned observations (object_versions), tombstones
+   scan_runs + current-state tables        a run that did not reconcile a scope marks nothing absent
+                 │
+                 ▼
+ IDENTITY + ACCESS DOMAIN MODEL
+   services/access.py  AccessService       loads SubjectFacts, ResourceDacl, ShareDacl
+     ._coverage_findings                   ◄ A: unresolved SIDs and uncollected groups on the ACLs
+   access_engine/subjects.py  build_token  the token for one access path
+                                           ◄ A: SYSTEM mapping (confirmed/ambiguous/missing/conflicting)
+   access_engine/evaluation.py             evaluate_acl: each ACL in DACL order
+   access_engine/resolver.py               resolve_access: share ∩ NTFS
+     certainty_of(findings)                ◄ B: certain / at_least / at_most / uncertain
+                 │
+                 ▼
+ RELATIONSHIP / PATH DERIVATION
+   access_engine/causality.py              explain_access: causal paths, measured removal targets
+                 │
+                 ▼
+ ACCESS EXPLANATION
+   access_engine/verdict.py                classify_access, describe_verdict
+   access_engine/investigation.py          investigate: primary routes, open questions
+                                           (state + impact), next steps
+   repositories/provenance.py              per-hop collector and first/last scan
+                 │
+                 ▼
+ RISK EVALUATION
+   risk_engine/engine.py                   evaluate: 11 deterministic rules; findings keep their
+                                           evidence. Each pass records the collected-state basis
+                                           it read (migration 0018_risk_evaluation_basis)
+                 │
+                 ▼
+ COVERAGE / COMPLETENESS
+   domain/coverage.py  assess_coverage     per scope: what the latest run did × how fresh the
+                                           held evidence is   ◄ C: collection freshness enters
+     interpret_totals                      complete / partial / incomplete / stale / not_evaluated
+   services/coverage.py                    expected collectors (ADG_EXPECTED_COLLECTORS or the
+                                           demo dataset's own scan history)
+                 │
+                 ▼
+ COMPARISON / RECOVERY
+   changes/service.py  ChangeService.compare
+                                           aligned cut, 5,000-object ceiling per side,
+                                           4 s window checked at checkpoints
+                                           ◄ D: complete / incomplete / timed_out / cancelled
+   api/changes.py  _recovery               retry_standard_window, narrow_kind (each names retry_of)
+                 │
+                 ▼
+ API  (FastAPI, api/*; a capability is checked on every route)
+   /api/v1/access/explain · /collection/coverage · /risks/summary · /changes/compare · /demo
+                 │
+                 ▼
+ REVIEWER UI  (Next.js, frontend/; a server-side proxy at /api/adg/* holds the token;
+               pages render API fields and compute no permissions)
+   /demo · /access/investigate · /risks · /collectors · /changes/compare
+```
+
+Where each kind of uncertainty is decided:
+
+| Marker | Decided in | What is decided |
+| --- | --- | --- |
+| **A** Ambiguity enters | `AccessService._coverage_findings` and `_could_contain_members` (`services/access.py`); `build_token` and `system_mapping_of` (`access_engine/subjects.py`) | An ACL trustee whose membership was never collected, or whose SID no collector could resolve, becomes a `trustee_membership_unobserved` finding. SYSTEM gets exactly one mapping state and one `system_mapping_*` finding. |
+| **B** `at_least` / provisional | `certainty_of` (`access_engine/resolver.py`) over the condition directions in `access_engine/conditions.py`; `_impact` in `access_engine/investigation.py` | Findings that may only understate make the answer `at_least`; both directions make it `uncertain`. The investigation marks a finding `extent` (the access stands and could be wider) or `presence` (the access itself is provisional). |
+| **C** Collection freshness enters | `assess_coverage` and `interpret_totals` (`domain/coverage.py`), over the collector operations records (`domain/operations.py`) | Each scope's latest run is `collected`, `partial`, `unavailable`, `failed` or `running`, and its evidence is `current`, `stale` or `none`. Risk totals are read against that, and against the snapshot the risk pass recorded. |
+| **D** Typed comparison outcome | `ChangeService.compare` (`changes/service.py`); recovery in `api/changes.py` | Whether a comparison is `complete`, `incomplete` (with `compared_through`), `timed_out` (with `stopped_in`) or `cancelled`, and which recovery requests are offered. |
+
+The demo walkthroughs that exercise this path are in [the demo guide](../demo/README.md). The
+reasoning behind each stage is in the [ADRs](../decisions/) and in the
+[demo reports](../demo/reports/).
+
 ## Component separation
 
 ```text

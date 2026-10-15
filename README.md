@@ -1,18 +1,385 @@
 # ADG
 
-ADG is a Windows-domain share-access auditing and governance application. It collects
-identity, SMB share, and NTFS permission facts from Windows environments and answers, with
-evidence:
+> **Synthetic data only.** All identities, organizations, directory objects, groups,
+> resources, ACLs, findings, collection runs, provider responses, audit evidence, comparison
+> data and credentials used by the ADG demo are synthetic or sanitized. No employer data,
+> production credentials, customer information or live production directory data is
+> included.
 
-1. Who can access this share or directory?
-2. What can this user access?
-3. Exactly why does the user have that access?
-4. What changed, when, and what was the access impact?
-5. Which access conditions are risky or anomalous?
-6. What would happen if a membership or ACL entry were removed?
+ADG is an evidence-aware access analysis system for Windows file shares. It reads identity,
+group membership, SMB share and NTFS permission facts reported by collectors, and explains
+*why* a person can reach a folder: the access paths, the collected evidence behind each step,
+what it could not confirm, how complete the collection was, and what that means for risk
+findings and for comparisons over time. It is read-only: it observes and explains
+permissions, and changes nothing.
 
-**ADG is read-only by default.** It observes and explains permissions; it does not change
-them.
+**For reviewers:**
+[Demo guide](docs/demo/README.md) ·
+[Run the demo](#run-the-demo) ·
+[Architecture](docs/architecture/system-overview.md#the-reviewer-view-from-collection-to-screen) ·
+[Code to review](#code-to-review) ·
+[Representative tests](#representative-tests) ·
+[Design decisions](#key-design-decisions) ·
+[Demo reports](docs/demo/reports/) ·
+[Limitations](#known-limitations)
+
+## What problem it demonstrates
+
+Enterprise access questions are hard to answer honestly. To say why someone can open a
+folder, you have to combine directory identities, nested group membership, the share ACL and
+the NTFS ACL. Each comes from a different collector, at a different time, and any of them can
+be missing, stale or contradictory: a SID nobody can resolve, a group whose members were
+never collected, a file server whose last scan failed.
+
+The easy way to build such a tool is to treat missing evidence as absence and print a
+confident answer. ADG deliberately does not. It keeps the uncertainty in the answer:
+
+* known rights are reported as a **lower bound** (`at_least`) when unseen evidence could
+  widen them;
+* an ambiguous identity mapping is reported as **not determined**, never as "no access";
+* a failed or unreachable collector is never shown as "checked, found nothing";
+* a comparison that cannot finish in time **says so**, and presents nothing it did not
+  finish.
+
+The demo shows each of these on a deterministic synthetic company, **Null Meridian** (1,800
+people, 205 groups, 33 file servers, three scans).
+
+## What to look at first
+
+A 10-minute path through the running demo. The [demo guide](docs/demo/README.md) has each step
+in detail.
+
+1. Open `http://localhost:3000/login`, sign in as **`auditor`**, then open `/demo`.
+2. Under *Start here: a guided access investigation*, choose **Investigate access**. This asks
+   *Why does Fatima Gordon have access to `\\NM-ENG-FS01\Engineering\Projects\Apollo`?*
+3. Section 1: access **granted**, **Modify**, certainty **`at_least`**, over SMB.
+4. Section 2: the **direct** NTFS entry and the share route **through `ENG-Mobile`**. Open
+   *Every other route ADG found* for the **inherited** route through five nested groups.
+5. Open **Evidence for hop N** under any hop: the collector, the scans and the stored row.
+6. Section 3: two pieces of **missing evidence** (an unresolved former-employee SID and an
+   uncollected group). Neither can take the access away; both mean the rights are a lower
+   bound.
+7. Section 6, then `/risks`: **collection coverage** beside the answer and beside the risk
+   totals. One file server was unreachable on the last scan, so the totals read *not
+   exhaustive*, and its 189 findings stay counted.
+8. Back on `/demo`, choose **Run the comparison drill**: it **times out** with nothing
+   presented, a retry stops **incomplete** at a named boundary, and **Compare only folder
+   permission entries** completes and is marked **recovered**.
+
+There is no hosted demo for this branch. [Run it locally](#run-the-demo).
+
+## What is technically interesting
+
+* **One access engine, no demo-only path.** Every screen in the demo is computed by the same
+  engine, API and database a production deployment uses. Demo Mode only replaces the
+  collectors with a synthetic provider that posts through the real ingestion routes
+  ([demo-mode.md](docs/architecture/demo-mode.md)).
+* **Access as a Windows access check.** ADG builds an access token for one declared access
+  path, evaluates both ACLs in DACL order, and intersects them
+  ([effective-access.md](docs/architecture/effective-access.md)).
+* **Paths are measured, not inferred.** Each causal path carries the measured effect of
+  removing it, so "removing this changes nothing" is computed, not guessed
+  ([access-causality.md](docs/architecture/access-causality.md)).
+* **Uncertainty has a direction.** Every gap is a typed finding that may *overstate* or
+  *understate* the answer. The findings fold into `certain`, `at_least`, `at_most` or
+  `uncertain`, and are never averaged into a score.
+* **Coverage is per scope, and two facts per scope.** What the latest scan did (`collected`,
+  `partial`, `unavailable`, `failed`, `running`) is kept apart from how fresh the held evidence
+  is (`current`, `stale`, `none`).
+* **Bounded comparisons with typed outcomes.** A point-in-time comparison is bounded in size
+  and time, ends as `complete`, `incomplete`, `timed_out` or `cancelled`, and offers real
+  recovery requests.
+
+## Code to review
+
+The paths below are where each claim is implemented. Everything else in the repository
+supports these.
+
+**Access logic** (`backend/app/access_engine/`, pure functions, no I/O)
+
+| What | Where |
+| --- | --- |
+| Access token construction, SYSTEM mapping | [`subjects.py`](backend/app/access_engine/subjects.py): `build_token`, `system_mapping_of`, `default_assumption` |
+| ACL evaluation in DACL order | [`evaluation.py`](backend/app/access_engine/evaluation.py): `evaluate_acl`; rights math in [`rights.py`](backend/app/access_engine/rights.py) |
+| Access verdict and certainty | [`resolver.py`](backend/app/access_engine/resolver.py): `resolve_access`, `certainty_of`; [`verdict.py`](backend/app/access_engine/verdict.py): `classify_access`, `describe_verdict` |
+| Path derivation and measured removals | [`causality.py`](backend/app/access_engine/causality.py): `explain_access` |
+| The investigation (primary routes, open questions, impact, next steps) | [`investigation.py`](backend/app/access_engine/investigation.py): `investigate` |
+| Loading the facts, and the coverage findings | [`backend/app/services/access.py`](backend/app/services/access.py): `AccessService.explain_access`, `_coverage_findings`, `_could_contain_members` |
+
+**Evidence and uncertainty**
+
+| What | Where |
+| --- | --- |
+| Condition vocabulary and the direction each can be wrong in | [`conditions.py`](backend/app/access_engine/conditions.py): `AccessCondition`, `OVERSTATING_CONDITIONS`, `UNDERSTATING_CONDITIONS` |
+| Mapping and evidence states | `SystemMapping` in [`subjects.py`](backend/app/access_engine/subjects.py); `EvidenceState`, `ConclusionImpact` in [`investigation.py`](backend/app/access_engine/investigation.py) |
+| Unresolved identities | `_could_contain_members` in [`services/access.py`](backend/app/services/access.py); `isUnresolved` in [`frontend/lib/identity.ts`](frontend/lib/identity.ts) |
+| Hop provenance (collector, first and last scan, stored row) | [`backend/app/repositories/provenance.py`](backend/app/repositories/provenance.py): `ProvenanceRepository.observed` |
+| Collection state per scope | [`backend/app/domain/collection.py`](backend/app/domain/collection.py): `assess_collection`; [`backend/app/domain/operations.py`](backend/app/domain/operations.py) |
+
+**Risk and coverage**
+
+| What | Where |
+| --- | --- |
+| Risk evaluation (eleven deterministic rules) | [`backend/app/risk_engine/engine.py`](backend/app/risk_engine/engine.py): `evaluate`; rules in [`rules.py`](backend/app/risk_engine/rules.py) |
+| Collection coverage (scope state, evidence freshness, expected collectors) | [`backend/app/domain/coverage.py`](backend/app/domain/coverage.py): `assess_coverage`, `ScopeState`, `EvidenceAge`; [`backend/app/services/coverage.py`](backend/app/services/coverage.py): `expected_collectors` |
+| How risk totals may be read (`complete` / `partial` / `incomplete` / `stale` / `not_evaluated`) | `interpret_totals`, `TotalsReading` in [`coverage.py`](backend/app/domain/coverage.py); served by [`backend/app/api/risks.py`](backend/app/api/risks.py) |
+| The snapshot each risk pass read | [`database/migrations/versions/0018_risk_evaluation_basis.py`](database/migrations/versions/0018_risk_evaluation_basis.py) |
+
+**Comparison and recovery**
+
+| What | Where |
+| --- | --- |
+| The comparison, its aligned cut and its checkpoints | [`backend/app/changes/service.py`](backend/app/changes/service.py): `ChangeService.compare`, `_aligned_boundary` |
+| Size and time bounds | `COMPARISON_CEILING`, `COMPARISON_WINDOW_MS`, `ComparisonBudget` in [`service.py`](backend/app/changes/service.py) |
+| Typed outcomes | `ComparisonOutcome`, `ComparisonPhase` in [`service.py`](backend/app/changes/service.py) |
+| Recovery actions and telemetry | [`backend/app/api/changes.py`](backend/app/api/changes.py): `compare_instants`, `_recovery`, the `changes.compare` log line |
+| The deterministic drill | `NullMeridianDataset.comparisons` in [`backend/app/demo/null_meridian/dataset.py`](backend/app/demo/null_meridian/dataset.py) |
+
+**UI** (Next.js; renders API fields and computes no permissions)
+
+| What | Where |
+| --- | --- |
+| Investigation page | [`frontend/app/access/investigate/page.tsx`](frontend/app/access/investigate/page.tsx), [`components/Investigation.tsx`](frontend/components/Investigation.tsx), [`lib/investigation.ts`](frontend/lib/investigation.ts) |
+| Risks page | [`frontend/app/risks/page.tsx`](frontend/app/risks/page.tsx), [`components/Risks.tsx`](frontend/components/Risks.tsx) |
+| Comparison page | [`frontend/app/changes/compare/page.tsx`](frontend/app/changes/compare/page.tsx), [`components/Comparison.tsx`](frontend/components/Comparison.tsx), [`components/ComparisonLink.tsx`](frontend/components/ComparisonLink.tsx) |
+| Coverage components and wording | [`frontend/components/Coverage.tsx`](frontend/components/Coverage.tsx), [`lib/coverage.ts`](frontend/lib/coverage.ts) |
+| Explanation components | [`frontend/components/Explanation.tsx`](frontend/components/Explanation.tsx), [`lib/explanation.ts`](frontend/lib/explanation.ts) |
+| Demo guide and demo indicator | [`frontend/components/DemoGuide.tsx`](frontend/components/DemoGuide.tsx), [`components/Banners.tsx`](frontend/components/Banners.tsx) |
+
+## Representative tests
+
+A short list, chosen to prove the claims above. The full suites are much larger (about 6,000
+backend unit tests, 1,270 PostgreSQL tests and 1,360 frontend tests).
+
+**ADG-DEMO-01: SYSTEM explanation correctness** ([report](docs/demo/reports/ADG-DEMO-01-report.md))
+
+| Test | What it proves |
+| --- | --- |
+| [`test_system_mapping.py`](backend/tests/access_engine/test_system_mapping.py) `TestAmbiguous::test_the_default_question_is_indeterminate_not_no_grant` | SYSTEM over a share is an ambiguous mapping, answered "not determined" and never "no grant". |
+| [`test_system_mapping.py`](backend/tests/access_engine/test_system_mapping.py) `TestMissing::test_no_token_is_invented_for_it` | When no collector described SYSTEM, ADG invents no group memberships for it. |
+| [`test_system_mapping.py`](backend/tests/access_engine/test_system_mapping.py) `TestConflicting::test_both_sides_and_the_provenance_are_preserved` | A collected description that contradicts the SID's fixed meaning is kept, with both sides and the describing run. |
+| [`test_system_mapping.py`](backend/tests/access_engine/test_system_mapping.py) `TestConfirmed::test_an_acl_naming_only_the_servers_administrators_is_not_a_no` | Even a confirmed SYSTEM mapping never yields an unsupported definite negative. |
+| [`test_system_explanation_regression.py`](backend/tests/access_engine/test_system_explanation_regression.py) `TestNoContradictionAnywhereInTheMatrix` | Across every description × path × assumption × share shape, the verdict, certainty and paths agree. This module failed 46 of 52 before the fix. |
+| [`test_system_mapping_api.py`](backend/tests/db/test_system_mapping_api.py) `TestConflictingEvidence::test_the_conflict_and_its_provenance_reach_the_client` | The mapping state survives ingestion → PostgreSQL → API → schema. |
+| [`system-mapping.test.tsx`](frontend/tests/system-mapping.test.tsx) "a SID a run saw and could not resolve" | A stored but unresolved identity renders as unresolved, not as a resolved name. |
+
+**ADG-DEMO-02: the guided access investigation** ([report](docs/demo/reports/ADG-DEMO-02-report.md))
+
+| Test | What it proves |
+| --- | --- |
+| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_the_ntfs_route_is_the_direct_entry_and_the_share_route_a_group` | On a real reset, the canonical answer's primary routes are the direct NTFS entry and the share entry via `ENG-Mobile`. |
+| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_the_inherited_route_through_five_groups_is_shown_in_order_and_redundant` | The inherited route is shown hop by hop, and marked redundant rather than primary. |
+| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_every_hop_carries_its_collector_and_scan` | Every hop carries its provenance: collector, method, and first and last observing scan. |
+| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_access_is_observed_and_qualified_not_certain` | The answer is `granted`, Modify, `at_least`: a lower bound, not certainty. |
+| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_what_cannot_be_confirmed_is_named_and_does_not_reach_the_conclusion` | Both gaps are named as missing evidence, and both are judged unable to remove the access. |
+| [`test_unidentified_trustees.py`](backend/tests/access_engine/test_unidentified_trustees.py) `test_a_record_saying_nothing_resolved_the_sid_could_be_a_group` | An unresolved trustee counts as "possibly a group", so it cannot be used to claim certainty. |
+| [`test_investigation.py`](backend/tests/access_engine/test_investigation.py) `TestWhetherAnOpenQuestionReachesTheConclusion::test_an_unread_share_acl_could_take_a_grant_away` | When missing evidence *could* remove the access, the impact is `presence` and the answer is provisional. |
+
+**ADG-DEMO-03: coverage, comparison timeout and recovery** ([report](docs/demo/reports/ADG-DEMO-03-report.md))
+
+| Test | What it proves |
+| --- | --- |
+| [`test_coverage.py`](backend/tests/domain/test_coverage.py) `TestZeroFindingsIsNotMissingCollection::test_the_two_zeros_never_share_a_verdict` | A failed collection with zero observations is never the same as a clean scan that found nothing. |
+| [`test_collection_coverage.py`](backend/tests/db/test_collection_coverage.py) `TestAFailedSourceDoesNotLowerRisk::test_findings_on_a_server_whose_scan_failed_stay_open_and_counted` | A later failed scan does not erase or uncount existing findings. |
+| [`test_coverage.py`](backend/tests/domain/test_coverage.py) `TestReadingRiskTotals::test_every_reason_is_listed_and_the_worst_one_wins` | Risk totals read `complete`, `partial`, `incomplete`, `stale` or `not_evaluated`, with every reason listed. |
+| [`test_collection_coverage.py`](backend/tests/db/test_collection_coverage.py) `TestTheCoverageReport::test_a_server_that_failed_after_a_success_holds_stale_evidence` and `TestAnExpectedCollectorThatNeverReported::test_is_not_collected_and_makes_coverage_incomplete` | Stale evidence and a never-reported expected collector both make coverage visibly incomplete. |
+| [`test_comparison_bounds.py`](backend/tests/db/test_comparison_bounds.py) `TestTheInteractiveWindow::test_past_the_window_after_reading_it_stops_and_presents_nothing` | A comparison past its window stops as `timed_out` and presents no partial list. |
+| [`test_comparison_bounds.py`](backend/tests/db/test_comparison_bounds.py) `TestTheSidesAreCutAtTheSameKey::test_objects_past_the_shorter_cut_are_not_called_unobserved` | An `incomplete` comparison is cut at one aligned boundary, so nothing past it is misreported. |
+| [`test_comparison_bounds.py`](backend/tests/db/test_comparison_bounds.py) `TestTheApi::test_timeout_then_recovery_then_a_complete_recovered_comparison` | A timed-out comparison offers a narrower request, which completes and is marked recovered. |
+| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheCoverageAndRecoveryDemo::test_the_comparison_drill_times_out_then_recovers_to_complete` | The demo drill runs `timed_out` → `incomplete` → `complete` (recovered) on a real reset. |
+| [`compare-page.test.tsx`](frontend/tests/compare-page.test.tsx) "reads an older server's truncated comparison as incomplete, never complete" | The UI never presents a partial comparison as complete. |
+| [`risks-page.test.tsx`](frontend/tests/risks-page.test.tsx) "calls the counts totals only when evaluation and collection are both complete" | The risks page says "not exhaustive" unless both evaluation and collection are complete. |
+
+How to run them is under [Run the tests](#run-the-tests).
+
+## Key design decisions
+
+These are the decisions ADG makes. They are not presented as universal best practice.
+
+* **Preserve uncertainty.** Missing or conflicting evidence stays explicit, as a typed
+  finding with a direction, rather than being coerced into a confident answer.
+  [ADR-0011](docs/decisions/0011-answers-carry-their-uncertainty.md),
+  [ADR-0015](docs/decisions/0015-emptiness-is-attributed-by-the-backend.md),
+  [ADG-DEMO-01 §4](docs/demo/reports/ADG-DEMO-01-report.md#4-the-invariant-now-enforced).
+* **Lower-bound access semantics.** When an unresolved trustee or an uncollected group could
+  widen the rights, ADG reports the known rights as `at_least` rather than as certain.
+  [ADR-0011](docs/decisions/0011-answers-carry-their-uncertainty.md),
+  [ADG-DEMO-02 §4](docs/demo/reports/ADG-DEMO-02-report.md#4-evidence-model).
+* **Evidence-aware risk totals.** Risk totals are read in the context of the collection and
+  the snapshot they were computed over. A failed collector does not erase existing findings:
+  a scan that did not reconcile a scope cannot mark anything absent.
+  [ADR-0018](docs/decisions/0018-history-is-a-versioned-observation-log.md),
+  [ADR-0023](docs/decisions/0023-risk-findings-are-reproducible-from-their-evidence.md),
+  [ADG-DEMO-03 §3–4](docs/demo/reports/ADG-DEMO-03-report.md#3-coverage-semantics).
+* **Bounded interactive comparisons.** Interactive comparison work is bounded in objects and
+  time. A partial or timed-out comparison is never reported as complete.
+  [ADR-0012](docs/decisions/0012-bounded-access-queries.md) (the same principle for access
+  queries), [ADG-DEMO-03 §6](docs/demo/reports/ADG-DEMO-03-report.md#6-implementation).
+* **Recovery by narrower scope.** The demo recovers by reducing the scope of a comparison. It
+  does not pretend an estate-wide synchronous comparison can always finish, and there is no
+  background job system.
+  [ADR-0020](docs/decisions/0020-simulation-is-the-engine-reading-an-overlay.md) (no job
+  queue), [ADG-DEMO-03 §6.2](docs/demo/reports/ADG-DEMO-03-report.md#62-typed-outcomes-and-recovery).
+* **Demo is a deployment boundary.** The demo is the real application on synthetic data,
+  selected by configuration, with no switch in the UI.
+  [ADR-0039](docs/decisions/0039-demo-is-a-deployment-boundary.md).
+
+All decisions: [docs/decisions/](docs/decisions/).
+
+## Run the demo
+
+The synthetic demo needs **no Windows host, domain, SMB server or collector**. These steps
+were run from a fresh clone on Linux (Ubuntu 24.04) for
+[DEMO-PUBLIC-01](docs/demo/reports/DEMO-PUBLIC-01-report.md#9-setup-validation).
+
+### Requirements
+
+| Tool | Version |
+| --- | --- |
+| Python | 3.11 or later (CI uses 3.13) |
+| Node.js | 20 or later (CI uses 22) |
+| PostgreSQL | 16 |
+
+### 1. A PostgreSQL role and a demo database
+
+The demo database must have `demo` as a word in its name; the reset refuses anything else.
+With a local PostgreSQL 16, as a superuser:
+
+```bash
+psql -U postgres -c "CREATE ROLE adg LOGIN CREATEDB PASSWORD 'adg_dev_password';"
+psql -U postgres -c "CREATE DATABASE adg_demo OWNER adg;"
+```
+
+`adg_dev_password` is the local development default from [`.env.example`](.env.example), not a
+secret. `CREATEDB` is only needed for the PostgreSQL test suite, which creates its own
+databases.
+
+### 2. Backend: install, reset the synthetic estate, serve
+
+```bash
+cp .env.example .env
+cd backend
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev]"
+
+export ADG_RUNTIME_MODE=demo
+export ADG_DATABASE_URL=postgresql+psycopg://adg:adg_dev_password@localhost:5432/adg_demo
+.venv/bin/python -m app.demo_mode reset    # migrate, wipe, ingest 3 synthetic scans, evaluate risks
+.venv/bin/python -m app.demo_mode verify   # re-check the canonical objects; changes nothing
+.venv/bin/python -m app                    # the API on http://127.0.0.1:8000
+```
+
+The reset takes a few minutes. It ingests 300 synthetic collector runs through the real
+ingestion routes and ends with a fingerprint of the database.
+
+### 3. Frontend
+
+In a second terminal, from the repository root:
+
+```bash
+cd frontend
+npm install
+npm run build
+npm run start                              # http://localhost:3000
+```
+
+`npm run dev` also works for development.
+
+### 4. Open the demo
+
+Open `http://localhost:3000/login`, sign in as **`auditor`**, and go to
+`http://localhost:3000/demo`. Then follow the [demo guide](docs/demo/README.md).
+
+### With Docker Compose instead
+
+The repository also ships a Compose overlay that runs the reset and the API in containers:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+```
+
+This path was **not** run for DEMO-PUBLIC-01 (no Docker in the validation environment). CI
+validates the base Compose file only.
+
+### Run the tests
+
+From `backend/` with the virtual environment above. The PostgreSQL tests read the database URL
+from `.env` (or `ADG_DATABASE_URL`) and create their own `<name>_test` databases beside it.
+
+```bash
+# Representative unit tests (no database)
+.venv/bin/python -m pytest -q tests/access_engine/test_system_mapping.py \
+  tests/access_engine/test_system_explanation_regression.py \
+  tests/access_engine/test_investigation.py tests/access_engine/test_unidentified_trustees.py \
+  tests/domain/test_coverage.py
+
+# Representative PostgreSQL tests (the Null Meridian classes run a full reset: several minutes)
+ADG_RUN_SMOKE_TESTS=1 .venv/bin/python -m pytest -q tests/db/test_system_mapping_api.py \
+  tests/db/test_collection_coverage.py tests/db/test_comparison_bounds.py \
+  "tests/db/test_null_meridian_demo.py::TestTheSystemExplanation" \
+  "tests/db/test_null_meridian_demo.py::TestTheAccessInvestigation" \
+  "tests/db/test_null_meridian_demo.py::TestTheCoverageAndRecoveryDemo"
+
+# Full suites, as CI runs them
+.venv/bin/python -m ruff check . && .venv/bin/python -m ruff format --check .
+.venv/bin/python -m mypy app tests
+.venv/bin/python -m pytest -q -m "not smoke"                  # unit
+ADG_RUN_SMOKE_TESTS=1 .venv/bin/python -m pytest -q -m smoke  # PostgreSQL, about 30 minutes
+```
+
+Run `unset ADG_RUNTIME_MODE ADG_DATABASE_URL` first if you exported them for the demo in the
+same shell.
+
+From `frontend/`:
+
+```bash
+npx vitest run tests/system-mapping.test.tsx tests/investigation-page.test.tsx \
+  tests/risks-page.test.tsx tests/compare-page.test.tsx tests/coverage.test.ts
+npm run lint && npm run typecheck && npm run test && npm run build
+```
+
+## Known limitations
+
+**Accepted product limitations of the demo** (each is explained in the
+[ADG-DEMO-03 report §12](docs/demo/reports/ADG-DEMO-03-report.md#12-limitations)):
+
+* Expected collectors are declared per collector kind, not per server.
+* "Stale" means the latest scan of a scope delivered nothing (it failed or could not reach
+  its target) while an earlier scan did. It is not an age threshold.
+* The page-wide collection-health banner was not redesigned.
+* An estate-wide demo comparison cannot finish inside one interactive request. The supported
+  recovery is narrowing the scope.
+* Comparison bounds rely on in-process checkpoints, not a background job system.
+* Remote-database behavior was modeled with injected per-statement latency, not measured on
+  hosted production infrastructure.
+* Browser validation uses one-off evidence scripts, not a committed browser-test framework.
+* SYSTEM over a share is never resolved to a computer account, and `NETWORK SERVICE` and
+  `LOCAL SERVICE` are not specially handled
+  ([ADG-DEMO-01 §9](docs/demo/reports/ADG-DEMO-01-report.md#9-known-limitations-and-deferred-work)).
+
+**Beyond the demo:** the NTFS collector has been validated against real volumes, but the
+Active Directory and SMB collectors have never met a real domain
+([known-limitations.md](docs/release/known-limitations.md)). ADG is not presented as
+production-ready.
+
+## Demo reports and evidence
+
+| Report | What it covers |
+| --- | --- |
+| [ADG-DEMO-01](docs/demo/reports/ADG-DEMO-01-report.md) | SYSTEM explanation correctness, and regression protection |
+| [ADG-DEMO-02](docs/demo/reports/ADG-DEMO-02-report.md) | The guided access investigation: routes, provenance, open questions |
+| [ADG-DEMO-03](docs/demo/reports/ADG-DEMO-03-report.md) | Collection coverage, risk interpretation, comparison timeout and recovery |
+| [DEMO-PUBLIC-01](docs/demo/reports/DEMO-PUBLIC-01-report.md) | This reviewer presentation, the public-readiness scan, setup validation |
+
+Each report links its evidence directory: API responses, screenshots, browser scripts and
+measurements. All of it is synthetic.
+
+---
+
+# Product reference
+
+Everything below describes the full product, including the Windows collectors and the
+production deployment path. A reviewer of the demo does not need it.
 
 ## Repository layout
 
@@ -49,7 +416,8 @@ host, collector, domain, SMB server or PowerShell anywhere in it:
 docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
 ```
 
-or, against a local PostgreSQL with a dedicated `adg_demo` database:
+or, against a local PostgreSQL with a dedicated `adg_demo` database, from `backend/` with its
+virtual environment active (every step, as validated, is in [Run the demo](#run-the-demo)):
 
 ```bash
 export ADG_RUNTIME_MODE=demo \
@@ -76,7 +444,9 @@ access check, and **the Active Directory and SMB collectors have never met a rea
 [`docs/release/release-readiness.md`](docs/release/release-readiness.md) says what that means
 for a first installation.
 
-## Prerequisites
+## Prerequisites (full product)
+
+The synthetic demo needs none of the Windows tooling below; see [Run the demo](#run-the-demo).
 
 | Tool | Version | Notes |
 | --- | --- | --- |

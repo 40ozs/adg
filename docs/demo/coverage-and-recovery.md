@@ -1,5 +1,7 @@
 # Coverage and recovery (ADG-DEMO-03)
 
+Part of the [ADG demo guide](README.md) (Walkthroughs 2 and 3). This page is the detailed account.
+
 > **Synthetic.** Every server, scan, identity and finding here is generated Null Meridian demo
 > data. None of it describes a real organization or system.
 
