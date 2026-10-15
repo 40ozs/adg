@@ -21772,7 +21772,7 @@
     },
     "/api/v1/collection/coverage": {
       "get": {
-        "description": "Coverage for a reviewer, in five statements.\n\nA failed or unavailable scope is reported with the age of the evidence ADG still holds\nfor it; a scope that was collected and found nothing is reported as exactly that. The\ntwo are never the same row.",
+        "description": "Coverage for a reviewer, in at most five statements.\n\nA failed or unavailable scope is reported with the age of the evidence ADG still holds\nfor it; a scope that was collected and found nothing is reported as exactly that. The\ntwo are never the same row.",
         "operationId": "collection_coverage_report_api_v1_collection_coverage_get",
         "parameters": [
           {
