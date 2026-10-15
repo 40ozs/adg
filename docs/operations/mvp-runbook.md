@@ -20,7 +20,7 @@ from the repository root unless a step says otherwise.
 | PowerShell | **7+** (`pwsh`) | Collectors and scripts. Windows PowerShell 5.1 is not enough |
 | Docker Desktop | current | PostgreSQL, and optionally the API and web tiers |
 | Python | 3.11+ | The backend |
-| Node.js | 20+ | The frontend |
+| Node.js | 20.9+ | The frontend |
 | Pester | 5+ | Collector tests: `Install-Module Pester -MinimumVersion 5.0 -Scope CurrentUser` |
 
 Docker Desktop must be **running**, not merely installed. `docker info` failing is the most
