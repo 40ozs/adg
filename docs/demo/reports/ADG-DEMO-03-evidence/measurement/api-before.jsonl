@@ -1,0 +1,37 @@
+{"timestamp":"2026-10-14T22:54:40.131687+00:00","level":"WARNING","logger":"adg.auth","message":"auth.mode.development","service":"ADG","environment":"development","version":"0.1.0"}
+2026-10-14 22:54:40,308 WARNING  adg.auth auth.mode.development
+2026-10-14 22:54:43,754 WARNING  adg.api api.startup.demo_mode
+2026-10-14 22:54:43,754 INFO     adg.api api.startup
+2026-10-14 22:54:44,477 INFO     adg.api http.request
+2026-10-14 22:54:44,479 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z "HTTP/1.1 200 OK"
+{"window": "g1->g3 estate", "run": 0, "status": 200, "wall_ms": 723.1, "statements": 42, "sql_ms": 515.4, "bytes": 250741, "changes": 145, "unchanged": 4855, "unobserved_at_from": 102, "unobserved_at_to": 102, "truncated": true, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 490.6], ["SELECT object_versions.container_key, max(object_versions.last_seen_at", 39, 20.3], ["SELECT DISTINCT ON (object_versions.object_kind, object_versions.objec", 1, 4.6]]}
+2026-10-14 22:54:44,692 INFO     adg.api http.request
+2026-10-14 22:54:44,694 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z "HTTP/1.1 200 OK"
+{"window": "g1->g3 estate", "run": 1, "status": 200, "wall_ms": 214.0, "statements": 42, "sql_ms": 128.2, "bytes": 250741, "changes": 145, "unchanged": 4855, "unobserved_at_from": 102, "unobserved_at_to": 102, "truncated": true, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 113.4], ["SELECT object_versions.container_key, max(object_versions.last_seen_at", 39, 13.6], ["SELECT DISTINCT ON (object_versions.object_kind, object_versions.objec", 1, 1.2]]}
+2026-10-14 22:54:44,860 INFO     adg.api http.request
+2026-10-14 22:54:44,861 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-09-18T00%3A00%3A00Z "HTTP/1.1 200 OK"
+{"window": "g1->g2 estate", "run": 0, "status": 200, "wall_ms": 166.6, "statements": 28, "sql_ms": 97.8, "bytes": 162442, "changes": 96, "unchanged": 4904, "unobserved_at_from": 78, "unobserved_at_to": 78, "truncated": true, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 89.0], ["SELECT object_versions.container_key, max(object_versions.last_seen_at", 25, 7.8], ["SELECT DISTINCT ON (object_versions.object_kind, object_versions.objec", 1, 1.1]]}
+2026-10-14 22:54:45,031 INFO     adg.api http.request
+2026-10-14 22:54:45,032 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-09-18T00%3A00%3A00Z "HTTP/1.1 200 OK"
+{"window": "g1->g2 estate", "run": 1, "status": 200, "wall_ms": 170.5, "statements": 28, "sql_ms": 98.5, "bytes": 162442, "changes": 96, "unchanged": 4904, "unobserved_at_from": 78, "unobserved_at_to": 78, "truncated": true, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 90.1], ["SELECT object_versions.container_key, max(object_versions.last_seen_at", 25, 7.5], ["SELECT DISTINCT ON (object_versions.object_kind, object_versions.objec", 1, 0.9]]}
+2026-10-14 22:54:45,276 INFO     adg.api http.request
+2026-10-14 22:54:45,277 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-18T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z "HTTP/1.1 200 OK"
+{"window": "g2->g3 estate", "run": 0, "status": 200, "wall_ms": 244.1, "statements": 17, "sql_ms": 174.5, "bytes": 88823, "changes": 49, "unchanged": 4951, "unobserved_at_from": 24, "unobserved_at_to": 24, "truncated": true, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 167.5], ["SELECT object_versions.container_key, max(object_versions.last_seen_at", 14, 5.9], ["SELECT DISTINCT ON (object_versions.object_kind, object_versions.objec", 1, 1.2]]}
+2026-10-14 22:54:45,428 INFO     adg.api http.request
+2026-10-14 22:54:45,429 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-18T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z "HTTP/1.1 200 OK"
+{"window": "g2->g3 estate", "run": 1, "status": 200, "wall_ms": 151.4, "statements": 17, "sql_ms": 91.2, "bytes": 88823, "changes": 49, "unchanged": 4951, "unobserved_at_from": 24, "unobserved_at_to": 24, "truncated": true, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 84.9], ["SELECT object_versions.container_key, max(object_versions.last_seen_at", 14, 5.5], ["SELECT DISTINCT ON (object_versions.object_kind, object_versions.objec", 1, 0.9]]}
+2026-10-14 22:54:45,602 INFO     adg.api http.request
+2026-10-14 22:54:45,603 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z&server=NM-ENG-FS01 "HTTP/1.1 200 OK"
+{"window": "g1->g3 server NM-ENG-FS01", "run": 0, "status": 200, "wall_ms": 173.7, "statements": 2, "sql_ms": 162.8, "bytes": 463, "changes": 0, "unchanged": 440, "unobserved_at_from": 0, "unobserved_at_to": 0, "truncated": false, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 162.8]]}
+2026-10-14 22:54:45,636 INFO     adg.api http.request
+2026-10-14 22:54:45,637 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z&server=NM-ENG-FS01 "HTTP/1.1 200 OK"
+{"window": "g1->g3 server NM-ENG-FS01", "run": 1, "status": 200, "wall_ms": 33.6, "statements": 2, "sql_ms": 24.7, "bytes": 463, "changes": 0, "unchanged": 440, "unobserved_at_from": 0, "unobserved_at_to": 0, "truncated": false, "top_sql": [["SELECT object_versions.id, object_versions.object_kind, object_version", 2, 24.7]]}
+2026-10-14 22:54:45,639 INFO     adg.api api.rejected.invalid_payload
+2026-10-14 22:54:45,639 INFO     adg.api http.request
+2026-10-14 22:54:45,640 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z&share=%5C%5CNM-ENG-FS01%5CEngineering "HTTP/1.1 422 Unprocessable Entity"
+{"window": "g1->g3 share Engineering", "run": 0, "status": 422, "wall_ms": 2.9, "statements": 0, "sql_ms": 0.0, "bytes": 298, "detail": "{'detail': {'message': \"'\\\\\\\\\\\\\\\\nm-eng-fs01\\\\\\\\engineering' is not a share key. A share key is <server>|<share>, which is how every share row in the database is spelled; anything else would select no", "top_sql": []}
+2026-10-14 22:54:45,642 INFO     adg.api api.rejected.invalid_payload
+2026-10-14 22:54:45,642 INFO     adg.api http.request
+2026-10-14 22:54:45,642 INFO     httpx HTTP Request: GET http://t/api/v1/changes/compare?from=2026-09-04T00%3A00%3A00Z&to=2026-10-02T00%3A00%3A00Z&share=%5C%5CNM-ENG-FS01%5CEngineering "HTTP/1.1 422 Unprocessable Entity"
+{"window": "g1->g3 share Engineering", "run": 1, "status": 422, "wall_ms": 2.4, "statements": 0, "sql_ms": 0.0, "bytes": 298, "detail": "{'detail': {'message': \"'\\\\\\\\\\\\\\\\nm-eng-fs01\\\\\\\\engineering' is not a share key. A share key is <server>|<share>, which is how every share row in the database is spelled; anything else would select no", "top_sql": []}
+2026-10-14 22:54:45,643 INFO     adg.api api.shutdown

@@ -1,0 +1,221 @@
+{
+  "at_from": "2026-09-03T06:00:00Z",
+  "at_to": "2026-10-01T06:00:00Z",
+  "scope_target": null,
+  "scope_key": null,
+  "changes": [
+    {
+      "kind": "ntfs_ace",
+      "key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-21-3949361974-1583827165-633756269-2103|allow|0x001301bf|0x13",
+      "action": "added",
+      "significance": "security",
+      "direction": "broadened",
+      "severity": "medium",
+      "reasons": [
+        "S-1-5-21-3949361974-1583827165-633756269-2103 was granted access."
+      ],
+      "rule_ids": [
+        "ace.allow.added"
+      ],
+      "at": "2026-10-01T04:26:51Z",
+      "window": {
+        "after": "2026-10-01T04:26:50Z",
+        "at_or_before": "2026-10-01T04:26:51Z",
+        "is_exact": false,
+        "duration_seconds": 1.0
+      },
+      "reconstructed": false,
+      "subject": {
+        "container_kind": "ntfs_resource",
+        "container_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014",
+        "related_kind": "principal",
+        "related_key": "S-1-5-21-3949361974-1583827165-633756269-2103"
+      },
+      "before": null,
+      "after": {
+        "present": true,
+        "valid_from": "2026-10-01T04:26:51Z",
+        "last_seen_at": "2026-10-01T04:26:51Z",
+        "valid_to": null,
+        "origin": "observed",
+        "opened_by_run_id": "db977171-7bc5-5958-8547-8f59090b9f26",
+        "last_seen_run_id": "db977171-7bc5-5958-8547-8f59090b9f26",
+        "state": {
+          "source": "inherited",
+          "ace_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-21-3949361974-1583827165-633756269-2103|allow|0x001301bf|0x13",
+          "ace_type": "allow",
+          "ace_flags": 19,
+          "source_key": "ntfs_ace|\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-21-3949361974-1583827165-633756269-2103|allow|0x001301bf|0x13",
+          "access_mask": 1245631,
+          "order_index": 5,
+          "trustee_key": "S-1-5-21-3949361974-1583827165-633756269-2103",
+          "trustee_sid": "S-1-5-21-3949361974-1583827165-633756269-2103",
+          "resource_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014",
+          "inherited_from": "\\\\NM-SEC-FS01\\Incidents"
+        }
+      },
+      "deltas": [],
+      "edit": null
+    },
+    {
+      "kind": "ntfs_ace",
+      "key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-21-3949361974-1583827165-633756269-1582|allow|0x001301bf|0x13",
+      "action": "added",
+      "significance": "security",
+      "direction": "broadened",
+      "severity": "medium",
+      "reasons": [
+        "S-1-5-21-3949361974-1583827165-633756269-1582 was granted access."
+      ],
+      "rule_ids": [
+        "ace.allow.added"
+      ],
+      "at": "2026-10-01T04:26:50Z",
+      "window": {
+        "after": "2026-10-01T04:26:49Z",
+        "at_or_before": "2026-10-01T04:26:50Z",
+        "is_exact": false,
+        "duration_seconds": 1.0
+      },
+      "reconstructed": false,
+      "subject": {
+        "container_kind": "ntfs_resource",
+        "container_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014",
+        "related_kind": "principal",
+        "related_key": "S-1-5-21-3949361974-1583827165-633756269-1582"
+      },
+      "before": null,
+      "after": {
+        "present": true,
+        "valid_from": "2026-10-01T04:26:50Z",
+        "last_seen_at": "2026-10-01T04:26:50Z",
+        "valid_to": null,
+        "origin": "observed",
+        "opened_by_run_id": "db977171-7bc5-5958-8547-8f59090b9f26",
+        "last_seen_run_id": "db977171-7bc5-5958-8547-8f59090b9f26",
+        "state": {
+          "source": "inherited",
+          "ace_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-21-3949361974-1583827165-633756269-1582|allow|0x001301bf|0x13",
+          "ace_type": "allow",
+          "ace_flags": 19,
+          "source_key": "ntfs_ace|\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-21-3949361974-1583827165-633756269-1582|allow|0x001301bf|0x13",
+          "access_mask": 1245631,
+          "order_index": 4,
+          "trustee_key": "S-1-5-21-3949361974-1583827165-633756269-1582",
+          "trustee_sid": "S-1-5-21-3949361974-1583827165-633756269-1582",
+          "resource_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014",
+          "inherited_from": "\\\\NM-SEC-FS01\\Incidents"
+        }
+      },
+      "deltas": [],
+      "edit": null
+    },
+    {
+      "kind": "ntfs_ace",
+      "key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-32-544|allow|0x001f01ff|0x13",
+      "action": "added",
+      "significance": "security",
+      "direction": "broadened",
+      "severity": "high",
+      "reasons": [
+        "BUILTIN\\Administrators was granted Full Control."
+      ],
+      "rule_ids": [
+        "ace.allow.full"
+      ],
+      "at": "2026-10-01T04:26:49Z",
+      "window": {
+        "after": "2026-10-01T04:26:48Z",
+        "at_or_before": "2026-10-01T04:26:49Z",
+        "is_exact": false,
+        "duration_seconds": 1.0
+      },
+      "reconstructed": false,
+      "subject": {
+        "container_kind": "ntfs_resource",
+        "container_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014",
+        "related_kind": "principal",
+        "related_key": "nm-sec-fs01|S-1-5-32-544"
+      },
+      "before": null,
+      "after": {
+        "present": true,
+        "valid_from": "2026-10-01T04:26:49Z",
+        "last_seen_at": "2026-10-01T04:26:49Z",
+        "valid_to": null,
+        "origin": "observed",
+        "opened_by_run_id": "db977171-7bc5-5958-8547-8f59090b9f26",
+        "last_seen_run_id": "db977171-7bc5-5958-8547-8f59090b9f26",
+        "state": {
+          "source": "inherited",
+          "ace_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-32-544|allow|0x001f01ff|0x13",
+          "ace_type": "allow",
+          "ace_flags": 19,
+          "source_key": "ntfs_ace|\\\\nm-sec-fs01\\incidents\\ir-2026-014|S-1-5-32-544|allow|0x001f01ff|0x13",
+          "access_mask": 2032127,
+          "order_index": 3,
+          "trustee_key": "nm-sec-fs01|S-1-5-32-544",
+          "trustee_sid": "S-1-5-32-544",
+          "resource_key": "\\\\nm-sec-fs01\\incidents\\ir-2026-014",
+          "inherited_from": "\\\\NM-SEC-FS01\\Incidents"
+        }
+      },
+      "deltas": [],
+      "edit": null
+    }
+  ],
+  "edits": [],
+  "unchanged": 3903,
+  "unobserved_at_from": 177,
+  "unobserved_at_to": 0,
+  "truncated": false,
+  "summary": {
+    "window_from": "2026-09-03T06:00:00Z",
+    "window_to": "2026-10-01T06:00:00Z",
+    "total": 221,
+    "returned": 221,
+    "excluded": 0,
+    "highest_severity": "high",
+    "reconstructed": 0,
+    "truncated": false,
+    "by_action": {
+      "removed": 7,
+      "added": 177,
+      "modified": 37
+    },
+    "by_significance": {
+      "security": 192,
+      "undetermined": 29
+    },
+    "by_severity": {
+      "low": 7,
+      "high": 59,
+      "medium": 155
+    },
+    "by_kind": {
+      "ntfs_ace": 221
+    }
+  },
+  "comparison_id": "f7bbb79b-1ab1-482e-b60e-5fba869f17bd",
+  "outcome": "complete",
+  "complete": true,
+  "recovered": true,
+  "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+  "stopped_in": null,
+  "compared_through": null,
+  "requested_scope": {
+    "target": null,
+    "key": null,
+    "kinds": [
+      "ntfs_ace"
+    ]
+  },
+  "window_ms": 4000,
+  "elapsed_ms": 325,
+  "objects_per_side": 5000,
+  "objects_read_from": 3947,
+  "objects_read_to": 4124,
+  "differences_found": 221,
+  "recovery": [],
+  "_evidence_note": "changes and edits trimmed to the first 3 of 221 for size; every other field as served"
+}

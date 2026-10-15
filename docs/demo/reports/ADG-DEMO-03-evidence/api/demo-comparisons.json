@@ -1,0 +1,11 @@
+[
+  {
+    "key": "first-to-latest",
+    "title": "What is different between the first scan and the latest?",
+    "question": "What is different across the estate between 2026-09-03 and 2026-10-01?",
+    "at_from": "2026-09-03T06:00:00Z",
+    "at_to": "2026-10-01T06:00:00Z",
+    "drill_window_ms": 1,
+    "summary": "The estate-wide comparison of ADG's first and latest scans, launched inside a deliberately short interactive window. ADG stops, says so, presents no partial list as an answer, and offers the comparisons that can finish: the same question inside the standard window, or one kind of object at a time."
+  }
+]

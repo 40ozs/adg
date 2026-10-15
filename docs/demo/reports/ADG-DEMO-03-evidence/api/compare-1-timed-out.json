@@ -1,0 +1,123 @@
+{
+  "at_from": "2026-09-03T06:00:00Z",
+  "at_to": "2026-10-01T06:00:00Z",
+  "scope_target": null,
+  "scope_key": null,
+  "changes": [],
+  "edits": [],
+  "unchanged": 0,
+  "unobserved_at_from": 0,
+  "unobserved_at_to": 0,
+  "truncated": true,
+  "summary": {
+    "window_from": "2026-09-03T06:00:00Z",
+    "window_to": "2026-10-01T06:00:00Z",
+    "total": 0,
+    "returned": 0,
+    "excluded": 0,
+    "highest_severity": null,
+    "reconstructed": 0,
+    "truncated": false,
+    "by_action": {},
+    "by_significance": {},
+    "by_severity": {},
+    "by_kind": {}
+  },
+  "comparison_id": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+  "outcome": "timed_out",
+  "complete": false,
+  "recovered": false,
+  "retry_of": null,
+  "stopped_in": "read",
+  "compared_through": null,
+  "requested_scope": {
+    "target": null,
+    "key": null,
+    "kinds": []
+  },
+  "window_ms": 1,
+  "elapsed_ms": 649,
+  "objects_per_side": 5000,
+  "objects_read_from": 4898,
+  "objects_read_to": 5000,
+  "differences_found": 0,
+  "recovery": [
+    {
+      "action": "retry_standard_window",
+      "label": "Retry inside the standard 4-second window",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d"
+      },
+      "objects_at_from": null,
+      "objects_at_to": null
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only folder permission entries",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+        "kind": "ntfs_ace"
+      },
+      "objects_at_from": 3947,
+      "objects_at_to": 4124
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only folders",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+        "kind": "ntfs_resource"
+      },
+      "objects_at_from": 803,
+      "objects_at_to": 827
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only identities",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+        "kind": "principal"
+      },
+      "objects_at_from": 2117,
+      "objects_at_to": 2148
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only servers",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+        "kind": "server"
+      },
+      "objects_at_from": 33,
+      "objects_at_to": 33
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only share permission entries",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+        "kind": "smb_ace"
+      },
+      "objects_at_from": 598,
+      "objects_at_to": 609
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only shares",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+        "kind": "smb_share"
+      },
+      "objects_at_from": 124,
+      "objects_at_to": 124
+    }
+  ],
+  "_evidence_note": "changes and edits trimmed to the first 3 of 0 for size; every other field as served"
+}

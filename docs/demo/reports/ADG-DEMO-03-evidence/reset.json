@@ -1,0 +1,257 @@
+{
+  "ok": true,
+  "dataset": {
+    "key": "null-meridian-v1",
+    "company_name": "Null Meridian",
+    "domain": "nullmeridian.info",
+    "snapshot_date": "2026-10-01",
+    "seed": "null-meridian-v1",
+    "synthetic": true,
+    "description": "Null Meridian: a fictional company founded 2016, ten years of directory and file-server history, scanned three times by ADG in September and October 2026. Every name, SID, host and path is generated from the seed.",
+    "facts": {
+      "Founded": "2016-10-01",
+      "Active employees": "1,800",
+      "Former employees": "640",
+      "Departments": "14",
+      "Groups": "205",
+      "File servers": "33",
+      "Shares": "91",
+      "Folders": "824",
+      "NTFS entries": "4,111",
+      "Scan generations": "3",
+      "Scan runs": "300",
+      "Observations": "41,756"
+    }
+  },
+  "database": "adg_demo",
+  "initialized": false,
+  "generations": {
+    "applied": [
+      "g1",
+      "g2",
+      "g3"
+    ],
+    "baseline": 3,
+    "total": 3,
+    "canonical": true
+  },
+  "runs": {
+    "total": 300,
+    "observations_applied": 41756,
+    "recorded_statuses": {
+      "failed": 2,
+      "partial": 1,
+      "succeeded": 297
+    },
+    "by_generation": [
+      {
+        "name": "g1",
+        "runs": 100,
+        "observations_applied": 13765,
+        "recorded_statuses": {
+          "failed": 1,
+          "succeeded": 99
+        }
+      },
+      {
+        "name": "g2",
+        "runs": 100,
+        "observations_applied": 14052,
+        "recorded_statuses": {
+          "succeeded": 100
+        }
+      },
+      {
+        "name": "g3",
+        "runs": 100,
+        "observations_applied": 13939,
+        "recorded_statuses": {
+          "failed": 1,
+          "partial": 1,
+          "succeeded": 98
+        }
+      }
+    ],
+    "not_succeeded": [
+      {
+        "name": "g1-ntfs-nm-sec-fs01",
+        "collector": "ntfs",
+        "claimed_status": "failed",
+        "recorded_status": "failed"
+      },
+      {
+        "name": "g3-ntfs-nm-fs-03",
+        "collector": "ntfs",
+        "claimed_status": "failed",
+        "recorded_status": "failed"
+      },
+      {
+        "name": "g3-ntfs-nm-mig-fs01",
+        "collector": "ntfs",
+        "claimed_status": "partial",
+        "recorded_status": "partial"
+      }
+    ]
+  },
+  "probes": {
+    "checked": true,
+    "present": 23,
+    "total": 23,
+    "results": [
+      {
+        "kind": "principal",
+        "description": "an active Finance employee",
+        "present": true
+      },
+      {
+        "kind": "ntfs_resource",
+        "description": "A: the Design share root",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "A: sg-share-design-write on the Design root",
+        "present": true
+      },
+      {
+        "kind": "share",
+        "description": "B: the Finance share",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "B: Finance-RW nested in GG_Finance_RW",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "B: GG_Finance_RW on the Finance root",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "C: Engineering-FS on the Engineering root",
+        "present": true
+      },
+      {
+        "kind": "share",
+        "description": "D: the People share",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "D: sg-share-people-write on the People root",
+        "present": true
+      },
+      {
+        "kind": "ntfs_resource",
+        "description": "E: the Archive share root",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "E: deleted Project-Vega still named on Archive\\Projects-2019",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "F: Sales-Ops nested in Revenue-Reporting",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "F: the transferred employee's direct entry on Finance\\Reports\\Revenue",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "G: chain link 1 of 6",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "G: chain link 2 of 6",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "G: chain link 3 of 6",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "G: chain link 4 of 6",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "G: chain link 5 of 6",
+        "present": true
+      },
+      {
+        "kind": "membership",
+        "description": "G: chain link 6 of 6",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "G: Share_Engineering_Modify on Runbooks\\Payments-Legacy",
+        "present": true
+      },
+      {
+        "kind": "ntfs_ace",
+        "description": "H: Proj-Zephyr-RW on Engineering\\Projects\\Zephyr",
+        "present": true
+      },
+      {
+        "kind": "ntfs_resource",
+        "description": "history: Wave-3-Staging survives the partial 2026-10-01 scan of NM-MIG-FS01",
+        "present": true
+      },
+      {
+        "kind": "ntfs_resource",
+        "description": "history: NM-FS-03's folders survive its failed 2026-10-01 scan",
+        "present": true
+      }
+    ]
+  },
+  "risk": {
+    "evaluated_at": "2026-10-01T06:00:00+00:00",
+    "matched": 9666,
+    "opened": 9386,
+    "reopened": 0,
+    "resolved": 0,
+    "complete": true,
+    "truncated": []
+  },
+  "risk_findings_open": 9386,
+  "counts": {
+    "current_principal": 2139,
+    "current_membership_edge": 6224,
+    "current_server": 33,
+    "current_smb_share": 124,
+    "current_smb_ace": 606,
+    "current_ntfs_resource": 826,
+    "current_ntfs_ace": 4117,
+    "object_versions": 14316,
+    "scan_runs": 300,
+    "tombstones_open": 70
+  },
+  "fingerprint": "228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0",
+  "digests": {
+    "current:principal": "b580544a3d76fae008a9e18fd4a30d29a4fd1ba36db7af3184da06547b124a26",
+    "current:membership_edge": "10aa3f796aeff011833de2c88a4987d1fe261f07fed8c02b1ab944334cae051b",
+    "current:server": "5b969787e29308fb3c903320614b4011e8c5e2d737b25d29840dd566694096d2",
+    "current:smb_share": "c52bf0b41c4e7576131d38cd9cf43630fb6fbd693381670f0fb8a4c2cd1ed03e",
+    "current:smb_ace": "4ea8a55e8049808eacf5b7b7b56b9c0f41df3cafcde34311532f5db73a2febbd",
+    "current:ntfs_resource": "1785f3fe5969b2678c38f042bc4979b5dfa8c58b8397707d1607b9a001f95ae6",
+    "current:ntfs_ace": "f0d1ebb2ed751782623aa7bd058f924965261a2c311b649572dd6473f6822740",
+    "object_versions": "7ba7b8697ae1e8e5bbde740c2fc2a5972760e4a4436b90248861ec7cdbc78a33",
+    "scan_runs": "6b929acfc2f6070f21ebe93f401f197b84e8dc1c09f5206e261e292c5bd611a2",
+    "scan_run_scopes": "5c69258a3f03d105fbfe2a1cff1e5d5bc15618244501caf71c701dea3e563c2f",
+    "scan_run_errors": "7ed6c7ef69dedcc4e35a50b19baf9ecd4b4ad5cc2898020949a0fa9a349743cb",
+    "risk_findings": "1507c197517dcb9d46d49d4d2c697ec689ee4a209082dcbab3ebeeca36845fe7"
+  },
+  "duration_seconds": 80.234,
+  "ingest_seconds": 50.48
+}

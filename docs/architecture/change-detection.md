@@ -251,13 +251,24 @@ scope bounds it instead of the clock.
 | `MAX_UNSCOPED_WINDOW` | 400 days | An estate-wide query cannot become a scan of the whole timeline |
 | `SCAN_BUDGET` | 4,000 versions | One feed request cannot walk the timeline looking for matches. When it runs out the response says `scan_exhausted`, so a short page is not read as the end of the data |
 | `SUMMARY_CEILING` | 2,000 changes | A page header cannot cost a classification of a million transitions. Beyond it the counts report themselves as a floor |
-| `COMPARISON_CEILING` | 5,000 objects per side | A comparison reads a bounded set and reports `truncated` |
+| `COMPARISON_CEILING` | 5,000 objects per side | A comparison reads a bounded set. Both sides are cut at the **same** key, everything up to it is compared and nothing after it is: outcome `incomplete`, boundary in `compared_through` (ADG-DEMO-03) |
+| `COMPARISON_WINDOW_MS` | 4,000 ms (caller may ask 1 to 8,000) | A comparison answers inside its interactive window or stops: outcome `timed_out`, no list presented. Checked after the reads, before classification, and between ACL reconstructions. Under the web tier's 10-second request timeout, so the typed answer always arrives first (ADG-DEMO-03) |
 | `MAX_PAGE` | 500 | Matches `app/api/pagination.MAX_LIMIT` |
 
 Queries per feed page: one for the page, one or two for predecessors, up to two for container
 coverage, and one pair of ACL reconstructions per `(container, instant pair)` that has an
 order-only change in it — which collapses to one or two, because a scan renumbers a whole ACL
 at once.
+
+**A comparison's outcome is typed** (ADG-DEMO-03): `complete`, `incomplete` (object ceiling),
+`timed_out` (window) or `cancelled` (the caller disconnected; logged, never delivered). Only
+`complete` is a whole answer. One that did not complete carries `recovery` actions -- retry
+inside the standard window, or compare one kind of object, offered only for kinds that fit the
+ceiling at both instants -- each a real request naming the attempt it recovers from
+(`retry_of`). Container confirmations are answered in one statement for the whole comparison
+rather than one per scan instant; measured on the Null Meridian estate, the bounded estate-wide
+comparison went from 42 statements to 6. See
+[the ADG-DEMO-03 report](../demo/reports/ADG-DEMO-03-report.md).
 
 ---
 

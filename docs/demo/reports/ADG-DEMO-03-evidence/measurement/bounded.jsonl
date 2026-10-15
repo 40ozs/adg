@@ -1,0 +1,2 @@
+{"code": "0cee1a4 (before)", "case": "estate-wide, ceiling 20,000, 25 ms injected per statement", "statements": 452, "wall_ms": 13789, "changes_presented": 546, "outcome": "n/a (untyped)", "stopped_in": null, "web_tier_timeout_ms": 10000}
+{"code": "413ded4 (after)", "case": "estate-wide, ceiling 20,000, 25 ms injected per statement", "statements": 126, "wall_ms": 4240, "changes_presented": 0, "outcome": "timed_out", "stopped_in": "ordering", "web_tier_timeout_ms": 10000}

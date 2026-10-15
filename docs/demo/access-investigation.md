@@ -142,13 +142,14 @@ reset-estate test repeats the original request. Neither ever shows "absent".
 
 ## Not in scope
 
-The following are deferred to ADG-DEMO-03 or later:
+ADG-DEMO-03 added the collection behind the answer: section 6 of the page names the scopes this
+answer reads, whether any is incomplete, and whether that could change the conclusion. See
+[coverage and recovery](coverage-and-recovery.md). Still deferred:
 
-* risk totals and collection-coverage badges;
-* comparison timeouts;
 * SYSTEM-to-computer-account correlation;
 * `NETWORK SERVICE` and `LOCAL SERVICE`.
 
 The current-state rules keep a row until a complete scan proves it gone. Provenance shows
-when each hop was last observed, but the summary does not treat an older observation as
-uncertain. That is collection coverage, also ADG-DEMO-03.
+when each hop was last observed, and section 6 says whether the scope that hop came from is
+current; the summary itself still does not treat an older observation as an open question
+(the answer's own certainty is unchanged by collection context).

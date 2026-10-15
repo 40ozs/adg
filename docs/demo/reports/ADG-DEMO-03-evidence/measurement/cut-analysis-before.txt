@@ -1,0 +1,9 @@
+objects at from: 13765 at to: 14139
+kinds at from: Counter({<ObservationKind.MEMBERSHIP_EDGE: 'membership_edge'>: 6143, <ObservationKind.NTFS_ACE: 'ntfs_ace'>: 3947, <ObservationKind.PRINCIPAL: 'principal'>: 2117, <ObservationKind.NTFS_RESOURCE: 'ntfs_resource'>: 803, <ObservationKind.SMB_ACE: 'smb_ace'>: 598, <ObservationKind.SMB_SHARE: 'smb_share'>: 124, <ObservationKind.SERVER: 'server'>: 33})
+last key from-side: (<ObservationKind.MEMBERSHIP_EDGE: 'membership_edge'>, 'S-1-5-21-3949361974-1583827165-633756269-513->S-1-5-21-3949361974-1583827165-633756269-2468|primary_group')
+last key to-side: (<ObservationKind.MEMBERSHIP_EDGE: 'membership_edge'>, 'S-1-5-21-3949361974-1583827165-633756269-513->S-1-5-21-3949361974-1583827165-633756269-2325|primary_group')
+truncated: changes 145 unchanged 4855 unobs_from 102 unobs_to 102 truncated True
+full: changes 546 unchanged 13588 unobs_from 374 unobs_to 0 truncated False
+changes in truncated result not in full result: 0
+actions truncated: Counter({'added': 102, 'removed': 43})
+actions full: Counter({'added': 343, 'modified': 102, 'removed': 70, 'first_observed': 31})

@@ -1,0 +1,310 @@
+{
+  "at_from": "2026-09-03T06:00:00Z",
+  "at_to": "2026-10-01T06:00:00Z",
+  "scope_target": null,
+  "scope_key": null,
+  "changes": [
+    {
+      "kind": "membership_edge",
+      "key": "S-1-5-21-3949361974-1583827165-633756269-1126->S-1-5-21-3949361974-1583827165-633756269-2434|directory_group_member",
+      "action": "removed",
+      "significance": "security",
+      "direction": "narrowed",
+      "severity": "low",
+      "reasons": [
+        "S-1-5-21-3949361974-1583827165-633756269-2434 left S-1-5-21-3949361974-1583827165-633756269-1126."
+      ],
+      "rule_ids": [
+        "membership.removed"
+      ],
+      "at": "2026-10-01T02:10:00Z",
+      "window": {
+        "after": "2026-09-17T02:01:21Z",
+        "at_or_before": "2026-10-01T02:10:00Z",
+        "is_exact": false,
+        "duration_seconds": 1210119.0
+      },
+      "reconstructed": false,
+      "subject": {
+        "container_kind": "principal",
+        "container_key": "S-1-5-21-3949361974-1583827165-633756269-1126",
+        "related_kind": "principal",
+        "related_key": "S-1-5-21-3949361974-1583827165-633756269-2434"
+      },
+      "before": {
+        "present": true,
+        "valid_from": "2026-09-03T02:01:19Z",
+        "last_seen_at": "2026-09-17T02:01:21Z",
+        "valid_to": "2026-10-01T02:10:00Z",
+        "origin": "observed",
+        "opened_by_run_id": "6be67089-054d-5cb1-8fc3-29668597475b",
+        "last_seen_run_id": "91d24175-3609-550a-9ce6-0489d70aa504",
+        "state": {
+          "edge_key": "S-1-5-21-3949361974-1583827165-633756269-1126->S-1-5-21-3949361974-1583827165-633756269-2434|directory_group_member",
+          "host_key": null,
+          "edge_kind": "directory_group_member",
+          "group_key": "S-1-5-21-3949361974-1583827165-633756269-1126",
+          "group_sid": "S-1-5-21-3949361974-1583827165-633756269-1126",
+          "member_key": "S-1-5-21-3949361974-1583827165-633756269-2434",
+          "member_sid": "S-1-5-21-3949361974-1583827165-633756269-2434",
+          "source_key": "edge|S-1-5-21-3949361974-1583827165-633756269-1126->S-1-5-21-3949361974-1583827165-633756269-2434|directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      },
+      "after": {
+        "present": false,
+        "valid_from": "2026-10-01T02:10:00Z",
+        "last_seen_at": "2026-10-01T02:10:00Z",
+        "valid_to": null,
+        "origin": "observed",
+        "opened_by_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+        "last_seen_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+        "state": null
+      },
+      "deltas": [],
+      "edit": null
+    },
+    {
+      "kind": "membership_edge",
+      "key": "S-1-5-21-3949361974-1583827165-633756269-1147->S-1-5-21-3949361974-1583827165-633756269-3226|directory_group_member",
+      "action": "removed",
+      "significance": "security",
+      "direction": "narrowed",
+      "severity": "low",
+      "reasons": [
+        "S-1-5-21-3949361974-1583827165-633756269-3226 left S-1-5-21-3949361974-1583827165-633756269-1147."
+      ],
+      "rule_ids": [
+        "membership.removed"
+      ],
+      "at": "2026-10-01T02:10:00Z",
+      "window": {
+        "after": "2026-09-17T02:01:19Z",
+        "at_or_before": "2026-10-01T02:10:00Z",
+        "is_exact": false,
+        "duration_seconds": 1210121.0
+      },
+      "reconstructed": false,
+      "subject": {
+        "container_kind": "principal",
+        "container_key": "S-1-5-21-3949361974-1583827165-633756269-1147",
+        "related_kind": "principal",
+        "related_key": "S-1-5-21-3949361974-1583827165-633756269-3226"
+      },
+      "before": {
+        "present": true,
+        "valid_from": "2026-09-03T02:01:18Z",
+        "last_seen_at": "2026-09-17T02:01:19Z",
+        "valid_to": "2026-10-01T02:10:00Z",
+        "origin": "observed",
+        "opened_by_run_id": "6be67089-054d-5cb1-8fc3-29668597475b",
+        "last_seen_run_id": "91d24175-3609-550a-9ce6-0489d70aa504",
+        "state": {
+          "edge_key": "S-1-5-21-3949361974-1583827165-633756269-1147->S-1-5-21-3949361974-1583827165-633756269-3226|directory_group_member",
+          "host_key": null,
+          "edge_kind": "directory_group_member",
+          "group_key": "S-1-5-21-3949361974-1583827165-633756269-1147",
+          "group_sid": "S-1-5-21-3949361974-1583827165-633756269-1147",
+          "member_key": "S-1-5-21-3949361974-1583827165-633756269-3226",
+          "member_sid": "S-1-5-21-3949361974-1583827165-633756269-3226",
+          "source_key": "edge|S-1-5-21-3949361974-1583827165-633756269-1147->S-1-5-21-3949361974-1583827165-633756269-3226|directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      },
+      "after": {
+        "present": false,
+        "valid_from": "2026-10-01T02:10:00Z",
+        "last_seen_at": "2026-10-01T02:10:00Z",
+        "valid_to": null,
+        "origin": "observed",
+        "opened_by_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+        "last_seen_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+        "state": null
+      },
+      "deltas": [],
+      "edit": null
+    },
+    {
+      "kind": "membership_edge",
+      "key": "S-1-5-21-3949361974-1583827165-633756269-1147->S-1-5-21-3949361974-1583827165-633756269-3259|directory_group_member",
+      "action": "removed",
+      "significance": "security",
+      "direction": "narrowed",
+      "severity": "low",
+      "reasons": [
+        "S-1-5-21-3949361974-1583827165-633756269-3259 left S-1-5-21-3949361974-1583827165-633756269-1147."
+      ],
+      "rule_ids": [
+        "membership.removed"
+      ],
+      "at": "2026-10-01T02:10:00Z",
+      "window": {
+        "after": "2026-09-17T02:01:19Z",
+        "at_or_before": "2026-10-01T02:10:00Z",
+        "is_exact": false,
+        "duration_seconds": 1210121.0
+      },
+      "reconstructed": false,
+      "subject": {
+        "container_kind": "principal",
+        "container_key": "S-1-5-21-3949361974-1583827165-633756269-1147",
+        "related_kind": "principal",
+        "related_key": "S-1-5-21-3949361974-1583827165-633756269-3259"
+      },
+      "before": {
+        "present": true,
+        "valid_from": "2026-09-03T02:01:18Z",
+        "last_seen_at": "2026-09-17T02:01:19Z",
+        "valid_to": "2026-10-01T02:10:00Z",
+        "origin": "observed",
+        "opened_by_run_id": "6be67089-054d-5cb1-8fc3-29668597475b",
+        "last_seen_run_id": "91d24175-3609-550a-9ce6-0489d70aa504",
+        "state": {
+          "edge_key": "S-1-5-21-3949361974-1583827165-633756269-1147->S-1-5-21-3949361974-1583827165-633756269-3259|directory_group_member",
+          "host_key": null,
+          "edge_kind": "directory_group_member",
+          "group_key": "S-1-5-21-3949361974-1583827165-633756269-1147",
+          "group_sid": "S-1-5-21-3949361974-1583827165-633756269-1147",
+          "member_key": "S-1-5-21-3949361974-1583827165-633756269-3259",
+          "member_sid": "S-1-5-21-3949361974-1583827165-633756269-3259",
+          "source_key": "edge|S-1-5-21-3949361974-1583827165-633756269-1147->S-1-5-21-3949361974-1583827165-633756269-3259|directory_group_member",
+          "member_kind": "user",
+          "is_foreign_security_principal": false
+        }
+      },
+      "after": {
+        "present": false,
+        "valid_from": "2026-10-01T02:10:00Z",
+        "last_seen_at": "2026-10-01T02:10:00Z",
+        "valid_to": null,
+        "origin": "observed",
+        "opened_by_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+        "last_seen_run_id": "9366fb1b-09d6-5c00-b0a9-9d5eff35231a",
+        "state": null
+      },
+      "deltas": [],
+      "edit": null
+    }
+  ],
+  "edits": [],
+  "unchanged": 4855,
+  "unobserved_at_from": 102,
+  "unobserved_at_to": 0,
+  "truncated": true,
+  "summary": {
+    "window_from": "2026-09-03T06:00:00Z",
+    "window_to": "2026-10-01T06:00:00Z",
+    "total": 145,
+    "returned": 145,
+    "excluded": 0,
+    "highest_severity": "medium",
+    "reconstructed": 0,
+    "truncated": true,
+    "by_action": {
+      "added": 102,
+      "removed": 43
+    },
+    "by_significance": {
+      "security": 145
+    },
+    "by_severity": {
+      "medium": 102,
+      "low": 43
+    },
+    "by_kind": {
+      "membership_edge": 145
+    }
+  },
+  "comparison_id": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+  "outcome": "incomplete",
+  "complete": false,
+  "recovered": false,
+  "retry_of": "f3bca1bb-d968-41ce-8ac1-ea5ddc47189d",
+  "stopped_in": null,
+  "compared_through": {
+    "kind": "membership_edge",
+    "key": "S-1-5-21-3949361974-1583827165-633756269-513->S-1-5-21-3949361974-1583827165-633756269-2325|primary_group"
+  },
+  "requested_scope": {
+    "target": null,
+    "key": null,
+    "kinds": []
+  },
+  "window_ms": 4000,
+  "elapsed_ms": 254,
+  "objects_per_side": 5000,
+  "objects_read_from": 4898,
+  "objects_read_to": 5000,
+  "differences_found": 145,
+  "recovery": [
+    {
+      "action": "narrow_kind",
+      "label": "Compare only folder permission entries",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+        "kind": "ntfs_ace"
+      },
+      "objects_at_from": 3947,
+      "objects_at_to": 4124
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only folders",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+        "kind": "ntfs_resource"
+      },
+      "objects_at_from": 803,
+      "objects_at_to": 827
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only identities",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+        "kind": "principal"
+      },
+      "objects_at_from": 2117,
+      "objects_at_to": 2148
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only servers",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+        "kind": "server"
+      },
+      "objects_at_from": 33,
+      "objects_at_to": 33
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only share permission entries",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+        "kind": "smb_ace"
+      },
+      "objects_at_from": 598,
+      "objects_at_to": 609
+    },
+    {
+      "action": "narrow_kind",
+      "label": "Compare only shares",
+      "parameters": {
+        "time_budget_ms": "4000",
+        "retry_of": "ccc3c45d-71e9-480e-821b-9ef0b8b5a336",
+        "kind": "smb_share"
+      },
+      "objects_at_from": 124,
+      "objects_at_to": 124
+    }
+  ],
+  "_evidence_note": "changes and edits trimmed to the first 3 of 145 for size; every other field as served"
+}
