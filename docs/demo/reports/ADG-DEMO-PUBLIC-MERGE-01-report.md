@@ -58,9 +58,11 @@ The fast-forward carries the whole validated demo line, not only its documentati
 | --- | --- | --- |
 | [76](https://github.com/40ozs/adg/actions/runs/38689355101) | `744c2ef`, the candidate itself | **success, every job**, completed 06:28 UTC. Pending when DEMO-PUBLIC-01 ended; resolved here. The jobs were Backend (lint, type check, unit tests, and database tests 05:58:30–06:28:23), Frontend (lint, types, tests, build), Collector (Pester, `windows-latest`) and Docker Compose configuration |
 | [75](https://github.com/40ozs/adg/actions/runs/38686166439) | `e535cd2`, same code and contract; differs only in the DEMO-PUBLIC-01 report | success, every job |
-| [77](https://github.com/40ozs/adg/actions/runs/38751393080) | `744c2ef` on `main`, triggered by this push | **in progress** when this report was first committed. Frontend, Collector (Pester) and Docker Compose had passed; the backend job (database suite) was still running. The result is recorded below when it finishes |
+| [77](https://github.com/40ozs/adg/actions/runs/38751393080) | `744c2ef` on `main`, triggered by this push | **success, every job**, completed 15:00:51 UTC. The jobs were Backend (lint, type check, unit and database tests, 14:26:25–15:00:50), Frontend (lint, types, tests, build), Collector (Pester) and Docker Compose configuration |
 
-`main` was pushed only after run 76 had passed on the exact commit.
+`main` was pushed only after run 76 had passed on the exact commit. Run 77 confirms the same
+tree on `main` itself. Run 78 (`04390d7`, this report's first version on
+`claude/intelligent-fermi-nxp2jw`) also passed every job.
 
 ## 3. Ancestry
 
