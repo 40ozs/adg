@@ -2,12 +2,12 @@
 
 ## 1. Verdict
 
-**`ADG_NEXT16_MERGED_WITH_LIMITATIONS`** — *provisional until CI run 89 on `main` completes (§12)*
+**`ADG_NEXT16_MERGED_WITH_LIMITATIONS`**
 
 `main` moved from `32da1ae` to **`0e770afdd872f5d0dd9b430ef8f7d238f7c9f1ff`**, the head of
 `claude/gallant-turing-aj7rf1`, by `git merge --ff-only`. No merge commit, squash, rebase or
 force-push. Every gate was re-checked from the repository before the merge (§3–§5). CI run
-**89** on `main` at that exact SHA is recorded in §12.
+**89** on `main` at that exact SHA passed every job (§12).
 
 The merge itself is complete. The limitations are documented ones, not defects of the merge:
 
@@ -114,7 +114,7 @@ origin/main = 0e770afdd872f5d0dd9b430ef8f7d238f7c9f1ff
 ## 6. Ending `main`
 
 **`0e770afdd872f5d0dd9b430ef8f7d238f7c9f1ff`**: the exact SHA CI run 88 proved on the branch,
-and CI run 89 runs on `main` (§12). This report is **not** on `main`; it is on the
+and CI run 89 proved on `main` (§12). This report is **not** on `main`; it is on the
 documentation-only follow-up branch, so `main` stays the CI-proven integration SHA.
 
 ---
@@ -200,10 +200,32 @@ Deploying `main` needs no migration beyond what `32da1ae` already required.
 Run **89** ([38822842600](https://github.com/40ozs/adg/actions/runs/38822842600)), triggered
 by the push of `main` to `0e770afdd872f5d0dd9b430ef8f7d238f7c9f1ff` (created 23:19:07 UTC):
 
-**In progress at the time of this commit.** Docker Compose configuration: **success**
-(23:19:12–23:19:15 UTC). Frontend, Collector (Pester) and Backend were running; the backend's
-lint and type-check steps had passed. The final per-job results are recorded by a follow-up
-commit to this report.
+**Completed 23:53:07 UTC: success, every job.**
+
+| Job | Result |
+| --- | --- |
+| Frontend (install, lint, types, tests, build) | **success** (23:19:11–23:20:52 UTC): 38 test files, **1,361 passed**; `▲ Next.js 16.4.1 (webpack)`, compiled successfully |
+| Collector (Pester, `windows-latest`) | **success** (23:19:11–23:20:56 UTC): **1,049 passed, 0 failed, 1 skipped**, of 1,050 |
+| Docker Compose configuration | **success** (23:19:11–23:19:17 UTC) |
+| Backend: lint, format, `mypy` | **success**: ruff clean, 412 files formatted, `mypy` clean over 411 source files |
+| Backend: unit tests | **success**: **6,121 passed, 12 skipped, 1,273 deselected** (23:19:59–23:23:01 UTC) |
+| Backend: database tests (PostgreSQL) | **success**: **1,272 passed, 1 xfailed**, 6,133 deselected, in 29m56s (23:23:02–23:53:01 UTC) |
+
+Every count equals run 87 (on `1309146`) and run 80 (on `501c136`). The xfail is the
+pre-existing one in `test_access_performance.py`. The backend gate lines, verbatim from the job
+log:
+
+```
+2026-10-15T23:19:42.5910018Z ##[group]Run python -m ruff check .
+2026-10-15T23:19:42.7310553Z All checks passed!
+2026-10-15T23:19:42.8631992Z 412 files already formatted
+2026-10-15T23:19:42.8674313Z ##[group]Run python -m mypy app tests
+2026-10-15T23:19:59.0340097Z Success: no issues found in 411 source files
+2026-10-15T23:19:59.0744194Z ##[group]Run python -m pytest -q -m "not smoke"
+2026-10-15T23:23:01.4102014Z 6121 passed, 12 skipped, 1273 deselected, 7 warnings in 178.37s (0:02:58)
+2026-10-15T23:23:02.4491169Z ##[group]Run python -m pytest -q -m smoke
+2026-10-15T23:53:01.5906253Z 1272 passed, 6133 deselected, 1 xfailed, 67 warnings in 1796.62s (0:29:56)
+```
 
 ---
 
