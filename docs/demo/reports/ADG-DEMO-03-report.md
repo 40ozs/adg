@@ -84,7 +84,7 @@ The walkthrough is in the demo guide and in [`docs/demo/coverage-and-recovery.md
 | Worktree | `/home/user/adg`, the session's clone; no separate worktree kept (two throwaway worktrees for measurement and trial merges were removed) |
 | Starting SHA | `0cee1a49aca7bf5e7064baf2db9369bd233442c4` (head of `claude/serene-mayer-itiwyi`, ADG-DEMO-02's report commit) |
 | Prerequisite | ADG-DEMO-02 code `6196eaa`, verdict `READY_FOR_ADG_DEMO_03_WITH_LIMITATIONS`; ADG-DEMO-01 `c37ca55` |
-| Code SHA (all code and tests) | `c709a51` |
+| Code SHA (all code and tests) | `95f47ae` |
 | Ending SHA | the commit adding this report (`git log -1 origin/claude/tender-curie-vw3iss`; stated in the final response) |
 | `origin/main` | `1ab01a2` (unchanged; nothing merged to it) |
 
@@ -97,8 +97,10 @@ Commits, in order:
 | `319acb7` | Put coverage beside the numbers, and a recovery path beside a comparison (frontend) |
 | `413ded4` | Show a comparison running on the link that started it (§6.5) |
 | `6e1bc00` | Record a link's prefetch in the demo guide test the way parallel branches do (§11) |
-| `c709a51` | Say the coverage read is at most five statements (docstrings only) |
-| report | this report, evidence, walkthrough doc, architecture/env docs |
+| `c709a51` | Say the coverage read is at most five statements (docstrings only — and, unnoticed, the published OpenAPI description of the coverage route; §10.6) |
+| `d4a7a19` | Report, evidence, walkthrough and docs (first draft of this report) |
+| `95f47ae` | Regenerate the OpenAPI snapshot for that description |
+| report | this report's final results |
 
 **Branch name.** This session's repository policy allows pushes only to
 `claude/tender-curie-vw3iss`. The branch was reset to the required starting SHA before any
@@ -548,7 +550,7 @@ not a product failure.
 | New: `TestTheCoverageAndRecoveryDemo` (5) + DEMO-01/02 classes (23), real reset | **28 passed** |
 | Existing related: `test_change_comparison`, `test_change_feed`, `test_changes_api`, `test_query_cost`, `test_risk_findings`, `test_collection_status_api`, `test_operations_api` | **157 passed** |
 | `test_system_mapping_api` + `test_explanation_api` + `test_access_paths_api` | **71 passed** |
-| `pytest -m smoke` (full DB suite) | *running at the time of this commit; recorded in the follow-up commit* |
+| `pytest -m smoke` (full DB suite), on `319acb7` (backend identical to the code head but for two docstrings) | **1,272 passed, 1 xfailed**, exit 0, 31m48s (ADG-DEMO-02: 1,236 passed, 1 xfailed; +36 new; the xfail is the same pre-existing one). Includes `TestRepeatability` (a second reset reproducing the fingerprint), the history replay, and every SYSTEM and investigation class |
 
 ### 10.3 Frontend
 
@@ -569,8 +571,9 @@ not a product failure.
 * Explanation contract **stays 1.1**: `CONTRACT_VERSION` untouched; `python -m
   app.contracts.derived` regenerates the three derived schemas byte-identical.
 * `docs/contracts/v1/openapi.json` and `openapi.demo.json` regenerated from the application
-  (`python -m app.contracts.openapi`) at each code commit, so every commit's snapshot test
-  passes. Semantic diff against the start: **11 schemas added, none removed; properties added
+  (`python -m app.contracts.openapi`) at each code commit. The exception is `c709a51`, whose
+  docstring change altered a published description without a regeneration; `95f47ae`
+  regenerated it (§10.6), and the snapshot tests pass on the code head. Semantic diff against the start: **11 schemas added, none removed; properties added
   to `ComparisonResponse` and `RiskSummaryResponse`, none removed; one path added**
   (`/api/v1/collection/coverage`); the demo document adds `ComparisonSeedView` and
   `DemoView.comparisons`. No stale generated contract is committed: the snapshot tests compare
@@ -609,8 +612,20 @@ GitHub Actions on `claude/tender-curie-vw3iss`:
   Backend (lint, types, unit, **database tests** 23:39–00:03 UTC), Frontend (lint, types,
   tests, build), Collector (Pester, `windows-latest`), Docker Compose configuration.
 * **Run 69** on `413ded4` (frontend included) ([run](https://github.com/40ozs/adg/actions/runs/38658153994)):
-  frontend, collector and compose jobs **passed**; backend unit tests **passed**; database tests *running at the time of this commit*.
-* **Run 70** on the code head `c709a51` ([run](https://github.com/40ozs/adg/actions/runs/38658840603)): *running at the time of this commit*.
+  *database tests still running at this commit (frontend, collector, compose and backend unit jobs passed); final result recorded in the next commit.*
+* **Runs 70 and 71 failed** — on `c709a51` ([run](https://github.com/40ozs/adg/actions/runs/38658840603))
+  and on the first report commit `d4a7a19` ([run](https://github.com/40ozs/adg/actions/runs/38658922806)):
+  1 of 6,133 unit tests, `tests/contracts/test_openapi_snapshot.py::test_the_snapshot_is_current`.
+  `c709a51` changed a route docstring that FastAPI publishes as the coverage operation's
+  description, so the committed `openapi.json` no longer matched the application; the local
+  gates had been run before that commit and were not rerun after it. Reproduced locally (same
+  failure), fixed by regenerating the artifact (`95f47ae`), and every backend gate plus the
+  frontend contract test rerun green before pushing. A real failure in this change, not a
+  flake; no test was skipped or changed to pass.
+* **Run 72** on the code head `95f47ae` ([run](https://github.com/40ozs/adg/actions/runs/38659592991)):
+  *running at this commit; final result recorded in the next commit.*
+* The final report commit triggers its own run (documentation only); its result is in the
+  final response, not here.
 
 ---
 
@@ -711,7 +726,7 @@ already in the workflow file).
 * **DEMO-PUBLIC-01 should start from:** the head of `claude/tender-curie-vw3iss` that contains
   this report (`git log -1 origin/claude/tender-curie-vw3iss`; the exact SHA is in the final
   response).
-* **Code and tests, all gates above:** `c709a51` (gates were run on `6e1bc00`; `c709a51` changes two docstrings only). The report commit adds only documentation
+* **Code and tests, all gates above:** `95f47ae`. The local gates ran on `6e1bc00`/`319acb7`; `c709a51` and `95f47ae` change two docstrings and the regenerated contract, after which lint, format, mypy, the full unit suite, `tests/contracts` and the frontend contract test were rerun and passed. The report commit adds only documentation
   and `ADG-DEMO-03-evidence/`.
 * **Before a public deployment:** decide `ADG_EXPECTED_COLLECTORS` for any non-demo estate;
   re-measure the comparison window on the hosted database (§12 env 1); add an Alembic merge
