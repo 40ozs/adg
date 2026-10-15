@@ -1,0 +1,145 @@
+# ADG-NEXT16-POST-DEMO-INTEGRATION-01: candidate overlap and trial merges
+# Generated 2026-10-15T17:43:53Z in the integration session. Write-free: git merge-tree --write-tree.
+
+## Refs
+main                                     32da1ae  merge-base with main 32da1ae  (main-only/branch-only 0/0)
+claude/beautiful-knuth-3zruji            aff70e8  merge-base with main 744c2ef  (main-only/branch-only 2/3)
+fix/ADG-NEXT16-REACT418-01               04663bc  merge-base with main 1ab01a2  (main-only/branch-only 26/19)
+integration/ADG-NEXT16-UI-02             3e26e4a  merge-base with main 1ab01a2  (main-only/branch-only 26/26)
+integration/ADG-UI-EDGE-01               4212f13  merge-base with main 1ab01a2  (main-only/branch-only 26/17)
+deploy/ADG-FREE-STAGING-01               3e26e4a  merge-base with main 1ab01a2  (main-only/branch-only 26/26)
+deploy/ADG-FREE-EDGE-SSR-03              57bbbaa  merge-base with main 1ab01a2  (main-only/branch-only 26/9)
+fix/ADG-UI-COMPACT-IDENTITY-01           f50e8f2  merge-base with main 1ab01a2  (main-only/branch-only 26/20)
+
+## Ancestry
+fix/ADG-NEXT16-REACT418-01 IS an ancestor of integration/ADG-NEXT16-UI-02
+66ca201 IS an ancestor of fix/ADG-NEXT16-REACT418-01
+66ca201 is NOT an ancestor of claude/beautiful-knuth-3zruji (it is cherry-picked there as af94e2e)
+
+## Trial merges into main (32da1ae)
+### fix/ADG-NEXT16-REACT418-01
+conflict: frontend/app/identities/principal/page.tsx
+files the merge would change vs main: 105
+### integration/ADG-NEXT16-UI-02
+conflict: frontend/app/identities/principal/page.tsx
+files the merge would change vs main: 109
+### claude/beautiful-knuth-3zruji
+files the merge would change vs main: 19
+
+## Files the Next 16 line changed since 1ab01a2, with the commits that changed them; BOTH = main changed the file too
+-     .dockerignore  [cedca60 ]
+-     .github/workflows/cloudflare-staging.yml  [6b69fe3 5617e1e 643da21 13719fb dc6e310 9b64b6a cedca60 ]
+-     backend/app/api/graph.py  [98a9a79 61fedb8 ]
+-     backend/app/main.py  [14ed8fa ]
+-     backend/app/origin_gate.py  [13719fb 9b64b6a ]
+-     backend/app/repositories/__init__.py  [61fedb8 ]
+-     backend/app/repositories/membership.py  [61fedb8 ]
+-     backend/app/simulation/repositories.py  [861a11b ]
+-     backend/tests/db/test_access_api.py  [61fedb8 ]
+-     backend/tests/db/test_graph_api.py  [f50e8f2 98a9a79 61fedb8 ]
+-     backend/tests/db/test_query_cost.py  [61fedb8 ]
+-     backend/tests/demo_mode/test_boundary.py  [14ed8fa ]
+-     backend/tests/history/test_repository_coverage.py  [861a11b ]
+-     backend/tests/simulation/test_repository_coverage.py  [861a11b ]
+-     backend/tests/test_origin_gate.py  [9b64b6a ]
+-     docker/Dockerfile.render  [df6556f 5617e1e ]
+-     docs/architecture/demo-mode.md  [643da21 cedca60 ]
+-     docs/deployment/cloudflare-demo.md  [6b69fe3 57bbbaa 643da21 cedca60 ]
+-     docs/handoffs/adg-cloudflare-demo-01.md  [643da21 cedca60 ]
+-     docs/handoffs/adg-free-edge-ssr-03.md  [57bbbaa ]
+-     docs/handoffs/adg-free-public-staging-02.md  [57bbbaa 643da21 ]
+-     docs/handoffs/adg-next16-react418-01.md  [3e26e4a 04663bc f5005b1 ]
+-     docs/handoffs/adg-next16-ui-integration-02.md  [3e26e4a ]
+-     docs/handoffs/adg-ui-update-01.md  [3e26e4a f50e8f2 0a66322 6b69fe3 ]
+-     frontend/.gitignore  [5617e1e cedca60 ]
+-     frontend/app/collectors/page.tsx  [a5cdf88 ]
+-     frontend/app/globals.css  [33cca01 98a9a79 4f33e08 552bcb8 ]
+-     frontend/app/governance/items/[itemId]/page.tsx  [4f33e08 ]
+-     frontend/app/identities/groups/page.tsx  [552bcb8 ]
+-     frontend/app/identities/page.tsx  [552bcb8 ]
+-     frontend/app/identities/principal/[key]/[[...view]]/page.tsx  [552bcb8 ]
+-     frontend/app/identities/principal/[key]/data.ts  [552bcb8 ]
+-     frontend/app/identities/principal/[key]/layout.tsx  [a5cdf88 552bcb8 ]
+-     frontend/app/identities/users/page.tsx  [552bcb8 ]
+-     frontend/app/login/page.tsx  [a5cdf88 ]
+-     frontend/app/resources/page.tsx  [552bcb8 ]
+-     frontend/app/resources/server/page.tsx  [4f33e08 a5cdf88 ]
+-     frontend/app/risks/alerts/page.tsx  [a5cdf88 ]
+-     frontend/app/search/page.tsx  [33cca01 4f33e08 a5cdf88 ]
+-     frontend/app/settings/page.tsx  [a5cdf88 ]
+-     frontend/app/status/page.tsx  [a5cdf88 ]
+-     frontend/cloudflare/assets.mjs  [5617e1e ]
+-     frontend/cloudflare/checks/browser.mjs  [13719fb cedca60 ]
+-     frontend/cloudflare/checks/navigation.mjs  [98a9a79 371b90e ]
+-     frontend/cloudflare/checks/null_meridian_fingerprint.py  [cedca60 ]
+-     frontend/cloudflare/checks/smoke.mjs  [6b69fe3 5617e1e 13719fb 9b64b6a cedca60 ]
+-     frontend/cloudflare/environment.ts  [5617e1e 13719fb 9b64b6a cedca60 ]
+-     frontend/cloudflare/routing.ts  [5617e1e 13719fb 9b64b6a cedca60 ]
+-     frontend/cloudflare/tsconfig.json  [cedca60 ]
+-     frontend/cloudflare/worker.ts  [5617e1e 13719fb 9b64b6a cedca60 ]
+-     frontend/components/DecisionForm.tsx  [4f33e08 a5cdf88 ]
+-     frontend/components/DirectoryTabs.tsx  [552bcb8 ]
+-     frontend/components/EffectiveAccess.tsx  [4f33e08 552bcb8 ]
+-     frontend/components/ExplanationExplorer.tsx  [a5cdf88 552bcb8 ]
+-     frontend/components/Facts.tsx  [33cca01 4f33e08 ]
+-     frontend/components/FilterToggle.tsx  [98a9a79 ]
+-     frontend/components/Governance.tsx  [4f33e08 a5cdf88 ]
+-     frontend/components/PrincipalDirectory.tsx  [33cca01 98a9a79 4f33e08 552bcb8 ]
+-     frontend/components/PrincipalViewTabs.tsx  [552bcb8 ]
+-     frontend/components/RawAcl.tsx  [552bcb8 ]
+-     frontend/components/Risks.tsx  [4f33e08 a5cdf88 ]
+-     frontend/components/Simulation.tsx  [4f33e08 a5cdf88 552bcb8 ]
+-     frontend/components/SimulationDetail.tsx  [4f33e08 a5cdf88 ]
+-     frontend/components/SortableTable.tsx  [4f33e08 a5cdf88 552bcb8 ]
+-     frontend/components/Watches.tsx  [4f33e08 a5cdf88 ]
+-     frontend/eslint.config.mjs  [66ca201 5617e1e cedca60 ]
+-     frontend/lib/auth/current.ts  [552bcb8 ]
+-     frontend/lib/sort.ts  [552bcb8 ]
+-     frontend/next.config.mjs  [df6556f 5617e1e ]
+-     frontend/package-lock.json  [66ca201 5617e1e 9b64b6a cedca60 ]
+-     frontend/package.json  [66ca201 5617e1e 9b64b6a cedca60 ]
+-     frontend/render/gate.ts  [5617e1e ]
+-     frontend/tests/alerts-page.test.tsx  [552bcb8 ]
+-     frontend/tests/changes-views.test.tsx  [552bcb8 ]
+-     frontend/tests/cloudflare/environment.test.ts  [5617e1e 13719fb 9b64b6a cedca60 ]
+-     frontend/tests/cloudflare/routing.test.ts  [5617e1e 13719fb 9b64b6a cedca60 ]
+-     frontend/tests/collectors-page.test.tsx  [a5cdf88 552bcb8 ]
+-     frontend/tests/components.test.tsx  [552bcb8 ]
+-     frontend/tests/demo-indicator.test.tsx  [552bcb8 ]
+-     frontend/tests/directory.test.tsx  [33cca01 98a9a79 4f33e08 552bcb8 ]
+-     frontend/tests/explanation-page.test.tsx  [552bcb8 ]
+-     frontend/tests/explanation-views.test.tsx  [33cca01 4f33e08 552bcb8 ]
+-     frontend/tests/governance-views.test.tsx  [552bcb8 ]
+-     frontend/tests/identity.test.ts  [552bcb8 ]
+-     frontend/tests/pages.test.tsx  [33cca01 4f33e08 552bcb8 ]
+-     frontend/tests/render/gate.test.ts  [5617e1e ]
+-     frontend/tests/simulation-views.test.tsx  [552bcb8 ]
+-     frontend/tests/simulations-page.test.tsx  [552bcb8 ]
+-     frontend/tests/sort.test.ts  [552bcb8 ]
+-     frontend/tests/sortable-table.test.tsx  [552bcb8 ]
+-     frontend/tests/views.test.tsx  [33cca01 4f33e08 552bcb8 ]
+-     frontend/tsconfig.json  [66ca201 5617e1e cedca60 ]
+-     frontend/wrangler.jsonc  [5617e1e 13719fb 9b64b6a cedca60 ]
+BOTH  README.md  [643da21 cedca60 ]
+BOTH  backend/app/api/access.py  [61fedb8 ]
+BOTH  backend/app/services/access.py  [61fedb8 ]
+BOTH  backend/tests/api/test_authorization.py  [61fedb8 ]
+BOTH  docs/contracts/v1/derived/access-explanation.schema.json  [61fedb8 ]
+BOTH  docs/contracts/v1/derived/resource-impact.schema.json  [61fedb8 ]
+BOTH  docs/contracts/v1/openapi.json  [98a9a79 61fedb8 ]
+BOTH  frontend/app/identities/principal/page.tsx  [552bcb8 ]
+BOTH  frontend/components/Explanation.tsx  [4f33e08 a5cdf88 ]
+BOTH  frontend/components/Identity.tsx  [33cca01 4f33e08 552bcb8 ]
+BOTH  frontend/lib/api/adg.ts  [98a9a79 552bcb8 ]
+BOTH  frontend/lib/contracts.ts  [552bcb8 ]
+BOTH  frontend/lib/identity.ts  [4f33e08 552bcb8 ]
+BOTH  frontend/tests/contracts.test.ts  [552bcb8 ]
+BOTH  frontend/tests/demo-guide.test.tsx  [552bcb8 ]
+BOTH  frontend/tests/risks-page.test.tsx  [552bcb8 ]
+
+## The integrated change (main..HEAD at code head 3524a02)
+ frontend/eslint.config.mjs |   8 +-
+ frontend/package-lock.json | 634 ++++++++++++++++++++++++++-------------------
+ frontend/package.json      |  15 +-
+ frontend/tsconfig.json     |   4 +-
+ 4 files changed, 384 insertions(+), 277 deletions(-)

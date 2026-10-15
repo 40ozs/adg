@@ -1,0 +1,55 @@
+== n15-direct: 10 runs
+   full loads 210; with #418 1 (0.5%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 1 of 10
+   #418 by page: {'cold /demo': 1}
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n15-l100: 10 runs
+   full loads 210; with #418 0 (0.0%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 0 of 10
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n16-direct: 10 runs
+   full loads 210; with #418 0 (0.0%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 0 of 10
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n16-l100: 10 runs
+   full loads 210; with #418 0 (0.0%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 0 of 10
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n15-chunk40: 10 runs
+   full loads 450; with #418 40 (8.9%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 10 of 10
+   readyState at report (hook): {'loading': 40}
+   #418 by page: {'reload /identities': 8, 'reload /demo': 8, 'cold /demo': 4, 'cold /identities': 3, 'reload /access/investigate': 3, 'reload-first /demo': 3, 'cold-390 /demo': 3, 'cold /access/investigate': 2, 'reload-first /identities': 2, 'reload-first /access/investigate': 2, 'cold-390 /access/investigate': 1, 'cold /resources': 1}
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n15-rate: 10 runs
+   full loads 450; with #418 50 (11.1%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 10 of 10
+   readyState at report (hook): {'loading': 20, 'complete': 30}
+   #418 by page: {'reload /': 9, 'reload /demo': 7, 'cold /demo': 5, 'cold /identities/principal': 4, 'cold-390 /demo': 4, 'reload-first /access/investigate': 3, 'cold-390 /access/investigate': 3, 'reload-first /demo': 2, 'reload /access/investigate': 2, 'cold /access/investigate': 2, 'reload /identities': 2, 'cold /identities': 2, 'cold /search': 2, 'cold /status': 1, 'reload-first /': 1, 'cold /resources': 1}
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n16-chunk40: 10 runs
+   full loads 450; with #418 0 (0.0%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 0 of 10
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n16-rate: 10 runs
+   full loads 450; with #418 0 (0.0%)
+   client-side navigations 100 (same document 100); with #418 0
+   runs with any #418: 0 of 10
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n16clean-rate: 3 runs
+   full loads 135; with #418 0 (0.0%)
+   client-side navigations 30 (same document 30); with #418 0
+   runs with any #418: 0 of 3
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== n16clean-chunk40: 3 runs
+   full loads 135; with #418 0 (0.0%)
+   client-side navigations 30 (same document 30); with #418 0
+   runs with any #418: 0 of 3
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0

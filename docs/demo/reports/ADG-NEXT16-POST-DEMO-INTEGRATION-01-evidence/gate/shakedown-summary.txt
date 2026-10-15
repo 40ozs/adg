@@ -1,0 +1,26 @@
+== shakedown-next16-direct: 1 runs
+   full loads 21; with #418 0 (0.0%)
+   client-side navigations 10 (same document 4); with #418 0
+   runs with any #418: 0 of 1
+   other application errors 0; failed steps 6; HTTP >= 400 0; 390px overflow 0
+     - explanation -> demo (nav): page.waitForURL: Timeout 30000ms exceeded.
+     - demo -> risk totals: page.waitForURL: Timeout 30000ms exceeded.
+     - risks -> demo (nav): page.waitForURL: Timeout 30000ms exceeded.
+     - demo -> drill (timed_out): page.waitForURL: Timeout 30000ms exceeded.
+     - drill -> retry (incomplete): page.waitForURL: Timeout 30000ms exceeded.
+== shakedown2-next16-direct: 1 runs
+   full loads 21; with #418 0 (0.0%)
+   client-side navigations 10 (same document 10); with #418 0
+   runs with any #418: 0 of 1
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== shakedown-n15-stream100: 1 runs
+   full loads 21; with #418 0 (0.0%)
+   client-side navigations 10 (same document 10); with #418 0
+   runs with any #418: 0 of 1
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
+== shakedown-v2-n15-rate: 1 runs
+   full loads 45; with #418 6 (13.3%)
+   client-side navigations 10 (same document 10); with #418 0
+   runs with any #418: 1 of 1
+   #418 by page: {'reload /access/investigate': 2, 'cold /access/investigate': 1, 'cold /collectors': 1, 'cold /resources': 1, 'reload /': 1}
+   other application errors 0; failed steps 0; HTTP >= 400 0; 390px overflow 0
