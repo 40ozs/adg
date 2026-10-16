@@ -1,0 +1,82 @@
+{
+  "base": "https://adg-demo-staging.d-walkes.workers.dev",
+  "results": [
+    {
+      "name": "sign in as the development auditor",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "SYSTEM over SMB: mapping shown as ambiguous",
+      "ok": true,
+      "detail": "Access explanation\n\nSYSTEM\nS-1-5-18\nagainst \\\\NM-FS-01\\Shared\n\nAs of 2026-10-12T17:47:12.077131Z, across 300 collector runs. Collected state b55b02c885d41e757fff5d761fd547a3.\n\nRead this answer as a guided investigation\n\nPart of the estate is unobserved\n\nA collector's most recent run failed. Part of the estate is unobserved, so an empty result here does not mean an empty result in reality. What is shown may be only part of the picture.\n\nOpen Collectors for the detail.\n\nUnknown\n\nNo rights were established, and this is not a finding of no access. Over a share SYSTEM is the computer account of whi"
+    },
+    {
+      "name": "SYSTEM over SMB: certainty uncertain, outcome indeterminate",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM over SMB: says it is not a finding of no access",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM over SMB: no definite 'No access' verdict",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM over SMB: access path remote_smb",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM local: mapping confirmed",
+      "ok": true,
+      "detail": "Access explanation\n\nSYSTEM\nS-1-5-18\nagainst \\\\NM-FS-01\\Shared\n\nAs of 2026-10-12T17:47:12.077131Z, across 300 collector runs. Collected state b55b02c885d41e757fff5d761fd547a3.\n\nRead this answer as a guided investigation\n\nPart of the estate is unobserved\n\nA collector's most recent run failed. Part of the estate is unobserved, so an empty result here does not mean an empty result in reality. What is shown may be only part of the picture.\n\nOpen Collectors for the detail.\n\nAccess\n\nThis principal holds rights on this object.\n\nAt least one right survives both the share ACL and the NTFS ACL. The route"
+    },
+    {
+      "name": "SYSTEM local: certainty at_least (lower bound)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM local: access path local",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unresolved SID: the banner is shown as an alert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "unresolved SID: the banner names the key and the reason",
+      "ok": true,
+      "detail": "A run saw this SID and could not resolve it\n\nS-1-5-21-3949361974-1583827165-633756269-1108 was recorded as unresolved (deleted). Its name and kind are unknown, and nothing on this page names it as anything else."
+    },
+    {
+      "name": "unresolved SID: says nothing on the page names it as anything else",
+      "ok": true,
+      "detail": "A run saw this SID and could not resolve it\n\nS-1-5-21-3949361974-1583827165-633756269-1108 was recorded as unresolved (deleted). Its name and kind are unknown, and nothing on this page names it as anything else."
+    },
+    {
+      "name": "unresolved SID: the heading does not invent a name",
+      "ok": true,
+      "detail": "NULLMERIDIAN\\lhansen unresolved"
+    },
+    {
+      "name": "no console errors from the application",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "known, pre-existing: /favicon.ico 404",
+      "ok": true,
+      "detail": "Failed to load resource: the server responded with a status of 404 () @ https://adg-demo-staging.d-walkes.workers.dev/favicon.ico"
+    }
+  ],
+  "passed": 15,
+  "total": 15
+}

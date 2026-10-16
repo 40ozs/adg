@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "dataset": "null-meridian-v1",
+  "generations": [
+    {
+      "name": "g1",
+      "applied": true
+    },
+    {
+      "name": "g2",
+      "applied": true
+    },
+    {
+      "name": "g3",
+      "applied": true
+    }
+  ],
+  "probes": 23,
+  "counts": {
+    "current_principal": 2139,
+    "current_membership_edge": 6224,
+    "current_server": 33,
+    "current_smb_share": 124,
+    "current_smb_ace": 606,
+    "current_ntfs_resource": 826,
+    "current_ntfs_ace": 4117,
+    "object_versions": 14316,
+    "scan_runs": 300,
+    "tombstones_open": 70
+  },
+  "fingerprint": "228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0",
+  "digests": {
+    "current:principal": "b580544a3d76fae008a9e18fd4a30d29a4fd1ba36db7af3184da06547b124a26",
+    "current:membership_edge": "10aa3f796aeff011833de2c88a4987d1fe261f07fed8c02b1ab944334cae051b",
+    "current:server": "5b969787e29308fb3c903320614b4011e8c5e2d737b25d29840dd566694096d2",
+    "current:smb_share": "c52bf0b41c4e7576131d38cd9cf43630fb6fbd693381670f0fb8a4c2cd1ed03e",
+    "current:smb_ace": "4ea8a55e8049808eacf5b7b7b56b9c0f41df3cafcde34311532f5db73a2febbd",
+    "current:ntfs_resource": "1785f3fe5969b2678c38f042bc4979b5dfa8c58b8397707d1607b9a001f95ae6",
+    "current:ntfs_ace": "f0d1ebb2ed751782623aa7bd058f924965261a2c311b649572dd6473f6822740",
+    "object_versions": "7ba7b8697ae1e8e5bbde740c2fc2a5972760e4a4436b90248861ec7cdbc78a33",
+    "scan_runs": "6b929acfc2f6070f21ebe93f401f197b84e8dc1c09f5206e261e292c5bd611a2",
+    "scan_run_scopes": "5c69258a3f03d105fbfe2a1cff1e5d5bc15618244501caf71c701dea3e563c2f",
+    "scan_run_errors": "7ed6c7ef69dedcc4e35a50b19baf9ecd4b4ad5cc2898020949a0fa9a349743cb",
+    "risk_findings": "1507c197517dcb9d46d49d4d2c697ec689ee4a209082dcbab3ebeeca36845fe7"
+  }
+}

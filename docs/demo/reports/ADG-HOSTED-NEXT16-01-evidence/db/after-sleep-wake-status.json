@@ -1,0 +1,57 @@
+{
+  "runtime_mode": "demo",
+  "dataset_key": "null-meridian-v1",
+  "dataset": {
+    "key": "null-meridian-v1",
+    "company_name": "Null Meridian",
+    "domain": "nullmeridian.info",
+    "snapshot_date": "2026-10-01",
+    "seed": "null-meridian-v1",
+    "synthetic": true,
+    "description": "Null Meridian: a fictional company founded 2016, ten years of directory and file-server history, scanned three times by ADG in September and October 2026. Every name, SID, host and path is generated from the seed.",
+    "facts": {
+      "Founded": "2016-10-01",
+      "Active employees": "1,800",
+      "Former employees": "640",
+      "Departments": "14",
+      "Groups": "205",
+      "File servers": "33",
+      "Shares": "91",
+      "Folders": "824",
+      "NTFS entries": "4,111",
+      "Scan generations": "3",
+      "Scan runs": "300",
+      "Observations": "41,756"
+    }
+  },
+  "dataset_error": null,
+  "database": "adg_demo",
+  "marker": {
+    "runtime_mode": "demo",
+    "dataset_key": "null-meridian-v1",
+    "dataset_seed": "null-meridian-v1",
+    "marked_at": "2026-10-12T17:33:33.772211+00:00",
+    "marked_by": "python -m app.demo_mode reset"
+  },
+  "target_error": null,
+  "generations": [
+    {
+      "index": 0,
+      "name": "g1",
+      "applied": true
+    },
+    {
+      "index": 1,
+      "name": "g2",
+      "applied": true
+    },
+    {
+      "index": 2,
+      "name": "g3",
+      "applied": true
+    }
+  ],
+  "baseline": 3,
+  "baseline_applied": true,
+  "fingerprint": "228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0"
+}

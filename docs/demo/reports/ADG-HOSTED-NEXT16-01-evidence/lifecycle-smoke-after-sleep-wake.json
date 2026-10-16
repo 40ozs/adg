@@ -1,0 +1,122 @@
+{
+  "base": "https://adg-demo-staging.d-walkes.workers.dev",
+  "passed": 23,
+  "failed": 0,
+  "results": [
+    {
+      "name": "an anonymous visitor reads no ADG data from the API",
+      "ok": true,
+      "detail": "5 routes → 401"
+    },
+    {
+      "name": "development sign-in offers only viewer, planner; every other account is refused",
+      "ok": true,
+      "detail": "admin, auditor, reviewer, governance, approver → 404"
+    },
+    {
+      "name": "the Render origin refuses a request that did not come through the Worker",
+      "ok": true,
+      "detail": "12 requests → 403 without the origin key or with a guessed one; only /health/live open"
+    },
+    {
+      "name": "homepage loads with the Demo indicator before sign-in",
+      "ok": true,
+      "detail": "194 ms"
+    },
+    {
+      "name": "/runtime reports demo / synthetic / null-meridian-v1 and discloses nothing",
+      "ok": true,
+      "detail": "110 ms"
+    },
+    {
+      "name": "/health/ready is ready in demo mode without connection detail",
+      "ok": true,
+      "detail": "postgresql 53.47 ms"
+    },
+    {
+      "name": "/version reports demo",
+      "ok": true,
+      "detail": "ADG 0.1.0"
+    },
+    {
+      "name": "runtime mode cannot be switched remotely",
+      "ok": true,
+      "detail": "POST/PUT/PATCH/DELETE → 405; query and header ignored"
+    },
+    {
+      "name": "external collector ingestion is refused (anonymous)",
+      "ok": true,
+      "detail": "403 demo_only"
+    },
+    {
+      "name": "development sign-in through the API (planner)",
+      "ok": true,
+      "detail": "planner: remediation_planner"
+    },
+    {
+      "name": "external collector ingestion is refused (planner)",
+      "ok": true,
+      "detail": "3 ingestion routes → 403 demo_only"
+    },
+    {
+      "name": "the public account cannot approve, export, alert or run governance (planner)",
+      "ok": true,
+      "detail": "8 privileged writes → 403"
+    },
+    {
+      "name": "remediation execution does not exist",
+      "ok": true,
+      "detail": "no execution route (404/405)"
+    },
+    {
+      "name": "/api/v1/demo: Null Meridian, three generations applied, scenarios A–H",
+      "ok": true,
+      "detail": "3 generations applied, next none"
+    },
+    {
+      "name": "web sign-in sets a session",
+      "ok": true,
+      "detail": "session cookie set"
+    },
+    {
+      "name": "web tier forwards no write to ingestion",
+      "ok": true,
+      "detail": "405"
+    },
+    {
+      "name": "/demo guide lists scenarios A–H",
+      "ok": true,
+      "detail": "835 ms"
+    },
+    {
+      "name": "scenario A share loads (directory page)",
+      "ok": true,
+      "detail": "509 ms"
+    },
+    {
+      "name": "representative principal loads (scenario F person)",
+      "ok": true,
+      "detail": "894 ms"
+    },
+    {
+      "name": "scenario F access explanation loads",
+      "ok": true,
+      "detail": "1037 ms"
+    },
+    {
+      "name": "scenario G nested path loads",
+      "ok": true,
+      "detail": "1351 ms"
+    },
+    {
+      "name": "risk UI loads",
+      "ok": true,
+      "detail": "1102 ms"
+    },
+    {
+      "name": "simulation UI loads",
+      "ok": true,
+      "detail": "425 ms"
+    }
+  ]
+}

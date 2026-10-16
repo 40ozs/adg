@@ -1,0 +1,141 @@
+{
+  "label": "hosted 53b81a6 Next 16.4.1",
+  "control": false,
+  "base": "https://adg-demo-staging.d-walkes.workers.dev",
+  "rounds": 10,
+  "reloadsPerRoute": 3,
+  "started": "2026-10-16T04:46:49.096Z",
+  "finished": "2026-10-16T05:57:23.387Z",
+  "total": {
+    "records": 1140,
+    "with418": 0,
+    "events418": 0,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 9,
+    "failedSteps": 0
+  },
+  "phases": {
+    "fresh": {
+      "records": 170,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "reload": {
+      "records": 680,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 9,
+      "failedSteps": 0
+    },
+    "nav": {
+      "records": 190,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "keys": {
+      "records": 30,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "phone": {
+      "records": 70,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    }
+  },
+  "fullDocumentLoads": 960,
+  "clientTransitions": 180,
+  "phoneOverflow": [],
+  "occurrences418": [],
+  "otherErrors": [
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "status",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/status"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "status",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/status"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "status",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/status"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "status",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/status"
+      ]
+    },
+    {
+      "round": 6,
+      "phase": "reload",
+      "route": "changes",
+      "errors": [
+        "Failed to load resource: the server responded with a status of 503 () @ https://adg-demo-staging.d-walkes.workers.dev/changes"
+      ]
+    }
+  ],
+  "failedSteps": [],
+  "knownErrors": [
+    "Failed to load resource: the server responded with a status of 404 () @ https://adg-demo-staging.d-walkes.workers.dev/favicon.ico"
+  ]
+}
