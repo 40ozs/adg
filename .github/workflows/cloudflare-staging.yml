@@ -1,0 +1,298 @@
+# ADG Demo Mode on Cloudflare: PUBLIC DEMO STAGING. Not production.
+#
+# Zero-cost hosting: a thin Worker on Cloudflare Workers Free serves the built static files and
+# proxies everything else, public (no Cloudflare Access). One free Render web service
+# (docker/Dockerfile.render) runs the Next.js server and the unmodified ADG API behind one origin
+# gate that answers only the Worker. PostgreSQL is on Supabase (database adg_demo). The Worker
+# renders nothing: Next.js runs on Render. Deploys this commit to both, then checks the hosted
+# result. No Cloudflare Container, Access or other paid product is used. Nothing here deploys
+# production, and this workflow runs only when someone asks it to.
+#
+# Triggers:
+#   * workflow_dispatch: deploy (default), optionally bootstrapping the demo database first.
+#   * push to deploy/ADG-FREE-STAGING-01: deploy + checks of exactly that commit. Never a
+#     bootstrap (a database reset is always a deliberate, typed request).
+#
+# Everything account-specific lives in the `cloudflare-staging` GitHub environment, never in
+# the repository. See docs/deployment/cloudflare-demo.md §4 for each name. The service's own
+# secrets (database URL, development-session secret, origin key) are set on the Render
+# service; this workflow holds the database URL only to bootstrap and verify, and the origin
+# key only to give it to the Worker.
+#   secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ADG_DATABASE_URL, ADG_ORIGIN_KEY,
+#              RENDER_API_KEY
+#   variables: ADG_STAGING_URL, ADG_RENDER_ORIGIN, RENDER_SERVICE_ID
+name: Free staging (ADG demo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: "Reset the hosted demo database to the Null Meridian baseline before deploying"
+        type: boolean
+        default: false
+      confirm_reset:
+        description: 'Required with bootstrap: type "reset adg_demo"'
+        type: string
+        default: ""
+  push:
+    branches: ["deploy/ADG-FREE-STAGING-01"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging
+  cancel-in-progress: false
+
+# bash -eo pipefail: a failure anywhere in a piped command (`wrangler deploy | tee`) fails
+# the step.
+defaults:
+  run:
+    shell: bash
+
+env:
+  NODE_VERSION: "22"
+  PLAYWRIGHT_VERSION: "1.56.1"
+
+jobs:
+  preflight:
+    name: Preflight (configuration, fail closed)
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required configuration is present (names only, never values)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+          ADG_ORIGIN_KEY: ${{ secrets.ADG_ORIGIN_KEY }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          ADG_STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          ADG_RENDER_ORIGIN: ${{ vars.ADG_RENDER_ORIGIN }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+        run: |
+          missing=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ADG_DATABASE_URL ADG_ORIGIN_KEY RENDER_API_KEY \
+                      ADG_STAGING_URL ADG_RENDER_ORIGIN RENDER_SERVICE_ID; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing staging configuration:$missing (docs/deployment/cloudflare-demo.md §4)"
+            exit 1
+          fi
+          case "$ADG_STAGING_URL" in https://*) ;; *)
+            echo "::error::ADG_STAGING_URL must be https"; exit 1;; esac
+          case "$ADG_RENDER_ORIGIN" in https://*) ;; *)
+            echo "::error::ADG_RENDER_ORIGIN must be https"; exit 1;; esac
+          if [ "${#ADG_ORIGIN_KEY}" -lt 32 ]; then
+            echo "::error::ADG_ORIGIN_KEY must be at least 32 characters"; exit 1
+          fi
+          # The same rule the API enforces, checked before anything is deployed: the database
+          # is named for the demo. Prints the verdict, never the URL.
+          python3 - <<'EOF'
+          import os, re, sys
+          from urllib.parse import urlsplit
+          url = os.environ["ADG_DATABASE_URL"]
+          if not url.startswith("postgresql+psycopg://"):
+              sys.exit("::error::ADG_DATABASE_URL must use postgresql+psycopg://")
+          name = urlsplit(url).path.lstrip("/").casefold()
+          if not re.search(r"(?:^|[^a-z0-9])demo(?:[^a-z0-9]|$)", name):
+              sys.exit("::error::ADG_DATABASE_URL must name a dedicated demo database (e.g. adg_demo)")
+          print("database name: demo-scoped")
+          EOF
+      - name: A database reset was asked for deliberately
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap }}
+        env:
+          CONFIRM: ${{ inputs.confirm_reset }}
+        run: |
+          if [ "$CONFIRM" != "reset adg_demo" ]; then
+            echo '::error::bootstrap=true requires confirm_reset to be exactly "reset adg_demo"'; exit 1
+          fi
+
+  gates:
+    name: Deployment code gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --no-audit --no-fund
+      - run: npm run cf:typecheck
+      - run: npx vitest run tests/cloudflare tests/render
+
+  bootstrap:
+    name: Bootstrap demo database (reset, verify, status)
+    needs: [preflight, gates]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the API image of this commit
+        run: docker build -f docker/Dockerfile.backend -t "adg-api:${GITHUB_SHA}" .
+      - name: python -m app.demo_mode reset / verify / status
+        env:
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          run() {
+            docker run --rm \
+              -e ADG_RUNTIME_MODE=demo -e ADG_DEMO_DATASET=null-meridian-v1 -e ADG_DATABASE_URL \
+              -e ADG_COLLECTOR_API_KEYS= -e ADG_ALERT_POLICY_PATH= \
+              -e ADG_REMEDIATION_EXECUTION_MODE=disabled -e ADG_LOG_LEVEL=WARNING \
+              "adg-api:${GITHUB_SHA}" python -m app.demo_mode "$@"
+          }
+          run reset
+          run --json verify > verify.json
+          run --json status > status.json
+          python3 -c "import json; d=json.load(open('verify.json')); print('verify ok:', d['ok'], 'fingerprint:', d['fingerprint']); assert d['ok']"
+      - name: Null Meridian logical fingerprint (expected db736602…85c28a0)
+        env:
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          docker run --rm -i -e ADG_DATABASE_URL "adg-api:${GITHUB_SHA}" \
+            python - < frontend/cloudflare/checks/null_meridian_fingerprint.py | tee nm-fingerprint.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-reports
+          path: |
+            verify.json
+            status.json
+            nm-fingerprint.json
+
+  deploy-origin:
+    name: "Deploy origin (Render: Next.js + API)"
+    needs: [preflight, gates, bootstrap]
+    # Runs after a bootstrap, or without one when none was asked for.
+    if: ${{ always() && needs.preflight.result == 'success' && needs.gates.result == 'success' && needs.bootstrap.result != 'failure' && needs.bootstrap.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - name: Deploy this commit to the Render service and wait until it is live
+        # The service builds docker/Dockerfile.render from this commit itself.
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+        run: |
+          api="https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys"
+          auth=(-H "Authorization: Bearer ${RENDER_API_KEY}" -H "Accept: application/json")
+          deploy_id="$(curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
+            -d "{\"commitId\": \"${GITHUB_SHA}\"}" "$api" | jq -r .id)"
+          echo "Render deploy ${deploy_id} of ${GITHUB_SHA::12}"
+          # A free instance builds the image itself; 20 minutes covers a build and a cold start
+          # (both processes must be up before the gate opens the port).
+          for _ in $(seq 120); do
+            status="$(curl -fsS "${auth[@]}" "$api/${deploy_id}" | jq -r .status)"
+            case "$status" in
+              live) echo "Render deploy ${deploy_id}: live"; break ;;
+              *_failed|canceled|deactivated) echo "::error::Render deploy ${deploy_id}: ${status}"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          [ "$status" = live ] || { echo "::error::Render deploy ${deploy_id} still ${status}"; exit 1; }
+          echo "- Render deploy: \`${deploy_id}\` (${GITHUB_SHA::12}) live" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy Worker (Workers Free, static files + proxy)
+    needs: [deploy-origin]
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --no-audit --no-fund
+      - name: Static files from the build Render runs (Dockerfile.render, target web)
+        # Same Dockerfile, same commit, same platform as Render's build, so the chunk names
+        # match the HTML Render serves; a file that differs (Server Action IDs are random per
+        # build) is proxied to Render instead. See cloudflare/assets.mjs.
+        working-directory: .
+        run: |
+          docker build -q -f docker/Dockerfile.render --target web \
+            --build-arg "RENDER_GIT_COMMIT=${GITHUB_SHA}" -t adg-web-build .
+          id="$(docker create adg-web-build)"
+          docker cp "$id:/app/frontend/.next/static" "$RUNNER_TEMP/next-static"
+          docker rm "$id"
+      - run: npm run cf:assets -- "$RUNNER_TEMP/next-static"
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADG_ORIGIN_KEY: ${{ secrets.ADG_ORIGIN_KEY }}
+          ADG_RENDER_ORIGIN: ${{ vars.ADG_RENDER_ORIGIN }}
+        run: |
+          umask 077
+          secrets_file="$RUNNER_TEMP/worker-secrets.json"
+          trap 'rm -f "$secrets_file"' EXIT
+          python3 -c 'import json, os, sys; json.dump({"ADG_ORIGIN_KEY": os.environ["ADG_ORIGIN_KEY"]}, open(sys.argv[1], "w"))' "$secrets_file"
+          npx wrangler deploy \
+            --secrets-file "$secrets_file" \
+            --var "ADG_RENDER_ORIGIN:${ADG_RENDER_ORIGIN}" \
+            --tag "${GITHUB_SHA::12}" \
+            --message "ADG staging ${GITHUB_SHA::12} (${GITHUB_REF_NAME})" | tee "$RUNNER_TEMP/deploy.log"
+          {
+            echo "## ADG staging deployment"
+            echo "- source commit: \`${GITHUB_SHA}\` (${GITHUB_REF_NAME})"
+            echo "- Worker version tag: \`${GITHUB_SHA::12}\`"
+            echo "- Worker version: \`$(grep -oE 'Current Version ID: [0-9a-f-]+' "$RUNNER_TEMP/deploy.log" | head -1)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  checks:
+    name: Hosted checks (verify, smoke, browser)
+    needs: [deploy]
+    if: ${{ always() && needs.deploy.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Read-only verify of the hosted demo database
+        env:
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+        run: |
+          docker build -q -f docker/Dockerfile.backend -t adg-api:check . >/dev/null
+          docker run --rm -e ADG_RUNTIME_MODE=demo -e ADG_DEMO_DATASET=null-meridian-v1 -e ADG_DATABASE_URL \
+            -e ADG_LOG_LEVEL=WARNING adg-api:check python -m app.demo_mode --json verify > verify.json
+          python3 -c "import json; d=json.load(open('verify.json')); print('verify ok:', d['ok'], 'fingerprint:', d['fingerprint']); assert d['ok']"
+          docker run --rm -i -e ADG_DATABASE_URL adg-api:check python - \
+            < frontend/cloudflare/checks/null_meridian_fingerprint.py > nm-fingerprint.json
+          python3 -c "import json; d=json.load(open('nm-fingerprint.json')); print('null meridian fingerprint:', d['fingerprint'], 'match:', d['match'])"
+      - name: HTTP smoke
+        env:
+          STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          ADG_DATABASE_URL: ${{ secrets.ADG_DATABASE_URL }}
+          RENDER_ORIGIN: ${{ vars.ADG_RENDER_ORIGIN }}
+        run: |
+          # The database host is a canary no answer may contain; derived here, never printed.
+          SMOKE_CANARIES="$(python3 -c 'import os; from urllib.parse import urlsplit; print(urlsplit(os.environ["ADG_DATABASE_URL"]).hostname or "")')"
+          export SMOKE_CANARIES
+          unset ADG_DATABASE_URL
+          node frontend/cloudflare/checks/smoke.mjs | tee smoke.log
+      - name: Browser gate (headless Chromium)
+        env:
+          STAGING_URL: ${{ vars.ADG_STAGING_URL }}
+          SCREENSHOT_DIR: screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          npx playwright install --with-deps chromium
+          node frontend/cloudflare/checks/browser.mjs | tee browser.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hosted-checks
+          path: |
+            verify.json
+            nm-fingerprint.json
+            smoke.log
+            browser.log
+            screenshots/

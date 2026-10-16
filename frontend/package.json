@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cf:typecheck": "tsc -p cloudflare/tsconfig.json",
+    "cf:assets": "node cloudflare/assets.mjs"
   },
   "dependencies": {
     "next": "^16.4.1",
@@ -18,6 +20,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261012.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
@@ -29,6 +32,7 @@
     "eslint-config-next": "^16.4.1",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wrangler": "^4.149.0"
   }
 }

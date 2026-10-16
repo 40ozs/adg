@@ -1,0 +1,34 @@
+// ADG Demo Mode on Cloudflare — PUBLIC DEMO STAGING. Not a production configuration.
+//
+// A thin Worker: built static files are served from the edge, and every other request is
+// proxied to one Render free web service that runs Next.js and the unmodified ADG API behind
+// its origin gate (frontend/render/gate.ts, docker/Dockerfile.render). The Worker renders
+// nothing. Public: no Cloudflare Access; ADG's own sign-in decides what a visitor may do.
+// Workers Free only: no Container, Durable Object, cron or other paid binding. See
+// docs/deployment/cloudflare-demo.md.
+//
+// Nothing secret is in this file. Secret (name only): ADG_ORIGIN_KEY, uploaded with the
+// version by .github/workflows/cloudflare-staging.yml. The account-specific value
+// ADG_RENDER_ORIGIN is passed at deploy time with --var.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "adg-demo-staging",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+
+  // The generated *.workers.dev hostname is the staging URL. Preview and version URLs are
+  // off: one public hostname, so every version a visitor can reach is the deployed one.
+  "workers_dev": true,
+  "preview_urls": false,
+
+  // A request for a built static file (/_next/static/…, public/) is served before the Worker
+  // runs: free, and outside the Workers Free daily request allowance and CPU limit. Every
+  // other path runs the Worker. `npm run cf:assets` assembles the directory from `next build`.
+  "assets": {
+    "directory": ".edge-assets",
+    "run_worker_first": false
+  },
+
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}

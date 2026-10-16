@@ -1,0 +1,64 @@
+# ADG public demo staging on Render: Next.js and the ADG API in ONE free web service, behind
+# one origin gate. Not a production image (production runs Dockerfile.backend and
+# Dockerfile.frontend separately).
+#
+#   $PORT ─► node gate.ts (frontend/render/gate.ts) ─┬─ FastAPI  127.0.0.1:8000  (python -m app)
+#                                                     └─ Next.js  127.0.0.1:3000  (standalone server.js)
+#
+# The gate is the only public listener. It refuses every request without X-ADG-Origin-Key
+# except /health/live, and it refuses to start without ADG_ORIGIN_KEY. Build context is the
+# repository root. See docs/deployment/cloudflare-demo.md.
+
+FROM node:22-bookworm-slim AS node
+
+# ── Next.js: the unmodified application, traced into a self-contained server ─────────────────
+FROM node AS web
+WORKDIR /app/frontend
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    ADG_NEXT_OUTPUT=standalone
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+# Render passes the deployed commit; with it, this build and the Worker's static files share a
+# build ID (next.config.mjs).
+ARG RENDER_GIT_COMMIT=""
+RUN ADG_BUILD_ID="${RENDER_GIT_COMMIT}" npm run build
+
+# ── Runtime: Python for the API, Node for Next.js and the gate ──────────────────────────────
+FROM python:3.13-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1
+
+# The same Debian release as the Node image, so its binary's libraries are all here.
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+
+WORKDIR /app
+# The API exactly as Dockerfile.backend installs it: dependencies from backend/pyproject.toml.
+COPY backend /app/backend
+COPY database /app/database
+RUN python -m pip install --upgrade pip && python -m pip install /app/backend
+# The service runs from /app/backend, so it imports this source tree, not the installed copy.
+# Compile it now: PYTHONDONTWRITEBYTECODE stops the service writing bytecode, so it would
+# otherwise compile every module again on each cold start, on a 0.1-CPU instance.
+RUN python -m compileall -q /app/backend/app
+
+COPY --from=web /app/frontend/.next/standalone /app/web
+COPY --from=web /app/frontend/.next/static /app/web/.next/static
+COPY --from=web /app/frontend/public /app/web/public
+COPY frontend/render/gate.ts /app/gate.ts
+
+# Run as an unprivileged user: nothing here needs host rights.
+RUN useradd --create-home --uid 10001 adg && chown -R adg:adg /app
+USER adg
+
+# Render sets PORT (10000 by default); the gate binds it, and only it, on all interfaces.
+EXPOSE 10000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=120s --retries=5 \
+    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||10000)+'/health/live').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+
+CMD ["node", "--disable-warning=ExperimentalWarning", "/app/gate.ts"]
