@@ -124,7 +124,7 @@ Next.js receives only `ADG_WEB_URL`, `NEXT_PUBLIC_ADG_API_URL` (= `ADG_WEB_URL`)
 
 Service settings: plan **free**, region Oregon (next to the Supabase project's `us-west-2`),
 runtime Docker, Dockerfile `./docker/Dockerfile.render`, context `.`, no start command (the
-image's `node gate.ts`), health check `/health/live`, branch `deploy/ADG-FREE-STAGING-01`,
+image's `node gate.ts`), health check `/health/live`, branch `deploy/ADG-HOSTED-NEXT16-01`,
 auto-deploy off (the workflow deploys a given commit). Render passes the commit to the build as
 `RENDER_GIT_COMMIT`, which becomes the Next.js build ID.
 
@@ -190,7 +190,7 @@ A password that has ever been pasted into a chat, ticket or log is treated as ex
 
 ### Deploy
 
-**Actions → Free staging (ADG demo) → Run workflow**, or push to `deploy/ADG-FREE-STAGING-01`:
+**Actions → Free staging (ADG demo) → Run workflow**, or push to `deploy/ADG-HOSTED-NEXT16-01`:
 
 1. **preflight**: every name in §4's GitHub list present; URLs https; the key ≥ 32 characters;
    the database named for the demo; a bootstrap only with the typed confirmation

@@ -10,7 +10,7 @@
 #
 # Triggers:
 #   * workflow_dispatch: deploy (default), optionally bootstrapping the demo database first.
-#   * push to deploy/ADG-FREE-STAGING-01: deploy + checks of exactly that commit. Never a
+#   * push to deploy/ADG-HOSTED-NEXT16-01: deploy + checks of exactly that commit. Never a
 #     bootstrap (a database reset is always a deliberate, typed request).
 #
 # Everything account-specific lives in the `cloudflare-staging` GitHub environment, never in
@@ -35,7 +35,7 @@ on:
         type: string
         default: ""
   push:
-    branches: ["deploy/ADG-FREE-STAGING-01"]
+    branches: ["deploy/ADG-HOSTED-NEXT16-01"]
 
 permissions:
   contents: read
