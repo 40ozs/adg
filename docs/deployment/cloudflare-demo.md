@@ -83,6 +83,27 @@ Dockerfile stage (`--target web`) from the same commit for the same platform and
 random per build. A mismatched file is therefore proxied to Render: correct, merely not
 edge-served. A Mac build, by contrast, differs from a Linux one in most chunk names.
 
+### Caching
+
+The Worker shares no answer between visitors (CLOUDFLARE-DEMO-CACHE-01; report
+`docs/demo/reports/CLOUDFLARE-DEMO-CACHE-01-report.md`).
+
+| What | Cached | Why |
+| --- | --- | --- |
+| Built static files (`/_next/static/…`) | Edge and browser, 1 year, `immutable` (the `_headers` file `cf:assets` writes) | Content-hashed names; no Worker, no Render, no PostgreSQL. |
+| Every proxied answer | Nowhere shared; the origin's own `Cache-Control` is relayed unchanged | Every Null Meridian view needs a signed-in session, and its answer depends on the account (§2). The public answers (`/`, `/login`, the sign-in notice, `/version`, `/runtime`, `/auth/config`, `/health/live`) never query PostgreSQL, so caching them would save no Supabase egress. `/health/ready` and `/status` are live checks. |
+
+Supabase egress therefore comes only from signed-in page renders (Next.js → FastAPI →
+PostgreSQL inside the container, never seen by the Worker), from `/health/ready` and `/status`,
+from the reset, `verify` and fingerprint runs, and from the hosted checks. Cloudflare cannot cache
+any of them without changing who may read the demo data. That is an owner decision (report §12).
+
+**Never turn on Workers Cache** (`"cache"` in `wrangler.jsonc`, at the top level or for an
+entrypoint). It sits in front of the Worker and keys answers by path alone: cookies are not part
+of its key, and it keeps a 200 that has no `Cache-Control` for 2 hours. One visitor's signed-in
+pages would then be served to the next. `tests/cloudflare/cache-policy.test.ts` fails if the key is
+added.
+
 ## 3. PostgreSQL (Supabase)
 
 * A **dedicated** database, **`adg_demo`**, in an existing Supabase project; never an ADG
