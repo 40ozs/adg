@@ -1,0 +1,23 @@
+# CLOUDFLARE-DEMO-CACHE-01 gates (ADG frontend). Worktree ~/Documents/code/adg-CLOUDFLARE-DEMO-CACHE-01, base 7ce195d.
+# node v22.23.3 (arm64, nvm). node_modules: sibling worktree adg-HOSTED-NEXT16-01 (identical package-lock.json).
+
+  node v22.23.3 7ce195d
+  lint exit=0
+  typecheck exit=0
+  test exit=0
+  cf:typecheck exit=0
+
+$ npm test
+   Test Files  42 passed (42)
+        Tests  1452 passed (1452)
+
+$ npx vitest run tests/cloudflare tests/render
+  ✓ tests/cloudflare/cache-policy.test.ts (2 tests)
+  ✓ tests/cloudflare/environment.test.ts (12 tests)
+  ✓ tests/cloudflare/routing.test.ts (39 tests)
+  ✓ tests/render/gate.test.ts (38 tests)
+  Test Files  4 passed (4); Tests  91 passed (91)
+
+# Mutation (reverted): adding "cache": { "enabled": true } to frontend/wrangler.jsonc ->
+#   × Cloudflare caching for the demo Worker > keeps Workers Cache off, for the Worker and for every entrypoint
+# Not run: backend ruff/mypy/pytest (no backend change); next build; hosted or Cloudflare checks (nothing deployed).
