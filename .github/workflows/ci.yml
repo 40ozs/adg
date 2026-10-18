@@ -9,7 +9,8 @@ on:
 jobs:
   backend:
     name: Backend (lint, types, tests)
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: [self-hosted, Linux, X64, docker, adg]
     defaults:
       run:
         working-directory: backend
@@ -55,7 +56,8 @@ jobs:
 
   frontend:
     name: Frontend (lint, types, tests, build)
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: [self-hosted, Linux, X64, docker, adg]
     defaults:
       run:
         working-directory: frontend
@@ -77,6 +79,7 @@ jobs:
 
   collector:
     name: Collector (Pester)
+    # The configured self-hosted pool is Linux. Keep this Windows-specific gate hosted.
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,8 +95,63 @@ jobs:
 
   compose:
     name: Docker Compose configuration
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: [self-hosted, Linux, X64, docker, adg]
     steps:
       - uses: actions/checkout@v4
+      - name: Validate compose file
+        run: docker compose config -q
+
+  fork-linux:
+    name: Fork PR Linux gates (GitHub-hosted)
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: adg
+          POSTGRES_PASSWORD: adg_ci_password
+          POSTGRES_DB: adg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adg -d adg"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      ADG_DATABASE_URL: postgresql+psycopg://adg:adg_ci_password@localhost:5432/adg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Backend lint, types, and tests
+        working-directory: backend
+        env:
+          ADG_RUN_SMOKE_TESTS: "1"
+        run: |
+          python -m ruff check .
+          python -m ruff format --check .
+          python -m mypy app tests
+          python -m pytest -q -m "not smoke"
+          python -m pytest -q -m smoke
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Frontend gates
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
       - name: Validate compose file
         run: docker compose config -q
