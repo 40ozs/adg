@@ -1,0 +1,8 @@
+# fresh clone of 40ozs/adg origin/feature/SYNTH-ADG-01, 2026-10-27T17:36:46Z
+HEAD 28abcff1e2334c5bb23e733dbbf068561f5cab18
+$ pytest -q -m 'not smoke' tests/demo tests/demo_mode tests/validation/test_windows_oracle.py
+318 passed, 27 deselected in 38.01s
+$ python -m app.demo.genesee_press manifest | diff - ../docs/demo/genesee-press.manifest.json
+manifest identical: True
+$ git status --porcelain | wc -l
+0
