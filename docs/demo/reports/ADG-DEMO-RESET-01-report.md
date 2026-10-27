@@ -18,7 +18,7 @@ Limitations (details in §12):
 1. The workflow did not deploy (preflight: no environment secrets or variables). The deploy was manual, of the same exact commit.
 2. `origin/main` is `7ce195d`, not the `c57146d` the task expected. That commit is CI-only and was left alone.
 3. The public workers.dev route had been disabled (Cloudflare error 1042) since some time after 2026-10-17. It was re-enabled with the owner's approval.
-4. CI on the deploy branch: Pester could not download its module from PSGallery (infrastructure; the same SHA passed CI on 2026-10-17).
+4. CI on the deploy branch: attempt 1's Pester job could not download its module from PSGallery (infrastructure). Rerunning the failed job made the run green (attempt 2: all 4 jobs succeeded).
 
 ## 1. Refs and clean-tree gate
 
@@ -187,7 +187,7 @@ rollback targets (`deploy/render-deploys-before.jsonl`).
 **CI run `40440655408`** (push to the deploy branch, `c57146d`): Docker Compose and Frontend
 **success**. Collector (Pester) **failure** at `Install-Module Pester`: "Package 'Pester' failed
 to download" (PSGallery). Infrastructure: the same SHA passed CI on `main` (run 39049159000,
-2026-10-17). Backend: see §12.
+2026-10-17). Backend **success**. Rerun of the failed job: attempt 2 **success**, so the run is green (4/4 jobs).
 
 ## 11. Hosted validation after deployment
 
@@ -240,8 +240,7 @@ separately: `/favicon.ico` 404. **#418 = 0, hydration errors = 0, application co
   ordering/read step on this capacity, which is capacity against a fixed window, not semantics.
 - The test Mac's load average was 4.8–6.8 during the hosted checks (the owner's other workloads),
   with `caffeinate` held for every long run.
-- **CI Pester** module download failure (§10). The backend job was still running when this report
-  was written; its result is in the run.
+- **CI Pester** module download failure on attempt 1 (§10); green on rerun.
 
 Out of scope and not re-examined: the `/risks` severity-strip bullet overlap, deleted/no
 inconsistency, UI-UPDATE, COMPACT-IDENTITY, GRAPH, and historical report wording. The favicon 404 is
