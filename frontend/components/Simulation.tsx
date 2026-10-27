@@ -9,6 +9,7 @@ import type {
   StoredSimulationView,
 } from "@/lib/contracts";
 import { principalLabel } from "@/lib/identity";
+import { PrincipalChain } from "@/components/Identity";
 import { impactHeadline, orderedDeltas, summaryLine } from "@/lib/simulation";
 
 /**
@@ -308,7 +309,7 @@ function DeltaRow({ delta }: { delta: SimulationDeltaView }): JSX.Element {
             <ul>
               {delta.retained_routes.map((route, index) => (
                 <li key={`${route.ace_key ?? "route"}-${index}`}>
-                  {route.chain.map((item) => principalLabel(item)).join(" → ")}{" "}
+                  <PrincipalChain principals={route.chain} />{" "}
                   <span className="muted">
                     ({route.layer}
                     {route.inherited ? ", inherited" : ""}

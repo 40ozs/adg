@@ -23,8 +23,18 @@ import { resourceBreadcrumb } from "@/lib/resources";
 import { ntfsAce, page, principal, rights, shareAce } from "./factories";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -221,6 +231,10 @@ describe("who reaches a directory", () => {
                 assumed: false,
                 depth: 1,
                 path: ["S-1-5-21-1-2-3-1104", "S-1-5-21-1-2-3-1200"],
+                path_principals: [
+                  principal({ display_name: "Ada", key: "S-1-5-21-1-2-3-1104" }),
+                  principal({ display_name: "Finance", key: "S-1-5-21-1-2-3-1200" }),
+                ],
               },
             ],
           },
@@ -229,7 +243,14 @@ describe("who reaches a directory", () => {
     );
 
     const row = screen.getByRole("row", { name: /Ada/ });
-    expect(within(row).getByText("Finance")).toBeInTheDocument();
+    expect(row.querySelector(".principal-chain")?.textContent).toBe("Ada → Finance");
+    // Each hop of the chain opens its principal by key, and none is prefetched.
+    const hops = within(row.querySelector(".principal-chain") as HTMLElement).getAllByRole("link");
+    expect(hops.map((link) => link.getAttribute("href"))).toEqual([
+      "/identities/principal/S-1-5-21-1-2-3-1104",
+      "/identities/principal/S-1-5-21-1-2-3-1200",
+    ]);
+    expect(hops.every((link) => link.getAttribute("data-prefetch") === "off")).toBe(true);
   });
 
   it("says 'directly' rather than nothing when the ACL names the principal itself", () => {

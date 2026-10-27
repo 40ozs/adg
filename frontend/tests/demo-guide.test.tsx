@@ -142,8 +142,8 @@ describe("the scenario list", () => {
   it("links people and groups to their principal pages, by SID", () => {
     render(<DemoScenarioList scenarios={[scenarioF]} />);
 
-    expect(hrefOf("Brianna Reddy")).toBe(`/identities/principal?key=${encodeURIComponent(MOVER)}`);
-    expect(hrefOf("Sales-Ops")).toBe(`/identities/principal?key=${encodeURIComponent(SALES_OPS)}`);
+    expect(hrefOf("Brianna Reddy")).toBe(`/identities/principal/${encodeURIComponent(MOVER)}`);
+    expect(hrefOf("Sales-Ops")).toBe(`/identities/principal/${encodeURIComponent(SALES_OPS)}`);
   });
 
   it("offers each person an explanation of their access to the folder", () => {

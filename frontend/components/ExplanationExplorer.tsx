@@ -12,6 +12,7 @@ import {
   type PathDetail,
 } from "@/lib/explanation";
 import { Rights } from "@/components/EffectiveAccess";
+import { PrincipalChain } from "@/components/Identity";
 import { AccessGraph } from "@/components/AccessGraph";
 import styles from "@/components/explanation.module.css";
 
@@ -155,7 +156,7 @@ export function PathTable({
                   {chain.length <= 1 ? (
                     <span className="muted">named directly on the ACL</span>
                   ) : (
-                    chain.join(" → ")
+                    <PrincipalChain principals={path.chain} />
                   )}
                   {path.assumed && (
                     <div className="ace-notes status-warn">

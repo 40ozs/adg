@@ -209,7 +209,8 @@ describe("what to do next", () => {
         "collector could say what it is. Until it is identified, Fatima Gordon cannot be ruled " +
         "out of it. If it is an account that no longer exists, the orphaned entry is the clean-up.",
     );
-    expect(steps[0].href).toContain("/identities/principal?key=");
+    // The canonical principal address: the key is the route, not a query parameter.
+    expect(steps[0].href).toBe(`/identities/principal/${ORPHAN.sid}`);
     expect(steps[1].text).toMatch(/^Collect the membership of Proj-Zephyr-RW, or confirm it is empty/);
     expect(steps[2].text).toMatch(/^Review Fatima Gordon's direct entry on the folder permissions/);
     expect(steps[2].text).toContain("measured to change nothing");

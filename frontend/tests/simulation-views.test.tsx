@@ -43,8 +43,18 @@ import {
 } from "./simulation-factories";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -198,7 +208,11 @@ describe("the delta table", () => {
       />,
     );
 
-    expect(screen.getByText(/Alice Smith → Domain Users/)).toBeInTheDocument();
+    expect(document.querySelector(".principal-chain")?.textContent).toBe("Alice Smith → Domain Users");
+    expect(screen.getByRole("link", { name: "Domain Users" })).toHaveAttribute(
+      "href",
+      "/identities/principal/g",
+    );
   });
 
   it("keeps an unchanged row rather than filtering it out", () => {

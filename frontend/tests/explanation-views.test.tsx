@@ -49,8 +49,18 @@ import {
 } from "./explanation-factories";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
-    <a href={href} {...rest}>
+  default: ({
+    children,
+    href,
+    prefetch,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+    prefetch?: boolean;
+  }) => (
+    // Recorded, not dropped: a list of principal links must not prefetch every one.
+    <a href={href} data-prefetch={prefetch === false ? "off" : undefined} {...rest}>
       {children}
     </a>
   ),
