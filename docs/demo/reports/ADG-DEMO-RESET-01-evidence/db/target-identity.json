@@ -1,0 +1,36 @@
+{
+ "render_service": "adg-demo-web",
+ "render_branch": "deploy/ADG-HOSTED-NEXT16-01",
+ "autoDeploy": "no",
+ "suspended": "not_suspended",
+ "local_url": {
+  "scheme": "postgresql+psycopg",
+  "db": "adg_demo",
+  "host_kind": "supabase-pooler",
+  "port": 5432
+ },
+ "render_url": {
+  "scheme": "postgresql+psycopg",
+  "db": "adg_demo",
+  "host_kind": "supabase-pooler",
+  "port": 5432
+ },
+ "same_url_sha256_equal": true,
+ "same_host_db_user": true,
+ "render_runtime_mode": "demo",
+ "render_demo_dataset": "null-meridian-v1",
+ "render_env_keys": [
+  "ADG_AUTH_MODE",
+  "ADG_DATABASE_URL",
+  "ADG_DEMO_DATASET",
+  "ADG_DEV_AUTH_SECRET",
+  "ADG_DEV_AUTH_USERS",
+  "ADG_ENVIRONMENT",
+  "ADG_LOG_FORMAT",
+  "ADG_LOG_LEVEL",
+  "ADG_ORIGIN_KEY",
+  "ADG_REMEDIATION_EXECUTION_MODE",
+  "ADG_RUNTIME_MODE",
+  "ADG_WEB_URL"
+ ]
+}

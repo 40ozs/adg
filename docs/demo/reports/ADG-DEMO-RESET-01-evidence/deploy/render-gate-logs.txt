@@ -1,0 +1,29 @@
+2026-10-27T02:16:11.464029965Z {"event":"adg.gate.starting","port":10000}
+2026-10-27T02:16:16.05960728Z {"event":"adg.gate.child_ready","child":"web","after_ms":4596}
+2026-10-27T02:17:15.718619164Z {"event":"adg.gate.child_ready","child":"api","after_ms":64255}
+2026-10-27T02:17:15.726230517Z {"event":"adg.gate.listening","port":10000,"after_ms":64263}
+2026-10-27T02:17:23.169301666Z {"event":"adg.gate.first_answer","upstream":"api","status":200,"after_ms":71706}
+2026-10-27T02:32:26.15172808Z {"event":"adg.gate.child_exited","child":"web","code":143,"signal":null}
+2026-10-27T02:32:26.315073723Z {"event":"adg.gate.child_exited","child":"api","code":null,"signal":"SIGTERM"}
+2026-10-27T02:46:05.904190868Z {"event":"adg.gate.starting","port":10000}
+2026-10-27T02:46:11.39218725Z {"event":"adg.gate.child_ready","child":"web","after_ms":5490}
+2026-10-27T02:47:14.39329643Z {"event":"adg.gate.child_ready","child":"api","after_ms":68491}
+2026-10-27T02:47:14.401752631Z {"event":"adg.gate.listening","port":10000,"after_ms":68500}
+2026-10-27T02:47:17.505162547Z {"event":"adg.gate.first_answer","upstream":"api","status":200,"after_ms":71603}
+2026-10-27T02:47:40.104867122Z {"event":"adg.gate.first_answer","upstream":"web","status":200,"after_ms":94203}
+2026-10-27T02:52:11.328560322Z {"event":"adg.gate.starting","port":10000}
+2026-10-27T02:52:16.617626704Z {"event":"adg.gate.child_ready","child":"web","after_ms":5289}
+2026-10-27T02:53:19.320773742Z {"event":"adg.gate.child_ready","child":"api","after_ms":67992}
+2026-10-27T02:53:19.335594047Z {"event":"adg.gate.listening","port":10000,"after_ms":68007}
+2026-10-27T02:53:22.951651189Z {"event":"adg.gate.first_answer","upstream":"api","status":200,"after_ms":71624}
+2026-10-27T02:53:23.151883856Z {"event":"adg.gate.child_exited","child":"web","code":143,"signal":null}
+2026-10-27T02:53:23.269376644Z {"event":"adg.gate.child_exited","child":"api","code":null,"signal":"SIGTERM"}
+2026-10-27T02:54:12.525146056Z {"event":"adg.gate.first_answer","upstream":"web","status":200,"after_ms":121196}
+2026-10-27T02:54:58.617759377Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:00.719139553Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:04.929775892Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:29.298165522Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:29.302931695Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:33.542829305Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:33.542838076Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}
+2026-10-27T02:55:34.786088318Z {"event":"adg.gate.upstream_unavailable","upstream":"web","error":"socket hang up"}

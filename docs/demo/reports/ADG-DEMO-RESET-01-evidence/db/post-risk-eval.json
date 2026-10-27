@@ -1,0 +1,34 @@
+{
+ "risk_evaluations_cols": [
+  "evaluation_id",
+  "trigger",
+  "source_run_id",
+  "configuration_version",
+  "scope_complete",
+  "scope_resource_keys",
+  "scope_share_keys",
+  "scope_principal_keys",
+  "rules_run",
+  "rules_skipped",
+  "findings_matched",
+  "findings_opened",
+  "findings_reopened",
+  "findings_resolved",
+  "error",
+  "started_at",
+  "completed_at",
+  "basis_token"
+ ],
+ "null_basis_token/total": [
+  0,
+  1
+ ],
+ "alerts_created": [
+  "1",
+  "1"
+ ],
+ "scan_runs_started": [
+  "2026-09-03 02:00:00+00:00",
+  "2026-10-01 05:40:00+00:00"
+ ]
+}

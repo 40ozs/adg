@@ -1,0 +1,108 @@
+{
+ "alerts": {
+  "columns": [
+   "watch_id",
+   "payload",
+   "first_raised_at",
+   "last_raised_at",
+   "last_notified_at",
+   "resolved_at",
+   "occurrence_count",
+   "suppressed_since_notice",
+   "suppressed_total",
+   "alert_key",
+   "payload_digest",
+   "delivered_digest",
+   "summary",
+   "trigger",
+   "lifecycle",
+   "status",
+   "watch_label",
+   "resource_key",
+   "share_key",
+   "principal_key",
+   "discriminator"
+  ],
+  "timestamps(min,max)": {
+   "first_raised_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ],
+   "last_raised_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ],
+   "last_notified_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ],
+   "resolved_at": [
+    null,
+    null
+   ]
+  }
+ },
+ "alert_events": {
+  "columns": [
+   "event_id",
+   "folds",
+   "notified",
+   "source_run_id",
+   "source_evaluation_id",
+   "occurred_at",
+   "recorded_at",
+   "payload",
+   "alert_key",
+   "transition",
+   "trigger",
+   "suppression_reason",
+   "summary",
+   "payload_digest"
+  ],
+  "timestamps(min,max)": {
+   "occurred_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ],
+   "recorded_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ]
+  }
+ },
+ "alert_deliveries": {
+  "columns": [
+   "delivered_at",
+   "event_id",
+   "attempts",
+   "enqueued_at",
+   "next_attempt_at",
+   "last_attempt_at",
+   "delivery_id",
+   "envelope",
+   "alert_key",
+   "sink_name",
+   "status",
+   "idempotency_key",
+   "last_error"
+  ],
+  "timestamps(min,max)": {
+   "delivered_at": [
+    null,
+    null
+   ],
+   "enqueued_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ],
+   "next_attempt_at": [
+    "2026-10-01 06:00:00+00",
+    "2026-10-01 06:00:00+00"
+   ],
+   "last_attempt_at": [
+    null,
+    null
+   ]
+  }
+ }
+}

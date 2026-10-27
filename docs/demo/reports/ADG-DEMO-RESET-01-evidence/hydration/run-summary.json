@@ -1,0 +1,68 @@
+{
+  "label": "c57146d hosted",
+  "control": false,
+  "base": "https://adg-demo-staging.d-walkes.workers.dev",
+  "rounds": 2,
+  "reloadsPerRoute": 3,
+  "started": "2026-10-27T03:01:10.613Z",
+  "finished": "2026-10-27T03:12:14.072Z",
+  "total": {
+    "records": 228,
+    "with418": 0,
+    "events418": 0,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 0,
+    "failedSteps": 0
+  },
+  "phases": {
+    "fresh": {
+      "records": 34,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "reload": {
+      "records": 136,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "nav": {
+      "records": 38,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "keys": {
+      "records": 6,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "phone": {
+      "records": 14,
+      "with418": 0,
+      "events418": 0,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    }
+  },
+  "fullDocumentLoads": 192,
+  "clientTransitions": 36,
+  "phoneOverflow": [],
+  "occurrences418": [],
+  "otherErrors": [],
+  "failedSteps": [],
+  "knownErrors": [
+    "Failed to load resource: the server responded with a status of 404 () @ https://adg-demo-staging.d-walkes.workers.dev/favicon.ico"
+  ]
+}

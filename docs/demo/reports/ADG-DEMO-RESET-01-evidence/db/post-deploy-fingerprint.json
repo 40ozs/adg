@@ -1,0 +1,17 @@
+{
+  "fingerprint": "db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0",
+  "expected": "db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0",
+  "match": true,
+  "digests": {
+    "scan_runs": "06a1b85d044c75c06743788dfc6354610c775c6e956e4ac07c58ddff2346eace",
+    "principals": "b5502f0853e0393d8a9e866c8ac0341ed4bf0a823d39ca91f2b463da7e8d8938",
+    "membership_edges": "3c233f03fa7831d44779d0c6d0e3030327a8d4c38e3ec90fd6abc7d4516a69c5",
+    "servers": "a2bfba794b676cccbd3c8975eef0f0282d58c513ef4f624878b595a07c99a57e",
+    "smb_shares": "98eda2d2a588c9900a6e24c3920a8bfb8d065119cf0c918efda2ad970cb3ee92",
+    "smb_share_aces": "73678a9976d7f1867702fbe92bbd73be1b6ad56efa76156e7ed5592714c00bfe",
+    "ntfs_resources": "80cca15cf7359140e5e49d946bd47ed65e729df41509ad77df10be3ffb96b9da",
+    "ntfs_aces": "ba71cadb13647df2613a5bf9d656a69c4eeabbf2a852f4c3b6967cb0c57e614c",
+    "object_versions": "30912f2c4666d8da6e72d68a92f1588e30722e42fa5f8e081758bbae3c7c69a1",
+    "risk_findings": "22911c768f3ab19673f4ba33232ec93dd4b162b3083a25fd2d0bbcea89555042"
+  }
+}

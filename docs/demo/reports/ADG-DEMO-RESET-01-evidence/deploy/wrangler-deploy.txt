@@ -1,0 +1,7 @@
+Uploaded 1 of 3 assets
+Uploaded 2 of 3 assets
+Uploaded 3 of 3 assets
+✨ Success! Uploaded 3 files (58 already uploaded) (0.88 sec)
+Uploaded adg-demo-staging (5.80 sec)
+Deployed adg-demo-staging triggers (0.52 sec)
+Current Version ID: adfb5c6d-b496-4e16-a2a8-1f17174c1471
