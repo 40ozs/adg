@@ -285,7 +285,7 @@ export function apollo(): AccessExplanationResponse {
   ];
   return {
     ...base,
-    schema_version: "1.1",
+    schema_version: "1.2",
     subject: FATIMA,
     resource: { ...base.resource, key: APOLLO_KEY, path: APOLLO_PATH, share_key: "nm-eng-fs01|engineering" },
     share: share({ key: "nm-eng-fs01|engineering", name: "Engineering", server_key: "nm-eng-fs01" }),
@@ -421,7 +421,7 @@ export function systemOverShareInvestigated(): AccessExplanationResponse {
   const system = body.subject;
   return {
     ...body,
-    schema_version: "1.1",
+    schema_version: "1.2",
     evidence: [],
     investigation: {
       presence: "undetermined",

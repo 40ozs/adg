@@ -3,11 +3,11 @@
   "basis": {
     "batches_received": 1,
     "is_empty": false,
-    "latest_activity_at": "2026-10-14T21:29:56.357281Z",
-    "latest_run_id": "ef2f220a-1838-4ae9-b883-e82216be0618",
+    "latest_activity_at": "2026-10-27T13:54:28.144324Z",
+    "latest_run_id": "8626a87c-dd89-42e1-b4e9-c95feba1564a",
     "observations_applied": 16,
     "runs": 1,
-    "token": "7984cebe9b5eca1ebb3356f05be9f1a2"
+    "token": "27ec4601fe6443a9744bc52ec5257708"
   },
   "complete": true,
   "graph": {
@@ -259,7 +259,7 @@
     "path": "\\\\FS01\\Finance",
     "share_key": "fs01|finance"
   },
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "share": {
     "key": "fs01|finance",
     "name": "Finance",

@@ -1039,8 +1039,8 @@
       "$ref": "#/$defs/ResourceRef"
     },
     "schema_version": {
-      "const": "1.1",
-      "default": "1.1",
+      "const": "1.2",
+      "default": "1.2",
       "title": "Schema Version",
       "type": "string"
     },
@@ -1082,5 +1082,5 @@
   ],
   "title": "AccessPathPageResponse",
   "type": "object",
-  "x-contract-version": "1.1"
+  "x-contract-version": "1.2"
 }

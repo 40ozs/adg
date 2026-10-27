@@ -269,6 +269,15 @@ removal targets, and nothing else:
 The architecture and the reviewer walkthrough are in
 [`docs/demo/access-investigation.md`](../demo/access-investigation.md).
 
+## `path_principals` (contract 1.2)
+
+A token entry (`TokenEntryView`: a `via` in resource impact, the token in an explanation)
+carries `path`, the membership chain as storage keys, subject first. Since 1.2 it also
+carries `path_principals`: the principal at each key of `path`, in the same order, labelled
+from the records the answer already loaded (no extra query). A key nobody has described is
+an unresolved summary (`resolved: false`), never a guessed name. `path` is unchanged and stays
+the identity of each hop; a client links by key and shows the label.
+
 ## Versioning
 
 Every body carries `schema_version`, pinned as a `const` in the schema.
@@ -280,4 +289,4 @@ Every body carries `schema_version`, pinned as a `const` in the schema.
 * A published schema file is never edited in place to mean something different.
 
 The version is part of every cache validator, so a client holding a `1.0` body cannot be
-handed a `304` by a server that now speaks `1.1`.
+handed a `304` by a server that now speaks `1.1` (or `1.2`).

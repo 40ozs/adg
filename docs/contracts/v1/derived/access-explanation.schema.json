@@ -1888,8 +1888,8 @@
       "$ref": "#/$defs/ResourceRef"
     },
     "schema_version": {
-      "const": "1.1",
-      "default": "1.1",
+      "const": "1.2",
+      "default": "1.2",
       "description": "Version of the derived-answer contract this body conforms to. Additive changes bump the minor; a breaking change means a new major and a new path.",
       "title": "Schema Version",
       "type": "string"
@@ -1944,5 +1944,5 @@
   ],
   "title": "AccessExplanationResponse",
   "type": "object",
-  "x-contract-version": "1.1"
+  "x-contract-version": "1.2"
 }

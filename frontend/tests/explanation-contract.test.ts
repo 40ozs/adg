@@ -278,8 +278,8 @@ describe("the derived contract", () => {
   it("is the version lib/derived.ts was written against", () => {
     // A major bump means a new directory and a new endpoint prefix; a minor bump is
     // additive and safe. Either way it is a deliberate edit here, not a surprise at runtime.
-    expect(explanationSchema["x-contract-version"]).toBe("1.1");
-    expect(explanationSchema.properties?.schema_version?.const).toBe("1.1");
+    expect(explanationSchema["x-contract-version"]).toBe("1.2");
+    expect(explanationSchema.properties?.schema_version?.const).toBe("1.2");
   });
 
   it("serves every derived path this application calls", () => {

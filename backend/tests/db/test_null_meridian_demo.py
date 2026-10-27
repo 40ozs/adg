@@ -684,7 +684,7 @@ class TestTheAccessInvestigation:
     ) -> None:
         body = await self.explain(api, seed["person"]["sid"])
 
-        assert body["schema_version"] == "1.1"
+        assert body["schema_version"] == "1.2"
         assert body["verdict"]["outcome"] == "granted"
         assert body["verdict"]["conclusive"] is True
         assert body["verdict"]["certainty"] == "at_least"

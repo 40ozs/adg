@@ -73,7 +73,7 @@ __all__ = [
     "validator_for",
 ]
 
-CONTRACT_VERSION: Final = "1.1"
+CONTRACT_VERSION: Final = "1.2"
 """The version of the derived-answer response contract published under
 ``docs/contracts/v1/``.
 

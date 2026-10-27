@@ -3,11 +3,11 @@
   "basis": {
     "batches_received": 1,
     "is_empty": false,
-    "latest_activity_at": "2026-10-14T21:30:07.788439Z",
-    "latest_run_id": "e9865907-220d-41a9-8ffe-b3072aadf926",
+    "latest_activity_at": "2026-10-27T13:54:33.876182Z",
+    "latest_run_id": "c437ce70-6c42-4bb8-9bc2-dfecbb70e790",
     "observations_applied": 10,
     "runs": 1,
-    "token": "502fd24ee8a22c8089adc143b5f7e6d4"
+    "token": "513d25480632b5eded28b89d2d263b15"
   },
   "group": {
     "display_name": "Finance-Team",
@@ -156,7 +156,7 @@
     "next_cursor": null,
     "total": null
   },
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "token": {
     "access_path": "remote_smb",
     "assumption": "authenticated_user",
@@ -166,6 +166,7 @@
         "depth": 0,
         "origin": "subject",
         "path": [],
+        "path_principals": [],
         "principal": {
           "display_name": "Finance-Team",
           "distinguished_name": null,
@@ -193,6 +194,44 @@
           "S-1-5-21-1004336348-1177238915-682003330-1201",
           "S-1-5-21-1004336348-1177238915-682003330-1202"
         ],
+        "path_principals": [
+          {
+            "display_name": "Finance-Team",
+            "distinguished_name": null,
+            "enabled": null,
+            "group_scope": "global",
+            "group_type": "security",
+            "host_key": null,
+            "is_deleted": false,
+            "is_group": true,
+            "key": "S-1-5-21-1004336348-1177238915-682003330-1201",
+            "kind": "domain_group",
+            "last_known_name": null,
+            "resolved": true,
+            "sam_account_name": null,
+            "sid": "S-1-5-21-1004336348-1177238915-682003330-1201",
+            "unresolved_reason": null,
+            "user_principal_name": null
+          },
+          {
+            "display_name": "Finance-RW",
+            "distinguished_name": null,
+            "enabled": null,
+            "group_scope": "domain_local",
+            "group_type": "security",
+            "host_key": null,
+            "is_deleted": false,
+            "is_group": true,
+            "key": "S-1-5-21-1004336348-1177238915-682003330-1202",
+            "kind": "domain_group",
+            "last_known_name": null,
+            "resolved": true,
+            "sam_account_name": null,
+            "sid": "S-1-5-21-1004336348-1177238915-682003330-1202",
+            "unresolved_reason": null,
+            "user_principal_name": null
+          }
+        ],
         "principal": {
           "display_name": "Finance-RW",
           "distinguished_name": null,
@@ -217,6 +256,7 @@
         "depth": 0,
         "origin": "well_known",
         "path": [],
+        "path_principals": [],
         "principal": {
           "display_name": null,
           "distinguished_name": null,
@@ -241,6 +281,7 @@
         "depth": 0,
         "origin": "well_known",
         "path": [],
+        "path_principals": [],
         "principal": {
           "display_name": null,
           "distinguished_name": null,
@@ -265,6 +306,7 @@
         "depth": 0,
         "origin": "logon_type",
         "path": [],
+        "path_principals": [],
         "principal": {
           "display_name": null,
           "distinguished_name": null,
