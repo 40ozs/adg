@@ -3,6 +3,7 @@ import type { JSX, ReactNode } from "react";
 import { currentViewer } from "@/lib/auth/current";
 import type { PrincipalDetail } from "@/lib/contracts";
 import {
+  deletedState,
   isGroup,
   isUnresolved,
   principalHrefForKey,
@@ -173,7 +174,7 @@ function IdentityInformation({ principal }: { principal: PrincipalDetail }): JSX
               </>
             ),
           },
-          { term: "Deleted", value: principal.is_deleted ? "yes" : "no" },
+          { term: "Deleted", value: <DeletedFact principal={principal} /> },
           { term: "Account name", value: <Maybe value={principal.sam_account_name} /> },
           { term: "User principal name", value: <Maybe value={principal.user_principal_name} /> },
           { term: "Distinguished name", value: <Maybe value={principal.distinguished_name} /> },
@@ -248,4 +249,21 @@ function IdentityInformation({ principal }: { principal: PrincipalDetail }): JSX
       )}
     </details>
   );
+}
+
+function DeletedFact({ principal }: { principal: PrincipalDetail }): JSX.Element {
+  switch (deletedState(principal)) {
+    case "yes":
+      return <>yes</>;
+    case "reported":
+      return (
+        <>
+          yes <span className="muted">— as the run that could not resolve this SID reported it</span>
+        </>
+      );
+    case "unknown":
+      return <NotReported />;
+    case "no":
+      return <>no</>;
+  }
 }

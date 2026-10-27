@@ -806,6 +806,12 @@ tr:focus-within .identifier {
   margin: 0.5rem 0 1rem;
 }
 
+/* A list of counts laid out as a strip: its disc markers sat on the previous count's last digit. */
+ul.filter-strip {
+  list-style: none;
+  padding-left: 0;
+}
+
 .filter-strip a {
   border-radius: 999px;
   border-color: var(--border);

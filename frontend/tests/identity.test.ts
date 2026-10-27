@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   ambiguousLabels,
   chainPrincipals,
+  deletedState,
   isAmbiguous,
   isGroup,
   principalHref,
@@ -23,7 +24,7 @@ import {
   principalViews,
   sidDomain,
 } from "@/lib/identity";
-import { principal } from "./factories";
+import { principal, principalDetail } from "./factories";
 
 describe("what to call a principal", () => {
   it("prefers the display name", () => {
@@ -201,5 +202,20 @@ describe("a principal's relationship views", () => {
     expect(principalHrefForKey("fs01|S-1-5-32-544", "effective-members")).toBe(
       "/identities/principal/fs01%7CS-1-5-32-544/effective-members",
     );
+  });
+});
+
+describe("whether an account was deleted", () => {
+  it("reads is_deleted on a directory principal", () => {
+    expect(deletedState(principalDetail({ kind: "user", is_deleted: true }))).toBe("yes");
+    expect(deletedState(principalDetail({ kind: "user", is_deleted: false }))).toBe("no");
+  });
+
+  it("reads an unresolved record's reason, not its is_deleted column default", () => {
+    // The banner says "(deleted)" from the reason; the facts must not answer "no" beside it.
+    const recorded = { kind: "unresolved", is_deleted: false } as const;
+    expect(deletedState(principalDetail({ ...recorded, unresolved_reason: "deleted" }))).toBe("reported");
+    expect(deletedState(principalDetail({ ...recorded, unresolved_reason: "lookup_failed" }))).toBe("unknown");
+    expect(deletedState(principalDetail({ resolved: false, kind: null, unresolved_reason: null }))).toBe("unknown");
   });
 });

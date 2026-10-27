@@ -817,6 +817,25 @@ describe("a principal's identity information", () => {
     expect(screen.queryByRole("heading", { name: "Identity information" })).not.toBeInTheDocument();
   });
 
+  it("says the same about deletion in the banner and in the facts", async () => {
+    const ORPHAN = principalDetail({
+      key: "S-1-5-21-1-2-3-1108",
+      sid: "S-1-5-21-1-2-3-1108",
+      kind: "unresolved",
+      display_name: null,
+      last_known_name: "CORP\\lhansen",
+      unresolved_reason: "deleted",
+      is_deleted: false,
+    });
+    vi.mocked(adg.fetchPrincipalDetail).mockResolvedValue(ok(ORPHAN));
+    vi.mocked(adg.fetchDirectGroups).mockResolvedValue(ok({ principal: ORPHAN, items: [], page: page() }));
+    render(await principalPage(ORPHAN.key));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("recorded as unresolved (deleted)");
+    const deleted = screen.getByText("Deleted").nextElementSibling as HTMLElement;
+    expect(deleted.textContent).toMatch(/^yes — as the run that could not resolve this SID reported it$/);
+  });
+
   it("refuses a view that does not exist", async () => {
     const route = Promise.resolve({ key: ADA.key, view: ["everything"] });
 

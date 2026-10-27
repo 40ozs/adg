@@ -95,7 +95,8 @@ export function RiskSummaryStrip({
   return (
     <section className="card" aria-label="Summary">
       <h2>Findings</h2>
-      <ul className="filter-strip" aria-label="Severity counts">
+      {/* role="list": Safari drops list semantics from a list with list-style: none. */}
+      <ul className="filter-strip" role="list" aria-label="Severity counts">
         {severityTiles(severityCounts).map((tile) => (
           <li key={tile.severity}>
             <span className={`badge status-${tile.tone}`}>{tile.severity}</span>{" "}

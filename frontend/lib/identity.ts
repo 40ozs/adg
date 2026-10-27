@@ -151,6 +151,24 @@ export function principalNotes(principal: AnyPrincipal): string[] {
 }
 
 /**
+ * What ADG knows about whether a principal's account was deleted, from the one fact that says.
+ *
+ * Two fields can: `is_deleted`, a directory fact only users and groups carry, and
+ * `unresolved_reason: "deleted"`, a collector's report that the SID's account is gone (an
+ * orphaned ACE). A record of kind `unresolved` never reports `is_deleted`, so its `false` is
+ * a column default, not an observation: reading it as "no" contradicts the banner above it.
+ */
+export function deletedState(principal: PrincipalDetail): "yes" | "reported" | "unknown" | "no" {
+  if (principal.is_deleted) {
+    return "yes";
+  }
+  if (isUnresolved(principal)) {
+    return principal.unresolved_reason === "deleted" ? "reported" : "unknown";
+  }
+  return "no";
+}
+
+/**
  * The detail page for a principal, keyed by the storage key the API issued — never by a
  * name, which two principals can share.
  *
