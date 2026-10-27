@@ -619,7 +619,8 @@ class TestExcludeLocalGroups:
     async def groups(client: AsyncClient, **params: Any) -> dict[str, Any]:
         response = await client.get("/api/v1/principals", params={"kind": "groups", **params})
         assert response.status_code == 200, response.text
-        return response.json()
+        body: dict[str, Any] = response.json()
+        return body
 
     async def test_off_by_default_and_when_false(self, client: AsyncClient) -> None:
         await ingest_scenario(client, "09-broken-inheritance")
