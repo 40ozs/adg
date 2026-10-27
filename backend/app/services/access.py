@@ -396,8 +396,11 @@ class AccessService:
         total = len(candidates)
         window = candidates[max(0, offset) : max(0, offset) + max(1, limit)]
 
+        # The chains are labelled in the same read: a via path runs through groups the
+        # expansions reached, which the rows on this page alone would not name.
+        chains = {key for _, via in window for entry in via for key in entry.path}
         labels = await self._membership.principals_by_keys(
-            sorted({key for key, _ in window} | set(trustees))
+            sorted({key for key, _ in window} | set(trustees) | chains)
         )
         items: list[PrincipalAccess] = []
         for key, via in window:

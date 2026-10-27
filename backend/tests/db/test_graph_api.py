@@ -475,6 +475,139 @@ class TestMembershipPaths:
         assert "not a member of itself" in response.json()["detail"]
 
 
+class TestShortestChainLabels:
+    """Every key on a shortest chain comes back with the principal it names."""
+
+    async def test_an_effective_member_chain_names_every_hop_in_order(
+        self, client: AsyncClient
+    ) -> None:
+        await ingest_scenario(client, "03-nested-group-grant")
+
+        item = (await client.get(f"/api/v1/groups/{FINANCE_RW}/effective-members")).json()["items"][
+            0
+        ]
+
+        assert [p["key"] for p in item["path_principals"]] == item["path"]
+        assert [p["display_name"] for p in item["path_principals"]] == [
+            "Finance-RW",
+            "Finance-Team",
+            "Alice Smith",
+        ]
+
+    async def test_an_effective_group_chain_names_every_hop_in_order(
+        self, client: AsyncClient
+    ) -> None:
+        await ingest_scenario(client, "03-nested-group-grant")
+
+        body = (
+            await client.get(f"/api/v1/principals/{ALICE}/groups", params={"scope": "effective"})
+        ).json()
+        outer = next(item for item in body["items"] if item["principal"]["key"] == FINANCE_RW)
+
+        assert outer["path"] == [ALICE, FINANCE_TEAM, FINANCE_RW]
+        assert [p["display_name"] for p in outer["path_principals"]] == [
+            "Alice Smith",
+            "Finance-Team",
+            "Finance-RW",
+        ]
+
+    async def test_an_undescribed_hop_stays_its_sid_and_a_shared_hop_is_named_twice(
+        self, client: AsyncClient
+    ) -> None:
+        await replay(
+            client,
+            synthetic_run(
+                edges=[("1000", "3000"), ("3000", "2000"), ("3000", "2001")],
+                # 3000 is never described: it is on both chains as a bare SID.
+                principals={"1000": "domain_group", "2000": "user", "2001": "user"},
+            ),
+        )
+
+        body = (await client.get(f"/api/v1/groups/{DOMAIN_SID}-1000/effective-members")).json()
+        chains = {item["principal"]["key"]: item["path_principals"] for item in body["items"]}
+
+        for member in ("2000", "2001"):
+            chain = chains[f"{DOMAIN_SID}-{member}"]
+            assert [p["display_name"] for p in chain] == [
+                "principal-1000",
+                None,
+                f"principal-{member}",
+            ]
+            hop = chain[1]
+            assert hop["key"] == f"{DOMAIN_SID}-3000"
+            assert hop["sid"] == f"{DOMAIN_SID}-3000"
+            assert hop["resolved"] is False
+
+
+class TestPrincipalDirectory:
+    async def test_users_and_groups_are_listed_apart_with_their_degree(
+        self, client: AsyncClient
+    ) -> None:
+        await ingest_scenario(client, "03-nested-group-grant")
+
+        users = (await client.get("/api/v1/principals", params={"kind": "users"})).json()
+        groups = (await client.get("/api/v1/principals", params={"kind": "groups"})).json()
+
+        assert [item["key"] for item in users["items"]] == [ALICE]
+        assert users["items"][0]["direct_group_count"] == 1
+        assert users["page"]["total"] == 1
+        assert [item["key"] for item in groups["items"]] == [FINANCE_TEAM, FINANCE_RW]
+        team = groups["items"][0]
+        assert (team["direct_member_count"], team["direct_group_count"]) == (1, 1)
+        assert team["is_group"] is True
+
+    @pytest.mark.parametrize(
+        ("kind", "q", "expected"),
+        [
+            ("users", "alice", [ALICE]),
+            ("users", "NULLMERIDIAN\\Alice", [ALICE]),
+            ("groups", "finance-t", [FINANCE_TEAM]),
+            ("groups", "fin", [FINANCE_TEAM, FINANCE_RW]),
+            ("users", ALICE, [ALICE]),
+            ("users", ALICE.lower(), [ALICE]),
+            ("groups", f"{DOMAIN_SID}-12", [FINANCE_TEAM, FINANCE_RW]),
+            ("groups", ALICE, []),
+            ("users", "%", []),
+            ("users", "Smith", []),
+        ],
+    )
+    async def test_search_is_a_prefix_of_a_name_or_of_a_sid(
+        self, client: AsyncClient, kind: str, q: str, expected: list[str]
+    ) -> None:
+        await ingest_scenario(client, "03-nested-group-grant")
+
+        body = (await client.get("/api/v1/principals", params={"kind": kind, "q": q})).json()
+
+        assert [item["key"] for item in body["items"]] == expected
+        assert body["page"]["total"] == len(expected)
+
+    async def test_paging_walks_every_user_exactly_once(self, client: AsyncClient) -> None:
+        await replay(
+            client,
+            synthetic_run(edges=[], principals={str(rid): "user" for rid in range(2000, 2007)}),
+        )
+
+        seen: list[str] = []
+        cursor: str | None = None
+        while True:
+            params: dict[str, Any] = {"kind": "users", "limit": 3}
+            if cursor:
+                params["cursor"] = cursor
+            body = (await client.get("/api/v1/principals", params=params)).json()
+            seen.extend(item["key"] for item in body["items"])
+            assert body["page"]["total"] == 7
+            cursor = body["page"]["next_cursor"]
+            if cursor is None:
+                break
+
+        assert seen == [f"{DOMAIN_SID}-{rid}" for rid in range(2000, 2007)]
+
+    async def test_an_unknown_kind_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/principals", params={"kind": "computers"})
+
+        assert response.status_code == 422
+
+
 class TestPrincipalGroups:
     async def test_direct_groups_are_the_default(self, client: AsyncClient) -> None:
         await ingest_scenario(client, "03-nested-group-grant")

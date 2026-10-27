@@ -327,6 +327,13 @@ class TestWhoCanReachAResource:
         alice = next(item for item in body["items"] if item["principal"]["key"] == ALICE)
         assert [entry["principal"]["key"] for entry in alice["via"]] == [FINANCE_RW]
         assert alice["via"][0]["path"] == [ALICE, FINANCE_TEAM, FINANCE_RW]
+        # Every hop of the chain is named from the same batched label read.
+        assert [hop["key"] for hop in alice["via"][0]["path_principals"]] == [
+            ALICE,
+            FINANCE_TEAM,
+            FINANCE_RW,
+        ]
+        assert all(hop["resolved"] for hop in alice["via"][0]["path_principals"])
 
     async def test_groups_are_excluded_by_default_and_included_on_request(
         self, client: AsyncClient, nested_grant: None

@@ -15,7 +15,7 @@ administrators into another's would invent access that nobody has.
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
@@ -32,8 +32,14 @@ from app.api.pagination import (
     encode_offset_cursor,
     normalize_limit,
 )
-from app.domain import GraphCycle, MembershipPath, Sid, TraversalLimits
-from app.repositories import AliasRecord, DirectEdgeRecord, MembershipRepository, PrincipalRecord
+from app.domain import GraphCycle, MembershipPath, PrincipalKind, Sid, TraversalLimits
+from app.repositories import (
+    AliasRecord,
+    DirectEdgeRecord,
+    ListedPrincipal,
+    MembershipRepository,
+    PrincipalRecord,
+)
 from app.services.graph import (
     GROUP_KINDS,
     EffectiveMembership,
@@ -182,8 +188,36 @@ class EffectiveMemberView(BaseModel):
     path: list[str] = Field(
         description="Shortest chain of keys from the queried group to this principal."
     )
+    path_principals: list[PrincipalSummary] = Field(
+        default_factory=list,
+        description=(
+            "The principal at each key of path, in the same order, so a chain renders as "
+            "names. Labelled from the traversal that produced the path: no extra lookup, "
+            "and a key nobody has described is an unresolved summary, never a guessed name."
+        ),
+    )
     edge_kinds: list[str]
     via_foreign_security_principal: bool = False
+
+
+class ListedPrincipalView(PrincipalSummary):
+    """One row of the users or groups directory."""
+
+    direct_member_count: int = Field(description="Principals directly inside this one.")
+    direct_group_count: int = Field(description="Groups this principal is directly inside.")
+
+
+class PrincipalListResponse(BaseModel):
+    kind: Literal["users", "groups"]
+    query: str | None = Field(
+        default=None,
+        description=(
+            "The search term, if any. A term starting S-1- is a SID prefix; anything else is "
+            "the start of a display, account, UPN or last known name, case-insensitive."
+        ),
+    )
+    items: list[ListedPrincipalView]
+    page: PageInfo
 
 
 class MembershipPathView(BaseModel):
@@ -237,6 +271,48 @@ class MembershipPathsResponse(BaseModel):
 
 
 # ----------------------------------------------------------------- endpoints
+
+
+@router.get(
+    "/principals",
+    response_model=PrincipalListResponse,
+    summary="The users or the groups ADG has observed, searchable by SID or name prefix",
+)
+async def list_principals(
+    session: Session,
+    kind: Annotated[
+        Literal["users", "groups"],
+        Query(
+            description=(
+                "users: user and managed service accounts. groups: domain and local groups."
+            )
+        ),
+    ],
+    q: Annotated[
+        str | None,
+        Query(max_length=256, description="A SID prefix (S-1-...) or the start of a name."),
+    ] = None,
+    limit: LimitQuery = None,
+    cursor: CursorQuery = None,
+) -> PrincipalListResponse:
+    repository = MembershipRepository(session)
+    kinds = _DIRECTORY_KINDS[kind]
+    term = q.strip() if q and q.strip() else None
+    page_size = normalize_limit(limit)
+    page = await repository.list_principals(
+        kinds, term=term, limit=page_size, after=decode_keyset_cursor(cursor)
+    )
+    return PrincipalListResponse(
+        kind=kind,
+        query=term,
+        items=[_listed_view(item) for item in page.items],
+        page=PageInfo(
+            limit=page_size,
+            has_more=page.has_more,
+            next_cursor=encode_keyset_cursor(page.next_key) if page.next_key else None,
+            total=await repository.count_principals(kinds, term=term),
+        ),
+    )
 
 
 @router.get(
@@ -322,10 +398,11 @@ async def group_effective_members(
 
     matching = [node for node in result.nodes if node.matches(include)]
     items, page = _slice(matching, limit, cursor)
+    labels = _traversal_labels(key, record, result)
     return EffectiveMembersResponse(
-        group=principal_summary(key, record),
+        group=labels[key],
         include=include.value,
-        items=[_effective_view(node) for node in items],
+        items=[_effective_view(node, labels) for node in items],
         page=page,
         traversal=_traversal_view(result, limits),
         cycles=[_cycle_view(cycle) for cycle in result.cycles],
@@ -377,9 +454,10 @@ async def principal_groups(
 
     result = await GraphService(repository).effective_groups(key, limits)
     items, page_info = _slice(list(result.nodes), limit, cursor)
+    labels = _traversal_labels(key, record, result)
     return EffectiveGroupsResponse(
-        principal=principal_summary(key, record),
-        items=[_effective_view(node) for node in items],
+        principal=labels[key],
+        items=[_effective_view(node, labels) for node in items],
         page=page_info,
         traversal=_traversal_view(result, limits),
         cycles=[_cycle_view(cycle) for cycle in result.cycles],
@@ -585,6 +663,20 @@ def _principal_detail(
     )
 
 
+_DIRECTORY_KINDS: dict[str, tuple[PrincipalKind, ...]] = {
+    "users": (PrincipalKind.USER, PrincipalKind.MANAGED_SERVICE_ACCOUNT),
+    "groups": tuple(sorted(GROUP_KINDS)),
+}
+
+
+def _listed_view(item: ListedPrincipal) -> ListedPrincipalView:
+    return ListedPrincipalView(
+        **principal_summary(item.record.principal_key, item.record).model_dump(),
+        direct_member_count=item.direct_member_count,
+        direct_group_count=item.direct_group_count,
+    )
+
+
 def _direct_view(item: DirectEdgeRecord) -> DirectMemberView:
     return DirectMemberView(
         principal=principal_summary(item.counterpart_key, item.counterpart),
@@ -598,7 +690,7 @@ def _direct_view(item: DirectEdgeRecord) -> DirectMemberView:
     )
 
 
-def _effective_view(node: ResolvedNode) -> EffectiveMemberView:
+def _node_summary(node: ResolvedNode) -> PrincipalSummary:
     summary = principal_summary(node.key, node.principal)
     if node.principal is None and node.reported_kind is not None:
         # The edge said what the member is even though nothing has described it. Reporting
@@ -606,10 +698,29 @@ def _effective_view(node: ResolvedNode) -> EffectiveMemberView:
         summary = summary.model_copy(
             update={"kind": node.reported_kind.value, "is_group": node.is_group}
         )
+    return summary
+
+
+def _traversal_labels(
+    root_key: str, root: PrincipalRecord | None, result: EffectiveMembership
+) -> dict[str, PrincipalSummary]:
+    """Every node a traversal reached, plus its root, rendered once.
+
+    A shortest path runs from the root through nodes the traversal itself reached, so this
+    labels every key of every path on the page with the records the traversal already
+    loaded: one batched read per traversal, not one per chain or per SID.
+    """
+    labels = {node.key: _node_summary(node) for node in result.nodes}
+    labels[root_key] = principal_summary(root_key, root)
+    return labels
+
+
+def _effective_view(node: ResolvedNode, labels: dict[str, PrincipalSummary]) -> EffectiveMemberView:
     return EffectiveMemberView(
-        principal=summary,
+        principal=labels[node.key],
         depth=node.depth,
         path=list(node.path),
+        path_principals=[labels.get(key) or principal_summary(key, None) for key in node.path],
         edge_kinds=[kind.value for kind in node.edge_kinds],
         via_foreign_security_principal=node.via_foreign_security_principal,
     )

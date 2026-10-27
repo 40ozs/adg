@@ -5286,6 +5286,14 @@
             "title": "Path",
             "type": "array"
           },
+          "path_principals": {
+            "description": "The principal at each key of path, in the same order, so a chain renders as names. Labelled from the traversal that produced the path: no extra lookup, and a key nobody has described is an unresolved summary, never a guessed name.",
+            "items": {
+              "$ref": "#/components/schemas/PrincipalSummary"
+            },
+            "title": "Path Principals",
+            "type": "array"
+          },
           "principal": {
             "$ref": "#/components/schemas/PrincipalSummary"
           },
@@ -7967,6 +7975,183 @@
           "max_paths"
         ],
         "title": "LimitsView",
+        "type": "object"
+      },
+      "ListedPrincipalView": {
+        "description": "One row of the users or groups directory.",
+        "properties": {
+          "direct_group_count": {
+            "description": "Groups this principal is directly inside.",
+            "title": "Direct Group Count",
+            "type": "integer"
+          },
+          "direct_member_count": {
+            "description": "Principals directly inside this one.",
+            "title": "Direct Member Count",
+            "type": "integer"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "distinguished_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distinguished Name"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "group_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Scope"
+          },
+          "group_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Type"
+          },
+          "host_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Key"
+          },
+          "is_deleted": {
+            "default": false,
+            "title": "Is Deleted",
+            "type": "boolean"
+          },
+          "is_group": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the kind is unknown, never a guessed false.",
+            "title": "Is Group"
+          },
+          "key": {
+            "description": "Storage key: the SID, or host|SID for a local group.",
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when no run has described this principal. The membership that reached it was still observed; only the description is missing.",
+            "title": "Kind"
+          },
+          "last_known_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Known Name"
+          },
+          "resolved": {
+            "description": "Whether ADG holds a principal record for this key.",
+            "title": "Resolved",
+            "type": "boolean"
+          },
+          "sam_account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sam Account Name"
+          },
+          "sid": {
+            "title": "Sid",
+            "type": "string"
+          },
+          "unresolved_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unresolved Reason"
+          },
+          "user_principal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Principal Name"
+          }
+        },
+        "required": [
+          "key",
+          "sid",
+          "resolved",
+          "direct_member_count",
+          "direct_group_count"
+        ],
+        "title": "ListedPrincipalView",
         "type": "object"
       },
       "LivenessResponse": {
@@ -10899,6 +11084,47 @@
         ],
         "title": "PrincipalKind",
         "type": "string"
+      },
+      "PrincipalListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListedPrincipalView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "users",
+              "groups"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The search term, if any. A term starting S-1- is a SID prefix; anything else is the start of a display, account, UPN or last known name, case-insensitive.",
+            "title": "Query"
+          }
+        },
+        "required": [
+          "kind",
+          "items",
+          "page"
+        ],
+        "title": "PrincipalListResponse",
+        "type": "object"
       },
       "PrincipalObservation": {
         "additionalProperties": false,
@@ -17118,6 +17344,14 @@
               "type": "string"
             },
             "title": "Path",
+            "type": "array"
+          },
+          "path_principals": {
+            "description": "The principal at each key of path, in the same order, from the labels this answer already loaded. A key nobody has described is an unresolved summary.",
+            "items": {
+              "$ref": "#/components/schemas/PrincipalSummary"
+            },
+            "title": "Path Principals",
             "type": "array"
           },
           "principal": {
@@ -24314,6 +24548,127 @@
         "summary": "Every resource one group's membership reaches, and what it confers",
         "tags": [
           "access"
+        ]
+      }
+    },
+    "/api/v1/principals": {
+      "get": {
+        "operationId": "list_principals_api_v1_principals_get",
+        "parameters": [
+          {
+            "description": "users: user and managed service accounts. groups: domain and local groups.",
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "description": "users: user and managed service accounts. groups: domain and local groups.",
+              "enum": [
+                "users",
+                "groups"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "description": "A SID prefix (S-1-...) or the start of a name.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A SID prefix (S-1-...) or the start of a name.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Items per page (default 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 500,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Items per page (default 100).",
+              "title": "Limit"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous response's next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque cursor from a previous response's next_cursor.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The users or the groups ADG has observed, searchable by SID or name prefix",
+        "tags": [
+          "graph"
         ]
       }
     },

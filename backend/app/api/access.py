@@ -357,6 +357,13 @@ class TokenEntryView(BaseModel):
     path: list[str] = Field(
         default_factory=list, description="The membership chain, subject first."
     )
+    path_principals: list[PrincipalSummary] = Field(
+        default_factory=list,
+        description=(
+            "The principal at each key of path, in the same order, from the labels this "
+            "answer already loaded. A key nobody has described is an unresolved summary."
+        ),
+    )
 
 
 class TokenView(BaseModel):
@@ -1792,6 +1799,7 @@ def _token_entry_view(entry: TokenSid, labels: dict[str, PrincipalRecord]) -> To
         assumed=entry.is_assumed,
         depth=entry.depth,
         path=list(entry.path),
+        path_principals=[principal_summary(key, labels.get(key)) for key in entry.path],
     )
 
 

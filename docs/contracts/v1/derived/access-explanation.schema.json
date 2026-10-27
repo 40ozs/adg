@@ -1703,6 +1703,14 @@
           "title": "Path",
           "type": "array"
         },
+        "path_principals": {
+          "description": "The principal at each key of path, in the same order, from the labels this answer already loaded. A key nobody has described is an unresolved summary.",
+          "items": {
+            "$ref": "#/$defs/PrincipalSummary"
+          },
+          "title": "Path Principals",
+          "type": "array"
+        },
         "principal": {
           "$ref": "#/$defs/PrincipalSummary"
         }
