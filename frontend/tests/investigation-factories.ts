@@ -4,7 +4,7 @@
  * `apollo()` is the canonical demo's response in miniature, shaped field for field like the
  * one `GET /api/v1/access/explain` returns for Fatima Gordon against
  * `\\GP-ENG-FS01\Engineering\Projects\Apollo` after a Genesee Press reset (pinned against
- * the real engine in `backend/tests/db/test_null_meridian_demo.py::TestTheAccessInvestigation`):
+ * the real engine in `backend/tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation`):
  *
  * - NTFS: a direct, explicit Modify entry carries the access; an inherited Modify entry
  *   reached through five nested groups is redundant behind it.
