@@ -719,6 +719,50 @@ describe("a principal's shortest chains", () => {
     // A described hop shows only its name; its key is the link's title.
     expect(links[1]).toHaveAttribute("title", TEAM.key);
   });
+
+  it("keeps a hop recorded as unresolved unlinked, under the name the record holds", async () => {
+    // ADG-DEMO-01: a record of kind `unresolved` exists (resolved: true) to say no authority
+    // could say what the SID is. It is not a resolved principal, and the chain must not say so.
+    const RECORDED = principal({
+      key: "S-1-5-21-1-2-3-1108",
+      sid: "S-1-5-21-1-2-3-1108",
+      kind: "unresolved",
+      last_known_name: "CORP\\lhansen",
+      unresolved_reason: "deleted",
+    });
+    const PC = principal({ key: "S-1-5-21-1-2-3-3001", display_name: "WS-0042$", kind: "computer", is_group: false });
+    vi.mocked(adg.fetchEffectiveGroups).mockResolvedValue(
+      ok({
+        principal: principalDetail(ADA),
+        items: [
+          {
+            principal: RW,
+            depth: 3,
+            path: [ADA.key, RECORDED.key, PC.key, RW.key],
+            path_principals: [ADA, RECORDED, PC, RW],
+            edge_kinds: ["member", "member", "member"],
+            via_foreign_security_principal: false,
+          },
+        ],
+        page: page(),
+        traversal: TRAVERSAL,
+        cycles: [],
+      }),
+    );
+    const { container } = render(await principalPage(ADA.key, "effective-groups"));
+
+    const chain = container.querySelector(".principal-chain") as HTMLElement;
+    expect(chain.textContent).toBe("Ada Lovelace → CORP\\lhansen → WS-0042$ → Finance-RW");
+    const recorded = within(chain).getByText("CORP\\lhansen");
+    expect(recorded.tagName).toBe("CODE");
+    expect(recorded.closest("a")).toBeNull();
+    expect(recorded.getAttribute("title")).toBe(`${RECORDED.key}: a run recorded this SID as unresolved`);
+    // A computer account is a principal like any other: it opens its own page.
+    expect(within(chain).getByRole("link", { name: "WS-0042$" })).toHaveAttribute(
+      "href",
+      `/identities/principal/${PC.key}`,
+    );
+  });
 });
 
 describe("a principal's identity information", () => {

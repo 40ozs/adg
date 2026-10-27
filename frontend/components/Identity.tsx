@@ -103,8 +103,9 @@ export function PrincipalCell({
  *
  * Each link is built from the node's storage key, never from its name: two principals can
  * share a name, and only the key opens the right one; the key is the link's `title`, never
- * text in the chain. A node no run has described has no page worth opening, so it stays
- * text — its SID, or the name an ACE last carried — and is never a link that leads nowhere.
+ * text in the chain. A node nothing has said what it is — no record, or a record of kind
+ * `unresolved` (`isUnresolved`, ADG-DEMO-01) — stays text: its SID, or the name an ACE last
+ * carried, never a guessed name and never a link presenting it as a resolved principal.
  * Prefetching is off: a page of chains is hundreds of links, and prefetching each one would
  * ask the server for hundreds of pages nobody opened.
  */
@@ -118,14 +119,18 @@ export function PrincipalChain({
       {principals.map((principal, index) => (
         <Fragment key={`${index}:${principal.key}`}>
           {index > 0 && " → "}
-          {principal.resolved ? (
+          {!isUnresolved(principal) ? (
             <Link href={principalHref(principal)} prefetch={false} title={principal.key}>
               {principalLabel(principal)}
             </Link>
           ) : (
             <code
               className={principalLabel(principal) === principal.sid ? "identifier sid" : "identifier"}
-              title={`${principal.key}: no run has described this SID`}
+              title={
+                principal.resolved
+                  ? `${principal.key}: a run recorded this SID as unresolved`
+                  : `${principal.key}: no run has described this SID`
+              }
             >
               {principalLabel(principal)}
             </code>
