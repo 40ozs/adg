@@ -89,7 +89,7 @@ export async function PrincipalDirectory({
       </Form>
       <p className="muted">
         Matches the start of a display, account or UPN name, case-insensitively, or the start
-        of a SID. <code>DOMAIN\name</code> matches on the account name.
+        of a SID. <code className="nowrap">DOMAIN\name</code> matches on the account name.
       </p>
       {kind === "groups" && (
         <p>
