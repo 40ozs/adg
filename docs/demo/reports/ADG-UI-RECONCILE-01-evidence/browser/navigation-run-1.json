@@ -1,0 +1,123 @@
+PASS  sign in as viewer
+PASS  Servers: the directory strip, and a numeric sort on Shares — 33 servers, shares 8,5,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+PASS  Servers → Users without a reload — 50 rows; Page 1. 1885 users in total, up to 50 per page. Previous Next
+PASS  Users: search by name — 13 match(es)
+PASS  Users: search by SID
+PASS  Users: sort by Direct groups, numerically, both ways — 50 rows
+PASS  Users: selecting a user opens that user, by SID, without a reload
+PASS  Identity information collapses, stays collapsed across every view, and expands — effective-groups, shares, directories, acl-references, groups
+PASS  Identity information is keyboard-operable
+PASS  one view switch is one request, and no chain link prefetches — 1 navigation; 3 tab prefetch(es); 144 chain links, none prefetched
+PASS  Shortest chains: names, not SIDs, in order — Bianca Rossi → Sales-Enterprise → GG_Sales → All Staff → AD-Okta-Sync-All → OKTA_Slack_All → sg-okta-slack-user
+PASS  Shortest chains: a group node opens that group; Back and Forward work — /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1123
+PASS  Shortest chains: a user node opens that user — /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133
+PASS  Groups: search, sort by members, open a group, switch its views — /identities/principal/S-1-5-21-3949361974-1583827165-633756269-2472/groups
+PASS  Groups: Exclude local groups filters on the server, keeps search and sort, no reload — 33 local Administrators groups; 5 Finance groups kept
+PASS  Groups → Servers without a reload
+PASS  a deep link survives a fresh load
+PASS  the old ?key= address redirects to the key's path
+PASS  no page errors — 0 console error(s)
+{
+  "base": "http://127.0.0.1:8787",
+  "passed": 19,
+  "failed": 0,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "results": [
+    {
+      "name": "sign in as viewer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Servers: the directory strip, and a numeric sort on Shares",
+      "ok": true,
+      "detail": "33 servers, shares 8,5,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3"
+    },
+    {
+      "name": "Servers → Users without a reload",
+      "ok": true,
+      "detail": "50 rows; Page 1. 1885 users in total, up to 50 per page. Previous Next"
+    },
+    {
+      "name": "Users: search by name",
+      "ok": true,
+      "detail": "13 match(es)"
+    },
+    {
+      "name": "Users: search by SID",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Users: sort by Direct groups, numerically, both ways",
+      "ok": true,
+      "detail": "50 rows"
+    },
+    {
+      "name": "Users: selecting a user opens that user, by SID, without a reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Identity information collapses, stays collapsed across every view, and expands",
+      "ok": true,
+      "detail": "effective-groups, shares, directories, acl-references, groups"
+    },
+    {
+      "name": "Identity information is keyboard-operable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "one view switch is one request, and no chain link prefetches",
+      "ok": true,
+      "detail": "1 navigation; 3 tab prefetch(es); 144 chain links, none prefetched"
+    },
+    {
+      "name": "Shortest chains: names, not SIDs, in order",
+      "ok": true,
+      "detail": "Bianca Rossi → Sales-Enterprise → GG_Sales → All Staff → AD-Okta-Sync-All → OKTA_Slack_All → sg-okta-slack-user"
+    },
+    {
+      "name": "Shortest chains: a group node opens that group; Back and Forward work",
+      "ok": true,
+      "detail": "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1123"
+    },
+    {
+      "name": "Shortest chains: a user node opens that user",
+      "ok": true,
+      "detail": "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133"
+    },
+    {
+      "name": "Groups: search, sort by members, open a group, switch its views",
+      "ok": true,
+      "detail": "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-2472/groups"
+    },
+    {
+      "name": "Groups: Exclude local groups filters on the server, keeps search and sort, no reload",
+      "ok": true,
+      "detail": "33 local Administrators groups; 5 Finance groups kept"
+    },
+    {
+      "name": "Groups → Servers without a reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "a deep link survives a fresh load",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the old ?key= address redirects to the key's path",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors",
+      "ok": true,
+      "detail": "0 console error(s)"
+    }
+  ]
+}

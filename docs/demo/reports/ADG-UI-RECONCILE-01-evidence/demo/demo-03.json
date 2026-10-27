@@ -1,0 +1,215 @@
+{
+  "results": [
+    {
+      "name": "sign in as the development auditor",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "demo guide offers the coverage and recovery walkthrough",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the walkthrough has ten steps",
+      "ok": true,
+      "detail": "10"
+    },
+    {
+      "name": "1. the totals are not called totals while a source is unavailable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1. the reading is an announced status region",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "1. the counts themselves are still shown (3 critical, 8 high)",
+      "ok": true,
+      "detail": "critical 3\nhigh 8\nmedium 1957\nlow 423\ninformational 6995"
+    },
+    {
+      "name": "1. the unavailable server's findings are held, not zeroed",
+      "ok": true,
+      "detail": "ntfs (NM-FS-03): 189 open finding(s) — Older evidence, from the scan of 2026-09-17"
+    },
+    {
+      "name": "2. coverage line beside the totals",
+      "ok": true,
+      "detail": "Collection behind these counts\n\n⚠ incomplete Coverage: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence\n\nNot exhaustive: read these counts as what ADG holds, not as everything the estate contains.\n\nCollected state ec61938d488e · 300 collector runs · last collector write 2026-10-27 13:59:51 UTC\n\nWhich scopes are not complete (2)\n\nEvery scope, on the collector status page"
+    },
+    {
+      "name": "2. verdict in a word and a symbol, not color alone",
+      "ok": true,
+      "detail": "Collection behind these counts\n\n⚠ incomplete Coverage: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence\n\nNot exhaustive: read these counts as what ADG holds, not as everything the estate contains.\n\nCollected state ec61938d488e · 300 collector runs · last collector write 2026-10-27 13:59:51 UTC\n\nWhich scopes are not complete (2)\n\nEvery scope, on the collector status page"
+    },
+    {
+      "name": "2. says the totals are not exhaustive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "2. names the snapshot",
+      "ok": true,
+      "detail": "Collection behind these counts\n\n⚠ incomplete Coverage: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence\n\nNot exhaustive: read these counts as what ADG holds, not as everything the estate contains.\n\nCollected state ec61938d488e · 300 collector runs · last collector write 2026-10-27 13:59:51 UTC\n\nWhich scopes are not complete (2)\n\nEvery scope, on the collector status page"
+    },
+    {
+      "name": "2. Tab reaches the incomplete-scopes disclosure",
+      "ok": true,
+      "detail": "2"
+    },
+    {
+      "name": "2. Enter opens it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "2. the focused disclosure shows a focus outline",
+      "ok": true,
+      "detail": "solid"
+    },
+    {
+      "name": "3. the unavailable source is named, with the age of its evidence",
+      "ok": true,
+      "detail": "Collection behind these counts\n\n⚠ incomplete Coverage: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence\n\nNot exhaustive: read these counts as what ADG holds, not as everything the estate contains.\n\nCollected state ec61938d488e · 300 collector runs · last collector write 2026-10-27 13:59:51 UTC\n\nWhich scopes are not complete (2)\nntfs (NM-FS-03): the latest scan could not reach its target. ADG still holds what the run of 2026-09-17 collected; anything that changed since is not reflected.\nntfs (NM-MIG-FS01): the latest scan was partial. 2 dec"
+    },
+    {
+      "name": "3. the collector status page shows NM-FS-03",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "4. the answer reads only complete scopes, and says the rest cannot change it",
+      "ok": true,
+      "detail": "6. How complete is the evidence behind this answer?\n\n✓ complete Missing collection elsewhere cannot change this answer.\n\nEvery scope this answer reads was collected completely in its latest scan (active_directory (nullmeridian.info), local_groups (NM-ENG-FS01), ntfs (NM-ENG-FS01), smb (NM-ENG-FS01)). 2 scope(s) elsewhere in the estate are not complete. None of them holds this folder, its share, its server's local groups or the directory, so they cannot change this answer.\n\nThe scopes this answer"
+    },
+    {
+      "name": "4. the four scopes the answer reads, each collected",
+      "ok": true,
+      "detail": "✓ collected active_directory (nullmeridian.info) — Current, collected 2026-10-01 | ✓ collected local_groups (NM-ENG-FS01) — Current, collected 2026-10-01 | ✓ collected ntfs (NM-ENG-FS01) — Current, collected 2026-10-01 | ✓ collected smb (NM-ENG-FS01) — Current, collected 2026-10-01"
+    },
+    {
+      "name": "4. the investigation's own answer is unchanged: Modify, at_least",
+      "ok": true,
+      "detail": "1. What ADG evaluated\n\nThe observed answer, before any explanation of it.\n\nPrincipal\nFatima Gordon\nResource\n\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo · share Engineering\nEffective access\nAccess present\nThis principal holds rights on this object.\nEffective rights\nModify\nCertainty\nat_least — A lower b"
+    },
+    {
+      "name": "6. timed out, stated in words and a symbol",
+      "ok": true,
+      "detail": "How this comparison ended\n⏱ timed out Timed out — no comparison is presented\n\nThe comparison stopped when it passed its 1 ms window (while it was at the read step). Nothing it had read is shown as an answer, because an interrupted comparison is not one. Choose a recovery below.\n\nGet a complete comparison\nRetry inside the standard 4-second window\nCompare only folder permission entries (3,947 → 4,12"
+    },
+    {
+      "name": "6. the state is announced (role=status, aria-live)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "6. each recovery action carries its own live 'comparing…' status",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "6. no partial list is presented, and nothing says 'nothing is different'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "7. Tab reaches Diagnostics",
+      "ok": true,
+      "detail": "9"
+    },
+    {
+      "name": "7. Diagnostics name the attempt, the window and what was read",
+      "ok": true,
+      "detail": "Diagnostics\nComparison aa41ea45-f3a8-44b0-bba7-fd8b308c4881\nWindow 1 ms; ran 216 ms\nObjects read: 4,898 at the earlier instant, 5,000 at the later\nObjects that differed: 0"
+    },
+    {
+      "name": "8. recovery actions offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "8. the retry stops as incomplete, at a named boundary, and says so",
+      "ok": true,
+      "detail": "How this comparison ended\n◐ incomplete Incomplete — this is not the whole comparison\n\nMore objects lie inside this scope than one comparison reads (5,000 per instant). Both instants were compared through group memberships up to S-1-5-21-3949361974-1583827165-633756269-513->S-1-5-21-3949361974-1583827165-633756269-2325|primary_group, and nothing after it was compared. The changes below are real, but a change past that point is not absent, it is unexamined.\n\nGet a complete comparison\nCompare only "
+    },
+    {
+      "name": "8. the retry names the first attempt",
+      "ok": true,
+      "detail": "http://localhost:3000/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=4000&retry_of=aa41ea45-f3a8-44b0-bba7-fd8b308c4881"
+    },
+    {
+      "name": "8. its list is labelled partial",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "10. the final comparison is marked complete and recovered",
+      "ok": true,
+      "detail": "How this comparison ended\n✓ complete Complete — this comparison recovered the earlier attempt\n\nEvery object covering either instant inside the scope was compared. It took 460 ms.\n\nDiagnostics\nComparison f92147bb-4ea1-4650-8cf0-26134e0e2319\nRetry of 939de25b-b7e8-4cad-9054-73e0dc288624\nWindow 4-second; ran 460 ms\nObjects read: 3,947 at the earlier instant, 4,124 at the later\nObjects that differed: "
+    },
+    {
+      "name": "10. no recovery is offered for a complete comparison",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "10. the complete comparison presents its differences",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no horizontal scroll at 390px: risks",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no horizontal scroll at 390px: investigation",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no horizontal scroll at 390px: comparison (timed out)",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no horizontal scroll at 390px: comparison (incomplete)",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no horizontal scroll at 390px: comparison (recovered)",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no console errors from the application",
+      "ok": true,
+      "detail": " || "
+    },
+    {
+      "name": "known, pre-existing: /favicon.ico 404",
+      "ok": true,
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico"
+    }
+  ],
+  "passed": 39,
+  "total": 39,
+  "timings": [
+    {
+      "step": "drill: 1 ms window, estate-wide",
+      "browser_ms": 326
+    },
+    {
+      "step": "retry: standard window, estate-wide",
+      "browser_ms": 430
+    },
+    {
+      "step": "recovery: folder permission entries only",
+      "browser_ms": 758
+    }
+  ]
+}

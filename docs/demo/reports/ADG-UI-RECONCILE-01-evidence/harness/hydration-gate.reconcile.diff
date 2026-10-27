@@ -1,0 +1,42 @@
+--- ~/Documents/code/adg-UI-RECONCILE-01/docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/hydration-gate.script.js	2026-10-27 06:41:48
++++ scratch/hydration.js	2026-10-27 07:08:49
+@@ -38,11 +38,12 @@
+ const ROUNDS = Number(process.env.GATE_ROUNDS || 5);
+ const RELOADS = Number(process.env.GATE_RELOADS || 3);
+ const CONTROL = process.env.GATE_CONTROL === "1";
+-const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
++const CHROME = "~/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing";
+ 
+ const enc = encodeURIComponent;
+ const FATIMA = "S-1-5-21-3949361974-1583827165-633756269-1323";
+ const UNRESOLVED = "S-1-5-21-3949361974-1583827165-633756269-1108";
++const BIANCA = "S-1-5-21-3949361974-1583827165-633756269-1133"; // scenario G, six-level chain
+ const APOLLO = "\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo";
+ const FROM = enc("2026-09-03T06:00:00Z");
+ const TO = enc("2026-10-01T06:00:00Z");
+@@ -60,13 +61,24 @@
+   ["identities", "/identities"],
+   ["principal: Fatima Gordon", `/identities/principal?key=${FATIMA}`],
+   ["principal: unresolved SID", `/identities/principal?key=${UNRESOLVED}`],
++  // ADG-UI-RECONCILE-01: the directories and the path-keyed principal views, loaded in full.
++  ["directory: users", "/identities/users"],
++  ["directory: users, name search", "/identities/users?q=Bianca"],
++  ["directory: users, SID search", `/identities/users?q=${enc("S-1-5-21-3949361974-1583827165-633756269-113")}`],
++  ["directory: groups", "/identities/groups"],
++  ["directory: groups, exclude local", "/identities/groups?exclude_local=1"],
++  ["directory: groups, exclude local + search", "/identities/groups?q=Fin&exclude_local=1"],
++  ["principal view: Bianca, effective groups", `/identities/principal/${BIANCA}/effective-groups`],
++  ["principal view: Bianca, direct groups", `/identities/principal/${BIANCA}/groups`],
++  ["principal view: Fatima, shares", `/identities/principal/${FATIMA}/shares`],
++  ["principal view: unresolved SID", `/identities/principal/${UNRESOLVED}`],
+   ["status", "/status"],
+   ["changes", "/changes"],
+   ["search", "/search?q=Apollo"],
+   ["resources", "/resources"],
+ ];
+ const PHONE_ROUTES = ROUTES.filter(([name]) =>
+-  /^(demo guide|investigation: Fatima|risks|comparison|principal: unresolved)/.test(name),
++  /^(demo guide|investigation: Fatima|risks|comparison|principal: unresolved|directory: (users|groups)$|principal view: Bianca, effective)/.test(name),
+ );
+ 
+ const HYDRATION = /#418\b|react\.dev\/errors\/418|Hydration failed|hydrat/i;

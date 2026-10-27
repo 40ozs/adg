@@ -1,0 +1,143 @@
+PASS  signed out: header pill reads Demo environment · Synthetic enterprise data · Null Meridian — DEMO ENVIRONMENT Synthetic enterprise data · Null Meridian
+PASS  explanation: synthetic data, no production AD/file servers, the application is real
+PASS  the indicator offers no control (no button, input or select)
+PASS  explanation lists the dataset's facts and links /demo
+PASS  footer: organization and data fictional
+FAIL  development sign-in offers only viewer, planner; signs in as planner — offered auditor,planner,viewer
+FAIL  /demo guide renders scenarios A–H; three generations applied — scenarios 
+FAIL  scenario A folder opens the real directory page (Design share ACL) — no folder link
+FAIL  scenario B folder renders Null Meridian's ACL on the directory page — page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+FAIL  a principal page loads (scenario B's person) — no principal link
+FAIL  scenario F explanation: the transferred employee against Finance\Reports\Revenue, both routes — no explain link
+FAIL  scenario G explanation: the six-level nested chain — no explain link
+FAIL  risk page renders the full pass (3 / 8 / 1957 / 423 / 6995) — critical 3 missing
+FAIL  scenario H through the real simulation editor: changes nobody's access — page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+PASS  normal navigation: every primary section loads — 11 sections
+PASS  status page: backend reachable, demo
+PASS  no production operation: web tier POST /api/adg/api/v1/scan-runs → 405
+PASS  no production operation: API POST /api/v1/scan-runs as planner → 403 demo_only
+PASS  /runtime → demo / synthetic / null-meridian-v1, no connection detail
+PASS  X-ADG-Runtime-Mode: demo on responses
+FAIL  sign out — locator.click: Timeout 60000ms exceeded.
+PASS  no fatal browser errors — 1 console errors
+{
+  "base": "http://127.0.0.1:8787",
+  "passed": 12,
+  "failed": 10,
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)"
+  ],
+  "pageErrors": [],
+  "results": [
+    {
+      "name": "signed out: header pill reads Demo environment · Synthetic enterprise data · Null Meridian",
+      "ok": true,
+      "detail": "DEMO ENVIRONMENT Synthetic enterprise data · Null Meridian"
+    },
+    {
+      "name": "explanation: synthetic data, no production AD/file servers, the application is real",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the indicator offers no control (no button, input or select)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "explanation lists the dataset's facts and links /demo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "footer: organization and data fictional",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "development sign-in offers only viewer, planner; signs in as planner",
+      "ok": false,
+      "detail": "offered auditor,planner,viewer"
+    },
+    {
+      "name": "/demo guide renders scenarios A–H; three generations applied",
+      "ok": false,
+      "detail": "scenarios "
+    },
+    {
+      "name": "scenario A folder opens the real directory page (Design share ACL)",
+      "ok": false,
+      "detail": "no folder link"
+    },
+    {
+      "name": "scenario B folder renders Null Meridian's ACL on the directory page",
+      "ok": false,
+      "detail": "page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "name": "a principal page loads (scenario B's person)",
+      "ok": false,
+      "detail": "no principal link"
+    },
+    {
+      "name": "scenario F explanation: the transferred employee against Finance\\Reports\\Revenue, both routes",
+      "ok": false,
+      "detail": "no explain link"
+    },
+    {
+      "name": "scenario G explanation: the six-level nested chain",
+      "ok": false,
+      "detail": "no explain link"
+    },
+    {
+      "name": "risk page renders the full pass (3 / 8 / 1957 / 423 / 6995)",
+      "ok": false,
+      "detail": "critical 3 missing"
+    },
+    {
+      "name": "scenario H through the real simulation editor: changes nobody's access",
+      "ok": false,
+      "detail": "page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "name": "normal navigation: every primary section loads",
+      "ok": true,
+      "detail": "11 sections"
+    },
+    {
+      "name": "status page: backend reachable, demo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no production operation: web tier POST /api/adg/api/v1/scan-runs → 405",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no production operation: API POST /api/v1/scan-runs as planner → 403 demo_only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "/runtime → demo / synthetic / null-meridian-v1, no connection detail",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "X-ADG-Runtime-Mode: demo on responses",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "sign out",
+      "ok": false,
+      "detail": "locator.click: Timeout 60000ms exceeded."
+    },
+    {
+      "name": "no fatal browser errors",
+      "ok": true,
+      "detail": "1 console errors"
+    }
+  ]
+}

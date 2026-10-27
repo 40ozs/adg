@@ -1,0 +1,17 @@
+== ruff check
+All checks passed!
+rc=0
+== ruff format
+414 files already formatted
+rc=0
+== mypy
+Success: no issues found in 413 source files
+rc=0
+== pytest not smoke
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6133 passed, 12 skipped, 1299 deselected, 7 warnings in 116.45s (0:01:56)
+rc=0
+== pytest smoke
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1298 passed, 6145 deselected, 1 xfailed, 67 warnings in 1375.34s (0:22:55)
+rc=0

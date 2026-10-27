@@ -1,0 +1,2304 @@
+{
+  "label": "control-delay40",
+  "control": true,
+  "base": "http://127.0.0.1:3100",
+  "rounds": 1,
+  "reloadsPerRoute": 3,
+  "started": "2026-10-27T14:21:57.783Z",
+  "finished": "2026-10-27T14:27:36.180Z",
+  "total": {
+    "records": 168,
+    "with418": 149,
+    "events418": 149,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 0,
+    "failedSteps": 0
+  },
+  "phases": {
+    "fresh": {
+      "records": 27,
+      "with418": 27,
+      "events418": 27,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "reload": {
+      "records": 108,
+      "with418": 108,
+      "events418": 108,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "nav": {
+      "records": 20,
+      "with418": 1,
+      "events418": 1,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "keys": {
+      "records": 3,
+      "with418": 3,
+      "events418": 3,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "phone": {
+      "records": 10,
+      "with418": 10,
+      "events418": 10,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    }
+  },
+  "fullDocumentLoads": 149,
+  "clientTransitions": 19,
+  "phoneOverflow": [],
+  "occurrences418": [
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "home",
+      "url": "http://127.0.0.1:3100/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "complete",
+          "at": 188,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "demo guide",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 272,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1173,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 152,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 875,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "risks",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 554,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "collectors",
+      "url": "http://127.0.0.1:3100/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 424,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "comparison drill: timed out",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 547,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "comparison: incomplete",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 3316,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "comparison: folder permission entries",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 4651,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "identities",
+      "url": "http://127.0.0.1:3100/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 120,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal: Fatima Gordon",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 272,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 216,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "directory: users",
+      "url": "http://127.0.0.1:3100/identities/users",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 314,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "directory: users, name search",
+      "url": "http://127.0.0.1:3100/identities/users?q=Bianca",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 141,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "directory: users, SID search",
+      "url": "http://127.0.0.1:3100/identities/users?q=S-1-5-21-3949361974-1583827165-633756269-113",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 161,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "directory: groups",
+      "url": "http://127.0.0.1:3100/identities/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 372,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "directory: groups, exclude local",
+      "url": "http://127.0.0.1:3100/identities/groups?exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 250,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "directory: groups, exclude local + search",
+      "url": "http://127.0.0.1:3100/identities/groups?q=Fin&exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 131,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal view: Bianca, effective groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 362,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal view: Bianca, direct groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 148,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal view: Fatima, shares",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1323/shares",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 418,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal view: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 134,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "status",
+      "url": "http://127.0.0.1:3100/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 527,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "changes",
+      "url": "http://127.0.0.1:3100/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 145,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "search",
+      "url": "http://127.0.0.1:3100/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 172,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "resources",
+      "url": "http://127.0.0.1:3100/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 124,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "home",
+      "url": "http://127.0.0.1:3100/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 154,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "home",
+      "url": "http://127.0.0.1:3100/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 117,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "home",
+      "url": "http://127.0.0.1:3100/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 127,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "home",
+      "url": "http://127.0.0.1:3100/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 140,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "demo guide",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 172,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "demo guide",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 216,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "demo guide",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 158,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "demo guide",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 223,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1171,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1035,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1139,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1040,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 408,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 224,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 310,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 216,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1228,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1137,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 903,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1035,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "risks",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 719,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "risks",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 621,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "risks",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 440,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "risks",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 575,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "collectors",
+      "url": "http://127.0.0.1:3100/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 418,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "collectors",
+      "url": "http://127.0.0.1:3100/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 375,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "collectors",
+      "url": "http://127.0.0.1:3100/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 409,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "collectors",
+      "url": "http://127.0.0.1:3100/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 273,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison drill: timed out",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 618,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison drill: timed out",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 356,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison drill: timed out",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 468,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison drill: timed out",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 557,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: incomplete",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 2969,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: incomplete",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 3194,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: incomplete",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 2976,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: incomplete",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 3405,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: folder permission entries",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 4375,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: folder permission entries",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 5078,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: folder permission entries",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 4471,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: folder permission entries",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 4549,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "identities",
+      "url": "http://127.0.0.1:3100/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 113,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "identities",
+      "url": "http://127.0.0.1:3100/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 96,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "identities",
+      "url": "http://127.0.0.1:3100/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 99,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "identities",
+      "url": "http://127.0.0.1:3100/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 100,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: Fatima Gordon",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 321,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: Fatima Gordon",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 123,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: Fatima Gordon",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 172,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: Fatima Gordon",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 129,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 170,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 122,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 124,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 127,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users",
+      "url": "http://127.0.0.1:3100/identities/users",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 257,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users",
+      "url": "http://127.0.0.1:3100/identities/users",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 176,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users",
+      "url": "http://127.0.0.1:3100/identities/users",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 224,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users",
+      "url": "http://127.0.0.1:3100/identities/users",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 258,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, name search",
+      "url": "http://127.0.0.1:3100/identities/users?q=Bianca",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 130,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, name search",
+      "url": "http://127.0.0.1:3100/identities/users?q=Bianca",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 149,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, name search",
+      "url": "http://127.0.0.1:3100/identities/users?q=Bianca",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 183,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, name search",
+      "url": "http://127.0.0.1:3100/identities/users?q=Bianca",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 166,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, SID search",
+      "url": "http://127.0.0.1:3100/identities/users?q=S-1-5-21-3949361974-1583827165-633756269-113",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 142,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, SID search",
+      "url": "http://127.0.0.1:3100/identities/users?q=S-1-5-21-3949361974-1583827165-633756269-113",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 135,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, SID search",
+      "url": "http://127.0.0.1:3100/identities/users?q=S-1-5-21-3949361974-1583827165-633756269-113",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 128,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: users, SID search",
+      "url": "http://127.0.0.1:3100/identities/users?q=S-1-5-21-3949361974-1583827165-633756269-113",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 119,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups",
+      "url": "http://127.0.0.1:3100/identities/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 208,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups",
+      "url": "http://127.0.0.1:3100/identities/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 206,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups",
+      "url": "http://127.0.0.1:3100/identities/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 249,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups",
+      "url": "http://127.0.0.1:3100/identities/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 208,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local",
+      "url": "http://127.0.0.1:3100/identities/groups?exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 218,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local",
+      "url": "http://127.0.0.1:3100/identities/groups?exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 248,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local",
+      "url": "http://127.0.0.1:3100/identities/groups?exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 219,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local",
+      "url": "http://127.0.0.1:3100/identities/groups?exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 220,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local + search",
+      "url": "http://127.0.0.1:3100/identities/groups?q=Fin&exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 119,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local + search",
+      "url": "http://127.0.0.1:3100/identities/groups?q=Fin&exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 186,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local + search",
+      "url": "http://127.0.0.1:3100/identities/groups?q=Fin&exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 121,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "directory: groups, exclude local + search",
+      "url": "http://127.0.0.1:3100/identities/groups?q=Fin&exclude_local=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 116,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, effective groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 274,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, effective groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 280,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, effective groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 319,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, effective groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 306,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, direct groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 128,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, direct groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 122,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, direct groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 120,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Bianca, direct groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 198,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Fatima, shares",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1323/shares",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 341,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Fatima, shares",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1323/shares",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 333,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Fatima, shares",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1323/shares",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 251,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: Fatima, shares",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1323/shares",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 251,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 162,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 145,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 128,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal view: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 174,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "status",
+      "url": "http://127.0.0.1:3100/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 110,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "status",
+      "url": "http://127.0.0.1:3100/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 111,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "status",
+      "url": "http://127.0.0.1:3100/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 102,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "status",
+      "url": "http://127.0.0.1:3100/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 100,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "changes",
+      "url": "http://127.0.0.1:3100/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 113,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "changes",
+      "url": "http://127.0.0.1:3100/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 106,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "changes",
+      "url": "http://127.0.0.1:3100/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 105,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "changes",
+      "url": "http://127.0.0.1:3100/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 103,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "search",
+      "url": "http://127.0.0.1:3100/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 124,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "search",
+      "url": "http://127.0.0.1:3100/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 120,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "search",
+      "url": "http://127.0.0.1:3100/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 126,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "search",
+      "url": "http://127.0.0.1:3100/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 112,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "resources",
+      "url": "http://127.0.0.1:3100/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 158,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "resources",
+      "url": "http://127.0.0.1:3100/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 112,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "resources",
+      "url": "http://127.0.0.1:3100/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 117,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "resources",
+      "url": "http://127.0.0.1:3100/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 111,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "nav",
+      "route": "demo guide (start)",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 206,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "keys",
+      "route": "investigation: hop evidence",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 946,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "keys",
+      "route": "risks: incomplete scopes",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 587,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "keys",
+      "route": "comparison: Diagnostics",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 441,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "demo guide",
+      "url": "http://127.0.0.1:3100/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 258,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "http://127.0.0.1:3100/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 1063,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "risks",
+      "url": "http://127.0.0.1:3100/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 456,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "comparison drill: timed out",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 332,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "comparison: incomplete",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 2793,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "comparison: folder permission entries",
+      "url": "http://127.0.0.1:3100/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 4376,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "principal: unresolved SID",
+      "url": "http://127.0.0.1:3100/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 192,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "directory: users",
+      "url": "http://127.0.0.1:3100/identities/users",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 210,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "directory: groups",
+      "url": "http://127.0.0.1:3100/identities/groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 214,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "principal view: Bianca, effective groups",
+      "url": "http://127.0.0.1:3100/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (http://127.0.0.1:3100/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:130975)\n    at http://127.0.0.1:3100/_next/",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 263,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    }
+  ],
+  "otherErrors": [],
+  "failedSteps": [],
+  "knownErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3100/favicon.ico"
+  ]
+}

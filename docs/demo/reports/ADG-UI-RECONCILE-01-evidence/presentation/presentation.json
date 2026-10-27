@@ -1,0 +1,120 @@
+{
+  "base": "http://127.0.0.1:8787",
+  "results": [
+    {
+      "name": "desktop: sign in as viewer",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "desktop: /risks severity strip has no markers",
+      "ok": true,
+      "detail": "{\"listStyle\":\"none\",\"marker\":\"normal\",\"role\":\"list\",\"items\":5,\"overlaps\":0,\"text\":\"critical 3 high 8 medium 1957 low 423 informational 6995\"}"
+    },
+    {
+      "name": "desktop: /risks severity items do not overlap",
+      "ok": true,
+      "detail": "critical 3 high 8 medium 1957 low 423 informational 6995"
+    },
+    {
+      "name": "desktop: /risks counts unchanged (3/8/1957/423/6995)",
+      "ok": true,
+      "detail": "critical 3 high 8 medium 1957 low 423 informational 6995"
+    },
+    {
+      "name": "desktop: unresolved principal banner says (deleted)",
+      "ok": true,
+      "detail": "A run saw this SID and could not resolve it S-1-5-21-3949361974-1583827165-633756269-1108 was recorded as unresolved (deleted). Its name and kind are unknown, and nothing on this page names it as anything else."
+    },
+    {
+      "name": "desktop: Identity information agrees: Deleted yes",
+      "ok": true,
+      "detail": "yes — as the run that could not resolve this SID reported it"
+    },
+    {
+      "name": "desktop: Groups rows rendered",
+      "ok": true,
+      "detail": "50"
+    },
+    {
+      "name": "desktop: no SID under a name in the Name column",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop: Groups rows are single-line (max height)",
+      "ok": true,
+      "detail": "max 39.8px, min 39.8px"
+    },
+    {
+      "name": "desktop: SID cell keeps the full value (text and title), one line, cut at the start",
+      "ok": true,
+      "detail": "{\"title\":\"S-1-5-21-3949361974-1583827165-633756269-1115\",\"text\":\"S-1-5-21-3949361974-1583827165-633756269-1115\",\"clipped\":true,\"dir\":\"rtl\",\"ws\":\"nowrap\"}"
+    },
+    {
+      "name": "desktop: no page-level horizontal scroll on Groups",
+      "ok": true,
+      "detail": "{\"scroll\":1360,\"client\":1360}"
+    },
+    {
+      "name": "phone: sign in as viewer",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "phone: /risks severity strip has no markers",
+      "ok": true,
+      "detail": "{\"listStyle\":\"none\",\"marker\":\"normal\",\"role\":\"list\",\"items\":5,\"overlaps\":0,\"text\":\"critical 3 high 8 medium 1957 low 423 informational 6995\"}"
+    },
+    {
+      "name": "phone: /risks severity items do not overlap",
+      "ok": true,
+      "detail": "critical 3 high 8 medium 1957 low 423 informational 6995"
+    },
+    {
+      "name": "phone: /risks counts unchanged (3/8/1957/423/6995)",
+      "ok": true,
+      "detail": "critical 3 high 8 medium 1957 low 423 informational 6995"
+    },
+    {
+      "name": "phone: unresolved principal banner says (deleted)",
+      "ok": true,
+      "detail": "A run saw this SID and could not resolve it S-1-5-21-3949361974-1583827165-633756269-1108 was recorded as unresolved (deleted). Its name and kind are unknown, and nothing on this page names it as anything else."
+    },
+    {
+      "name": "phone: Identity information agrees: Deleted yes",
+      "ok": true,
+      "detail": "yes — as the run that could not resolve this SID reported it"
+    },
+    {
+      "name": "phone: Groups rows rendered",
+      "ok": true,
+      "detail": "50"
+    },
+    {
+      "name": "phone: no SID under a name in the Name column",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "phone: Groups rows are single-line (max height)",
+      "ok": true,
+      "detail": "max 39.8px, min 39.8px"
+    },
+    {
+      "name": "phone: SID cell keeps the full value (text and title), one line, cut at the start",
+      "ok": true,
+      "detail": "{\"title\":\"S-1-5-21-3949361974-1583827165-633756269-1115\",\"text\":\"S-1-5-21-3949361974-1583827165-633756269-1115\",\"clipped\":true,\"dir\":\"rtl\",\"ws\":\"nowrap\"}"
+    },
+    {
+      "name": "phone: no page-level horizontal scroll on Groups",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no application console or page errors",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

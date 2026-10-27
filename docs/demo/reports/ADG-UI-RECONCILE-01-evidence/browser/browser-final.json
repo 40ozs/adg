@@ -1,0 +1,143 @@
+PASS  signed out: header pill reads Demo environment · Synthetic enterprise data · Null Meridian — DEMO ENVIRONMENT Synthetic enterprise data · Null Meridian
+PASS  explanation: synthetic data, no production AD/file servers, the application is real
+PASS  the indicator offers no control (no button, input or select)
+PASS  explanation lists the dataset's facts and links /demo
+PASS  footer: organization and data fictional
+PASS  development sign-in offers only auditor, planner, viewer; signs in as planner — offered auditor, planner, viewer
+PASS  /demo guide renders scenarios A–H; three generations applied — 8 scenarios
+PASS  scenario A folder opens the real directory page (Design share ACL)
+PASS  scenario B folder renders Null Meridian's ACL on the directory page
+PASS  a principal page loads (scenario B's person)
+PASS  scenario F explanation: the transferred employee against Finance\Reports\Revenue, both routes
+PASS  scenario G explanation: the six-level nested chain
+PASS  risk page renders the full pass (3 / 8 / 1957 / 423 / 6995)
+PASS  scenario H through the real simulation editor: changes nobody's access
+PASS  normal navigation: every primary section loads — 11 sections
+PASS  status page: backend reachable, demo
+PASS  no production operation: web tier POST /api/adg/api/v1/scan-runs → 405
+PASS  no production operation: API POST /api/v1/scan-runs as planner → 403 demo_only
+PASS  /runtime → demo / synthetic / null-meridian-v1, no connection detail
+PASS  X-ADG-Runtime-Mode: demo on responses
+PASS  sign out
+PASS  no fatal browser errors — 1 console errors
+{
+  "base": "http://127.0.0.1:8787",
+  "passed": 22,
+  "failed": 0,
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)"
+  ],
+  "pageErrors": [],
+  "results": [
+    {
+      "name": "signed out: header pill reads Demo environment · Synthetic enterprise data · Null Meridian",
+      "ok": true,
+      "detail": "DEMO ENVIRONMENT Synthetic enterprise data · Null Meridian"
+    },
+    {
+      "name": "explanation: synthetic data, no production AD/file servers, the application is real",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the indicator offers no control (no button, input or select)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "explanation lists the dataset's facts and links /demo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "footer: organization and data fictional",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "development sign-in offers only auditor, planner, viewer; signs in as planner",
+      "ok": true,
+      "detail": "offered auditor, planner, viewer"
+    },
+    {
+      "name": "/demo guide renders scenarios A–H; three generations applied",
+      "ok": true,
+      "detail": "8 scenarios"
+    },
+    {
+      "name": "scenario A folder opens the real directory page (Design share ACL)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario B folder renders Null Meridian's ACL on the directory page",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "a principal page loads (scenario B's person)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario F explanation: the transferred employee against Finance\\Reports\\Revenue, both routes",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario G explanation: the six-level nested chain",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "risk page renders the full pass (3 / 8 / 1957 / 423 / 6995)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario H through the real simulation editor: changes nobody's access",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "normal navigation: every primary section loads",
+      "ok": true,
+      "detail": "11 sections"
+    },
+    {
+      "name": "status page: backend reachable, demo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no production operation: web tier POST /api/adg/api/v1/scan-runs → 405",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no production operation: API POST /api/v1/scan-runs as planner → 403 demo_only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "/runtime → demo / synthetic / null-meridian-v1, no connection detail",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "X-ADG-Runtime-Mode: demo on responses",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "sign out",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no fatal browser errors",
+      "ok": true,
+      "detail": "1 console errors"
+    }
+  ]
+}
