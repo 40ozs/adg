@@ -199,6 +199,7 @@ jobs:
   deploy:
     name: Deploy Worker (Workers Free, static files + proxy)
     needs: [deploy-origin]
+    if: ${{ always() && needs.deploy-origin.result == 'success' }}
     runs-on: ubuntu-latest
     environment: cloudflare-staging
     defaults:
