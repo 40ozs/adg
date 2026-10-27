@@ -350,7 +350,7 @@ class ChangeRepository:
         ``(kind, instant)`` on the reasoning that a scan confirms everything at one moment.
         That holds for one scan; a comparison across three scan generations of a real estate
         holds a distinct instant per server and per run, and ADG-DEMO-03 measured 253 such
-        queries in one Null Meridian comparison -- the larger part of its statement count.
+        queries in one Genesee Press comparison -- the larger part of its statement count.
         Every wanted ``(kind, container, instant)`` is now passed as three parallel arrays
         and answered by one correlated ``max`` each, on ``ix_object_versions_container``.
         """

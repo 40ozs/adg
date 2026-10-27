@@ -280,7 +280,7 @@ class TestTheScopesOneAnswerReads:
         assert relevant.verdict is CoverageVerdict.INCOMPLETE
 
     def test_server_of_resource(self) -> None:
-        assert server_of_resource(r"\\NM-ENG-FS01\Engineering\Projects") == "NM-ENG-FS01"
+        assert server_of_resource(r"\\GP-ENG-FS01\Engineering\Projects") == "GP-ENG-FS01"
         assert server_of_resource("//fs01/share") == "fs01"
         assert server_of_resource("") is None
 

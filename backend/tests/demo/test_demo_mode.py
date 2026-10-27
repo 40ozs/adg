@@ -1,22 +1,22 @@
-r"""Null Meridian under Demo Mode: selected at startup and sealed, with no switch.
+r"""Genesee Press under Demo Mode: selected at startup and sealed, with no switch.
 
 Three kinds of claim, each tested where it can be tested without a database. The generic
 Demo Mode boundary is in ``tests/demo_mode``; these are the claims about the canonical
 dataset running inside it.
 
 * **The configuration boundary.** ``ADG_RUNTIME_MODE`` is ``production`` or ``demo`` and
-  nothing else; a demo runs Null Meridian by default, under Null Meridian's own risk
+  nothing else; a demo runs Genesee Press by default, under Genesee Press's own risk
   configuration, and refuses every setting that would let it receive or reach real data.
 * **No runtime switch.** No request parameter or request body in the published API can name
   the mode, so a running deployment cannot be moved between demo and production by a
   request. (The mode is *reported*, read-only, by ``GET /runtime``, ``/version`` and
   ``/health/ready``.)
-* **No production code path.** The Null Meridian package imports nothing that talks to a
+* **No production code path.** The Genesee Press package imports nothing that talks to a
   directory, a file share, PowerShell or the network and starts no process; the one
   subprocess of the whole demo is Demo Mode's schema migration; synthetic ingestion is an
   in-process ASGI call; and the application imports without ``httpx``, a development-only
   dependency. (The database half of this, with sockets refused at runtime, is in
-  ``tests/db/test_null_meridian_demo.py``.)
+  ``tests/db/test_genesee_press_demo.py``.)
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.config import Settings, build_settings
 from app.db import ConnectivityResult
-from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
+from app.demo.genesee_press.risk import DEMO_RISK_CONFIGURATION
 from app.domain.remediation import ExecutionMode
 from app.main import RUNTIME_MODE_HEADER, create_app
 from app.remediation.executor import DisabledRemediator, remediator_for
@@ -45,7 +45,7 @@ from tests.conftest import StubDatabase
 
 DEMO_URL = "postgresql+psycopg://adg:secret@localhost:5432/adg_demo"
 BACKEND = Path(__file__).resolve().parents[2]
-PACKAGE = BACKEND / "app" / "demo" / "null_meridian"
+PACKAGE = BACKEND / "app" / "demo" / "genesee_press"
 DEMO_MODE = BACKEND / "app" / "demo_mode"
 OPENAPI = BACKEND.parent / "docs" / "contracts" / "v1" / "openapi.json"
 
@@ -68,15 +68,15 @@ class TestTheConfigurationBoundary:
         assert settings.is_demo is False
         assert settings.risk_configuration is DEFAULT_CONFIGURATION
 
-    def test_a_valid_demo_runs_null_meridian_under_its_own_risk_configuration(self) -> None:
+    def test_a_valid_demo_runs_genesee_press_under_its_own_risk_configuration(self) -> None:
         settings = demo()
         assert settings.is_demo
-        assert settings.resolved_demo_dataset == "null-meridian-v1"
+        assert settings.resolved_demo_dataset == "genesee-press-v1"
         assert settings.risk_configuration is DEMO_RISK_CONFIGURATION
         assert settings.risk_configuration.marks_anything_sensitive
 
     def test_the_demo_tuning_is_the_datasets_alone(self) -> None:
-        """redundant_access_paths at four routes is Null Meridian's operator tuning; the
+        """redundant_access_paths at four routes is Genesee Press's operator tuning; the
         shipped default, and therefore production, is unchanged."""
         rule = RuleId("redundant_access_paths")
         assert DEMO_RISK_CONFIGURATION.for_rule(rule).options["minimum_paths"] == 4
@@ -162,7 +162,7 @@ class TestTheConfigurationBoundary:
 
     @pytest.mark.parametrize("value", ["standard", "Standard", "prod", "live", ""])
     def test_the_retired_standard_value_and_every_synonym_are_refused(self, value: str) -> None:
-        """``standard`` was the Null Meridian branch's name for production. The integrated
+        """``standard`` was the Genesee Press branch's name for production. The integrated
         contract is ``production|demo``; a second spelling of production is refused rather
         than mapped, like any other unrecognized value."""
         with pytest.raises(ValueError, match=r"must be one of: production, demo"):
@@ -277,7 +277,7 @@ class TestNoProductionCodePath:
         assert lifecycle.count("subprocess.run(") == 1
         assert '"alembic", "upgrade", "heads"' in lifecycle
 
-    def test_null_meridian_has_no_reset_of_its_own(self) -> None:
+    def test_genesee_press_has_no_reset_of_its_own(self) -> None:
         """One reset, one safety boundary: Demo Mode's. The generator only generates."""
         assert not (PACKAGE / "reset.py").exists()
         for module in PACKAGE.glob("*.py"):
@@ -299,7 +299,7 @@ class TestNoProductionCodePath:
             "import sys\n"
             "sys.modules['httpx'] = None\n"
             "import app.main, app.demo_mode.lifecycle, app.demo_mode.ingest, app.api.demo\n"
-            "import app.demo_mode.__main__, app.demo.null_meridian.dataset\n"
+            "import app.demo_mode.__main__, app.demo.genesee_press.dataset\n"
             "print('imported')\n"
         )
         # Inherit the environment: a replaced one drops what the interpreter itself needs to
@@ -336,7 +336,7 @@ class TestTheOperatorCommand:
             logging.getLogger("adg.auth").warning("auth.mode.development")
             return StatusReport(
                 runtime_mode=RuntimeMode.DEMO,
-                dataset_key="null-meridian-v1",
+                dataset_key="genesee-press-v1",
                 dataset=None,
                 dataset_error=None,
                 inspection=None,
@@ -353,5 +353,5 @@ class TestTheOperatorCommand:
             get_settings.cache_clear()
 
         captured = capsys.readouterr()
-        assert json.loads(captured.out)["dataset_key"] == "null-meridian-v1"
+        assert json.loads(captured.out)["dataset_key"] == "genesee-press-v1"
         assert "auth.mode.development" in captured.err

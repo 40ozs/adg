@@ -1,0 +1,10 @@
+{
+ "repository": "40ozs/synthetic-enterprise",
+ "commit": "6f016d8c0753f79669e4432eb42ab04c2f6cc0c7",
+ "snapshot": "standard-baseline",
+ "contract_version": "0.2.0",
+ "dataset": "synthetic-enterprise-world@2.0.0",
+ "projection": "adg@0.3.0",
+ "manifest_sha256": "59430e5e2e6b7badedb5d791d69611b5aed6ede8c21c0bf409a16d0ce2665038",
+ "manifest_source_commit": "71055a72001ce814547683029cd06ecd6462a3ae"
+}

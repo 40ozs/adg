@@ -1,29 +1,44 @@
 {
- "format": "null-meridian-manifest/1",
- "notice": "Synthetic. Null Meridian is a fictional company. Every name, address, identifier, SID, GUID, host name, share and path here was generated from the seed and describes no real person, organization or system.",
+ "format": "genesee-press-manifest/1",
+ "notice": "Synthetic. Genesee Press is a fictional company. Every name, address, identifier, SID, GUID, host name, share and path here comes from the synthetic world in 40ozs/synthetic-enterprise or from ADG's own seeded estate, and describes no real person, organization or system.",
  "company": {
-  "name": "Null Meridian",
-  "domain": "nullmeridian.info",
-  "netbios": "NULLMERIDIAN",
-  "distinguished_name": "DC=nullmeridian,DC=info",
+  "name": "Genesee Press",
+  "mail_domain": "geneseepress.example",
+  "directory_domain": "corp.geneseepress.example",
+  "netbios": "GPCORP",
+  "distinguished_name": "DC=corp,DC=geneseepress,DC=example",
   "domain_sid": "S-1-5-21-3949361974-1583827165-633756269",
-  "seed": "null-meridian-v1",
+  "dataset": "genesee-press-v1",
   "snapshot": "2026-10-01",
   "founded": "2016-10-01",
   "age_years": 10,
-  "okta_adopted": "2021-10-01",
+  "identity_provider_adopted": "2021-10-01",
   "standards_adopted": "2023-10-01",
-  "tech_debt": "moderate",
+  "acquisition": "Brindlewood Analytics",
   "account_deletion_days_after_termination": 180
  },
+ "source": {
+  "repository": "40ozs/synthetic-enterprise",
+  "commit": "6f016d8c0753f79669e4432eb42ab04c2f6cc0c7",
+  "snapshot": "standard-baseline",
+  "contract_version": "0.2.0",
+  "dataset": "synthetic-enterprise-world@2.0.0",
+  "projection": "adg@0.3.0",
+  "manifest_sha256": "59430e5e2e6b7badedb5d791d69611b5aed6ede8c21c0bf409a16d0ce2665038",
+  "canonical_digest": "c7b742cb606ee90066209dbd0d8f114afd438e233e0eac9d46de05580c94b8d8",
+  "options": {
+   "exclude_org_unit_ids": [
+    "ou_M970YB9ACZCZ",
+    "ou_T483WPYQTBE2"
+   ],
+   "organization_id": "org_80AJVSFG78Z0"
+  },
+  "estate_scope": "ADG's directory catalogue: every employee, the directory groups with an ADG legacy_name, and the memberships among them"
+ },
  "algorithms": {
-  "draws": "value(label, n) = int.from_bytes(sha256(f'{seed}|{label}|{n}').digest()[:8], 'big'); random() = value / 2**64; below(k) = value % k",
-  "uuid": "uuid5(9ae8a2d1-7501-5d9d-87db-c3ce08982e4e, '<kind>:<key>'); NAMESPACE = uuid5(NAMESPACE_DNS, 'nullmeridian.info'); kinds: employee:<employee_id>, group:<group key>, object-guid:<sid>",
-  "domain_sid": "S-1-5-21-a-b-c, a/b/c = the first three big-endian 32-bit words of sha256('null-meridian-v1|domain-sid')",
-  "rid": "accounts (by hire date) and groups (by creation date) sorted by (date, groups first, then key), numbered from 1103; Domain Admins 512, Domain Users 513",
-  "email": "given.family@nullmeridian.info, lower-cased, letters/digits/hyphens only; the n-th holder of a local part in employee-number order gets the suffix n (n >= 2)",
-  "sam_account_name": "first initial + family name, at most 18 characters, numbered like email on collision",
-  "employee_id": "NM-nnnnn in order of hire date, ties broken by a draw"
+  "draws": "value(label, n) = int.from_bytes(sha256(f'{seed}|{label}|{n}').digest()[:8], 'big'); random() = value / 2**64; below(k) = value % k; seed and server labels keep their ADG v1 spellings (legacy draw keys)",
+  "uuid": "uuid5(41b0da28-f52e-5711-8549-8c23659bd9f7, '<kind>:<key>'); NAMESPACE = uuid5(NAMESPACE_DNS, 'corp.geneseepress.example'); run and batch ids only",
+  "directory": "people, accounts, groups, memberships, SIDs and objectGUIDs are read from the vendored synthetic-enterprise adg projection; none is derived here"
  },
  "eras": [
   {
@@ -45,89 +60,35 @@
  ],
  "departments": [
   {
-   "slug": "engineering",
-   "name": "Engineering",
-   "active_employees": 520,
-   "founded": "2016-10-01",
-   "department_group": "Engineering",
+   "slug": "customer-success",
+   "name": "Customer Success",
+   "active_employees": 190,
+   "founded": "2017-03-01",
+   "department_group": "CS-All",
    "teams": [
     {
-     "slug": "platform",
-     "name": "Platform",
-     "group": "ENG-Platform"
-    },
-    {
-     "slug": "payments",
-     "name": "Payments",
-     "group": "ENG-Payments"
-    },
-    {
-     "slug": "mobile",
-     "name": "Mobile",
-     "group": "ENG-Mobile"
-    },
-    {
-     "slug": "web",
-     "name": "Web",
-     "group": "ENG-Web"
-    },
-    {
-     "slug": "infrastructure",
-     "name": "Infrastructure",
-     "group": "ENG-Infrastructure"
-    },
-    {
-     "slug": "sre",
-     "name": "Site Reliability",
-     "group": "ENG-SRE"
-    },
-    {
-     "slug": "qa",
-     "name": "Quality",
-     "group": "ENG-QA"
-    },
-    {
-     "slug": "identity",
-     "name": "Identity",
-     "group": "ENG-Identity"
-    },
-    {
-     "slug": "api",
-     "name": "API",
-     "group": "ENG-API"
-    },
-    {
-     "slug": "developer-experience",
-     "name": "Developer Experience",
-     "group": null
-    }
-   ]
-  },
-  {
-   "slug": "product",
-   "name": "Product",
-   "active_employees": 95,
-   "founded": "2016-10-01",
-   "department_group": "Product Team",
-   "teams": [
-    {
-     "slug": "core",
-     "name": "Core Product",
-     "group": "PRD-Core"
-    },
-    {
-     "slug": "growth",
-     "name": "Growth",
-     "group": "PRD-Growth"
-    },
-    {
-     "slug": "platform-product",
-     "name": "Platform Product",
+     "slug": "account-management",
+     "name": "Account Management",
      "group": null
     },
     {
-     "slug": "product-ops",
-     "name": "Product Operations",
+     "slug": "cs-ops",
+     "name": "Customer Success Operations",
+     "group": null
+    },
+    {
+     "slug": "onboarding",
+     "name": "Onboarding",
+     "group": null
+    },
+    {
+     "slug": "support-t1",
+     "name": "Support Tier 1",
+     "group": null
+    },
+    {
+     "slug": "support-t2",
+     "name": "Support Tier 2",
      "group": null
     }
    ]
@@ -140,23 +101,143 @@
    "department_group": "Data-Team",
    "teams": [
     {
-     "slug": "data-platform",
-     "name": "Data Platform",
-     "group": "Team_Data_Platform"
-    },
-    {
      "slug": "analytics",
      "name": "Analytics",
-     "group": "Team_Analytics"
-    },
-    {
-     "slug": "ml",
-     "name": "Machine Learning",
-     "group": "Team_ML"
+     "group": null
     },
     {
      "slug": "data-governance",
      "name": "Data Governance",
+     "group": null
+    },
+    {
+     "slug": "data-platform",
+     "name": "Data Platform",
+     "group": null
+    },
+    {
+     "slug": "ml",
+     "name": "Machine Learning",
+     "group": null
+    }
+   ]
+  },
+  {
+   "slug": "design",
+   "name": "Design",
+   "active_employees": 55,
+   "founded": "2018-04-02",
+   "department_group": "Design_Team",
+   "teams": [
+    {
+     "slug": "brand-design",
+     "name": "Brand Design",
+     "group": null
+    },
+    {
+     "slug": "product-design",
+     "name": "Product Design",
+     "group": null
+    },
+    {
+     "slug": "research",
+     "name": "Research",
+     "group": null
+    }
+   ]
+  },
+  {
+   "slug": "engineering",
+   "name": "Engineering",
+   "active_employees": 520,
+   "founded": "2016-10-01",
+   "department_group": "Engineering",
+   "teams": [
+    {
+     "slug": "api",
+     "name": "API",
+     "group": null
+    },
+    {
+     "slug": "developer-experience",
+     "name": "Developer Experience",
+     "group": null
+    },
+    {
+     "slug": "identity",
+     "name": "Identity",
+     "group": null
+    },
+    {
+     "slug": "infrastructure",
+     "name": "Infrastructure",
+     "group": null
+    },
+    {
+     "slug": "mobile",
+     "name": "Mobile",
+     "group": null
+    },
+    {
+     "slug": "payments",
+     "name": "Payments",
+     "group": null
+    },
+    {
+     "slug": "platform",
+     "name": "Platform",
+     "group": null
+    },
+    {
+     "slug": "qa",
+     "name": "Quality",
+     "group": null
+    },
+    {
+     "slug": "sre",
+     "name": "Site Reliability",
+     "group": null
+    },
+    {
+     "slug": "web",
+     "name": "Web",
+     "group": null
+    }
+   ]
+  },
+  {
+   "slug": "executive",
+   "name": "Executive",
+   "active_employees": 12,
+   "founded": "2016-10-01",
+   "department_group": "Executives",
+   "teams": []
+  },
+  {
+   "slug": "finance",
+   "name": "Finance",
+   "active_employees": 90,
+   "founded": "2016-10-01",
+   "department_group": "Finance-Team",
+   "teams": [
+    {
+     "slug": "accounting",
+     "name": "Accounting",
+     "group": null
+    },
+    {
+     "slug": "fpa",
+     "name": "Financial Planning and Analysis",
+     "group": null
+    },
+    {
+     "slug": "payroll",
+     "name": "Payroll",
+     "group": null
+    },
+    {
+     "slug": "tax-treasury",
+     "name": "Tax and Treasury",
      "group": null
     }
    ]
@@ -169,110 +250,28 @@
    "department_group": "IT-Staff",
    "teams": [
     {
-     "slug": "helpdesk",
-     "name": "Helpdesk",
-     "group": "IT-Helpdesk"
+     "slug": "corporate-systems",
+     "name": "Corporate Systems",
+     "group": null
     },
     {
      "slug": "endpoint",
      "name": "Endpoint",
-     "group": "IT-Endpoint"
+     "group": null
     },
     {
-     "slug": "network",
-     "name": "Network",
-     "group": "IT-Network"
-    },
-    {
-     "slug": "corporate-systems",
-     "name": "Corporate Systems",
-     "group": "IT-Corp-Systems"
+     "slug": "helpdesk",
+     "name": "Helpdesk",
+     "group": null
     },
     {
      "slug": "identity-access",
      "name": "Identity and Access",
      "group": null
-    }
-   ]
-  },
-  {
-   "slug": "security",
-   "name": "Security",
-   "active_employees": 40,
-   "founded": "2020-01-15",
-   "department_group": "Security-Team",
-   "teams": [
-    {
-     "slug": "soc",
-     "name": "Security Operations",
-     "group": "SEC-SOC"
     },
     {
-     "slug": "appsec",
-     "name": "Application Security",
-     "group": "SEC-AppSec"
-    },
-    {
-     "slug": "grc",
-     "name": "Governance, Risk and Compliance",
-     "group": null
-    }
-   ]
-  },
-  {
-   "slug": "finance",
-   "name": "Finance",
-   "active_employees": 90,
-   "founded": "2016-10-01",
-   "department_group": "Finance-Team",
-   "teams": [
-    {
-     "slug": "accounting",
-     "name": "Accounting",
-     "group": "FIN-Accounting"
-    },
-    {
-     "slug": "fpa",
-     "name": "Financial Planning and Analysis",
-     "group": "FIN-FPandA"
-    },
-    {
-     "slug": "payroll",
-     "name": "Payroll",
-     "group": "FIN-Payroll"
-    },
-    {
-     "slug": "tax-treasury",
-     "name": "Tax and Treasury",
-     "group": null
-    }
-   ]
-  },
-  {
-   "slug": "people",
-   "name": "People / HR",
-   "active_employees": 60,
-   "founded": "2017-01-09",
-   "department_group": "HR Staff",
-   "teams": [
-    {
-     "slug": "recruiting",
-     "name": "Recruiting",
-     "group": "HR-Recruiting"
-    },
-    {
-     "slug": "people-ops",
-     "name": "People Operations",
-     "group": "HR-PeopleOps"
-    },
-    {
-     "slug": "total-rewards",
-     "name": "Total Rewards",
-     "group": null
-    },
-    {
-     "slug": "learning",
-     "name": "Learning and Development",
+     "slug": "network",
+     "name": "Network",
      "group": null
     }
    ]
@@ -290,58 +289,14 @@
      "group": null
     },
     {
-     "slug": "privacy",
-     "name": "Privacy",
-     "group": null
-    },
-    {
      "slug": "corporate",
      "name": "Corporate",
      "group": null
-    }
-   ]
-  },
-  {
-   "slug": "sales",
-   "name": "Sales",
-   "active_employees": 300,
-   "founded": "2016-10-01",
-   "department_group": "GG_Sales",
-   "teams": [
-    {
-     "slug": "na-east",
-     "name": "North America East",
-     "group": "Sales-NA-East"
     },
     {
-     "slug": "na-west",
-     "name": "North America West",
-     "group": "Sales-NA-West"
-    },
-    {
-     "slug": "emea",
-     "name": "EMEA",
-     "group": "Sales-EMEA"
-    },
-    {
-     "slug": "apac",
-     "name": "APAC",
-     "group": "Sales-APAC"
-    },
-    {
-     "slug": "enterprise",
-     "name": "Enterprise",
-     "group": "Sales-Enterprise"
-    },
-    {
-     "slug": "sales-ops",
-     "name": "Sales Operations",
-     "group": "Sales-Ops"
-    },
-    {
-     "slug": "sdr",
-     "name": "Sales Development",
-     "group": "Sales-SDR"
+     "slug": "privacy",
+     "name": "Privacy",
+     "group": null
     }
    ]
   },
@@ -353,62 +308,28 @@
    "department_group": "Marketing-All",
    "teams": [
     {
+     "slug": "brand",
+     "name": "Brand",
+     "group": null
+    },
+    {
      "slug": "content",
      "name": "Content",
-     "group": "MKT-Content"
+     "group": null
     },
     {
      "slug": "demand-gen",
      "name": "Demand Generation",
-     "group": "MKT-Demand-Gen"
+     "group": null
     },
     {
      "slug": "events",
      "name": "Events",
-     "group": "MKT-Events"
+     "group": null
     },
     {
      "slug": "product-marketing",
      "name": "Product Marketing",
-     "group": "MKT-PMM"
-    },
-    {
-     "slug": "brand",
-     "name": "Brand",
-     "group": null
-    }
-   ]
-  },
-  {
-   "slug": "customer-success",
-   "name": "Customer Success",
-   "active_employees": 190,
-   "founded": "2017-03-01",
-   "department_group": "CS-All",
-   "teams": [
-    {
-     "slug": "support-t1",
-     "name": "Support Tier 1",
-     "group": "CS-Support-T1"
-    },
-    {
-     "slug": "support-t2",
-     "name": "Support Tier 2",
-     "group": "CS-Support-T2"
-    },
-    {
-     "slug": "onboarding",
-     "name": "Onboarding",
-     "group": "CS-Onboarding"
-    },
-    {
-     "slug": "account-management",
-     "name": "Account Management",
-     "group": "CS-Account-Mgmt"
-    },
-    {
-     "slug": "cs-ops",
-     "name": "Customer Success Operations",
      "group": null
     }
    ]
@@ -421,19 +342,19 @@
    "department_group": "Ops Team",
    "teams": [
     {
+     "slug": "bizops",
+     "name": "Business Operations",
+     "group": null
+    },
+    {
      "slug": "facilities",
      "name": "Facilities",
-     "group": "OPS-Facilities"
+     "group": null
     },
     {
      "slug": "procurement",
      "name": "Procurement",
-     "group": "OPS-Procurement"
-    },
-    {
-     "slug": "bizops",
-     "name": "Business Operations",
-     "group": "OPS-BizOps"
+     "group": null
     },
     {
      "slug": "workplace",
@@ -443,36 +364,130 @@
    ]
   },
   {
-   "slug": "design",
-   "name": "Design",
-   "active_employees": 55,
-   "founded": "2018-04-02",
-   "department_group": "Design_Team",
+   "slug": "people",
+   "name": "People / HR",
+   "active_employees": 60,
+   "founded": "2017-01-09",
+   "department_group": "HR Staff",
    "teams": [
     {
-     "slug": "product-design",
-     "name": "Product Design",
+     "slug": "learning",
+     "name": "Learning and Development",
      "group": null
     },
     {
-     "slug": "brand-design",
-     "name": "Brand Design",
+     "slug": "people-ops",
+     "name": "People Operations",
      "group": null
     },
     {
-     "slug": "research",
-     "name": "Research",
+     "slug": "recruiting",
+     "name": "Recruiting",
+     "group": null
+    },
+    {
+     "slug": "total-rewards",
+     "name": "Total Rewards",
      "group": null
     }
    ]
   },
   {
-   "slug": "executive",
-   "name": "Executive",
-   "active_employees": 12,
+   "slug": "product",
+   "name": "Product",
+   "active_employees": 95,
    "founded": "2016-10-01",
-   "department_group": "Executives",
-   "teams": []
+   "department_group": "Product Team",
+   "teams": [
+    {
+     "slug": "core",
+     "name": "Core Product",
+     "group": null
+    },
+    {
+     "slug": "growth",
+     "name": "Growth",
+     "group": null
+    },
+    {
+     "slug": "platform-product",
+     "name": "Platform Product",
+     "group": null
+    },
+    {
+     "slug": "product-ops",
+     "name": "Product Operations",
+     "group": null
+    }
+   ]
+  },
+  {
+   "slug": "sales",
+   "name": "Sales",
+   "active_employees": 300,
+   "founded": "2016-10-01",
+   "department_group": "GG_Sales",
+   "teams": [
+    {
+     "slug": "apac",
+     "name": "APAC",
+     "group": null
+    },
+    {
+     "slug": "emea",
+     "name": "EMEA",
+     "group": null
+    },
+    {
+     "slug": "enterprise",
+     "name": "Enterprise",
+     "group": null
+    },
+    {
+     "slug": "na-east",
+     "name": "North America East",
+     "group": null
+    },
+    {
+     "slug": "na-west",
+     "name": "North America West",
+     "group": null
+    },
+    {
+     "slug": "sales-ops",
+     "name": "Sales Operations",
+     "group": null
+    },
+    {
+     "slug": "sdr",
+     "name": "Sales Development",
+     "group": null
+    }
+   ]
+  },
+  {
+   "slug": "security",
+   "name": "Security",
+   "active_employees": 40,
+   "founded": "2020-01-15",
+   "department_group": "Security-Team",
+   "teams": [
+    {
+     "slug": "appsec",
+     "name": "Application Security",
+     "group": null
+    },
+    {
+     "slug": "grc",
+     "name": "Governance, Risk and Compliance",
+     "group": null
+    },
+    {
+     "slug": "soc",
+     "name": "Security Operations",
+     "group": null
+    }
+   ]
   }
  ],
  "standard_era_exceptions": [
@@ -486,7 +501,7 @@
    "observed_on": "2026-09-03",
    "title": "Initial observation",
    "ntfs_failed": [
-    "NM-SEC-FS01"
+    "GP-SEC-FS01"
    ]
   },
   {
@@ -500,7 +515,7 @@
    "observed_on": "2026-10-01",
    "title": "Snapshot",
    "ntfs_failed": [
-    "NM-FS-03"
+    "GP-FS-03"
    ]
   }
  ],
@@ -512,20 +527,20 @@
    "accounts_disabled": 85,
    "accounts_deleted": 555,
    "by_department": {
-    "engineering": 520,
-    "product": 95,
-    "data": 110,
-    "it": 85,
-    "security": 40,
-    "finance": 90,
-    "people": 60,
-    "legal": 28,
-    "sales": 300,
-    "marketing": 110,
     "customer-success": 190,
-    "operations": 105,
+    "data": 110,
     "design": 55,
-    "executive": 12
+    "engineering": 520,
+    "executive": 12,
+    "finance": 90,
+    "it": 85,
+    "legal": 28,
+    "marketing": 110,
+    "operations": 105,
+    "people": 60,
+    "product": 95,
+    "sales": 300,
+    "security": 40
    },
    "by_level": {
     "director": 16,
@@ -562,7 +577,7 @@
    "tenure_over_8_years": 90,
    "hired_in_last_90_days": 118,
    "transferred": 57,
-   "acquired_with_lumen_analytics": 15
+   "acquired": 15
   },
   "groups": {
    "total": 205,
@@ -690,55 +705,55 @@
   {
    "id": "A",
    "title": "Modern healthy share",
-   "resource": "\\\\NM-CORP-FS02\\Design",
+   "resource": "\\\\GP-CORP-FS02\\Design",
    "groups": [
-    "sg-share-design-read-only",
-    "sg-share-design-write"
+    "sec-share-design-read-only",
+    "sec-share-design-write"
    ],
-   "demonstrates": "A 2023 share built to the standard: two sg-share-* groups with people as direct members, inheritance unbroken, no direct user entries, no legacy groups.",
+   "demonstrates": "A 2023 share built to the standard: two sec-share-* groups with people as direct members, inheritance unbroken, no direct user entries, no legacy groups.",
    "look_at": [
-    "GET /api/v1/resources/{\\\\NM-CORP-FS02\\Design}/acl",
-    "GET /api/v1/groups/{sg-share-design-write SID}/members"
+    "GET /api/v1/resources/{\\\\GP-CORP-FS02\\Design}/acl",
+    "GET /api/v1/groups/{sec-share-design-write SID}/members"
    ]
   },
   {
    "id": "B",
    "title": "Legacy finance hierarchy",
-   "resource": "\\\\NM-FIN-FS01\\Finance",
+   "resource": "\\\\GP-FIN-FS01\\Finance",
    "groups": [
     "Finance-RW",
     "GG_Finance_RW",
     "Finance_Read",
     "FS-Finance-R",
     "FIN-Close-Team",
-    "sg-share-finance-write",
-    "sg-share-finance-read-only"
+    "sec-share-finance-write",
+    "sec-share-finance-read-only"
    ],
    "people": [
     {
-     "employee_id": "NM-00379",
+     "employee_id": "GP-00379",
      "name": "Lucia Hart",
-     "email": "lucia.hart@nullmeridian.info",
+     "email": "lucia.hart@geneseepress.example",
      "sid": "S-1-5-21-3949361974-1583827165-633756269-1584",
      "department": "finance",
      "title": "Corporate Controller"
     }
    ],
-   "demonstrates": "Four generations of finance groups on one 2017 ACL. FIN-Accounting -> Finance-Team -> Finance-RW -> GG_Finance_RW grants Modify, FIN-Close-Team grants it again, and about 40% of Finance also hold sg-share-finance-write directly: the 2024 migration added the modern groups and removed nothing. Close folders carry direct entries for named accountants.",
+   "demonstrates": "Four generations of finance groups on one 2017 ACL. FIN-Accounting -> Finance-Team -> Finance-RW -> GG_Finance_RW grants Modify, FIN-Close-Team grants it again, and about 40% of Finance also hold sec-share-finance-write directly: the 2024 migration added the modern groups and removed nothing. Close folders carry direct entries for named accountants.",
    "look_at": [
-    "GET /api/v1/resources/{\\\\NM-FIN-FS01\\Finance}/acl",
-    "GET /api/v1/access/resources/{\\\\NM-FIN-FS01\\Finance\\Accounting\\Close}/principals"
+    "GET /api/v1/resources/{\\\\GP-FIN-FS01\\Finance}/acl",
+    "GET /api/v1/access/resources/{\\\\GP-FIN-FS01\\Finance\\Accounting\\Close}/principals"
    ]
   },
   {
    "id": "C",
    "title": "Engineering sprawl",
-   "resource": "\\\\NM-ENG-FS01\\Engineering",
+   "resource": "\\\\GP-ENG-FS01\\Engineering",
    "groups": [
     "Share_Engineering_Modify",
     "Engineering-FS",
     "APP-GitHub-Users",
-    "sg-share-engineering-write",
+    "sec-share-engineering-write",
     "ENG-Payments",
     "Proj-Apollo",
     "PRJ_Nebula",
@@ -746,31 +761,31 @@
    ],
    "demonstrates": "The largest share: team folders, project folders, inherited access from five root entries, historical direct entries for long-tenured engineers, and an application group (APP-GitHub-Users) that became a file-share dependency. Most engineers reach Modify by three or more routes.",
    "look_at": [
-    "GET /api/v1/access/resources/{\\\\NM-ENG-FS01\\Engineering\\Services\\Payments}/principals"
+    "GET /api/v1/access/resources/{\\\\GP-ENG-FS01\\Engineering\\Services\\Payments}/principals"
    ]
   },
   {
    "id": "D",
    "title": "Sensitive People share",
-   "resource": "\\\\NM-HR-FS01\\People",
+   "resource": "\\\\GP-HR-FS01\\People",
    "groups": [
     "HR_Share_RW",
     "HR-Confidential",
-    "sg-share-people-write",
+    "sec-share-people-write",
     "Hiring-Managers",
     "Payroll_Admins"
    ],
    "demonstrates": "Well controlled: Employee-Relations and Compensation are protected and limited to HR-Confidential. Two understandable exceptions: Recruiting is readable by Hiring-Managers (which nests every manager), and a Finance payroll specialist holds a direct entry on the payroll-vendor transition folder.",
    "look_at": [
-    "GET /api/v1/resources/{\\\\NM-HR-FS01\\People\\Compensation}/acl"
+    "GET /api/v1/resources/{\\\\GP-HR-FS01\\People\\Compensation}/acl"
    ]
   },
   {
    "id": "E",
    "title": "Migration and archive debt",
-   "resource": "\\\\NM-ARCH-FS01\\Archive",
+   "resource": "\\\\GP-ARCH-FS01\\Archive",
    "also": [
-    "\\\\NM-MIG-FS01\\Migrations\\FS-Consolidation-2020"
+    "\\\\GP-MIG-FS01\\Migrations\\FS-Consolidation-2020"
    ],
    "groups": [
     "GG_Archive_R",
@@ -781,18 +796,18 @@
    ],
    "demonstrates": "Broken inheritance on every subfolder; Finance-RW granted twice on one ACL (Modify and Read & execute); Project-Vega, deleted on 2026-09-10, still named and now unresolved; home drives naming accounts deleted before ADG's first scan, an account deleted between the first and second scans, and an IT migrator's leftover Full control.",
    "look_at": [
-    "GET /api/v1/resources/{\\\\NM-ARCH-FS01\\Archive\\Legacy-Home-Drives}/acl"
+    "GET /api/v1/resources/{\\\\GP-ARCH-FS01\\Archive\\Legacy-Home-Drives}/acl"
    ]
   },
   {
    "id": "F",
    "title": "Cross-department access, two ways",
-   "resource": "\\\\NM-FIN-FS01\\Finance\\Reports\\Revenue",
+   "resource": "\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue",
    "people": [
     {
-     "employee_id": "NM-00104",
+     "employee_id": "GP-00104",
      "name": "Brianna Reddy",
-     "email": "brianna.reddy@nullmeridian.info",
+     "email": "brianna.reddy@geneseepress.example",
      "sid": "S-1-5-21-3949361974-1583827165-633756269-1243",
      "department": "sales",
      "title": "Sales Operations Analyst"
@@ -803,22 +818,22 @@
     "Revenue-Reporting",
     "Finance_Read",
     "FS-Finance-R",
-    "sg-share-finance-read-only"
+    "sec-share-finance-read-only"
    ],
    "demonstrates": "Brianna Reddy moved from Finance to Sales Operations on 2022-02-01. Sales-Ops -> Revenue-Reporting grants Read & execute on the Revenue folder (and Revenue-Reporting -> Finance_Read reaches the share root); the direct Modify entry from their Finance days was never removed. ADG explains both paths, and that removing either one leaves the other standing.",
    "look_at": [
-    "GET /api/v1/access/paths/principals/S-1-5-21-3949361974-1583827165-633756269-1243/resources/\\\\NM-FIN-FS01\\Finance\\Reports\\Revenue"
+    "GET /api/v1/access/paths/principals/S-1-5-21-3949361974-1583827165-633756269-1243/resources/\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue"
    ]
   },
   {
    "id": "G",
    "title": "A six-level chain",
-   "resource": "\\\\NM-ENG-FS01\\Engineering\\Runbooks\\Payments-Legacy",
+   "resource": "\\\\GP-ENG-FS01\\Engineering\\Runbooks\\Payments-Legacy",
    "people": [
     {
-     "employee_id": "NM-00874",
+     "employee_id": "GP-00874",
      "name": "Camila Nair",
-     "email": "camila.nair@nullmeridian.info",
+     "email": "camila.nair@geneseepress.example",
      "sid": "S-1-5-21-3949361974-1583827165-633756269-2110",
      "department": "engineering",
      "title": "Software Engineer"
@@ -835,15 +850,15 @@
    "demonstrates": "Camila Nair is on the payments on-call rotation. The only entry on this protected folder is Share_Engineering_Modify, which they reach through six nested groups — and through seven by a detour via APP-GitHub-Users, the application group that became a file-share dependency. Valid, and legible to nobody reading the ACL.",
    "look_at": [
     "GET /api/v1/principals/S-1-5-21-3949361974-1583827165-633756269-2110/membership-paths",
-    "GET /api/v1/access/paths/principals/S-1-5-21-3949361974-1583827165-633756269-2110/resources/\\\\NM-ENG-FS01\\Engineering\\Runbooks\\Payments-Legacy"
+    "GET /api/v1/access/paths/principals/S-1-5-21-3949361974-1583827165-633756269-2110/resources/\\\\GP-ENG-FS01\\Engineering\\Runbooks\\Payments-Legacy"
    ]
   },
   {
    "id": "H",
    "title": "A safe first clean-up",
-   "resource": "\\\\NM-ENG-FS01\\Engineering\\Projects\\Zephyr",
+   "resource": "\\\\GP-ENG-FS01\\Engineering\\Projects\\Zephyr",
    "also": [
-    "\\\\NM-ENG-FS01\\Projects\\Zephyr"
+    "\\\\GP-ENG-FS01\\Projects\\Zephyr"
    ],
    "groups": [
     "Proj-Zephyr-RW"
@@ -855,8 +870,8 @@
   }
  ],
  "digests": {
-  "employees": "458a92afec8835af94e9dd39da2bb2c42f0560b59801fe6b7e8d9a8bcf6e9cd0",
-  "groups": "8e9e508272c657f0726d2e4de6b021c60481d90c1c3a95df8ae6cd28da076c34",
-  "memberships_at_snapshot": "a8df6c61a9384be628d503ffa50a3470d0c4a361cb013c68daaa8bcb64fb15e2"
+  "employees": "dfebe58dcf13ca58f4915f095ec98c27dfbea6a965b092442b8b65329ce9ed71",
+  "groups": "bad3eb84944c228c6a45669865f356bdf32825d282bfff6b3c7d26a67d95ac94",
+  "memberships_at_snapshot": "6556d678224c6f5697e819041ca69e757ecc084b4a3acfbbd097149e62c30db1"
  }
 }

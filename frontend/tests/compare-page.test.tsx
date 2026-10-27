@@ -102,7 +102,7 @@ describe("start: the request the page makes", () => {
     await open(ok(recovered()), {
       from: DRILL.at_from,
       to: DRILL.at_to,
-      server: "NM-ENG-FS01",
+      server: "GP-ENG-FS01",
       kind: "ntfs_ace",
       retry_of: "aaaaaaaa-0000-4000-8000-000000000002",
     });
@@ -110,7 +110,7 @@ describe("start: the request the page makes", () => {
     expect(adg.compareInstants).toHaveBeenCalledWith("token", {
       from: DRILL.at_from,
       to: DRILL.at_to,
-      server: "NM-ENG-FS01",
+      server: "GP-ENG-FS01",
       kind: ["ntfs_ace"],
       retry_of: "aaaaaaaa-0000-4000-8000-000000000002",
       significance: ["security", "undetermined"],

@@ -1,9 +1,9 @@
-r"""Null Meridian's file estate and its three scans: shaped as documented, valid, repeatable.
+r"""Genesee Press's file estate and its three scans: shaped as documented, valid, repeatable.
 
 The estate is derived by the same inheritance and hashing functions the server uses, so most
 of what could go wrong is in the *shape*: too clean, too dirty, a golden scenario lost in an
 edit, a direct-user grant concentrated in one obviously artificial folder. Each of those is a
-test here. Behavior against a real database is in ``tests/db/test_null_meridian_demo.py``.
+test here. Behavior against a real database is in ``tests/db/test_genesee_press_demo.py``.
 """
 
 from __future__ import annotations
@@ -15,21 +15,21 @@ import pytest
 
 from app.contracts.v1 import ObservationBatch, ScanRunCompletion, ScanRunStart
 from app.demo.estate import DemoDirectory
-from app.demo.null_meridian.canon import DOMAIN_SID, SNAPSHOT, Canon, build_canon
-from app.demo.null_meridian.estate import (
+from app.demo.genesee_press.canon import DOMAIN_SID, SNAPSHOT, Canon, build_canon
+from app.demo.genesee_press.estate import (
     BROAD_WELL_KNOWN,
     SERVERS,
     AceIntent,
     FolderRecord,
-    NullMeridianEstate,
+    GeneseePressEstate,
     build_estate,
 )
-from app.demo.null_meridian.generations import (
+from app.demo.genesee_press.generations import (
     GENERATIONS,
     TRANSCRIPT_NAMESPACE,
     build_generations,
 )
-from app.demo.null_meridian.scenarios import SCENARIO_IDS, golden_scenarios
+from app.demo.genesee_press.scenarios import SCENARIO_IDS, golden_scenarios
 from app.domain.acl_hash import acl_hash
 from app.domain.inheritance import project_inherited_acl
 from tests.contracts.test_fixtures import OBSERVATION_SCHEMA, validator
@@ -44,22 +44,22 @@ def canon() -> Canon:
 
 
 @pytest.fixture(scope="module")
-def snapshot() -> NullMeridianEstate:
+def snapshot() -> GeneseePressEstate:
     return build_estate(SNAPSHOT)
 
 
-def _folder(estate: NullMeridianEstate, path: str) -> FolderRecord:
+def _folder(estate: GeneseePressEstate, path: str) -> FolderRecord:
     folded = path.casefold()
     return next(item for item in estate.folders if item.path.casefold() == folded)
 
 
-def _directory(estate: NullMeridianEstate, path: str) -> DemoDirectory:
+def _directory(estate: GeneseePressEstate, path: str) -> DemoDirectory:
     folded = path.casefold()
     return next(item for item in estate.estate.directories if item.path.casefold() == folded)
 
 
 class TestScale:
-    def test_servers_shares_and_folders_are_in_range(self, snapshot: NullMeridianEstate) -> None:
+    def test_servers_shares_and_folders_are_in_range(self, snapshot: GeneseePressEstate) -> None:
         estate = snapshot.estate
         assert 25 <= len(estate.servers) <= 40
         assert 80 <= sum(1 for share in estate.shares if not share.is_special) <= 140
@@ -67,14 +67,14 @@ class TestScale:
         explicit = [folder for folder in snapshot.folders if folder.assignment != "inherited"]
         assert 300 <= len(explicit) <= 600, "several hundred meaningful ACL objects"
 
-    def test_synthetic_host_names_and_paths(self, snapshot: NullMeridianEstate) -> None:
+    def test_synthetic_host_names_and_paths(self, snapshot: GeneseePressEstate) -> None:
         for server in snapshot.estate.servers:
-            assert server.name.startswith("NM-")
-            assert server.dns_host_name.endswith(".nullmeridian.info")
+            assert server.name.startswith("GP-")
+            assert server.dns_host_name.endswith(".corp.geneseepress.example")
         for directory in snapshot.estate.directories:
-            assert directory.path.startswith("\\\\NM-")
+            assert directory.path.startswith("\\\\GP-")
 
-    def test_older_servers_carry_more_legacy_patterns(self, snapshot: NullMeridianEstate) -> None:
+    def test_older_servers_carry_more_legacy_patterns(self, snapshot: GeneseePressEstate) -> None:
         by_server = {server.name: server.created for server in SERVERS}
         old = [f for f in snapshot.folders if by_server[f.server] < dt.date(2019, 10, 1)]
         new = [f for f in snapshot.folders if by_server[f.server] >= dt.date(2023, 10, 1)]
@@ -87,7 +87,7 @@ class TestScale:
 
 class TestDistribution:
     def test_assignment_distribution_is_in_the_documented_bands(
-        self, snapshot: NullMeridianEstate
+        self, snapshot: GeneseePressEstate
     ) -> None:
         explicit = [folder for folder in snapshot.folders if folder.assignment != "inherited"]
         share = Counter(folder.assignment for folder in explicit)
@@ -96,7 +96,7 @@ class TestDistribution:
         assert 0.15 <= share["direct-user"] / total <= 0.20
         assert 0.10 <= share["mixed"] / total <= 0.15
 
-    def test_posture_is_moderate_debt(self, snapshot: NullMeridianEstate) -> None:
+    def test_posture_is_moderate_debt(self, snapshot: GeneseePressEstate) -> None:
         share = Counter(folder.posture.value for folder in snapshot.folders)
         total = len(snapshot.folders)
         assert 0.70 <= share["ordinary"] / total <= 0.80
@@ -104,13 +104,13 @@ class TestDistribution:
         assert 0.05 <= share["risky"] / total <= 0.10
 
     def test_direct_user_entries_are_spread_out_and_explained(
-        self, snapshot: NullMeridianEstate
+        self, snapshot: GeneseePressEstate
     ) -> None:
         direct = [
             (folder, ace)
             for folder in snapshot.folders
             for ace in folder.explicit
-            if ace.trustee.startswith("NM-")
+            if ace.trustee.startswith("GP-")
         ]
         assert len({folder.server for folder, _ in direct}) >= 15
         assert len({folder.area for folder, _ in direct}) >= 10
@@ -120,7 +120,7 @@ class TestDistribution:
         assert max(per_folder.values()) <= 4
         assert {ace.intent for _, ace in direct} == set(AceIntent)
 
-    def test_everyone_is_rare(self, snapshot: NullMeridianEstate) -> None:
+    def test_everyone_is_rare(self, snapshot: GeneseePressEstate) -> None:
         explicit_everyone = [
             folder
             for folder in snapshot.folders
@@ -134,13 +134,13 @@ class TestDistribution:
         ]
         assert len(everyone_shares) <= 5
 
-    def test_every_permission_level_is_used(self, snapshot: NullMeridianEstate) -> None:
+    def test_every_permission_level_is_used(self, snapshot: GeneseePressEstate) -> None:
         levels = {ace.level for folder in snapshot.folders for ace in folder.explicit}
         assert {"R", "RX", "L", "RW", "M", "F"} <= levels
         assert any(ace.deny for folder in snapshot.folders for ace in folder.explicit)
 
     def test_inherited_explicit_and_broken_inheritance_all_occur(
-        self, snapshot: NullMeridianEstate
+        self, snapshot: GeneseePressEstate
     ) -> None:
         directories = snapshot.estate.directories
         assert any(d.dacl_protected for d in directories)
@@ -149,7 +149,7 @@ class TestDistribution:
 
 
 class TestSelfConsistency:
-    def test_every_acl_hash_is_the_hash_of_its_entries(self, snapshot: NullMeridianEstate) -> None:
+    def test_every_acl_hash_is_the_hash_of_its_entries(self, snapshot: GeneseePressEstate) -> None:
         for directory in snapshot.estate.directories:
             assert directory.acl_hash == acl_hash(
                 dacl_present=directory.dacl_present,
@@ -158,7 +158,7 @@ class TestSelfConsistency:
             ), directory.path
 
     def test_a_child_that_inherits_carries_exactly_the_parent_projection(
-        self, snapshot: NullMeridianEstate
+        self, snapshot: GeneseePressEstate
     ) -> None:
         by_path = {d.path.casefold(): d for d in snapshot.estate.directories}
         checked = 0
@@ -174,7 +174,7 @@ class TestSelfConsistency:
         assert checked >= 200
 
     def test_every_trustee_is_a_collected_principal_or_a_known_ghost(
-        self, snapshot: NullMeridianEstate, canon: Canon
+        self, snapshot: GeneseePressEstate, canon: Canon
     ) -> None:
         """A trustee missing from the snapshot's principals must be one of the deliberate
         ghosts: an account or group deleted after ADG started scanning."""
@@ -197,7 +197,7 @@ class TestSelfConsistency:
         assert ghosts, "the estate should carry at least one deleted-since-first-scan trustee"
 
     def test_every_share_and_directory_belongs_to_a_server(
-        self, snapshot: NullMeridianEstate
+        self, snapshot: GeneseePressEstate
     ) -> None:
         servers = {server.name for server in snapshot.estate.servers}
         assert {share.server_name for share in snapshot.estate.shares} <= servers
@@ -206,7 +206,7 @@ class TestSelfConsistency:
             assert (directory.server_name, directory.share_name.casefold()) in shares
 
     def test_unresolved_principals_are_reported_with_a_last_known_name(
-        self, snapshot: NullMeridianEstate
+        self, snapshot: GeneseePressEstate
     ) -> None:
         unresolved = [
             p for p in snapshot.estate.principals if p.principal_kind.value == "unresolved"
@@ -214,9 +214,7 @@ class TestSelfConsistency:
         assert unresolved
         for principal in unresolved:
             assert principal.sid.startswith(DOMAIN_SID)
-            assert principal.last_known_name and principal.last_known_name.startswith(
-                "NULLMERIDIAN\\"
-            )
+            assert principal.last_known_name and principal.last_known_name.startswith("GPCORP\\")
 
 
 class TestItIsDeterministic:
@@ -284,12 +282,12 @@ class TestTheTranscripts:
         }
         failed = {key for key, t in statuses.items() if t.status == "failed"}
         partial = {key for key, t in statuses.items() if t.status == "partial"}
-        assert failed == {("g1", "g1-ntfs-nm-sec-fs01"), ("g3", "g3-ntfs-nm-fs-03")}
-        assert partial == {("g3", "g3-ntfs-nm-mig-fs01")}
+        assert failed == {("g1", "g1-ntfs-gp-sec-fs01"), ("g3", "g3-ntfs-gp-fs-03")}
+        assert partial == {("g3", "g3-ntfs-gp-mig-fs01")}
         for key in failed | partial:
             assert statuses[key].completion["reconciled_scopes"] == []
-        assert statuses[("g3", "g3-ntfs-nm-fs-03")].observation_count == 0
-        assert statuses[("g3", "g3-ntfs-nm-mig-fs01")].completion["errors"]
+        assert statuses[("g3", "g3-ntfs-gp-fs-03")].observation_count == 0
+        assert statuses[("g3", "g3-ntfs-gp-mig-fs01")].completion["errors"]
         for key, transcript in statuses.items():
             if key not in failed | partial:
                 assert transcript.completion["reconciled_scopes"], key
@@ -299,24 +297,24 @@ class TestChangesBetweenGenerations:
     def test_what_appears_and_disappears(self, canon: Canon) -> None:
         g1, g2, g3 = (build_estate(day) for day in (G1, G2, G3))
 
-        def paths(estate: NullMeridianEstate) -> set[str]:
+        def paths(estate: GeneseePressEstate) -> set[str]:
             return {d.path for d in estate.estate.directories}
 
-        def sids(estate: NullMeridianEstate) -> set[str]:
+        def sids(estate: GeneseePressEstate) -> set[str]:
             return {p.sid for p in estate.estate.principals}
 
-        scratch = r"\\NM-ENG-FS02\QA\Sprint-Scratch"
+        scratch = r"\\GP-ENG-FS02\QA\Sprint-Scratch"
         assert scratch in paths(g1) and scratch not in paths(g2)
-        new_close = r"\\NM-FIN-FS01\Finance\Accounting\Close\FY2026-Q3"
+        new_close = r"\\GP-FIN-FS01\Finance\Accounting\Close\FY2026-Q3"
         assert new_close not in paths(g1) and new_close in paths(g2)
-        staging = r"\\NM-MIG-FS01\Migrations\Wave-3-Staging"
+        staging = r"\\GP-MIG-FS01\Migrations\Wave-3-Staging"
         assert staging in paths(g2) and staging not in paths(g3)
-        incident = r"\\NM-SEC-FS01\Incidents\IR-2026-014"
+        incident = r"\\GP-SEC-FS01\Incidents\IR-2026-014"
         assert incident not in paths(g2) and incident in paths(g3)
 
         vega = canon.group("Project-Vega").sid
         assert vega in sids(g1) and vega not in sids(g2)
-        legal = canon.group("sg-share-legal-write").sid
+        legal = canon.group("sec-share-legal-write").sid
         assert legal not in sids(g1) and legal in sids(g2)
 
         joined = sids(g3) - sids(g1)
@@ -325,19 +323,19 @@ class TestChangesBetweenGenerations:
 
     def test_permissions_change_between_generations(self) -> None:
         g1, g2 = build_estate(G1), build_estate(G2)
-        campaigns = r"\\NM-MKT-FS01\Marketing\Campaigns"
+        campaigns = r"\\GP-MKT-FS01\Marketing\Campaigns"
         before = {ace.trustee for ace in _folder(g1, campaigns).explicit}
         after = {ace.trustee for ace in _folder(g2, campaigns).explicit}
         assert "All Staff" in before and "All Staff" not in after
         assert "MKT-Demand-Gen" in after
-        forecasts = r"\\NM-SALES-FS01\Sales\Forecasts"
-        assert any(a.trustee.startswith("NM-") for a in _folder(g1, forecasts).explicit)
-        assert not any(a.trustee.startswith("NM-") for a in _folder(g2, forecasts).explicit)
+        forecasts = r"\\GP-SALES-FS01\Sales\Forecasts"
+        assert any(a.trustee.startswith("GP-") for a in _folder(g1, forecasts).explicit)
+        assert not any(a.trustee.startswith("GP-") for a in _folder(g2, forecasts).explicit)
         assert _directory(g1, campaigns).acl_hash != _directory(g2, campaigns).acl_hash
 
     def test_the_unreadable_folder_is_reported_not_observed(self) -> None:
         g3 = build_estate(G3)
-        restricted = r"\\NM-MIG-FS01\Migrations\FS-Consolidation-2020\Restricted"
+        restricted = r"\\GP-MIG-FS01\Migrations\FS-Consolidation-2020\Restricted"
         assert restricted in g3.unreadable
         assert restricted not in {d.path for d in g3.estate.directories}
         assert restricted in {d.path for d in build_estate(G2).estate.directories}
@@ -347,44 +345,44 @@ class TestGoldenScenarios:
     def test_all_eight_are_described(self) -> None:
         assert [item["id"] for item in golden_scenarios()] == list(SCENARIO_IDS)
 
-    def test_a_modern_healthy_share(self, snapshot: NullMeridianEstate, canon: Canon) -> None:
-        folders = [f for f in snapshot.folders if f.share == r"\\NM-CORP-FS02\Design"]
+    def test_a_modern_healthy_share(self, snapshot: GeneseePressEstate, canon: Canon) -> None:
+        folders = [f for f in snapshot.folders if f.share == r"\\GP-CORP-FS02\Design"]
         assert len(folders) >= 6
         trustees = {ace.trustee for f in folders for ace in f.explicit}
         assert trustees == {
             "SYSTEM",
             "ADMINISTRATORS",
-            "sg-share-design-read-only",
-            "sg-share-design-write",
+            "sec-share-design-read-only",
+            "sec-share-design-write",
         }
         assert not any(f.protected for f in folders)
         assert all(f.posture.value == "ordinary" for f in folders)
         edges = canon.memberships_on(SNAPSHOT)
         groups = {g.name for g in canon.groups}
-        for name in ("sg-share-design-read-only", "sg-share-design-write"):
+        for name in ("sec-share-design-read-only", "sec-share-design-write"):
             members = [member for group, member in edges if group == name]
             assert members and not any(member in groups for member in members), name
 
-    def test_b_legacy_finance(self, snapshot: NullMeridianEstate, canon: Canon) -> None:
-        root = _folder(snapshot, r"\\NM-FIN-FS01\Finance")
+    def test_b_legacy_finance(self, snapshot: GeneseePressEstate, canon: Canon) -> None:
+        root = _folder(snapshot, r"\\GP-FIN-FS01\Finance")
         trustees = {ace.trustee for ace in root.explicit}
         assert {
             "Finance-RW",
             "GG_Finance_RW",
             "Finance_Read",
             "FS-Finance-R",
-            "sg-share-finance-write",
-            "sg-share-finance-read-only",
+            "sec-share-finance-write",
+            "sec-share-finance-read-only",
         } <= trustees
-        close = _folder(snapshot, r"\\NM-FIN-FS01\Finance\Accounting\Close\FY2025")
-        assert sum(1 for ace in close.explicit if ace.trustee.startswith("NM-")) == 2
+        close = _folder(snapshot, r"\\GP-FIN-FS01\Finance\Accounting\Close\FY2025")
+        assert sum(1 for ace in close.explicit if ace.trustee.startswith("GP-")) == 2
         finance = [p for p in canon.active if p.department == "finance"]
-        migrated = {m for g, m in canon.memberships_on(SNAPSHOT) if g == "sg-share-finance-write"}
+        migrated = {m for g, m in canon.memberships_on(SNAPSHOT) if g == "sec-share-finance-write"}
         fraction = sum(1 for p in finance if p.employee_id in migrated) / len(finance)
         assert 0.2 < fraction < 0.7, "the migration is under way and incomplete"
 
-    def test_c_engineering_sprawl(self, snapshot: NullMeridianEstate) -> None:
-        folders = [f for f in snapshot.folders if f.share == r"\\NM-ENG-FS01\Engineering"]
+    def test_c_engineering_sprawl(self, snapshot: GeneseePressEstate) -> None:
+        folders = [f for f in snapshot.folders if f.share == r"\\GP-ENG-FS01\Engineering"]
         assert len(folders) >= 25
         trustees = {ace.trustee for f in folders for ace in f.explicit}
         assert {"Proj-Apollo", "PRJ_Nebula", "PRJ_Orion", "Proj-Zephyr-RW"} <= trustees
@@ -396,40 +394,40 @@ class TestGoldenScenarios:
         ]
         assert len(historical) >= 3
 
-    def test_d_people_share(self, snapshot: NullMeridianEstate) -> None:
-        folders = [f for f in snapshot.folders if f.share == r"\\NM-HR-FS01\People"]
-        direct = [ace for f in folders for ace in f.explicit if ace.trustee.startswith("NM-")]
+    def test_d_people_share(self, snapshot: GeneseePressEstate) -> None:
+        folders = [f for f in snapshot.folders if f.share == r"\\GP-HR-FS01\People"]
+        direct = [ace for f in folders for ace in f.explicit if ace.trustee.startswith("GP-")]
         assert len(direct) == 1
         for name in ("Employee-Relations", "Compensation"):
-            folder = _folder(snapshot, rf"\\NM-HR-FS01\People\{name}")
+            folder = _folder(snapshot, rf"\\GP-HR-FS01\People\{name}")
             assert folder.protected
         exceptions = {f.path.rsplit("\\", 1)[-1] for f in folders if f.posture.value != "ordinary"}
         assert exceptions == {"Recruiting", "Payroll-Vendor-Transition"}
 
-    def test_e_archive_debt(self, snapshot: NullMeridianEstate) -> None:
-        folders = [f for f in snapshot.folders if f.share == r"\\NM-ARCH-FS01\Archive"]
+    def test_e_archive_debt(self, snapshot: GeneseePressEstate) -> None:
+        folders = [f for f in snapshot.folders if f.share == r"\\GP-ARCH-FS01\Archive"]
         assert sum(1 for f in folders if f.protected) >= 4
-        finance_2017 = _folder(snapshot, r"\\NM-ARCH-FS01\Archive\Finance-2017")
+        finance_2017 = _folder(snapshot, r"\\GP-ARCH-FS01\Archive\Finance-2017")
         assert Counter(a.trustee for a in finance_2017.explicit)["Finance-RW"] == 2
         assert any(a.trustee == "Project-Vega" for f in folders for a in f.explicit)
         assert sum(1 for f in folders for a in f.explicit if a.intent is AceIntent.FORMER_USER) >= 3
 
-    def test_f_two_routes_for_one_person(self, snapshot: NullMeridianEstate, canon: Canon) -> None:
+    def test_f_two_routes_for_one_person(self, snapshot: GeneseePressEstate, canon: Canon) -> None:
         mover = canon.one("golden:cross-department")
         assert mover.department == "sales" and mover.previous_department == "finance"
-        revenue = _folder(snapshot, r"\\NM-FIN-FS01\Finance\Reports\Revenue")
+        revenue = _folder(snapshot, r"\\GP-FIN-FS01\Finance\Reports\Revenue")
         assert any(ace.trustee == mover.employee_id for ace in revenue.explicit)
         assert any(ace.trustee == "Revenue-Reporting" for ace in revenue.explicit)
         edges = set(canon.memberships_on(SNAPSHOT))
         assert ("Sales-Ops", mover.employee_id) in edges
         assert ("Revenue-Reporting", "Sales-Ops") in edges
 
-    def test_g_the_chain_is_the_only_grant(self, snapshot: NullMeridianEstate) -> None:
-        folder = _folder(snapshot, r"\\NM-ENG-FS01\Engineering\Runbooks\Payments-Legacy")
+    def test_g_the_chain_is_the_only_grant(self, snapshot: GeneseePressEstate) -> None:
+        folder = _folder(snapshot, r"\\GP-ENG-FS01\Engineering\Runbooks\Payments-Legacy")
         assert folder.protected
         trustees = {a.trustee for a in folder.explicit} - {"SYSTEM", "ADMINISTRATORS"}
         assert trustees == {"Share_Engineering_Modify"}
 
-    def test_h_the_safe_cleanup(self, snapshot: NullMeridianEstate) -> None:
-        zephyr = _folder(snapshot, r"\\NM-ENG-FS01\Engineering\Projects\Zephyr")
+    def test_h_the_safe_cleanup(self, snapshot: GeneseePressEstate) -> None:
+        zephyr = _folder(snapshot, r"\\GP-ENG-FS01\Engineering\Projects\Zephyr")
         assert {a.trustee for a in zephyr.explicit} == {"Proj-Zephyr-RW"}

@@ -76,10 +76,10 @@ async function go(path) {
 
 const indicator = page.locator("details.demo-indicator");
 
-await check("signed out: header pill reads Demo environment · Synthetic enterprise data · Null Meridian", async () => {
+await check("signed out: header pill reads Demo environment · Synthetic enterprise data · Genesee Press", async () => {
   await go("/");
   const summary = await text(indicator.locator("summary"));
-  expect(/Demo environment/i.test(summary) && summary.includes("Synthetic enterprise data · Null Meridian"), summary);
+  expect(/Demo environment/i.test(summary) && summary.includes("Synthetic enterprise data · Genesee Press"), summary);
   await shot("cloudflare-indicator");
   return summary;
 });
@@ -148,10 +148,10 @@ const scenario = (key) => scenarios.find((s) => s.key === key) ?? { folder: null
 await check("scenario A folder opens the real directory page (Design share ACL)", async () => {
   expect(scenario("A").folder, "no folder link");
   const body = await go(scenario("A").folder);
-  expect(body.includes("sg-share-design-write"), "sg-share-design-write missing");
+  expect(body.includes("sec-share-design-write"), "sec-share-design-write missing");
 });
 
-await check("scenario B folder renders Null Meridian's ACL on the directory page", async () => {
+await check("scenario B folder renders Genesee Press's ACL on the directory page", async () => {
   const body = await go(scenario("B").folder);
   expect(body.includes("Finance-RW"), "Finance-RW missing");
 });
@@ -225,11 +225,11 @@ await check(`no production operation: API POST /api/v1/scan-runs as ${SIGN_IN_AS
   expect(response.status() === 403 && (await response.json()).status === "demo_only", `HTTP ${response.status()}`);
 });
 
-await check("/runtime → demo / synthetic / null-meridian-v1, no connection detail", async () => {
+await check("/runtime → demo / synthetic / genesee-press-v1, no connection detail", async () => {
   const response = await page.goto(`${BASE}/runtime`);
   const raw = await response.text();
   const body = JSON.parse(raw);
-  expect(body.runtime_mode === "demo" && body.data_source === "synthetic" && body.dataset?.key === "null-meridian-v1", raw.slice(0, 120));
+  expect(body.runtime_mode === "demo" && body.data_source === "synthetic" && body.dataset?.key === "genesee-press-v1", raw.slice(0, 120));
   for (const needle of ["postgresql+psycopg", "postgresql://", "adg_demo", ":5432", "sslmode"]) {
     expect(!raw.toLowerCase().includes(needle), `contains ${needle}`);
   }

@@ -1,8 +1,9 @@
-r"""The Null Meridian canon: the company is exactly what the documentation says it is.
+r"""The Genesee Press canon: the company is exactly what the documentation says it is.
 
-Every number the manifest quotes and every rule ``docs/demo/null-meridian.md`` states is
-asserted here against a freshly built canon, so the documentation cannot drift from the
-generator and the generator cannot drift from the seed.
+Every number the manifest quotes and every rule ``docs/demo/genesee-press.md`` states is
+asserted here against the canon read from the vendored ``synthetic-enterprise`` projection,
+so the documentation cannot drift from the shared world and ADG cannot drift from the
+snapshot its lock pins.
 """
 
 from __future__ import annotations
@@ -11,23 +12,27 @@ import datetime as dt
 import itertools
 import json
 import re
-import uuid
+import shutil
 from collections import Counter
 from pathlib import Path
 
 import pytest
 
-from app.demo.null_meridian import canon as canon_module
-from app.demo.null_meridian.canon import (
-    ACTIVE_EMPLOYEES,
+from app.demo.genesee_press import canon as canon_module
+from app.demo.genesee_press import vendor
+from app.demo.genesee_press.canon import (
+    ACQUISITION_TAG,
+    COMPANY,
+    DATASET_KEY,
     DEPARTMENTS,
+    DOMAIN_DN,
     DOMAIN_DNS,
     DOMAIN_NETBIOS,
     DOMAIN_SID,
     FOUNDED,
-    NAMESPACE,
+    LEGACY_DRAW_SEED,
+    MAIL_DOMAIN,
     OKTA_ADOPTED,
-    SEED,
     SNAPSHOT,
     STANDARD_ERA_EXCEPTIONS,
     STANDARDS_ADOPTED,
@@ -37,23 +42,39 @@ from app.demo.null_meridian.canon import (
     Era,
     Level,
     build_canon,
+    draw_key,
     era_of,
     is_standard_name,
-    stable_uuid,
+    legacy_key,
 )
-from app.demo.null_meridian.manifest import (
-    build_manifest,
-    canon_digests,
-    render_canon_document,
-)
+from app.demo.genesee_press.manifest import build_manifest, canon_digests
 
 REPOSITORY = Path(__file__).resolve().parents[3]
-MANIFEST_PATH = REPOSITORY / "docs" / "demo" / "null-meridian.manifest.json"
-CANON_PATH = REPOSITORY / "docs" / "demo" / "null-meridian.canon.json"
+MANIFEST_PATH = REPOSITORY / "docs" / "demo" / "genesee-press.manifest.json"
 
-#: The digests of canon v1. A change here is a change to the company: it needs a new seed,
-#: a regenerated manifest, and a note to OGWA, not an edit to this constant.
+#: The digests of the canon read from the pinned snapshot. A change here is a change to the
+#: company: it comes from re-vendoring synthetic-enterprise (a new lock), and the manifest is
+#: regenerated with it; never an edit to this constant alone.
 PINNED_DIGESTS = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["digests"]
+
+#: Active employees per department on the snapshot: the ADG v1 sizes, unchanged by the move
+#: to the shared world.
+DEPARTMENT_SIZES = {
+    "engineering": 520,
+    "sales": 300,
+    "customer-success": 190,
+    "data": 110,
+    "marketing": 110,
+    "operations": 105,
+    "product": 95,
+    "finance": 90,
+    "it": 85,
+    "people": 60,
+    "design": 55,
+    "security": 40,
+    "legal": 28,
+    "executive": 12,
+}
 
 
 @pytest.fixture(scope="module")
@@ -63,9 +84,12 @@ def canon() -> Canon:
 
 class TestTheFixedFacts:
     def test_the_company_constants(self) -> None:
-        assert SEED == "null-meridian-v1"
-        assert DOMAIN_DNS == "nullmeridian.info"
-        assert DOMAIN_NETBIOS == "NULLMERIDIAN"
+        assert COMPANY == "Genesee Press"
+        assert DATASET_KEY == "genesee-press-v1"
+        assert MAIL_DOMAIN == "geneseepress.example"
+        assert DOMAIN_DNS == "corp.geneseepress.example"
+        assert DOMAIN_DN == "DC=corp,DC=geneseepress,DC=example"
+        assert DOMAIN_NETBIOS == "GPCORP"
         assert dt.date(2026, 10, 1) == SNAPSHOT
         assert dt.date(2016, 10, 1) == FOUNDED
         assert dt.date(2021, 10, 1) == OKTA_ADOPTED
@@ -73,11 +97,10 @@ class TestTheFixedFacts:
         assert (SNAPSHOT.year - FOUNDED.year) == 10
 
     def test_exactly_1800_active_employees(self, canon: Canon) -> None:
-        assert ACTIVE_EMPLOYEES == 1800
         assert len(canon.active) == 1800
-        assert sum(department.size for department in DEPARTMENTS) == 1800
         counts = Counter(person.department for person in canon.active)
-        assert counts == {department.slug: department.size for department in DEPARTMENTS}
+        assert counts == DEPARTMENT_SIZES
+        assert {department.slug for department in DEPARTMENTS} == set(DEPARTMENT_SIZES)
 
     def test_every_active_employee_holds_an_enabled_account_on_the_snapshot(
         self, canon: Canon
@@ -106,16 +129,9 @@ class TestItIsDeterministic:
     def test_the_committed_manifest_is_current(self) -> None:
         committed = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
         assert committed == json.loads(json.dumps(build_manifest(), ensure_ascii=False)), (
-            "docs/demo/null-meridian.manifest.json is stale. Regenerate it with "
-            "python -m app.demo.null_meridian manifest "
-            "--out ../docs/demo/null-meridian.manifest.json"
-        )
-
-    def test_the_committed_canon_is_current(self) -> None:
-        assert CANON_PATH.read_text(encoding="utf-8") == render_canon_document(), (
-            "docs/demo/null-meridian.canon.json is stale. Regenerate it with "
-            "python -m app.demo.null_meridian manifest "
-            "--canon-out ../docs/demo/null-meridian.canon.json"
+            "docs/demo/genesee-press.manifest.json is stale. Regenerate it with "
+            "python -m app.demo.genesee_press manifest "
+            "--out ../docs/demo/genesee-press.manifest.json"
         )
 
     def test_draws_follow_the_documented_algorithm(self) -> None:
@@ -124,7 +140,7 @@ class TestItIsDeterministic:
 
         draws = Draws("example", 7)
         expected = int.from_bytes(
-            hashlib.sha256(f"{SEED}|example|7|0".encode()).digest()[:8], "big"
+            hashlib.sha256(f"{LEGACY_DRAW_SEED}|example|7|0".encode()).digest()[:8], "big"
         )
         assert draws.next_int() == expected
 
@@ -136,7 +152,7 @@ class TestItIsDeterministic:
 
 class TestIdentifiers:
     def test_mail_and_upn_are_in_the_canonical_domain(self, canon: Canon) -> None:
-        pattern = re.compile(r"^[a-z0-9-]+\.[a-z0-9-]+[0-9]*@nullmeridian\.info$")
+        pattern = re.compile(r"^[a-z0-9-]+\.[a-z0-9-]+[0-9]*@geneseepress\.example$")
         for person in canon.employees:
             assert pattern.match(person.email), person.email
             assert person.user_principal_name == person.email
@@ -156,9 +172,9 @@ class TestIdentifiers:
         collided = {key: value for key, value in holders.items() if len(value) > 1}
         assert collided, "the population should be large enough to collide at least once"
         for local, emails in collided.items():
-            assert emails[0] == f"{local}@{DOMAIN_DNS}"
+            assert emails[0] == f"{local}@{MAIL_DOMAIN}"
             for index, email in enumerate(emails[1:], start=2):
-                assert email == f"{local}{index}@{DOMAIN_DNS}"
+                assert email == f"{local}{index}@{MAIL_DOMAIN}"
 
     def test_sids_are_unique_and_in_the_synthetic_domain(self, canon: Canon) -> None:
         sids = [person.sid for person in canon.employees] + [g.sid for g in canon.groups]
@@ -179,42 +195,54 @@ class TestIdentifiers:
         assert canon.group("Domain Users").rid == 513
         assert canon.group("Domain Admins").rid == 512
 
-    def test_uuids_are_uuid5_under_the_documented_namespace(self, canon: Canon) -> None:
-        assert uuid.uuid5(uuid.NAMESPACE_DNS, "nullmeridian.info") == NAMESPACE
-        for person in canon.employees[:50]:
-            assert person.uuid == str(uuid.uuid5(NAMESPACE, f"employee:{person.employee_id}"))
-            assert person.object_guid == stable_uuid("object-guid", person.sid)
+    def test_canonical_ids_and_directory_ids_come_from_the_projection(self, canon: Canon) -> None:
+        guid = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+        for person in canon.employees:
+            assert person.canonical_id.startswith("per_")
+            assert person.account_canonical_id.startswith("acc_")
+            assert guid.match(person.object_guid)
+            assert re.fullmatch(r"GP-\d{5}", person.employee_id)
         for group in canon.groups:
-            assert uuid.UUID(group.uuid).version == 5
+            assert group.canonical_id.startswith("grp_")
+            assert guid.match(group.object_guid)
+        guids = [p.object_guid for p in canon.employees] + [g.object_guid for g in canon.groups]
+        assert len(set(guids)) == len(guids)
 
-    def test_the_domain_sid_is_derived_from_the_seed(self) -> None:
-        import hashlib
-
-        digest = hashlib.sha256(b"null-meridian-v1|domain-sid").digest()
-        words = [int.from_bytes(digest[index : index + 4], "big") for index in (0, 4, 8)]
-        assert "S-1-5-21-" + "-".join(map(str, words)) == DOMAIN_SID
+    def test_the_domain_sid_is_the_directorys(self) -> None:
+        """SIDs are opaque directory identifiers: the shared world keeps ADG's, unchanged."""
+        (directory,) = vendor.records("directory.jsonl")
+        assert directory["domain_sid"] == DOMAIN_SID == "S-1-5-21-3949361974-1583827165-633756269"
 
     def test_no_identifier_comes_from_outside_the_canon(self, canon: Canon) -> None:
-        """Nothing borrowed: not the repository's other fixtures, not a real-looking tenant."""
-        document = render_canon_document()
+        """Nothing borrowed: not the repository's other fixtures, not a real-looking tenant,
+        and no former organization value outside the vendored legacy_* fields."""
+        document = json.dumps(
+            [list(map(str, (p.email, p.sam_account_name, p.sid, p.title))) for p in canon.employees]
+            + [list(map(str, (g.name, g.description, g.sid))) for g in canon.groups]
+        )
         for forbidden in (
             "corp.example",
             "example.com",
             "contoso",
             "fabrikam",
             "S-1-5-21-1004336348",
+            "S-1-5-21-244598355",
             '.local"',
             "@gmail",
             "@outlook",
+            "nullmeridian",
+            "Null Meridian",
+            "NM-",
+            "Lumen",
         ):
             assert forbidden not in document
         domains = set(re.findall(r"@([a-z0-9.-]+)", document))
-        assert domains == {DOMAIN_DNS}
+        assert domains == {MAIL_DOMAIN}
 
 
 class TestTheOrganization:
     def test_department_sizes_differ_substantially(self) -> None:
-        sizes = [department.size for department in DEPARTMENTS]
+        sizes = list(DEPARTMENT_SIZES.values())
         assert len(DEPARTMENTS) == 14
         assert max(sizes) / min(sizes) > 10
 
@@ -248,7 +276,8 @@ class TestTheOrganization:
         for person in transferred:
             assert person.transfer_date is not None
             assert person.hire_date < person.transfer_date < SNAPSHOT
-        assert len(canon.tagged("acquired:lumen-analytics")) >= 10
+        assert ACQUISITION_TAG == "acquired:brindlewood-analytics"
+        assert len(canon.tagged(ACQUISITION_TAG)) == 15
 
     def test_nobody_is_hired_before_their_department_exists(self, canon: Canon) -> None:
         founded = {department.slug: department.founded for department in DEPARTMENTS}
@@ -265,7 +294,10 @@ class TestGroupNamingHistory:
                     group.name
                 )
             else:
-                assert not group.name.startswith("sg-"), group.name
+                assert not group.name.startswith("sec-"), group.name
+            assert not re.match(r"(?i)^(sg|dg)[-_ ]", group.name), group.name
+            if re.match(r"^(sec|di)-", group.name):
+                assert group.name == group.name.lower(), group.name
 
     def test_the_standard_predominates_after_2023_10_01(self, canon: Canon) -> None:
         modern = [group for group in canon.groups if group.created >= STANDARDS_ADOPTED]
@@ -274,14 +306,14 @@ class TestGroupNamingHistory:
         assert len(conforming) / len(modern) >= 0.9
         names = {group.name for group in modern}
         for name in (
-            "sg-okta-github-developer",
-            "sg-okta-github-admin",
-            "sg-okta-salesforce-user",
-            "sg-okta-workday-user",
-            "sg-share-finance-read-only",
-            "sg-share-finance-write",
-            "sg-share-engineering-read-only",
-            "sg-share-engineering-write",
+            "sec-okta-github-developer",
+            "sec-okta-github-admin",
+            "sec-okta-salesforce-user",
+            "sec-okta-workday-user",
+            "sec-share-finance-read-only",
+            "sec-share-finance-write",
+            "sec-share-engineering-read-only",
+            "sec-share-engineering-write",
         ):
             assert name in names
 
@@ -331,10 +363,10 @@ class TestGroupNamingHistory:
     ) -> None:
         on_snapshot = {group.name for group in canon.groups if group.exists_on(SNAPSHOT)}
         for legacy, modern in (
-            ("APP-GitHub-Users", "sg-okta-github-developer"),
-            ("GG_App_Workday", "sg-okta-workday-user"),
-            ("Salesforce-Sales", "sg-okta-salesforce-user"),
-            ("Finance-RW", "sg-share-finance-write"),
+            ("APP-GitHub-Users", "sec-okta-github-developer"),
+            ("GG_App_Workday", "sec-okta-workday-user"),
+            ("Salesforce-Sales", "sec-okta-salesforce-user"),
+            ("Finance-RW", "sec-share-finance-write"),
         ):
             assert {legacy, modern} <= on_snapshot
 
@@ -385,3 +417,61 @@ class TestTheHierarchy:
     def test_the_empty_project_group_stays_empty(self, canon: Canon) -> None:
         for day in (dt.date(2026, 9, 3), dt.date(2026, 9, 17), SNAPSHOT):
             assert not [edge for edge in canon.memberships_on(day) if edge[0] == "Proj-Zephyr-RW"]
+
+
+class TestTheSharedWorld:
+    """The canon is the pinned ``synthetic-enterprise`` projection, read locally and verified."""
+
+    def test_the_lock_pins_one_snapshot_and_projection(self) -> None:
+        lock = vendor.lock()
+        assert lock["repository"] == "40ozs/synthetic-enterprise"
+        assert re.fullmatch(r"[0-9a-f]{40}", lock["commit"])
+        assert lock["projection"] == "adg@0.3.0"
+        assert lock["contract_version"] == "0.2.0"
+        assert lock["dataset"] == "synthetic-enterprise-world@2.0.0"
+        vendor.verify()
+
+    def test_an_edited_projection_file_is_refused(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        copy = tmp_path / "synthetic-enterprise"
+        shutil.copytree(vendor.VENDOR_DIR, copy)
+        monkeypatch.setattr(vendor, "VENDOR_DIR", copy)
+        monkeypatch.setattr(vendor, "LOCK_PATH", copy / "SYNTHETIC_ENTERPRISE.lock")
+        for cached in (vendor.lock, vendor.verify, vendor.records):
+            cached.cache_clear()
+        try:
+            vendor.verify()  # the untouched copy verifies
+            vendor.verify.cache_clear()
+            target = copy / vendor.lock()["snapshot"] / "projections" / "adg" / "hosts.jsonl"
+            target.write_text(target.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+            with pytest.raises(vendor.VendorError, match=r"hosts\.jsonl"):
+                vendor.verify()
+        finally:
+            for cached in (vendor.lock, vendor.verify, vendor.records):
+                cached.cache_clear()
+
+    def test_reading_the_canon_needs_no_network(self) -> None:
+        for module in (canon_module, vendor):
+            source = Path(str(module.__file__)).read_text(encoding="utf-8")
+            for forbidden in ("urllib", "http", "socket", "requests", "github.com/"):
+                assert forbidden not in source.replace("https://", ""), (module, forbidden)
+
+    def test_the_estate_is_adgs_directory_catalogue(self, canon: Canon) -> None:
+        groups = vendor.records("groups.jsonl")
+        assert len(groups) == 521
+        assert len(canon.groups) == sum(1 for g in groups if g["legacy_name"]) == 206
+        assert len(canon.employees) == len(vendor.records("employees.jsonl")) == 2440
+        assert len(canon.nesting) == 192
+        assert len(canon.memberships_on(SNAPSHOT)) == 4273
+
+    def test_legacy_spellings_are_draw_keys_only(self, canon: Canon) -> None:
+        assert legacy_key("GP-00874") == "NM-00874"
+        assert legacy_key("sec-share-finance-write") == "sg-share-finance-write"
+        assert legacy_key("GP-ENG-FS01") == "NM-ENG-FS01"
+        assert legacy_key("Finance-RW") == "Finance-RW"
+        assert draw_key(r"\\GP-ACQ-FS01\Brindlewood-Analytics") == r"\\NM-ACQ-FS01\Lumen-Analytics"
+        assert draw_key("Brindlewood-Models/Archive") == "Lumen-Models/Archive"
+        manifest = MANIFEST_PATH.read_text(encoding="utf-8")
+        for legacy in ("NM-", "sg-share-", "sg-okta-", "nullmeridian", "Lumen", "NULLMERIDIAN"):
+            assert legacy not in manifest, legacy

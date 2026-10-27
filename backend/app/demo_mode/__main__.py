@@ -6,8 +6,8 @@
     python -m app.demo_mode scan     # apply the dataset's next synthetic scan generation
     python -m app.demo_mode verify   # re-run the validation against the current database
 
-The dataset is Null Meridian (``null-meridian-v1``) unless ``ADG_DEMO_DATASET`` names
-another registered one. This is the only reset there is: ``app.demo.null_meridian``
+The dataset is Genesee Press (``genesee-press-v1``) unless ``ADG_DEMO_DATASET`` names
+another registered one. This is the only reset there is: ``app.demo.genesee_press``
 generates the estate and has no database command of its own.
 
 Every command reads the same environment the API reads (``ADG_RUNTIME_MODE``,

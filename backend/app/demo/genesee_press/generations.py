@@ -1,4 +1,4 @@
-r"""Three scans of Null Meridian, two weeks apart, cut into the runs a deployment receives.
+r"""Three scans of Genesee Press, two weeks apart, cut into the runs a deployment receives.
 
 A single perfect scan would show ADG's current state and nothing about how it got there.
 These three are what an installation that went live at the start of September 2026 would
@@ -9,21 +9,21 @@ through every rule in ``docs/architecture/current-state-presence.md``:
 Generation  Observed at  What it demonstrates
 =========== ============ ================================================================
 ``g1``      2026-09-03   **Initial observation.** Every server's SMB and NTFS scan
-                         succeeds except ``NM-SEC-FS01``, whose NTFS scan fails: the
+                         succeeds except ``GP-SEC-FS01``, whose NTFS scan fails: the
                          collector account had not yet been granted access. Its shares
                          are known; its folders are not.
 ``g2``      2026-09-17   **Change.** Joiners and leavers; accounts crossing the 180-day
                          deletion line are **tombstoned** by the reconciled AD scan;
                          ``Project-Vega`` is deleted and tombstoned with its edges;
-                         ``\\NM-ENG-FS02\QA\Sprint-Scratch`` is deleted and tombstoned by
+                         ``\\GP-ENG-FS02\QA\Sprint-Scratch`` is deleted and tombstoned by
                          the reconciled NTFS scan; Legal's standard groups and their
                          entries appear; one direct entry is cleaned up; a folder's
-                         ``All Staff`` entry is replaced. ``NM-SEC-FS01`` is read for the
+                         ``All Staff`` entry is replaced. ``GP-SEC-FS01`` is read for the
                          first time.
-``g3``      2026-10-01   **The snapshot, with an imperfect scan.** ``NM-FS-03``'s NTFS
-                         scan **fails** and ``NM-MIG-FS01``'s is **partial**. Neither may
+``g3``      2026-10-01   **The snapshot, with an imperfect scan.** ``GP-FS-03``'s NTFS
+                         scan **fails** and ``GP-MIG-FS01``'s is **partial**. Neither may
                          remove anything, so every folder they did not report stays
-                         current — including ``\\NM-MIG-FS01\Migrations\Wave-3-Staging``,
+                         current — including ``\\GP-MIG-FS01\Migrations\Wave-3-Staging``,
                          which really was deleted on 2026-09-25 and which ADG correctly
                          keeps until a complete scan says otherwise.
 =========== ============ ================================================================
@@ -42,8 +42,8 @@ from functools import lru_cache
 from typing import Any, Final
 
 from app.demo.estate import DemoRunError
-from app.demo.null_meridian.canon import DOMAIN_DNS, DOMAIN_SID, NAMESPACE
-from app.demo.null_meridian.estate import NullMeridianEstate, build_estate
+from app.demo.genesee_press.canon import DOMAIN_DNS, DOMAIN_SID, NAMESPACE
+from app.demo.genesee_press.estate import GeneseePressEstate, build_estate
 from app.demo.transcripts import (
     DemoTranscript,
     _assemble,
@@ -71,7 +71,7 @@ TRANSCRIPT_NAMESPACE: Final = uuid.uuid5(NAMESPACE, "adg-demo-transcripts")
 #: sequencing on every run with more than one.
 BATCH_SIZE: Final = 1000
 
-COLLECTOR_HOST_AD: Final = "NM-DC01"
+COLLECTOR_HOST_AD: Final = "GP-DC01"
 
 
 #: When the operator's scheduled risk pass runs on a scan day: after the last NTFS run of a
@@ -103,13 +103,13 @@ GENERATIONS: Final[tuple[Generation, ...]] = (
         dt.datetime(2026, 9, 3, 2, 0, tzinfo=dt.UTC),
         "Initial observation",
         {
-            "NM-SEC-FS01": DemoRunError(
+            "GP-SEC-FS01": DemoRunError(
                 code="access_denied",
                 message=(
                     "The collector account has not been granted read access to this "
                     "server's file system. Nothing below its shares was read."
                 ),
-                target=r"\\NM-SEC-FS01",
+                target=r"\\GP-SEC-FS01",
             )
         },
     ),
@@ -126,13 +126,13 @@ GENERATIONS: Final[tuple[Generation, ...]] = (
         dt.datetime(2026, 10, 1, 2, 0, tzinfo=dt.UTC),
         "Snapshot",
         {
-            "NM-FS-03": DemoRunError(
+            "GP-FS-03": DemoRunError(
                 code="host_unreachable",
                 message=(
                     "The server did not respond. No part of its file system was read, so "
-                    "nothing about NM-FS-03 may be inferred from this scan."
+                    "nothing about GP-FS-03 may be inferred from this scan."
                 ),
-                target=r"\\NM-FS-03",
+                target=r"\\GP-FS-03",
             )
         },
     ),
@@ -146,7 +146,7 @@ def _assemble_nm(**kwargs: Any) -> DemoTranscript:
 
 
 def _generation_transcripts(generation: Generation) -> list[DemoTranscript]:
-    built: NullMeridianEstate = build_estate(generation.day)
+    built: GeneseePressEstate = build_estate(generation.day)
     estate = built.estate
     base = generation.started_at
     prefix = generation.key

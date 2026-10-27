@@ -101,7 +101,7 @@ describe("the routes", () => {
       "Engineering is a member of Engineering-FS",
       "Engineering-FS is a member of Share_Engineering_Modify",
       "NTFS entry #5 names Share_Engineering_Modify: Allow Modify",
-      "NTFS entry #5 applies to this folder, inherited from \\\\NM-ENG-FS01\\Engineering",
+      "NTFS entry #5 applies to this folder, inherited from \\\\GP-ENG-FS01\\Engineering",
     ]);
     expect(hops[0].principal?.display_name).toBe("Fatima Gordon");
   });
@@ -162,7 +162,7 @@ describe("what could not be confirmed", () => {
 
   it("marks an identity nobody resolved as unresolved, with its SID", () => {
     expect(aboutLabel(ORPHAN)).toBe(
-      `NULLMERIDIAN\\lhansen (unresolved SID ${ORPHAN.sid})`,
+      `GPCORP\\lhansen (unresolved SID ${ORPHAN.sid})`,
     );
     expect(aboutLabel(ZEPHYR)).toBe("Proj-Zephyr-RW");
   });
@@ -205,7 +205,7 @@ describe("what to do next", () => {
     const steps = investigation.next_steps.map((step) => nextStepWording(step, body, investigation));
 
     expect(steps[0].text).toBe(
-      `Identify ${ORPHAN.sid}, last known as NULLMERIDIAN\\lhansen: an ACL here names it and no ` +
+      `Identify ${ORPHAN.sid}, last known as GPCORP\\lhansen: an ACL here names it and no ` +
         "collector could say what it is. Until it is identified, Fatima Gordon cannot be ruled " +
         "out of it. If it is an account that no longer exists, the orphaned entry is the clean-up.",
     );
@@ -253,7 +253,7 @@ describe("the seven answers", () => {
       "Share permissions (SMB share ACL): 3 of 3 relationships observed (Active Directory collector, SMB share collector), last observed 2026-10-01 03:12 UTC.",
     );
     expect(summary[4].answer).toHaveLength(2);
-    expect(summary[4].answer[0]).toMatch(/^Missing evidence — NULLMERIDIAN\\lhansen \(unresolved SID/);
+    expect(summary[4].answer[0]).toMatch(/^Missing evidence — GPCORP\\lhansen \(unresolved SID/);
     expect(summary[4].answer[1]).toMatch(/^Missing evidence — Proj-Zephyr-RW: /);
     expect(summary[5].answer[0]).toMatch(/none of them can take that access away/);
     expect(summary[6].answer[0]).toMatch(new RegExp(`^Identify ${ORPHAN.sid}, last known as`));

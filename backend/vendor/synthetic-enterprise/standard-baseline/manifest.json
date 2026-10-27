@@ -1,0 +1,259 @@
+{
+  "canonical_digest": "c7b742cb606ee90066209dbd0d8f114afd438e233e0eac9d46de05580c94b8d8",
+  "clock": {
+    "anchor": "2026-10-01T00:00:00Z",
+    "as_of": "2026-10-01T12:00:00Z",
+    "effective_as_of": "2026-10-01T12:00:00Z",
+    "rebase_days": 0,
+    "rebase_to": null
+  },
+  "contract_version": "0.2.0",
+  "counts": {
+    "entity:account": 4840,
+    "entity:application": 111,
+    "entity:environment": 4,
+    "entity:group": 618,
+    "entity:host": 34,
+    "entity:identity_system": 6,
+    "entity:org_unit": 93,
+    "entity:organization": 1,
+    "entity:person": 2491,
+    "event:account_lifecycle": 3636,
+    "event:employment": 3190,
+    "relationship:access_assignment": 247,
+    "relationship:deployment": 28,
+    "relationship:group_membership": 23466,
+    "relationship:group_sync": 251,
+    "relationship:ownership": 437,
+    "relationship:reports_to": 1846,
+    "relationship:unit_membership": 2548
+  },
+  "dataset": {
+    "id": "synthetic-enterprise-world",
+    "version": "2.0.0"
+  },
+  "files": {
+    "canonical/entities/account.jsonl": {
+      "bytes": 1953718,
+      "sha256": "9e6a3803de55c245dde0f2d62d3201bf81631618b99aba4fb333ae5bd595b6b7"
+    },
+    "canonical/entities/application.jsonl": {
+      "bytes": 18928,
+      "sha256": "368f3665bde7eaad4c859221969b40b6e7f85be58ccd6db6986d9b3d676f872a"
+    },
+    "canonical/entities/environment.jsonl": {
+      "bytes": 608,
+      "sha256": "39d0301accb28f0c91ee53ca4241af4229758cb1c08a297b51950f739b01d8ba"
+    },
+    "canonical/entities/group.jsonl": {
+      "bytes": 195403,
+      "sha256": "525c388bd0aeef582ac3ff6fc86239c855b1c335d56dcee2dce428d8b1b1abd4"
+    },
+    "canonical/entities/host.jsonl": {
+      "bytes": 7755,
+      "sha256": "c6e957068b2ccd1950639809e4c696a7a3e3b727a7906e8fbe3026d153bec131"
+    },
+    "canonical/entities/identity_system.jsonl": {
+      "bytes": 1406,
+      "sha256": "d909dbf6cc8670de8eda051e59fb34fdf7963be8e710ec09b8330524c219cd7c"
+    },
+    "canonical/entities/org_unit.jsonl": {
+      "bytes": 14219,
+      "sha256": "fc89e6c1a430e7d6eeec4c0b5716fbfa169d9207fe593507f22bca999d285311"
+    },
+    "canonical/entities/organization.jsonl": {
+      "bytes": 476,
+      "sha256": "a027123bf630ffc09f865b4d1743ca71f8653a1c428b0f6d02f2e6abde127bf5"
+    },
+    "canonical/entities/person.jsonl": {
+      "bytes": 830109,
+      "sha256": "742c3177e03b011207ce8a1c0a64d27d091e8681533f33a4014a21d53456cfbc"
+    },
+    "canonical/events/account_lifecycle.jsonl": {
+      "bytes": 476988,
+      "sha256": "69f35360e8229b6975ade53d3c85533ac25706b74ef40b0fed89c1fac8c2d313"
+    },
+    "canonical/events/employment.jsonl": {
+      "bytes": 568128,
+      "sha256": "dba99cb2bd0013b5f81b192d24e6ac6a55bac23c7279a7f6b69c8d9b6c6cdcd9"
+    },
+    "canonical/relationships/access_assignment.jsonl": {
+      "bytes": 43418,
+      "sha256": "feadad21b847e78a98df614df9eba8620581fc62ac72e20c7e1e8ea001693b56"
+    },
+    "canonical/relationships/deployment.jsonl": {
+      "bytes": 4312,
+      "sha256": "1ca114ebad9f832588c8b23c8f49f75d8e03f580b82b59595209084e06576a54"
+    },
+    "canonical/relationships/group_membership.jsonl": {
+      "bytes": 4943793,
+      "sha256": "895d781b786878802cf27497c607b612ea104893f434936ec36b09fae03e7916"
+    },
+    "canonical/relationships/group_sync.jsonl": {
+      "bytes": 42700,
+      "sha256": "9d412a13cb9e2bc58ec2b2c1b532afb938a33c5332685757bcb293192c7d94e5"
+    },
+    "canonical/relationships/ownership.jsonl": {
+      "bytes": 79575,
+      "sha256": "f60c91b9e977d73cce5744bc8e4be09b50e3399715805a9dec86147d19b0fd38"
+    },
+    "canonical/relationships/reports_to.jsonl": {
+      "bytes": 284356,
+      "sha256": "0e8db692cbba3a7946dac2706d0aca2d3500bd121535bca32b23e12dbe880d0c"
+    },
+    "canonical/relationships/unit_membership.jsonl": {
+      "bytes": 453422,
+      "sha256": "3d6d7c12c3559a9a5394c6d7e1c7992bf6665034fbbd7f0485e2755775533d5b"
+    },
+    "canonical/scenarios.json": {
+      "bytes": 20041,
+      "sha256": "c56866c9dbc06271f1591a55e35f1ccd90a9e88cbf14f9042280af38213f9dd0"
+    },
+    "projections/adg/directory.jsonl": {
+      "bytes": 291,
+      "sha256": "10a32fc44025730e9cfa3cf4b5752b5e4a0651982c4c791435bc744ee7d5f4d3"
+    },
+    "projections/adg/employees.jsonl": {
+      "bytes": 2048611,
+      "sha256": "c085cf6b66e9d107eddf2da779eafedf51d6a526a83fb3ec769d1fa59651b769"
+    },
+    "projections/adg/groups.jsonl": {
+      "bytes": 275257,
+      "sha256": "d4f9ce83def58c65c53decede72d1a7ca90a37cda4af51776e695bffb4e0c6df"
+    },
+    "projections/adg/hosts.jsonl": {
+      "bytes": 8064,
+      "sha256": "31116000975dbd9662fc7649b87f86b5a8979dfc977f4375f9847caf956bf161"
+    },
+    "projections/adg/memberships.jsonl": {
+      "bytes": 3753600,
+      "sha256": "33dd78ce2c5febf7acbcf21f4b091869c61f2a664a23ff22ef3d96e728470658"
+    },
+    "projections/adg/org_units.jsonl": {
+      "bytes": 12524,
+      "sha256": "cc4cd060a826553a3975fb53d5769cbdd5bc1b8911af250f4433ca78e2dcf6e4"
+    },
+    "projections/adg/organization.jsonl": {
+      "bytes": 403,
+      "sha256": "6fe69f42260e5ba4f710cafdc88dd49bbbba5977be9f24532be162110e777e23"
+    },
+    "projections/adg/projection.json": {
+      "bytes": 2909,
+      "sha256": "dc2db25f7f247bf7e1af94078980524f23731d8a42ab5a921240c89183149b17"
+    },
+    "projections/ao/accounts.jsonl": {
+      "bytes": 21223,
+      "sha256": "105811c1227156aefeeb80e2c7a1a57e9a2e232cb412badc7359720220e39f6f"
+    },
+    "projections/ao/groups.jsonl": {
+      "bytes": 5738,
+      "sha256": "3a6126bb2f1477a7f832dc28b1901131ea50ba2ec179e55cae433817c71f8388"
+    },
+    "projections/ao/manages.jsonl": {
+      "bytes": 6302,
+      "sha256": "40c9de371ffcb3f3a13722771a08509f6e5543757846d7dc6c84279a62c7a1a0"
+    },
+    "projections/ao/memberships.jsonl": {
+      "bytes": 33076,
+      "sha256": "0e58de2f6257c1a2003bc361f3ea7b4fd61e01f590d8fafe6554444d367cc2c7"
+    },
+    "projections/ao/people.jsonl": {
+      "bytes": 11875,
+      "sha256": "ba507a79bda3417a97cdbfe757a0c6a8170c8f19c38eaf9bf864d3853aee9992"
+    },
+    "projections/ao/projection.json": {
+      "bytes": 3548,
+      "sha256": "ee345bf30f5772543d672fbb47b3f0eeb9b14af2f3c42358416fd5ca8b1b2d04"
+    },
+    "projections/csw/applications.jsonl": {
+      "bytes": 6303,
+      "sha256": "cc850fad995ff01d11370ba9f514db8cb971b05ae4120eccf1b17fb03dd1b216"
+    },
+    "projections/csw/environments.jsonl": {
+      "bytes": 356,
+      "sha256": "00e6d8f1ee4496b96705bc7925f677b69552846143a9021491b45135d1e23848"
+    },
+    "projections/csw/owners.jsonl": {
+      "bytes": 1104,
+      "sha256": "249310e133e739a5c87319eeccfaf70859418e0529c552e46130e57615b712dc"
+    },
+    "projections/csw/projection.json": {
+      "bytes": 2876,
+      "sha256": "7191e53b0f23f969231b184eb136c464e14193240cdfbcdcd42efc77736a651e"
+    },
+    "projections/ogwa/applications.jsonl": {
+      "bytes": 16127,
+      "sha256": "e469cf1a01bd153ffe0b6858ca9a1f4a915d6680dd404e05d63fc39bbe0110bd"
+    },
+    "projections/ogwa/assignments.jsonl": {
+      "bytes": 59861,
+      "sha256": "11981083744e04aace6cc468ca1c4d6816f0587212780c55a5d0e75c62bc53df"
+    },
+    "projections/ogwa/groups.jsonl": {
+      "bytes": 225775,
+      "sha256": "d521704668234b13ceefe0bef9daa7796869a42ccf407dff577564b4cde88803"
+    },
+    "projections/ogwa/memberships.jsonl": {
+      "bytes": 6037293,
+      "sha256": "ee46e5ac84d055b4c95a1d99bff227999b7a54be233166ac1169829ac0ce07dd"
+    },
+    "projections/ogwa/people.jsonl": {
+      "bytes": 1341222,
+      "sha256": "714130d5feef82ae6332e786f4155ba2746146ee9c4440242f329d73213b3bb2"
+    },
+    "projections/ogwa/projection.json": {
+      "bytes": 2433,
+      "sha256": "e49ea7f7ed15b4575a220d98ac0edb6984e48266600a68fa8b276095010b3307"
+    }
+  },
+  "format": "synthetic-enterprise-snapshot/1",
+  "generated_records": 0,
+  "generator_version": "0.2.0",
+  "name": "standard-baseline",
+  "pending_steps": 0,
+  "profile": null,
+  "projections": {
+    "adg": {
+      "header_sha256": "dc2db25f7f247bf7e1af94078980524f23731d8a42ab5a921240c89183149b17",
+      "projection_version": "0.3.0",
+      "supported_contract": ">=0.2.0,<0.3.0"
+    },
+    "ao": {
+      "header_sha256": "ee345bf30f5772543d672fbb47b3f0eeb9b14af2f3c42358416fd5ca8b1b2d04",
+      "projection_version": "0.2.0",
+      "supported_contract": ">=0.2.0,<0.3.0"
+    },
+    "csw": {
+      "header_sha256": "7191e53b0f23f969231b184eb136c464e14193240cdfbcdcd42efc77736a651e",
+      "projection_version": "0.2.0",
+      "supported_contract": ">=0.2.0,<0.3.0"
+    },
+    "ogwa": {
+      "header_sha256": "e49ea7f7ed15b4575a220d98ac0edb6984e48266600a68fa8b276095010b3307",
+      "projection_version": "0.2.0",
+      "supported_contract": ">=0.2.0,<0.3.0"
+    }
+  },
+  "scenarios": [
+    "ao-collection-incidents",
+    "ao-epoch-2-drift",
+    "csw-estate-collection-rounds",
+    "gp-access-investigation-apollo",
+    "gp-adg-scan-history",
+    "gp-golden-a",
+    "gp-golden-b",
+    "gp-golden-c",
+    "gp-golden-d",
+    "gp-golden-e",
+    "gp-golden-f",
+    "gp-golden-g",
+    "gp-golden-h",
+    "gp-ogwa-lifecycle-candidates"
+  ],
+  "seed": "baseline-v1",
+  "source": {
+    "commit": "71055a72001ce814547683029cd06ecd6462a3ae",
+    "repository": "40ozs/synthetic-enterprise"
+  },
+  "synthetic": true
+}

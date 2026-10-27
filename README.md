@@ -41,7 +41,7 @@ confident answer. ADG deliberately does not. It keeps the uncertainty in the ans
 * a comparison that cannot finish in time **says so**, and presents nothing it did not
   finish.
 
-The demo shows each of these on a deterministic synthetic company, **Null Meridian** (1,800
+The demo shows each of these on a deterministic synthetic company, **Genesee Press** (1,800
 people, 205 groups, 33 file servers, three scans).
 
 ## What to look at first
@@ -51,7 +51,7 @@ in detail.
 
 1. Open `http://localhost:3000/login`, sign in as **`auditor`**, then open `/demo`.
 2. Under *Start here: a guided access investigation*, choose **Investigate access**. This asks
-   *Why does Fatima Gordon have access to `\\NM-ENG-FS01\Engineering\Projects\Apollo`?*
+   *Why does Fatima Gordon have access to `\\GP-ENG-FS01\Engineering\Projects\Apollo`?*
 3. Section 1: access **granted**, **Modify**, certainty **`at_least`**, over SMB.
 4. Section 2: the **direct** NTFS entry and the share route **through `ENG-Mobile`**. Open
    *Every other route ADG found* for the **inherited** route through five nested groups.
@@ -133,7 +133,7 @@ supports these.
 | Size and time bounds | `COMPARISON_CEILING`, `COMPARISON_WINDOW_MS`, `ComparisonBudget` in [`service.py`](backend/app/changes/service.py) |
 | Typed outcomes | `ComparisonOutcome`, `ComparisonPhase` in [`service.py`](backend/app/changes/service.py) |
 | Recovery actions and telemetry | [`backend/app/api/changes.py`](backend/app/api/changes.py): `compare_instants`, `_recovery`, the `changes.compare` log line |
-| The deterministic drill | `NullMeridianDataset.comparisons` in [`backend/app/demo/null_meridian/dataset.py`](backend/app/demo/null_meridian/dataset.py) |
+| The deterministic drill | `GeneseePressDataset.comparisons` in [`backend/app/demo/genesee_press/dataset.py`](backend/app/demo/genesee_press/dataset.py) |
 
 **UI** (Next.js; renders API fields and computes no permissions)
 
@@ -167,11 +167,11 @@ backend unit tests, 1,270 PostgreSQL tests and 1,360 frontend tests).
 
 | Test | What it proves |
 | --- | --- |
-| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_the_ntfs_route_is_the_direct_entry_and_the_share_route_a_group` | On a real reset, the canonical answer's primary routes are the direct NTFS entry and the share entry via `ENG-Mobile`. |
-| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_the_inherited_route_through_five_groups_is_shown_in_order_and_redundant` | The inherited route is shown hop by hop, and marked redundant rather than primary. |
-| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_every_hop_carries_its_collector_and_scan` | Every hop carries its provenance: collector, method, and first and last observing scan. |
-| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_access_is_observed_and_qualified_not_certain` | The answer is `granted`, Modify, `at_least`: a lower bound, not certainty. |
-| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheAccessInvestigation::test_what_cannot_be_confirmed_is_named_and_does_not_reach_the_conclusion` | Both gaps are named as missing evidence, and both are judged unable to remove the access. |
+| [`test_genesee_press_demo.py`](backend/tests/db/test_genesee_press_demo.py) `TestTheAccessInvestigation::test_the_ntfs_route_is_the_direct_entry_and_the_share_route_a_group` | On a real reset, the canonical answer's primary routes are the direct NTFS entry and the share entry via `ENG-Mobile`. |
+| [`test_genesee_press_demo.py`](backend/tests/db/test_genesee_press_demo.py) `TestTheAccessInvestigation::test_the_inherited_route_through_five_groups_is_shown_in_order_and_redundant` | The inherited route is shown hop by hop, and marked redundant rather than primary. |
+| [`test_genesee_press_demo.py`](backend/tests/db/test_genesee_press_demo.py) `TestTheAccessInvestigation::test_every_hop_carries_its_collector_and_scan` | Every hop carries its provenance: collector, method, and first and last observing scan. |
+| [`test_genesee_press_demo.py`](backend/tests/db/test_genesee_press_demo.py) `TestTheAccessInvestigation::test_access_is_observed_and_qualified_not_certain` | The answer is `granted`, Modify, `at_least`: a lower bound, not certainty. |
+| [`test_genesee_press_demo.py`](backend/tests/db/test_genesee_press_demo.py) `TestTheAccessInvestigation::test_what_cannot_be_confirmed_is_named_and_does_not_reach_the_conclusion` | Both gaps are named as missing evidence, and both are judged unable to remove the access. |
 | [`test_unidentified_trustees.py`](backend/tests/access_engine/test_unidentified_trustees.py) `test_a_record_saying_nothing_resolved_the_sid_could_be_a_group` | An unresolved trustee counts as "possibly a group", so it cannot be used to claim certainty. |
 | [`test_investigation.py`](backend/tests/access_engine/test_investigation.py) `TestWhetherAnOpenQuestionReachesTheConclusion::test_an_unread_share_acl_could_take_a_grant_away` | When missing evidence *could* remove the access, the impact is `presence` and the answer is provisional. |
 
@@ -186,7 +186,7 @@ backend unit tests, 1,270 PostgreSQL tests and 1,360 frontend tests).
 | [`test_comparison_bounds.py`](backend/tests/db/test_comparison_bounds.py) `TestTheInteractiveWindow::test_past_the_window_after_reading_it_stops_and_presents_nothing` | A comparison past its window stops as `timed_out` and presents no partial list. |
 | [`test_comparison_bounds.py`](backend/tests/db/test_comparison_bounds.py) `TestTheSidesAreCutAtTheSameKey::test_objects_past_the_shorter_cut_are_not_called_unobserved` | An `incomplete` comparison is cut at one aligned boundary, so nothing past it is misreported. |
 | [`test_comparison_bounds.py`](backend/tests/db/test_comparison_bounds.py) `TestTheApi::test_timeout_then_recovery_then_a_complete_recovered_comparison` | A timed-out comparison offers a narrower request, which completes and is marked recovered. |
-| [`test_null_meridian_demo.py`](backend/tests/db/test_null_meridian_demo.py) `TestTheCoverageAndRecoveryDemo::test_the_comparison_drill_times_out_then_recovers_to_complete` | The demo drill runs `timed_out` → `incomplete` → `complete` (recovered) on a real reset. |
+| [`test_genesee_press_demo.py`](backend/tests/db/test_genesee_press_demo.py) `TestTheCoverageAndRecoveryDemo::test_the_comparison_drill_times_out_then_recovers_to_complete` | The demo drill runs `timed_out` → `incomplete` → `complete` (recovered) on a real reset. |
 | [`compare-page.test.tsx`](frontend/tests/compare-page.test.tsx) "reads an older server's truncated comparison as incomplete, never complete" | The UI never presents a partial comparison as complete. |
 | [`risks-page.test.tsx`](frontend/tests/risks-page.test.tsx) "calls the counts totals only when evaluation and collection are both complete" | The risks page says "not exhaustive" unless both evaluation and collection are complete. |
 
@@ -313,12 +313,12 @@ from `.env` (or `ADG_DATABASE_URL`) and create their own `<name>_test` databases
   tests/access_engine/test_investigation.py tests/access_engine/test_unidentified_trustees.py \
   tests/domain/test_coverage.py
 
-# Representative PostgreSQL tests (the Null Meridian classes run a full reset: several minutes)
+# Representative PostgreSQL tests (the Genesee Press classes run a full reset: several minutes)
 ADG_RUN_SMOKE_TESTS=1 .venv/bin/python -m pytest -q tests/db/test_system_mapping_api.py \
   tests/db/test_collection_coverage.py tests/db/test_comparison_bounds.py \
-  "tests/db/test_null_meridian_demo.py::TestTheSystemExplanation" \
-  "tests/db/test_null_meridian_demo.py::TestTheAccessInvestigation" \
-  "tests/db/test_null_meridian_demo.py::TestTheCoverageAndRecoveryDemo"
+  "tests/db/test_genesee_press_demo.py::TestTheSystemExplanation" \
+  "tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation" \
+  "tests/db/test_genesee_press_demo.py::TestTheCoverageAndRecoveryDemo"
 
 # Full suites, as CI runs them
 .venv/bin/python -m ruff check . && .venv/bin/python -m ruff format --check .
@@ -408,7 +408,7 @@ scripts/          Windows developer commands (PowerShell 7).
 
 ## Demo Mode
 
-The same application can run as a **demo deployment** on **Null Meridian**, a deterministic
+The same application can run as a **demo deployment** on **Genesee Press**, a deterministic
 synthetic company (1,800 people, 205 groups, 33 file servers, three scans), with no Windows
 host, collector, domain, SMB server or PowerShell anywhere in it:
 
@@ -429,8 +429,8 @@ python -m app                      # the API, in demo mode
 
 The mode is deployment configuration (`ADG_RUNTIME_MODE=production|demo`), never a switch in
 the UI. Demo Mode is the runtime and safety boundary
-([`docs/architecture/demo-mode.md`](docs/architecture/demo-mode.md)); Null Meridian is the
-dataset it runs on ([`docs/demo/null-meridian.md`](docs/demo/null-meridian.md)). A free public
+([`docs/architecture/demo-mode.md`](docs/architecture/demo-mode.md)); Genesee Press is the
+dataset it runs on ([`docs/demo/genesee-press.md`](docs/demo/genesee-press.md)). A free public
 demo staging deployment of it (Cloudflare Workers Free + Render Free + Supabase PostgreSQL, no
 Cloudflare Access) is described in [`docs/deployment/cloudflare-demo.md`](docs/deployment/cloudflare-demo.md).
 
@@ -490,7 +490,7 @@ seeds `.env` if it is missing. It never overwrites an existing `.env`.
 .\scripts\seed-demo.ps1 -Profile large                         # for measuring, not demonstrating
 .\scripts\seed-demo.ps1 -OutDir .\.tmp\demo                    # write the transcripts, post nothing
 
-# Demo Mode: the synthetic Null Meridian estate (1,800 people, 33 file servers, three scans).
+# Demo Mode: the synthetic Genesee Press estate (1,800 people, 33 file servers, three scans).
 # Runs `python -m app.demo_mode reset`: the real API, ingestion, history and risk engine;
 # touches no AD, SMB or collector. The API must run with ADG_RUNTIME_MODE=demo against a
 # database named with 'demo' as a word. See docs\architecture\demo-mode.md.

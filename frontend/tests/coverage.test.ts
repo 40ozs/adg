@@ -81,8 +81,8 @@ describe("the evidence a scope holds", () => {
 
   it("lists only the scopes that are not complete", () => {
     expect(incompleteScopes(apolloCoverage().scopes).map((scope) => scope.label)).toEqual([
-      "ntfs (NM-FS-03)",
-      "ntfs (NM-MIG-FS01)",
+      "ntfs (GP-FS-03)",
+      "ntfs (GP-MIG-FS01)",
     ]);
   });
 

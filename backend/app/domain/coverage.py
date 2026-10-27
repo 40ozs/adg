@@ -398,7 +398,7 @@ def _scope(scope: ScopeOperations, codes: Sequence[str]) -> ScopeCoverage:
 
 
 def server_of_resource(resource: str) -> str | None:
-    r"""The server a UNC path names: ``\\NM-ENG-FS01\Engineering\…`` → ``NM-ENG-FS01``."""
+    r"""The server a UNC path names: ``\\GP-ENG-FS01\Engineering\…`` → ``GP-ENG-FS01``."""
     trimmed = resource.strip().lstrip("\\/")
     server = trimmed.replace("/", "\\").split("\\", 1)[0]
     return server or None

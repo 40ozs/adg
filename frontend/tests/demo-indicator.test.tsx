@@ -46,17 +46,17 @@ const demo: RuntimeInfo = {
   data_source: "synthetic",
   synthetic: true,
   dataset: {
-    key: "null-meridian-v1",
-    company_name: "Null Meridian",
-    domain: "nullmeridian.info",
+    key: "genesee-press-v1",
+    company_name: "Genesee Press",
+    domain: "corp.geneseepress.example",
     snapshot_date: "2026-10-01",
-    seed: "null-meridian-v1",
+    seed: "genesee-press-v1",
     synthetic: true,
     description: "A fictional enterprise.",
     facts: { "active users": "1800" },
   },
   notice:
-    "This environment uses deterministic synthetic data for Null Meridian. No production " +
+    "This environment uses deterministic synthetic data for Genesee Press. No production " +
     "Active Directory or file servers are connected.",
 };
 
@@ -97,7 +97,7 @@ describe("the demo environment indicator", () => {
     render(<DemoEnvironmentIndicator runtime={demo} />);
 
     expect(screen.getByText("Demo environment")).toBeInTheDocument();
-    expect(screen.getByText(/Synthetic enterprise data · Null Meridian/)).toBeInTheDocument();
+    expect(screen.getByText(/Synthetic enterprise data · Genesee Press/)).toBeInTheDocument();
   });
 
   it("explains that the data is synthetic and the application is real", () => {
@@ -107,7 +107,7 @@ describe("the demo environment indicator", () => {
       screen.getByText(/No production Active Directory or file servers are connected/),
     ).toBeInTheDocument();
     expect(screen.getByText(/The application is real/)).toBeInTheDocument();
-    expect(screen.getByText("nullmeridian.info")).toBeInTheDocument();
+    expect(screen.getByText("corp.geneseepress.example")).toBeInTheDocument();
   });
 
   it("points to the demo guide, where the scenarios link into the real pages", () => {

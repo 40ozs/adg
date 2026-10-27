@@ -2,7 +2,7 @@
 
 Part of the [ADG demo guide](README.md) (Walkthroughs 2 and 3). This page is the detailed account.
 
-> **Synthetic.** Every server, scan, identity and finding here is generated Null Meridian demo
+> **Synthetic.** Every server, scan, identity and finding here is generated Genesee Press demo
 > data. None of it describes a real organization or system.
 
 The guided investigation ([access-investigation.md](access-investigation.md)) answers *why
@@ -43,22 +43,22 @@ if a comparison cannot finish?*, each of the first five linked into the page it 
 **The estate's collection.** Three scan generations, 300 runs. Two scopes are not complete
 after the last one, by the estate's own history:
 
-* NTFS on `NM-FS-03`: the 2026-10-01 scan could not reach the server (`host_unreachable`).
+* NTFS on `GP-FS-03`: the 2026-10-01 scan could not reach the server (`host_unreachable`).
   It is **unavailable**, and ADG still holds the folders it read on 2026-09-17: **older
   evidence**, not missing evidence, and not "nothing there".
-* NTFS on `NM-MIG-FS01`: the 2026-10-01 scan was **partial** (one folder unreadable).
+* NTFS on `GP-MIG-FS01`: the 2026-10-01 scan was **partial** (one folder unreadable).
 
 So coverage reads `98 of 100 collection scopes collected completely · 1 unavailable · 1
 partial · 1 holding older evidence`. It is a count of scopes, never a percentage: a scope is a
 whole server or the whole directory, and they are not equal in size.
 
 **The risk totals.** 9,386 open findings (3 critical, 8 high). The banner says *These counts
-are not exhaustive*, and why. The 189 open findings on `NM-FS-03` are still counted, from the
+are not exhaustive*, and why. The 189 open findings on `GP-FS-03` are still counted, from the
 scan that last read them: a failed scan closes nothing, and the page says so. The counts sit
 beside the snapshot they describe; the risk pass records the collected state it read, so a
 total over a snapshot that has since moved reads *stale*, not current.
 
-**The investigation.** Fatima's answer reads four scopes: the directory, and `NM-ENG-FS01`'s
+**The investigation.** Fatima's answer reads four scopes: the directory, and `GP-ENG-FS01`'s
 shares, folders and local groups. All four were collected completely, so *missing collection
 elsewhere cannot change this answer*. The answer's own certainty (`at_least`, two open
 questions) is unchanged: coverage is context beside the answer, never part of it.
@@ -110,7 +110,7 @@ does not; ADG cannot tell an intentional omission from a collector nobody set up
 * `GET /api/v1/changes/compare` — `ChangeService.compare` (aligned cut, window, outcome,
   `narrower`), `app/api/changes.py` (recovery, telemetry: one `changes.compare` log line per
   comparison).
-* `GET /api/v1/demo` — `comparisons`: the dataset's drill (`NullMeridianDataset.comparisons`).
+* `GET /api/v1/demo` — `comparisons`: the dataset's drill (`GeneseePressDataset.comparisons`).
 * Frontend: `components/Coverage.tsx`, `components/Comparison.tsx`,
   `components/ComparisonLink.tsx`, `lib/coverage.ts`, `/risks`, `/access/investigate`,
   `/changes/compare`, `components/DemoGuide.tsx`.

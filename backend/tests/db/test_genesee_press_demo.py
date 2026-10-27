@@ -1,4 +1,4 @@
-r"""Null Meridian through Demo Mode against a real PostgreSQL: reset, history, scenarios.
+r"""Genesee Press through Demo Mode against a real PostgreSQL: reset, history, scenarios.
 
 The reset runs once for this module, the way an operator runs it -- ``app.demo_mode``'s
 canonical reset with the default dataset: migrations, the deployment marker, the three scan
@@ -36,10 +36,10 @@ from httpx import ASGITransport, AsyncClient
 from app.auth.roles import Role
 from app.config import Settings, build_settings
 from app.db import Database
-from app.demo.null_meridian.canon import SNAPSHOT, Canon, build_canon
-from app.demo.null_meridian.estate import build_estate
-from app.demo.null_meridian.generations import GENERATIONS, TRANSCRIPT_NAMESPACE
-from app.demo.null_meridian.scenarios import investigations
+from app.demo.genesee_press.canon import SNAPSHOT, Canon, build_canon
+from app.demo.genesee_press.estate import build_estate
+from app.demo.genesee_press.generations import GENERATIONS, TRANSCRIPT_NAMESPACE
+from app.demo.genesee_press.scenarios import investigations
 from app.demo_mode.datasets import CANONICAL_DATASET, load_dataset
 from app.demo_mode.lifecycle import (
     DemoLifecycleError,
@@ -57,8 +57,8 @@ from tests.db.conftest import BASE_DATABASE_URL, _render
 from tests.support.auth import auth_headers, token_for_roles
 
 G1, G2, G3 = (generation.day for generation in GENERATIONS)
-MANIFEST = Path(__file__).resolve().parents[3] / "docs" / "demo" / "null-meridian.manifest.json"
-#: The Null Meridian branch's pre-integration reset evaluated risk at this instant; the
+MANIFEST = Path(__file__).resolve().parents[3] / "docs" / "demo" / "genesee-press.manifest.json"
+#: The Genesee Press branch's pre-integration reset evaluated risk at this instant; the
 #: dataset contract now carries it as the last generation's ``evaluated_at``.
 CANONICAL_RISK_PASS = dt.datetime(2026, 10, 1, 6, 0, tzinfo=dt.UTC)
 #: Sources of the canonical fingerprint that do not depend on when risks were evaluated.
@@ -165,8 +165,8 @@ def _stored_sids(engine: sa.Engine) -> set[str]:
 
 class TestTheReset:
     def test_it_ran_on_the_canonical_dataset(self, first_reset: ResetReport) -> None:
-        assert first_reset.dataset.key == CANONICAL_DATASET == "null-meridian-v1"
-        assert first_reset.dataset.company_name == "Null Meridian"
+        assert first_reset.dataset.key == CANONICAL_DATASET == "genesee-press-v1"
+        assert first_reset.dataset.company_name == "Genesee Press"
         assert first_reset.initialized is True
         assert [item.name for item in first_reset.applied] == ["g1", "g2", "g3"]
         assert first_reset.canonical
@@ -179,9 +179,9 @@ class TestTheReset:
         assert runs["recorded_statuses"] == {"failed": 2, "partial": 1, "succeeded": 297}
         assert [g["runs"] for g in runs["by_generation"]] == [100, 100, 100]
         assert {(r["name"], r["recorded_status"]) for r in runs["not_succeeded"]} == {
-            ("g1-ntfs-nm-sec-fs01", "failed"),
-            ("g3-ntfs-nm-fs-03", "failed"),
-            ("g3-ntfs-nm-mig-fs01", "partial"),
+            ("g1-ntfs-gp-sec-fs01", "failed"),
+            ("g3-ntfs-gp-fs-03", "failed"),
+            ("g3-ntfs-gp-mig-fs01", "partial"),
         }
 
     def test_the_ingested_volume_is_the_manifests(self, first_reset: ResetReport) -> None:
@@ -206,7 +206,7 @@ class TestTheReset:
         assert first_reset.risk.evaluated_at == CANONICAL_RISK_PASS
 
     def test_the_risk_pass_used_the_datasets_configuration(self, engine: sa.Engine) -> None:
-        """Sensitive folders exist only in Null Meridian's own declaration, so a finding on
+        """Sensitive folders exist only in Genesee Press's own declaration, so a finding on
         one proves the dataset's configuration -- not the shipped default -- was applied."""
         with engine.connect() as connection:
             sensitive = connection.execute(
@@ -225,7 +225,7 @@ class TestTheReset:
         assert instants == {CANONICAL_RISK_PASS}
 
     def test_the_deployment_marker_is_the_one_authority(self, engine: sa.Engine) -> None:
-        """Demo Mode's ``deployment_marker`` row marks the database; the Null Meridian
+        """Demo Mode's ``deployment_marker`` row marks the database; the Genesee Press
         branch's ``COMMENT ON DATABASE`` marker is gone rather than kept as a second one."""
         with engine.connect() as connection:
             marker = connection.execute(
@@ -242,8 +242,8 @@ class TestTheReset:
             ).scalar_one()
         assert tuple(marker) == (
             "demo",
-            "null-meridian-v1",
-            "null-meridian-v1",
+            "genesee-press-v1",
+            "genesee-press-v1",
             "python -m app.demo_mode reset",
         )
         assert comment is None
@@ -269,7 +269,7 @@ class TestTheReset:
                 )
             }
         assert enabled == 1800
-        assert all(upn.endswith("@nullmeridian.info") for upn in upns)
+        assert all(upn.endswith("@geneseepress.example") for upn in upns)
         assert {person.email for person in canon.active} <= upns
 
     def test_current_state_matches_the_manifest(self, first_reset: ResetReport) -> None:
@@ -279,7 +279,7 @@ class TestTheReset:
         assert counts["current_server"] == estate["servers"]
         assert counts["current_smb_share"] == estate["shares"] + estate["administrative_shares"]
         assert counts["current_smb_ace"] == estate["share_aces"]
-        # The two folders the partial g3 scan of NM-MIG-FS01 could not remove stay current.
+        # The two folders the partial g3 scan of GP-MIG-FS01 could not remove stay current.
         assert counts["current_ntfs_resource"] == estate["directories"] + 2
         assert counts["scan_runs"] == 300
 
@@ -288,7 +288,7 @@ class TestCurrentStateSemantics:
     def test_a_reconciled_scan_tombstones_what_it_no_longer_saw(
         self, engine: sa.Engine, canon: Canon
     ) -> None:
-        scratch = r"\\NM-ENG-FS02\QA\Sprint-Scratch"
+        scratch = r"\\GP-ENG-FS02\QA\Sprint-Scratch"
         with engine.connect() as connection:
             stored = {
                 row[0] for row in connection.execute(sa.text("SELECT path FROM ntfs_resources"))
@@ -319,18 +319,18 @@ class TestCurrentStateSemantics:
             assert sid in stored and sid not in current, sid
 
     def test_a_failed_scan_removes_nothing(self, engine: sa.Engine) -> None:
-        """NM-FS-03's NTFS scan failed in g3. Everything g2 saw there is still current."""
-        seen_in_g2 = {d.path for d in build_estate(G2).estate.directories_on("NM-FS-03")}
+        """GP-FS-03's NTFS scan failed in g3. Everything g2 saw there is still current."""
+        seen_in_g2 = {d.path for d in build_estate(G2).estate.directories_on("GP-FS-03")}
         assert seen_in_g2
         assert seen_in_g2 <= _current_paths(engine)
 
     def test_a_partial_scan_removes_nothing_even_what_is_really_gone(
         self, engine: sa.Engine
     ) -> None:
-        """Wave-3-Staging was deleted on 2026-09-25. The g3 scan of NM-MIG-FS01 was partial,
+        """Wave-3-Staging was deleted on 2026-09-25. The g3 scan of GP-MIG-FS01 was partial,
         so it may not say so, and ADG keeps the folder until a complete scan does."""
-        staging = r"\\NM-MIG-FS01\Migrations\Wave-3-Staging"
-        restricted = r"\\NM-MIG-FS01\Migrations\FS-Consolidation-2020\Restricted"
+        staging = r"\\GP-MIG-FS01\Migrations\Wave-3-Staging"
+        restricted = r"\\GP-MIG-FS01\Migrations\FS-Consolidation-2020\Restricted"
         assert staging not in {d.path for d in build_estate(G3).estate.directories}
         current = _current_paths(engine)
         assert staging in current
@@ -339,9 +339,9 @@ class TestCurrentStateSemantics:
     def test_current_state_is_exactly_what_the_scans_justify(self, engine: sa.Engine) -> None:
         g2 = build_estate(G2).estate
         g3 = build_estate(G3).estate
-        expected = {d.path for d in g3.directories if d.server_name != "NM-FS-03"}
-        expected |= {d.path for d in g2.directories_on("NM-FS-03")}
-        expected |= {d.path for d in g2.directories_on("NM-MIG-FS01")}
+        expected = {d.path for d in g3.directories if d.server_name != "GP-FS-03"}
+        expected |= {d.path for d in g2.directories_on("GP-FS-03")}
+        expected |= {d.path for d in g2.directories_on("GP-MIG-FS01")}
         assert _current_paths(engine) == expected
 
     def test_a_server_first_read_in_g2_was_first_observed_then(self, engine: sa.Engine) -> None:
@@ -356,19 +356,19 @@ class TestCurrentStateSemantics:
                 for row in connection.execute(
                     sa.text(
                         "SELECT path, first_observed_run_id FROM ntfs_resources "
-                        "WHERE server_key = 'nm-sec-fs01'"
+                        "WHERE server_key = 'gp-sec-fs01'"
                     )
                 )
             }
-        incident = r"\\NM-SEC-FS01\Incidents\IR-2026-014"
-        assert first.pop(incident) == run("g3-ntfs-nm-sec-fs01"), "created after g2"
-        assert set(first.values()) == {run("g2-ntfs-nm-sec-fs01")}, "g1 could not read it"
+        incident = r"\\GP-SEC-FS01\Incidents\IR-2026-014"
+        assert first.pop(incident) == run("g3-ntfs-gp-sec-fs01"), "created after g2"
+        assert set(first.values()) == {run("g2-ntfs-gp-sec-fs01")}, "g1 could not read it"
 
 
 class TestTheGoldenScenariosThroughTheApi:
     async def test_f_both_routes_are_explained(self, api: AsyncClient, canon: Canon) -> None:
         mover = canon.one("golden:cross-department")
-        path = r"\\NM-FIN-FS01\Finance\Reports\Revenue"
+        path = r"\\GP-FIN-FS01\Finance\Reports\Revenue"
         response = await api.get(
             f"/api/v1/access/paths/principals/{mover.sid}/resources/{_q(path)}"
         )
@@ -382,7 +382,7 @@ class TestTheGoldenScenariosThroughTheApi:
 
     async def test_g_the_six_group_chain(self, api: AsyncClient, canon: Canon) -> None:
         person = canon.one("golden:deep-chain")
-        path = r"\\NM-ENG-FS01\Engineering\Runbooks\Payments-Legacy"
+        path = r"\\GP-ENG-FS01\Engineering\Runbooks\Payments-Legacy"
         response = await api.get(
             f"/api/v1/access/paths/principals/{person.sid}/resources/{_q(path)}"
         )
@@ -424,7 +424,7 @@ class TestTheGoldenScenariosThroughTheApi:
     async def test_h_a_simulation_confirms_the_cleanup_changes_nobody(
         self, api: AsyncClient, canon: Canon
     ) -> None:
-        zephyr = r"\\NM-ENG-FS01\Engineering\Projects\Zephyr"
+        zephyr = r"\\GP-ENG-FS01\Engineering\Projects\Zephyr"
         sid = canon.group("Proj-Zephyr-RW").sid
         acl = await api.get(f"/api/v1/resources/{_q(zephyr)}/acl")
         assert acl.status_code == 200, acl.text
@@ -456,11 +456,11 @@ class TestTheGoldenScenariosThroughTheApi:
         assert body["summary"]["changed"] == 0
 
     async def test_a_the_design_share_names_no_person(self, api: AsyncClient, canon: Canon) -> None:
-        design = r"\\NM-CORP-FS02\Design"
+        design = r"\\GP-CORP-FS02\Design"
         response = await api.get(f"/api/v1/resources/{_q(design)}/acl")
         assert response.status_code == 200, response.text
         text = response.text
-        assert "sg-share-design-write" in text
+        assert "sec-share-design-write" in text
         people = {person.sid for person in canon.employees}
         assert not any(sid in text for sid in people)
 
@@ -471,24 +471,28 @@ class TestTheGoldenScenariosThroughTheApi:
         return body
 
     async def test_b_four_generations_of_finance_groups_on_one_acl(self, api: AsyncClient) -> None:
-        body = await self._acl(api, r"\\NM-FIN-FS01\Finance")
+        body = await self._acl(api, r"\\GP-FIN-FS01\Finance")
         names = {entry["trustee"]["display_name"] for entry in body["entries"]}
         assert {
             "Finance-RW",
             "GG_Finance_RW",
             "Finance_Read",
             "FS-Finance-R",
-            "sg-share-finance-write",
-            "sg-share-finance-read-only",
+            "sec-share-finance-write",
+            "sec-share-finance-read-only",
         } <= names
 
     async def test_c_engineering_mixes_legacy_and_standard_groups_at_the_root(
         self, api: AsyncClient
     ) -> None:
-        body = await self._acl(api, r"\\NM-ENG-FS01\Engineering")
+        body = await self._acl(api, r"\\GP-ENG-FS01\Engineering")
         names = {entry["trustee"]["display_name"] for entry in body["entries"]}
-        assert {"Share_Engineering_Modify", "Engineering-FS", "sg-share-engineering-write"} <= names
-        payments = r"\\NM-ENG-FS01\Engineering\Services\Payments"
+        assert {
+            "Share_Engineering_Modify",
+            "Engineering-FS",
+            "sec-share-engineering-write",
+        } <= names
+        payments = r"\\GP-ENG-FS01\Engineering\Services\Payments"
         response = await api.get(f"/api/v1/access/resources/{_q(payments)}/principals")
         assert response.status_code == 200, response.text
         assert any(item["access"] for item in response.json()["items"])
@@ -496,7 +500,7 @@ class TestTheGoldenScenariosThroughTheApi:
     async def test_d_compensation_is_protected_and_limited_to_two_groups(
         self, api: AsyncClient
     ) -> None:
-        body = await self._acl(api, r"\\NM-HR-FS01\People\Compensation")
+        body = await self._acl(api, r"\\GP-HR-FS01\People\Compensation")
         assert body["resource"]["dacl_protected"] is True
         trustees = {entry["trustee"]["display_name"] for entry in body["entries"]}
         assert trustees == {"HR-Confidential", "Payroll_Admins"}
@@ -504,10 +508,10 @@ class TestTheGoldenScenariosThroughTheApi:
     async def test_e_archive_acls_still_name_accounts_and_groups_that_are_gone(
         self, api: AsyncClient, canon: Canon
     ) -> None:
-        homes = await self._acl(api, r"\\NM-ARCH-FS01\Archive\Legacy-Home-Drives")
+        homes = await self._acl(api, r"\\GP-ARCH-FS01\Archive\Legacy-Home-Drives")
         unresolved = [entry for entry in homes["entries"] if entry["trustee"]["kind"] != "user"]
         assert len(unresolved) == 2, homes["entries"]
-        projects = await self._acl(api, r"\\NM-ARCH-FS01\Archive\Projects-2019")
+        projects = await self._acl(api, r"\\GP-ARCH-FS01\Archive\Projects-2019")
         vega = canon.group("Project-Vega").sid
         named = [entry for entry in projects["entries"] if entry["trustee"]["sid"] == vega]
         assert len(named) == 1
@@ -531,7 +535,7 @@ class TestTheGoldenScenariosThroughTheApi:
             await database.dispose()
         assert overview.status_code == 200, overview.text
         body = overview.json()
-        assert body["dataset"]["key"] == "null-meridian-v1"
+        assert body["dataset"]["key"] == "genesee-press-v1"
         assert [(g["name"], g["applied"], g["in_baseline"]) for g in body["generations"]] == [
             ("g1", True, True),
             ("g2", True, True),
@@ -539,7 +543,7 @@ class TestTheGoldenScenariosThroughTheApi:
         ]
         assert body["next_generation"] is None
         assert [s["key"] for s in body["scenarios"]] == list("ABCDEFGH")
-        assert runtime.json()["dataset"]["company_name"] == "Null Meridian"
+        assert runtime.json()["dataset"]["company_name"] == "Genesee Press"
         assert runtime.json()["data_source"] == "synthetic"
 
     def test_the_risk_report_has_every_kind_of_debt(self, engine: sa.Engine) -> None:
@@ -565,13 +569,13 @@ class TestTheGoldenScenariosThroughTheApi:
 class TestTheSystemExplanation:
     r"""ADG-DEMO-01: the request that once contradicted itself, on the demo estate itself.
 
-    ``GET /explain?principal=S-1-5-18&resource=\\NM-FS-01\Shared`` answered ``no_grant``,
+    ``GET /explain?principal=S-1-5-18&resource=\\GP-FS-01\Shared`` answered ``no_grant``,
     *certain*, "no entry on either ACL names it" -- beside ``SYSTEM: Full Control`` in
     ``effective.ntfs.granted_by``. Over a share SYSTEM is a computer account the question does
     not name, so the honest answer is the ambiguous mapping; locally it is confirmed.
     """
 
-    SHARED = r"\\NM-FS-01\Shared"
+    SHARED = r"\\GP-FS-01\Shared"
 
     async def explain(self, api: AsyncClient, **query: str) -> dict[str, Any]:
         response = await api.get(
@@ -623,13 +627,13 @@ class TestTheSystemExplanation:
 class TestTheAccessInvestigation:
     r"""ADG-DEMO-02: the guided investigation the demo opens with, end to end.
 
-    *Why does Fatima Gordon have access to* ``\\NM-ENG-FS01\Engineering\Projects\Apollo``*?*
+    *Why does Fatima Gordon have access to* ``\\GP-ENG-FS01\Engineering\Projects\Apollo``*?*
     Asked of the reset estate through ``GET /api/v1/demo`` and ``GET /api/v1/access/explain``
     exactly as the investigation page asks it. Every claim the seed's summary makes, and
     every field the page renders, is pinned here against what the engine computes.
     """
 
-    APOLLO = r"\\NM-ENG-FS01\Engineering\Projects\Apollo"
+    APOLLO = r"\\GP-ENG-FS01\Engineering\Projects\Apollo"
     FIVE_GROUPS = (
         "ENG-Mobile",
         "Engineering-Frontend",
@@ -821,7 +825,7 @@ class TestTheAccessInvestigation:
         assert orphan["impact"] == "extent"
         assert orphan["about"]["kind"] == "unresolved"
         assert orphan["about"]["display_name"] is None
-        assert orphan["about"]["last_known_name"] == r"NULLMERIDIAN\lhansen"
+        assert orphan["about"]["last_known_name"] == r"GPCORP\lhansen"
 
         zephyr = open_[canon.group("Proj-Zephyr-RW").sid]
         assert zephyr["condition"] == "trustee_membership_unobserved"
@@ -862,7 +866,7 @@ class TestTheAccessInvestigation:
         self, api: AsyncClient
     ) -> None:
         """ADG-DEMO-01's request, read through the investigation summary."""
-        shared = r"\\NM-FS-01\Shared"
+        shared = r"\\GP-FS-01\Shared"
         over_smb = (
             await api.get(
                 "/api/v1/access/explain", params={"principal": "S-1-5-18", "resource": shared}
@@ -900,11 +904,11 @@ class TestTheCoverageAndRecoveryDemo:
     r"""ADG-DEMO-03: collection coverage beside the numbers, and a comparison that recovers.
 
     Asked of the reset estate through the same routes the pages call. The history leaves
-    exactly two scopes incomplete -- NM-FS-03's g3 NTFS scan could not reach the server, and
-    NM-MIG-FS01's was partial -- and everything here is read off those two facts.
+    exactly two scopes incomplete -- GP-FS-03's g3 NTFS scan could not reach the server, and
+    GP-MIG-FS01's was partial -- and everything here is read off those two facts.
     """
 
-    APOLLO = r"\\NM-ENG-FS01\Engineering\Projects\Apollo"
+    APOLLO = r"\\GP-ENG-FS01\Engineering\Projects\Apollo"
 
     async def coverage(self, api: AsyncClient, **params: str) -> dict[str, Any]:
         response = await api.get("/api/v1/collection/coverage", params=params)
@@ -945,22 +949,22 @@ class TestTheCoverageAndRecoveryDemo:
         incomplete = {
             item["label"]: item for item in body["scopes"] if item["state"] != "collected"
         }
-        assert set(incomplete) == {"ntfs (NM-FS-03)", "ntfs (NM-MIG-FS01)"}
-        fs03 = incomplete["ntfs (NM-FS-03)"]
+        assert set(incomplete) == {"ntfs (GP-FS-03)", "ntfs (GP-MIG-FS01)"}
+        fs03 = incomplete["ntfs (GP-FS-03)"]
         assert fs03["state"] == "unavailable"
         assert fs03["evidence"] == "stale"
         assert fs03["failure_codes"] == ["host_unreachable"]
         assert fs03["evidence_collected_at"].startswith(GENERATIONS[1].day.isoformat())
-        assert incomplete["ntfs (NM-MIG-FS01)"]["state"] == "partial"
+        assert incomplete["ntfs (GP-MIG-FS01)"]["state"] == "partial"
 
     async def test_the_apollo_answer_reads_only_complete_scopes(self, api: AsyncClient) -> None:
         relevant = (await self.coverage(api, resource=self.APOLLO))["relevant"]
 
         assert sorted(item["label"] for item in relevant["scopes"]) == [
-            "active_directory (nullmeridian.info)",
-            "local_groups (NM-ENG-FS01)",
-            "ntfs (NM-ENG-FS01)",
-            "smb (NM-ENG-FS01)",
+            "active_directory (corp.geneseepress.example)",
+            "local_groups (GP-ENG-FS01)",
+            "ntfs (GP-ENG-FS01)",
+            "smb (GP-ENG-FS01)",
         ]
         assert relevant["complete"] is True
         assert relevant["could_change_answer"] is False
@@ -993,9 +997,9 @@ class TestTheCoverageAndRecoveryDemo:
         assert interpretation["evaluated_basis"] == body["collection"]["snapshot"]["token"]
         assert len(interpretation["reasons"]) == 1
         held = {item["scope"]: item for item in interpretation["held"]}
-        assert held["ntfs (NM-FS-03)"]["evidence"] == "stale"
-        assert held["ntfs (NM-FS-03)"]["open_findings"] == 189
-        assert held["ntfs (NM-FS-03)"]["evidence_collected_at"].startswith(
+        assert held["ntfs (GP-FS-03)"]["evidence"] == "stale"
+        assert held["ntfs (GP-FS-03)"]["open_findings"] == 189
+        assert held["ntfs (GP-FS-03)"]["evidence_collected_at"].startswith(
             GENERATIONS[1].day.isoformat()
         )
 
@@ -1072,7 +1076,7 @@ class TestTheBoundary:
     def test_an_unmarked_database_with_data_is_refused_whatever_its_comment_says(
         self, demo_settings: Settings, engine: sa.Engine, saved_marker: None
     ) -> None:
-        """The Null Meridian branch's database comment is not an authority: a populated
+        """The Genesee Press branch's database comment is not an authority: a populated
         database without the marker row is refused even when it carries that comment."""
         with engine.connect() as connection:
             name = connection.execute(sa.text("SELECT current_database()")).scalar_one()
@@ -1080,7 +1084,7 @@ class TestTheBoundary:
         with engine.begin() as connection:
             connection.execute(sa.text("DELETE FROM deployment_marker"))
             connection.execute(
-                sa.text(f"COMMENT ON DATABASE {quoted} IS 'adg-demo:null-meridian-v1'")
+                sa.text(f"COMMENT ON DATABASE {quoted} IS 'adg-demo:genesee-press-v1'")
             )
         try:
             with pytest.raises(DemoTargetRefused, match="carries no deployment marker"):
@@ -1150,12 +1154,12 @@ class TestTheHistoryReplaysThroughTheSyntheticScan:
         assert status.baseline_applied is False
         with pytest.raises(DemoLifecycleError, match="not yet applied: g2, g3"):
             asyncio.run(verify_demo(demo_settings))
-        # g1 could not read NM-SEC-FS01's file system: its shares are known, its folders not.
+        # g1 could not read GP-SEC-FS01's file system: its shares are known, its folders not.
         with engine.connect() as connection:
             sec_folders = connection.execute(
                 sa.select(sa.func.count())
                 .select_from(current_ntfs_resources)
-                .where(current_ntfs_resources.c.path.ilike(r"\\\\NM-SEC-FS01\\%"))
+                .where(current_ntfs_resources.c.path.ilike(r"\\\\GP-SEC-FS01\\%"))
             ).scalar_one()
         assert sec_folders == 0
 

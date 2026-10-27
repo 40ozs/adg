@@ -1,14 +1,15 @@
-"""``python -m app.demo.null_meridian`` — developer utilities for the Null Meridian canon.
+"""``python -m app.demo.genesee_press`` — developer utilities for the Genesee Press estate.
 
-    python -m app.demo.null_meridian manifest [--out PATH] [--canon-out PATH]
-    python -m app.demo.null_meridian transcripts --out DIR
-    python -m app.demo.null_meridian stats
+    python -m app.demo.genesee_press manifest [--out PATH]
+    python -m app.demo.genesee_press transcripts --out DIR
+    python -m app.demo.genesee_press stats
 
-Every command is pure: it builds the canon and prints or writes it, and none of them reads
-configuration or opens a database. ``manifest`` is how the committed
-``docs/demo/null-meridian.manifest.json`` and ``.canon.json`` are regenerated.
+Every command is pure: it reads the vendored projection, builds the estate and prints or
+writes it, and none of them reads configuration or opens a database. ``manifest`` is how the
+committed ``docs/demo/genesee-press.manifest.json`` is regenerated. The vendored projection
+itself changes only through ``scripts/vendor-synthetic-enterprise.py``.
 
-Loading Null Meridian into a demo database is not done here. It is Demo Mode's job, behind
+Loading Genesee Press into a demo database is not done here. It is Demo Mode's job, behind
 Demo Mode's safety checks: ``python -m app.demo_mode reset`` (see docs/architecture/demo-mode.md).
 
 Exit codes: ``0`` done, ``2`` usage.
@@ -26,23 +27,16 @@ EXIT_OK = 0
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m app.demo.null_meridian",
+        prog="python -m app.demo.genesee_press",
         description=(
-            "Developer utilities for the Null Meridian canon. To load it into a demo "
+            "Developer utilities for the Genesee Press estate. To load it into a demo "
             "database, use `python -m app.demo_mode reset`."
         ),
     )
     commands = parser.add_subparsers(dest="command", required=True)
-    manifest = commands.add_parser(
-        "manifest", help="Print or write the canonical manifest (shared with OGWA)."
-    )
+    manifest = commands.add_parser("manifest", help="Print or write the estate's manifest.")
     manifest.add_argument(
         "--out", type=pathlib.Path, help="Write the summary manifest here instead of printing it."
-    )
-    manifest.add_argument(
-        "--canon-out",
-        type=pathlib.Path,
-        help="Also write the full identity canon (every employee, group and membership) here.",
     )
     transcripts = commands.add_parser(
         "transcripts", help="Write every generation's collector transcripts as JSON."
@@ -53,7 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _manifest(args: argparse.Namespace) -> int:
-    from app.demo.null_meridian.manifest import build_manifest, render_canon_document
+    from app.demo.genesee_press.manifest import build_manifest
 
     rendered = json.dumps(build_manifest(), indent=1, ensure_ascii=False)
     if args.out:
@@ -62,15 +56,11 @@ def _manifest(args: argparse.Namespace) -> int:
         print(f"Wrote {args.out}")
     else:
         print(rendered)
-    if args.canon_out:
-        args.canon_out.parent.mkdir(parents=True, exist_ok=True)
-        args.canon_out.write_text(render_canon_document(), encoding="utf-8")
-        print(f"Wrote {args.canon_out}")
     return EXIT_OK
 
 
 def _transcripts(args: argparse.Namespace) -> int:
-    from app.demo.null_meridian.generations import build_generations
+    from app.demo.genesee_press.generations import build_generations
 
     args.out.mkdir(parents=True, exist_ok=True)
     index = 0
@@ -84,7 +74,7 @@ def _transcripts(args: argparse.Namespace) -> int:
 
 
 def _stats() -> int:
-    from app.demo.null_meridian.manifest import build_manifest
+    from app.demo.genesee_press.manifest import build_manifest
 
     print(json.dumps(build_manifest()["statistics"], indent=2))
     return EXIT_OK

@@ -270,7 +270,7 @@ describe("5. what ADG could not confirm", () => {
   it("keeps a stored-but-unresolved identity visibly unresolved (ADG-DEMO-01)", async () => {
     await open();
     const gaps = section(/What ADG could not confirm/);
-    const orphan = within(gaps).getByText("NULLMERIDIAN\\lhansen");
+    const orphan = within(gaps).getByText("GPCORP\\lhansen");
     const item = orphan.closest("li") as HTMLElement;
 
     expect(within(item).getByText(ORPHAN_SID)).toBeInTheDocument();
@@ -416,9 +416,9 @@ describe("7. how complete the evidence behind the answer is (ADG-DEMO-03)", () =
 
     const items = within(scopes).getAllByRole("listitem").map((item) => item.textContent ?? "");
     expect(items).toHaveLength(4);
-    expect(items[0]).toContain("active_directory (nullmeridian.info)");
+    expect(items[0]).toContain("active_directory (corp.geneseepress.example)");
     expect(items.every((item) => item.includes("Collected"))).toBe(true);
-    expect(items.join(" ")).toContain("ntfs (NM-ENG-FS01)");
+    expect(items.join(" ")).toContain("ntfs (GP-ENG-FS01)");
   });
 
   it("says the incomplete scopes elsewhere cannot change this answer, and names them", async () => {
@@ -431,7 +431,7 @@ describe("7. how complete the evidence behind the answer is (ADG-DEMO-03)", () =
     const elsewhere = within(panel).getByRole("list", {
       name: "Incomplete scopes this answer does not read",
     });
-    expect(elsewhere.textContent).toContain("ntfs (NM-FS-03): the latest scan could not reach its target");
+    expect(elsewhere.textContent).toContain("ntfs (GP-FS-03): the latest scan could not reach its target");
     expect(elsewhere.textContent).toContain("Unavailable");
     expect(within(panel).getByText(/98 of 100 collection scopes collected completely/)).toBeInTheDocument();
   });

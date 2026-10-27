@@ -3,7 +3,7 @@
 **Status:** deployed and checked — see [the handoff](../handoffs/adg-free-edge-ssr-03.md) for
 the measured results. · **Code:** `frontend/wrangler.jsonc`, `frontend/cloudflare/`,
 `frontend/render/gate.ts`, `docker/Dockerfile.render`, `.github/workflows/cloudflare-staging.yml`
-· **Runs on:** [Demo Mode](../architecture/demo-mode.md) with [Null Meridian](../demo/null-meridian.md).
+· **Runs on:** [Demo Mode](../architecture/demo-mode.md) with [Genesee Press](../demo/genesee-press.md).
 
 This is a **public demo staging** deployment of the real ADG application on synthetic data, at
 zero hosting cost. It is not a production configuration. Anyone on the internet can open it;
@@ -40,12 +40,12 @@ Render Free — ONE web service "adg-demo-web" (Oregon)          docker/Dockerfi
       │           │                                                       (python -m app, unmodified)
       │           └─ everything else ─► Next.js 127.0.0.1:3000 (standalone server.js)
       │                                 its server-side API calls ─► 127.0.0.1:8000
-      │  ADG_RUNTIME_MODE=demo, ADG_DEMO_DATASET=null-meridian-v1
+      │  ADG_RUNTIME_MODE=demo, ADG_DEMO_DATASET=genesee-press-v1
       │
       │  TLS, Supavisor session mode, port 5432
       ▼
 Supabase PostgreSQL — database adg_demo ONLY
-         deployment_marker = demo / null-meridian-v1
+         deployment_marker = demo / genesee-press-v1
 ```
 
 One codebase, one schema: Render runs the backend exactly as `docker compose` does, and the
@@ -61,7 +61,7 @@ Next.js application unmodified. The deployment adds infrastructure only:
 | `frontend/render/gate.ts` | The front gate and process supervisor on Render (§5). |
 | `docker/Dockerfile.render` | One image: the Next.js standalone build, the API as `Dockerfile.backend` installs it, Node for the gate. |
 | `backend/app/origin_gate.py` | The previous API-only gate (`python -m app.origin_gate`), kept for the rollback service `adg-demo-api` (§10). |
-| `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `null_meridian_fingerprint.py`: hosted checks (§6). |
+| `frontend/cloudflare/checks/` | `smoke.mjs`, `browser.mjs`, `genesee_press_fingerprint.py`: hosted checks (§6). |
 | `.github/workflows/cloudflare-staging.yml` | Preflight → gates → (bootstrap) → Render deploy → static files + Worker deploy → hosted checks. |
 
 ## 2. Routing
@@ -97,7 +97,7 @@ edge-served. A Mac build, by contrast, differs from a Linux one in most chunk na
 * Create the database once, from the project's default database:
   `CREATE DATABASE adg_demo;` then reconnect to `adg_demo` and check
   `SELECT current_database();` before the first reset.
-* The database receives `deployment_marker = demo / null-meridian-v1` from the reset (§6), the
+* The database receives `deployment_marker = demo / genesee-press-v1` from the reset (§6), the
   only way it is ever written.
 
 ## 4. Configuration
@@ -107,7 +107,7 @@ edge-served. A Mac build, by contrast, differs from a Linux one in most chunk na
 | Name | Value |
 | --- | --- |
 | `ADG_RUNTIME_MODE` | `demo` |
-| `ADG_DEMO_DATASET` | `null-meridian-v1` |
+| `ADG_DEMO_DATASET` | `genesee-press-v1` |
 | `ADG_DATABASE_URL` | secret (§3) |
 | `ADG_REMEDIATION_EXECUTION_MODE` | `disabled` |
 | `ADG_ORIGIN_KEY` | secret, ≥ 32 characters; the same value as the Worker's. Read by the gate only; neither FastAPI nor Next.js receives it. |
@@ -197,7 +197,7 @@ A password that has ever been pasted into a chat, ticket or log is treated as ex
    `reset adg_demo`. Prints names, never values.
 2. **gates**: Worker typecheck, the Worker and gate unit tests.
 3. **bootstrap** (only when asked): `python -m app.demo_mode reset`, `--json verify`,
-   `--json status` and the Null Meridian logical fingerprint, from this commit's API image.
+   `--json status` and the Genesee Press logical fingerprint, from this commit's API image.
 4. **deploy-origin**: a Render deploy of exactly this commit (Render builds
    `Dockerfile.render`), waited on until live.
 5. **deploy**: `docker build --target web` of the same commit, its `.next/static` →
@@ -240,12 +240,12 @@ for such a client).
 ### Bootstrap and reset
 
 The demo database is bootstrapped **once** and reset only deliberately. The API never resets:
-its startup only verifies that the database is a marked Null Meridian demo and refuses to start
+its startup only verifies that the database is a marked Genesee Press demo and refuses to start
 otherwise. There is no reset endpoint. To reset: run the workflow with `bootstrap` and
 `confirm_reset = reset adg_demo`, or from any machine with the backend and the secret:
 
 ```bash
-export ADG_RUNTIME_MODE=demo ADG_DEMO_DATASET=null-meridian-v1 ADG_REMEDIATION_EXECUTION_MODE=disabled
+export ADG_RUNTIME_MODE=demo ADG_DEMO_DATASET=genesee-press-v1 ADG_REMEDIATION_EXECUTION_MODE=disabled
 export ADG_DATABASE_URL="$(cat ~/.config/adg-staging/adg-database-url)"
 python -m app.demo_mode reset    # then: verify, status
 ```
@@ -256,8 +256,8 @@ not run it while people are using the demo. Moving compute (as ADG-FREE-EDGE-SSR
 no reset: run `verify` instead.
 
 Expected after a reset: `verify` ok, 23/23 probes, 300 scan runs, fingerprint
-`228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0`; Null Meridian logical
-fingerprint `db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0`. A different
+`4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08`; Genesee Press logical
+fingerprint `b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0`. A different
 value is dataset drift until proven otherwise.
 
 ### Hosted checks

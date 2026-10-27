@@ -82,7 +82,7 @@ export const SECTION = {
 
 /* ------------------------------------------------------------------ the question */
 
-/** "Why does Fatima Gordon have access to \\NM-ENG-FS01\…\Apollo?" */
+/** "Why does Fatima Gordon have access to \\GP-ENG-FS01\…\Apollo?" */
 export function investigationQuestion(explanation: AccessExplanationResponse): string {
   const resource = explanation.resource.path ?? explanation.resource.key;
   return `Why does ${principalLabel(explanation.subject)} have access to ${resource}?`;

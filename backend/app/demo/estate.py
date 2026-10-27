@@ -955,7 +955,7 @@ def materialize_directories(specs: Iterable[DirectorySpec]) -> tuple[DemoDirecto
 
     The derivation runs the server's own functions, so this cannot encode a different idea
     of what a child inherits than the one the product enforces. A parent must precede its
-    children in ``specs``. Shared with :mod:`app.demo.null_meridian`, so both demo estates
+    children in ``specs``. Shared with :mod:`app.demo.genesee_press`, so both demo estates
     derive their inherited entries in exactly one place.
     """
     built: dict[str, DemoDirectory] = {}

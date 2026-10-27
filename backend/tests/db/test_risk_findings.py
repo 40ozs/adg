@@ -296,7 +296,7 @@ class TestLookupByKeyAtScale:
     async def test_more_keys_than_postgres_accepts_parameters_for(
         self, seeded: DemoEstate, session: AsyncSession
     ) -> None:
-        """A full pass over a large estate matched ~190,000 findings in the Null Meridian
+        """A full pass over a large estate matched ~190,000 findings in the Genesee Press
         demo, and one ``IN`` list per key exceeded PostgreSQL's 65,535 bind parameters,
         failing the whole evaluation. The lookup is chunked; it must still find every
         stored finding among the keys it is given."""

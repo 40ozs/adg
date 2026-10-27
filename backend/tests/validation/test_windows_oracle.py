@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 from collections.abc import Iterator
 from typing import Any
 
@@ -371,3 +372,14 @@ class TestTheRealDirectoryMeasurements:
         assert real_access["subject"]["user_sid"].startswith("S-1-5-21-")
         assert "AuthzAccessCheck" in real_access["method"]["authz_granted"]
         assert "NtQueryObject" in real_access["method"]["open_granted"]
+
+    def test_the_capturing_machine_is_not_identifiable(self, real_access: dict[str, Any]) -> None:
+        """The fixture was measured on a real workstation (SYNTH-DISCOVERY-01 U-02). Its
+        machine-account domain is replaced by a synthetic one before it is committed, and the
+        only other domain SID is the synthetic unresolvable trustee."""
+        synthetic = real_access["sanitized"]["machine_account_domain"]
+        assert synthetic == "S-1-5-21-1000000001-1000000002-1000000003"
+        assert real_access["subject"]["user_sid"] == f"{synthetic}-1000"
+        text = REAL_ACCESS_PATH.read_text(encoding="utf-8-sig")
+        domains = set(re.findall(r"S-1-5-21-\d+-\d+-\d+", text))
+        assert domains == {synthetic, "S-1-5-21-999888777-666555444-333222111"}

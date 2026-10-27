@@ -122,7 +122,7 @@ if (RENDER_ORIGIN) {
       const response = await fetch(`${RENDER_ORIGIN}${path}`, { method: "GET", redirect: "manual" });
       const text = await response.text();
       expect(
-        response.status === 403 && !text.includes("runtime_mode") && !text.includes("Null Meridian"),
+        response.status === 403 && !text.includes("runtime_mode") && !text.includes("Genesee Press"),
         `${path}: HTTP ${response.status}`,
       );
     }
@@ -150,7 +150,7 @@ await check("homepage loads with the Demo indicator before sign-in", async () =>
   expect(response.status === 200, `HTTP ${response.status}`);
   expect(/Demo environment/i.test(text), "no Demo indicator");
   expect(text.includes("Synthetic enterprise data"), "no synthetic-data label");
-  expect(text.includes("Null Meridian"), "no dataset name");
+  expect(text.includes("Genesee Press"), "no dataset name");
   noSecrets(text, "homepage");
   return `${ms} ms`;
 });
@@ -158,13 +158,13 @@ await check("homepage loads with the Demo indicator before sign-in", async () =>
 // After a page render on purpose: under the earlier Worker-rendered architecture, Next.js
 // replaced the isolate's Request class on its first request, which once broke API requests made
 // after it (adg-cloudflare-demo-01 handoff §10). Kept as an ordering regression check.
-await check("/runtime reports demo / synthetic / null-meridian-v1 and discloses nothing", async () => {
+await check("/runtime reports demo / synthetic / genesee-press-v1 and discloses nothing", async () => {
   const { response, text, ms } = await request("/runtime");
   expect(response.status === 200, `HTTP ${response.status}`);
   const body = JSON.parse(text);
   expect(body.runtime_mode === "demo", `runtime_mode ${body.runtime_mode}`);
   expect(body.data_source === "synthetic", `data_source ${body.data_source}`);
-  expect(body.dataset?.key === "null-meridian-v1", `dataset ${body.dataset?.key}`);
+  expect(body.dataset?.key === "genesee-press-v1", `dataset ${body.dataset?.key}`);
   expect(response.headers.get("x-adg-runtime-mode") === "demo", "no X-ADG-Runtime-Mode: demo");
   noSecrets(text, "/runtime");
   return `${ms} ms`;
@@ -255,7 +255,7 @@ await check("remediation execution does not exist", async () => {
 });
 
 let scenarios = [];
-await check("/api/v1/demo: Null Meridian, three generations applied, scenarios A–H", async () => {
+await check("/api/v1/demo: Genesee Press, three generations applied, scenarios A–H", async () => {
   const { response, text } = await request("/api/v1/demo", { headers: { Authorization: `Bearer ${apiToken}` } });
   expect(response.status === 200, `HTTP ${response.status}`);
   const body = JSON.parse(text);
@@ -302,9 +302,9 @@ async function page(path, mustContain) {
 
 const q = (params) => new URLSearchParams(params).toString();
 
-await check("/demo guide lists scenarios A–H", () => page("/demo", ["Demo guide", "Null Meridian", "A six-level chain", "A safe first clean-up"]));
+await check("/demo guide lists scenarios A–H", () => page("/demo", ["Demo guide", "Genesee Press", "A six-level chain", "A safe first clean-up"]));
 await check("scenario A share loads (directory page)", () =>
-  page(`/resources/directory?${q({ key: scenario("A").resource })}`, ["sg-share-design-write"]));
+  page(`/resources/directory?${q({ key: scenario("A").resource })}`, ["sec-share-design-write"]));
 await check("representative principal loads (scenario F person)", () => {
   const person = scenario("F").subjects.find((s) => s.kind === "person");
   return page(`/identities/principal?${q({ key: person.sid })}`, [person.name]);
