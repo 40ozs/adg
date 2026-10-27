@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 
 import type { PrincipalDetail, PrincipalSummary } from "@/lib/contracts";
+import { Sid } from "@/components/Facts";
 import {
   isAmbiguous,
   isUnresolved,
@@ -21,7 +22,9 @@ type AnyPrincipal = PrincipalSummary | PrincipalDetail;
  * The SID is not printed under the name. It stays behind it — the link opens the principal
  * by its key and carries that key as its `title`, and the principal's Identity information
  * shows SID and key in full — and a table that needs it on screen gives it a column of its
- * own (`Identifier`).
+ * own (`Identifier`). One exception: a principal nothing has resolved (`isUnresolved`) shown
+ * under a last known name. That name is a hint an ACE carried, not an identity; the SID is
+ * the identity, so it stays on screen above the warning (ADG-DEMO-01), on one line like any SID.
  *
  * Two "Administrators" rows in one table are the normal case in a Windows estate, not an
  * error: `fs01|S-1-5-32-544` and `fs02|S-1-5-32-544` are two different groups on two
@@ -47,6 +50,7 @@ export function PrincipalName({
   const notes = principalNotes(principal);
   // An undescribed trustee can have no name but its SID, held to one line and keeping its end.
   const labelClass = label === principal.sid ? "identifier sid" : undefined;
+  const unresolved = isUnresolved(principal);
 
   return (
     <span className="principal">
@@ -68,8 +72,9 @@ export function PrincipalName({
           <span className="principal-qualifier"> ({qualifier})</span>
         )}
       </span>
+      {unresolved && label !== principal.sid && <Sid value={principal.sid} />}
       {notes.length > 0 && (
-        <span className={isUnresolved(principal) ? "principal-notes status-warn" : "principal-notes"}>
+        <span className={unresolved ? "principal-notes status-warn" : "principal-notes"}>
           {notes.join(" · ")}
         </span>
       )}

@@ -598,6 +598,12 @@ tr:focus-within .identifier {
   overflow-wrap: anywhere;
 }
 
+/* An unresolved principal's SID under its last known name: its own short line (Identity.tsx). */
+.principal > .identifier {
+  display: block;
+  font-size: 0.78rem;
+}
+
 .principal-notes,
 .principal-kind {
   display: block;
