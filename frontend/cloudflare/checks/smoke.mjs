@@ -307,7 +307,7 @@ await check("scenario A share loads (directory page)", () =>
   page(`/resources/directory?${q({ key: scenario("A").resource })}`, ["sec-share-design-write"]));
 await check("representative principal loads (scenario F person)", () => {
   const person = scenario("F").subjects.find((s) => s.kind === "person");
-  return page(`/identities/principal?${q({ key: person.sid })}`, [person.name]);
+  return page(`/identities/principal/${encodeURIComponent(person.sid)}`, [person.name]);
 });
 await check("scenario F access explanation loads", () => {
   const person = scenario("F").subjects.find((s) => s.kind === "person");
