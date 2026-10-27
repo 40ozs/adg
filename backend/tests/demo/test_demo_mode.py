@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -301,13 +302,17 @@ class TestNoProductionCodePath:
             "import app.demo_mode.__main__, app.demo.null_meridian.dataset\n"
             "print('imported')\n"
         )
+        # Inherit the environment: a replaced one drops what the interpreter itself needs to
+        # start (e.g. setup-python's LD_LIBRARY_PATH for a shared libpython).
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(BACKEND)
         completed = subprocess.run(
             [sys.executable, "-c", program],
             cwd=BACKEND,
             capture_output=True,
             text=True,
             check=False,
-            env={"PATH": "", "PYTHONPATH": str(BACKEND)},
+            env=env,
         )
         assert completed.returncode == 0, completed.stderr[-2000:]
         assert "imported" in completed.stdout
