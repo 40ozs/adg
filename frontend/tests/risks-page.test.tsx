@@ -18,6 +18,7 @@
  */
 
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApiResult } from "@/lib/api/client";
@@ -57,6 +58,7 @@ vi.mock("@/lib/api/adg", () => ({
 }));
 
 import * as adg from "@/lib/api/adg";
+import { FindingTable } from "@/components/Risks";
 import { currentViewer } from "@/lib/auth/current";
 import RisksPage from "@/app/risks/page";
 import { completeRiskSummary, riskSummary } from "./coverage-factories";
@@ -336,6 +338,40 @@ describe("the findings table", () => {
     // Without the trail, opening the drawer on page three would silently return the reader
     // to page one and the row they clicked would be off screen.
     expect(link.getAttribute("href")).toContain("trail=abc");
+  });
+});
+
+describe("sorting the findings table", () => {
+  // Chosen so that an alphabetical sort gives a different order from the rank.
+  const ROWS = [
+    finding({ key: "1".repeat(64), title: "One", severity: "medium", confidence: "possible" }),
+    finding({ key: "2".repeat(64), title: "Two", severity: "informational", confidence: "confirmed" }),
+    finding({ key: "3".repeat(64), title: "Three", severity: "critical", confidence: "probable" }),
+  ];
+  const titles = () =>
+    screen
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[1].textContent?.replace(/everyone_has_access$/, ""));
+
+  it("orders severity and confidence by rank, not alphabetically", async () => {
+    const user = userEvent.setup();
+    render(<FindingTable findings={ROWS} drawerHref={() => "/risks"} openKey={null} />);
+
+    await user.click(screen.getByRole("button", { name: /^Severity/ }));
+    expect(titles()).toEqual(["Three", "One", "Two"]); // critical, medium, informational
+    expect(screen.getByRole("columnheader", { name: /^Severity/ })).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(screen.getByRole("button", { name: /^Confidence/ }));
+    expect(titles()).toEqual(["Two", "Three", "One"]); // confirmed, probable, possible
+    await user.click(screen.getByRole("button", { name: /^Confidence/ }));
+    expect(titles()).toEqual(["One", "Three", "Two"]);
+    expect(screen.getByRole("columnheader", { name: /^Confidence/ })).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("says sorting orders this page, not the estate", () => {
+    render(<FindingTable findings={ROWS} drawerHref={() => "/risks"} openKey={null} />);
+    expect(screen.getByText(/Sorting orders the rows on this page\./)).toBeInTheDocument();
   });
 });
 
