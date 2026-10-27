@@ -1,0 +1,27 @@
+{
+ "at": "2026-10-27T05:51:46.161Z",
+ "login": 200,
+ "signed_in": true,
+ "api_status": 200,
+ "ms": 592,
+ "basis_current": true,
+ "evaluated_basis": "0d1cc4aa0f1f5f3d86932cdd85c7a0e1",
+ "reading": "incomplete",
+ "reasons": [
+  "Collection is incomplete: 98 of 100 collection scopes collected completely · 1 unavailable · 1 partial · 1 holding older evidence. Findings for scopes that were not read completely can be missing, and findings held for a scope whose latest scan failed date from its last successful scan."
+ ],
+ "stale_reason_in_api": false,
+ "page_status": 200,
+ "page_bytes": 208852,
+ "stale_reason_in_page": false,
+ "collection_incomplete_line_in_page": true,
+ "evaluation_id": "ac1ebb47-50d7-40bf-8d55-976b9ef462f8",
+ "total": 9386,
+ "severity_counts": {
+  "informational": 6995,
+  "low": 423,
+  "medium": 1957,
+  "high": 8,
+  "critical": 3
+ }
+}

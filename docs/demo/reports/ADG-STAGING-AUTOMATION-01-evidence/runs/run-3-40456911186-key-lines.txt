@@ -1,0 +1,62 @@
+Deployment code gates	Set up job	2026-10-27T05:43:17.1649100Z Image: ubuntu-26.04
+Deployment code gates	Run npx vitest run tests/cloudflare tests/render	2026-10-27T05:43:35.8468911Z ^[[2m Test Files ^[[22m ^[[1m^[[32m3 passed^[[39m^[[22m^[[90m (3)^[[39m
+Deployment code gates	Run npx vitest run tests/cloudflare tests/render	2026-10-27T05:43:35.8470490Z ^[[2m      Tests ^[[22m ^[[1m^[[32m89 passed^[[39m^[[22m^[[90m (89)^[[39m
+Preflight (configuration, fail closed)	Set up job	2026-10-27T05:43:16.9690602Z Image: ubuntu-26.04
+Preflight (configuration, fail closed)	Required configuration is present (names only, never values)	2026-10-27T05:43:19.3547455Z database name: demo-scoped
+Deploy origin (Render: Next.js + API)	Set up job	2026-10-27T05:43:43.0008982Z Image: ubuntu-26.04
+Deploy origin (Render: Next.js + API)	Deploy this commit to the Render service and wait until it is live	2026-10-27T05:43:43.8592104Z Render deploy dep-dbg3k3t9fdbs73cm2v40 of f730d9922f2f
+Deploy origin (Render: Next.js + API)	Deploy this commit to the Render service and wait until it is live	2026-10-27T05:46:16.6781637Z Render deploy dep-dbg3k3t9fdbs73cm2v40: live
+Deploy Worker (Workers Free, static files + proxy)	Set up job	2026-10-27T05:46:22.3172614Z Image: ubuntu-26.04
+Deploy Worker (Workers Free, static files + proxy)	Deploy	2026-10-27T05:48:25.3963296Z Current Version ID: d2ca8cfe-d5f9-44c7-b7e9-a4550e4a952d
+Hosted checks (verify, smoke, browser)	Set up job	2026-10-27T05:48:32.8055224Z Image: ubuntu-24.04
+Hosted checks (verify, smoke, browser)	Read-only verify of the hosted demo database	2026-10-27T05:49:16.2159337Z verify ok: True fingerprint: 228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0
+Hosted checks (verify, smoke, browser)	Read-only verify of the hosted demo database	2026-10-27T05:49:24.0209076Z null meridian fingerprint: db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0 match: True
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:25.3664445Z PASS  an anonymous visitor reads no ADG data from the API — 5 routes → 401
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:26.2494434Z PASS  development sign-in offers only viewer, planner; every other account is refused — admin, auditor, reviewer, governance, approver → 404
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:28.2102789Z PASS  the Render origin refuses a request that did not come through the Worker — 12 requests → 403 without the origin key or with a guessed one; only /health/live open
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:29.3780866Z PASS  homepage loads with the Demo indicator before sign-in — 1168 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:29.4854314Z PASS  /runtime reports demo / synthetic / null-meridian-v1 and discloses nothing — 107 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:29.6216728Z PASS  /health/ready is ready in demo mode without connection detail — postgresql 12.408 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:29.7289099Z PASS  /version reports demo — ADG 0.1.0
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:30.6477539Z PASS  runtime mode cannot be switched remotely — POST/PUT/PATCH/DELETE → 405; query and header ignored
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:30.8126052Z PASS  external collector ingestion is refused (anonymous) — 403 demo_only
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:31.1467056Z PASS  development sign-in through the API (planner) — planner: remediation_planner
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:31.8736014Z PASS  external collector ingestion is refused (planner) — 3 ingestion routes → 403 demo_only
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:33.0051869Z PASS  the public account cannot approve, export, alert or run governance (planner) — 8 privileged writes → 403
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:33.3678920Z PASS  remediation execution does not exist — no execution route (404/405)
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:33.7003064Z PASS  /api/v1/demo: Null Meridian, three generations applied, scenarios A–H — 3 generations applied, next none
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:34.2749233Z PASS  web sign-in sets a session — session cookie set
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:34.5780946Z PASS  web tier forwards no write to ingestion — 405
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:35.5435314Z PASS  /demo guide lists scenarios A–H — 965 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:36.6686844Z PASS  scenario A share loads (directory page) — 1124 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:37.2736637Z PASS  representative principal loads (scenario F person) — 604 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:39.3703231Z PASS  scenario F access explanation loads — 2094 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:40.4824706Z PASS  scenario G nested path loads — 1109 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:42.7782709Z PASS  risk UI loads — 2294 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:43.1837609Z PASS  simulation UI loads — 405 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:43.1840256Z   "passed": 23,
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:49:43.1840728Z   "failed": 0,
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:05.2724043Z PASS  signed out: header pill reads Demo environment · Synthetic enterprise data · Null Meridian — DEMO ENVIRONMENT Synthetic enterprise data · Null Meridian
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:05.3127162Z PASS  explanation: synthetic data, no production AD/file servers, the application is real
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:05.3149444Z PASS  the indicator offers no control (no button, input or select)
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:05.3224136Z PASS  explanation lists the dataset's facts and links /demo
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:05.3243923Z PASS  footer: organization and data fictional
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:06.5843375Z PASS  development sign-in offers only viewer, planner; signs in as planner — offered planner, viewer
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:07.9727337Z PASS  /demo guide renders scenarios A–H; three generations applied — 8 scenarios
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:10.4168590Z PASS  scenario A folder opens the real directory page (Design share ACL)
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:11.9410767Z PASS  scenario B folder renders Null Meridian's ACL on the directory page
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:13.4381233Z PASS  a principal page loads (scenario B's person)
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:15.6957077Z PASS  scenario F explanation: the transferred employee against Finance\Reports\Revenue, both routes
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:18.2875712Z PASS  scenario G explanation: the six-level nested chain
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:20.5787627Z PASS  risk page renders the full pass (3 / 8 / 1957 / 423 / 6995)
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:31.0603063Z PASS  scenario H through the real simulation editor: changes nobody's access
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:41.5266750Z PASS  normal navigation: every primary section loads — 11 sections
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:42.3934243Z PASS  status page: backend reachable, demo
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:42.6762075Z PASS  no production operation: web tier POST /api/adg/api/v1/scan-runs → 405
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:43.3823863Z PASS  no production operation: API POST /api/v1/scan-runs as planner → 403 demo_only
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:43.5215246Z PASS  /runtime → demo / synthetic / null-meridian-v1, no connection detail
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:43.6394853Z PASS  X-ADG-Runtime-Mode: demo on responses
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:45.1047068Z PASS  sign out
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:45.1048170Z PASS  no fatal browser errors — 1 console errors
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:45.1331518Z   "passed": 22,
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:50:45.1332001Z   "failed": 0,

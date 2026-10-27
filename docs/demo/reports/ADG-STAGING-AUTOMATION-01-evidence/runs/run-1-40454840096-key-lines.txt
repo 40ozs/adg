@@ -1,0 +1,8 @@
+Preflight (configuration, fail closed)	Set up job	2026-10-27T05:21:24.3094505Z Image: ubuntu-26.04
+Preflight (configuration, fail closed)	Required configuration is present (names only, never values)	2026-10-27T05:21:27.1722124Z database name: demo-scoped
+Deployment code gates	Set up job	2026-10-27T05:21:22.8168885Z Image: ubuntu-26.04
+Deployment code gates	Run npx vitest run tests/cloudflare tests/render	2026-10-27T05:21:36.3046843Z ^[[2m Test Files ^[[22m ^[[1m^[[32m3 passed^[[39m^[[22m^[[90m (3)^[[39m
+Deployment code gates	Run npx vitest run tests/cloudflare tests/render	2026-10-27T05:21:36.3047769Z ^[[2m      Tests ^[[22m ^[[1m^[[32m89 passed^[[39m^[[22m^[[90m (89)^[[39m
+Deploy origin (Render: Next.js + API)	Set up job	2026-10-27T05:21:41.6570075Z Image: ubuntu-26.04
+Deploy origin (Render: Next.js + API)	Deploy this commit to the Render service and wait until it is live	2026-10-27T05:21:42.5795601Z Render deploy dep-dbg39pgm7kps73b97460 of 77d5f0d5218c
+Deploy origin (Render: Next.js + API)	Deploy this commit to the Render service and wait until it is live	2026-10-27T05:24:15.4946419Z Render deploy dep-dbg39pgm7kps73b97460: live

@@ -1,0 +1,999 @@
+{
+  "label": "SA01 positive control",
+  "control": true,
+  "base": "https://adg-demo-staging.d-walkes.workers.dev",
+  "rounds": 1,
+  "reloadsPerRoute": 1,
+  "started": "2026-10-27T05:52:04.727Z",
+  "finished": "2026-10-27T05:56:07.474Z",
+  "total": {
+    "records": 80,
+    "with418": 62,
+    "events418": 62,
+    "withHydrationFamily": 0,
+    "withOtherErrors": 0,
+    "failedSteps": 0
+  },
+  "phases": {
+    "fresh": {
+      "records": 17,
+      "with418": 17,
+      "events418": 17,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "reload": {
+      "records": 34,
+      "with418": 34,
+      "events418": 34,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "nav": {
+      "records": 19,
+      "with418": 1,
+      "events418": 1,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "keys": {
+      "records": 3,
+      "with418": 3,
+      "events418": 3,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    },
+    "phone": {
+      "records": 7,
+      "with418": 7,
+      "events418": 7,
+      "withHydrationFamily": 0,
+      "withOtherErrors": 0,
+      "failedSteps": 0
+    }
+  },
+  "fullDocumentLoads": 62,
+  "clientTransitions": 18,
+  "phoneOverflow": [],
+  "occurrences418": [
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "home",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 831,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "demo guide",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 449,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1613,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 603,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1339,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "risks",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1210,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "collectors",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "complete",
+          "at": 1977,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "comparison drill: timed out",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 4406,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "comparison: incomplete",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "complete",
+          "at": 6568,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "comparison: folder permission entries",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "complete",
+          "at": 7601,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "identities",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 240,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal: Fatima Gordon",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "complete",
+          "at": 476,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "principal: unresolved SID",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 524,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "status",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 190,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "changes",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 373,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "search",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 694,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "fresh",
+      "route": "resources",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 416,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "home",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 295,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "home",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 372,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "demo guide",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 310,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "demo guide",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 665,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 2742,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1908,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 746,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "investigation: SYSTEM over \\\\NM-FS-01\\Shared",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-18&resource=%5C%5CNM-FS-01%5CShared",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 640,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 883,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "access explanation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 878,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "risks",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 2623,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "risks",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 868,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "collectors",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 712,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "collectors",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/collectors",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1052,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison drill: timed out",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 3013,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison drill: timed out",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 2677,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: incomplete",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 4639,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: incomplete",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 6165,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: folder permission entries",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 7386,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "comparison: folder permission entries",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "loading",
+          "at": 7456,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "identities",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 374,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "identities",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 203,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: Fatima Gordon",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 417,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: Fatima Gordon",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1323",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 526,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 403,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "principal: unresolved SID",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 378,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "status",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 292,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "status",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/status",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 192,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "changes",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 158,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "changes",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 292,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "search",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 292,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "search",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/search?q=Apollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 489,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "resources",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 396,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "reload",
+      "route": "resources",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/resources",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 304,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "nav",
+      "route": "demo guide (start)",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 414,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "keys",
+      "route": "investigation: hop evidence",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1305,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "keys",
+      "route": "risks: incomplete scopes",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 780,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "keys",
+      "route": "comparison: Diagnostics",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 3874,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "demo guide",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/demo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 1342,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "investigation: Fatima Gordon -> Apollo",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG-FS01%5CEngineering%5CProjects%5CApollo",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 2243,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "risks",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/risks",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 956,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "comparison drill: timed out",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&time_budget_ms=1",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 2368,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "comparison: incomplete",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "complete",
+          "at": 5027,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "comparison: folder permission entries",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/changes/compare?from=2026-09-03T06%3A00%3A00Z&to=2026-10-01T06%3A00%3A00Z&kind=ntfs_ace",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 4450,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "phase": "phone",
+      "route": "principal: unresolved SID",
+      "url": "https://adg-demo-staging.d-walkes.workers.dev/identities/principal?key=S-1-5-21-3949361974-1583827165-633756269-1108",
+      "first": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\nError: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at r4 (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:37790)\n    at iy (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4bd1b696-e199e788e58acf79.js:1:89170)\n    at sE (https://adg-demo-staging.d-walkes.workers.dev/_next/static/chunks/4b",
+      "react": [
+        {
+          "kind": "reportError",
+          "readyState": "interactive",
+          "at": 501,
+          "text": "Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+        }
+      ]
+    }
+  ],
+  "otherErrors": [],
+  "failedSteps": [],
+  "knownErrors": [
+    "Failed to load resource: the server responded with a status of 404 () @ https://adg-demo-staging.d-walkes.workers.dev/favicon.ico"
+  ]
+}

@@ -1,0 +1,40 @@
+Deployment code gates	Set up job	2026-10-27T05:27:48.9539768Z Image: ubuntu-26.04
+Deployment code gates	Run npx vitest run tests/cloudflare tests/render	2026-10-27T05:28:09.8530319Z ^[[2m Test Files ^[[22m ^[[1m^[[32m3 passed^[[39m^[[22m^[[90m (3)^[[39m
+Deployment code gates	Run npx vitest run tests/cloudflare tests/render	2026-10-27T05:28:09.8531282Z ^[[2m      Tests ^[[22m ^[[1m^[[32m89 passed^[[39m^[[22m^[[90m (89)^[[39m
+Preflight (configuration, fail closed)	Set up job	2026-10-27T05:27:49.4713771Z Image: ubuntu-26.04
+Preflight (configuration, fail closed)	Required configuration is present (names only, never values)	2026-10-27T05:27:51.6654174Z database name: demo-scoped
+Deploy origin (Render: Next.js + API)	Set up job	2026-10-27T05:28:16.0938561Z Image: ubuntu-26.04
+Deploy origin (Render: Next.js + API)	Deploy this commit to the Render service and wait until it is live	2026-10-27T05:28:17.1960859Z Render deploy dep-dbg3cs0m7kps73b9fjkg of 898f59f0a8be
+Deploy origin (Render: Next.js + API)	Deploy this commit to the Render service and wait until it is live	2026-10-27T05:30:50.0805503Z Render deploy dep-dbg3cs0m7kps73b9fjkg: live
+Deploy Worker (Workers Free, static files + proxy)	Set up job	2026-10-27T05:30:56.0615593Z Image: ubuntu-26.04
+Deploy Worker (Workers Free, static files + proxy)	Deploy	2026-10-27T05:32:54.5739167Z Current Version ID: 61095174-b69e-4dc3-9a5f-8beefa9648f4
+Hosted checks (verify, smoke, browser)	Set up job	2026-10-27T05:33:01.9825846Z Image: ubuntu-26.04
+Hosted checks (verify, smoke, browser)	Read-only verify of the hosted demo database	2026-10-27T05:33:47.1460346Z verify ok: True fingerprint: 228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0
+Hosted checks (verify, smoke, browser)	Read-only verify of the hosted demo database	2026-10-27T05:33:52.3103111Z null meridian fingerprint: db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0 match: True
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:53.2363188Z PASS  an anonymous visitor reads no ADG data from the API — 5 routes → 401
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:53.7468941Z PASS  development sign-in offers only viewer, planner; every other account is refused — admin, auditor, reviewer, governance, approver → 404
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:54.3749447Z PASS  the Render origin refuses a request that did not come through the Worker — 12 requests → 403 without the origin key or with a guessed one; only /health/live open
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:55.6072835Z PASS  homepage loads with the Demo indicator before sign-in — 1232 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:55.6571997Z PASS  /runtime reports demo / synthetic / null-meridian-v1 and discloses nothing — 50 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:55.7848791Z PASS  /health/ready is ready in demo mode without connection detail — postgresql 50.523 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:55.8570549Z PASS  /version reports demo — ADG 0.1.0
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:56.4099880Z PASS  runtime mode cannot be switched remotely — POST/PUT/PATCH/DELETE → 405; query and header ignored
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:56.5577962Z PASS  external collector ingestion is refused (anonymous) — 403 demo_only
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:56.6488944Z PASS  development sign-in through the API (planner) — planner: remediation_planner
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:56.9259078Z PASS  external collector ingestion is refused (planner) — 3 ingestion routes → 403 demo_only
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:57.6445964Z PASS  the public account cannot approve, export, alert or run governance (planner) — 8 privileged writes → 403
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:57.8714679Z PASS  remediation execution does not exist — no execution route (404/405)
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:58.0251357Z PASS  /api/v1/demo: Null Meridian, three generations applied, scenarios A–H — 3 generations applied, next none
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:58.4142773Z PASS  web sign-in sets a session — session cookie set
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:58.6146911Z PASS  web tier forwards no write to ingestion — 405
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:33:59.8056242Z PASS  /demo guide lists scenarios A–H — 1190 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:00.7205271Z PASS  scenario A share loads (directory page) — 914 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:01.4170782Z PASS  representative principal loads (scenario F person) — 696 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:03.3276538Z PASS  scenario F access explanation loads — 1908 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:04.5304271Z PASS  scenario G nested path loads — 1200 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:06.6199276Z PASS  risk UI loads — 2088 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:07.0190921Z PASS  simulation UI loads — 399 ms
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:07.0193459Z   "passed": 23,
+Hosted checks (verify, smoke, browser)	HTTP smoke	2026-10-27T05:34:07.0194958Z   "failed": 0,
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:34:09.9000613Z Cannot install dependencies for ubuntu26.04-x64 with Playwright 1.56.1!
+Hosted checks (verify, smoke, browser)	Browser gate (headless Chromium)	2026-10-27T05:34:09.9064285Z Error: ERROR: Playwright does not support chromium on ubuntu26.04-x64

@@ -1,0 +1,50 @@
+{
+ "service": "adg-demo-web",
+ "id": "srv-db6jbmlg1s2s739i4fsg",
+ "branch": "deploy/ADG-HOSTED-NEXT16-01",
+ "autoDeploy": "no",
+ "suspended": "not_suspended",
+ "url": "https://adg-demo-web.onrender.com",
+ "deploys": [
+  {
+   "id": "dep-dbg3k3t9fdbs73cm2v40",
+   "status": "live",
+   "commit": "f730d9922f2f76583d0c55eea9afa917293f870a",
+   "trigger": "api",
+   "createdAt": "2026-10-27T05:43:43.76609Z",
+   "finishedAt": "2026-10-27T05:46:14.740336Z"
+  },
+  {
+   "id": "dep-dbg3cs0m7kps73b9fjkg",
+   "status": "deactivated",
+   "commit": "898f59f0a8be01654f24e82ef8a6da588ca9e962",
+   "trigger": "api",
+   "createdAt": "2026-10-27T05:28:17.048921Z",
+   "finishedAt": "2026-10-27T05:30:48.585795Z"
+  },
+  {
+   "id": "dep-dbg39pgm7kps73b97460",
+   "status": "deactivated",
+   "commit": "77d5f0d5218c51ecdcbfd8d34c08d158d1229681",
+   "trigger": "api",
+   "createdAt": "2026-10-27T05:21:42.483306Z",
+   "finishedAt": "2026-10-27T05:24:14.888282Z"
+  },
+  {
+   "id": "dep-dbg12pgm7kps73b2oop0",
+   "status": "deactivated",
+   "commit": "c57146d636ad04f186b836ec12e8f8722c23e27f",
+   "trigger": "api",
+   "createdAt": "2026-10-27T02:50:14.53538Z",
+   "finishedAt": "2026-10-27T02:53:23.487264Z"
+  },
+  {
+   "id": "dep-db8qhucs728c73anb3n0",
+   "status": "deactivated",
+   "commit": "53b81a670f03ff69f6a7545dab103c844265d624",
+   "trigger": "api",
+   "createdAt": "2026-10-16T04:32:57.418506Z",
+   "finishedAt": "2026-10-16T04:35:57.954924Z"
+  }
+ ]
+}
