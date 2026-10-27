@@ -22,8 +22,10 @@ the catalogues the shared world was reconciled from (ADR-0003): 521 groups, 206 
 the groups ADG's file estate was designed around. Those are the groups whose projection record
 carries an ADG ``legacy_name``; the demo loads them, every employee, and the memberships among
 them. The other 315 groups (and the 20 nestings that join them to ADG's standard share groups)
-are canonical too, and are left for the cross-application lane to bring in, because loading
-them changes every count this demo pins (SYNTH-ADG-01 report, D-ADG-02).
+are canonical too, and stay out: an application consumes the subset of the shared world it
+needs. One is added only when a concrete cross-application scenario needs ADG to see it, with
+its effect on memberships, routes, findings, fingerprints and parity measured (SYNTH-ADG-01
+report, D-ADG-02).
 
 ## Determinism
 

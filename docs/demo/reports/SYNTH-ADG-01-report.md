@@ -45,8 +45,8 @@ All suites are green:
 - ADG backend: 6,025 unit tests and 1,298 database tests (§10);
 - ADG frontend: 1,510 tests, lint, typecheck and build.
 
-One shared-world question is deliberately left to the cross-application lane:
-ADG loads its own 206-group catalogue, not all 521 canonical directory groups (§6, D-ADG-02).
+ADG consumes its own 206-group subset of the 521 canonical directory groups, as the
+shared-universe contract permits (§6, D-ADG-02).
 
 No `BLOCKED_BY_CANONICAL_CONTRACT_CONFLICT`: nothing in `contract/`, `universe/`, the shared
 generator, ID rules, scenarios or another application's projection was changed.
@@ -185,9 +185,14 @@ ADG's demo loads:
 Loading the other 315 groups and 9,154 memberships (the 20 nestings included) would add access routes to ADG's standard
 share groups. That would change every pinned count (findings, routes, comparison sizes). ADR-0003
 already expects ADG's migration to be "mostly a domain change". Bringing ADG's estate to the
-full canonical directory is therefore a **cross-application decision for the integration
-lane**, not something this lane does silently. The projection itself covers the full
-directory (`complete_kinds` includes `group`), so that lane needs no projection change.
+full canonical directory is therefore not done. The owner confirmed this after the lane (§15):
+the shared-universe contract permits application-specific subsets, and ADG is not expanded
+for numerical consistency across applications. An additional canonical group is added to
+ADG's estate only when a concrete cross-application scenario requires ADG to see it, and its
+effect on the membership graph, access routes, finding counts, reset fingerprints, golden
+outputs and the parity guarantees (§15) is measured and documented. The projection already
+carries the full directory (`complete_kinds` includes `group`), so such a change needs only
+ADG's selection rule in `canon._catalogue_groups`, not a projection change.
 
 ## 7. Genesee Press values
 
@@ -325,13 +330,15 @@ and an owner decision.
 
 **Work for Prompt 10** (making `adg-demo` the deployment source):
 
-1. Merge `feature/SYNTH-ADG-01` into ADG `main` after cross-app integration. If the
-   integration lane re-vendors a newer snapshot, run `scripts/vendor-synthetic-enterprise.py`
-   and regenerate the manifest; the tests show any drift.
+1. Leave `feature/SYNTH-ADG-01` merge-ready. Merging it into ADG `main` needs the owner's
+   separate authorization; this list is not that authorization. If the integration lane
+   re-pins a newer snapshot, run `scripts/vendor-synthetic-enterprise.py` and regenerate the
+   manifest; the tests show any drift.
 2. Set the hosted `ADG_DEMO_DATASET` to `genesee-press-v1` (or unset it). This is a Render
    service variable, if one is set there. `null-meridian-v1` is no longer registered and the
    API refuses to start with it.
-3. Deploy with `workflow_dispatch` `bootstrap: true`: the hosted database's marker says
+3. At cutover only (no deployment during cross-app integration), deploy with
+   `workflow_dispatch` `bootstrap: true`: the hosted database's marker says
    `null-meridian-v1`, so `verify` refuses it until it has been reset.
    Expected values:
    - Demo Mode fingerprint `4667d3cf…9b270f08`;
@@ -339,20 +346,91 @@ and an owner decision.
    - 23/23 probes;
    - 9,386 findings.
 4. Re-capture the hosted browser evidence and screenshots, which carry the former names.
-5. Create the `adg-demo` release export from the ADG source SHA plus the pinned
-   synthetic-enterprise SHA (from the lock). Point the workflow, Render and the Worker at it,
-   and retire the deploy branch.
+5. Create the `adg-demo` release from a **sanitized, approved tree export** of the ADG source
+   SHA plus the pinned synthetic-enterprise SHA (from the lock). It must not mirror ADG's Git
+   history, which still holds the raw U-02 capture (§11). Point the workflow, Render and the
+   Worker at `adg-demo`, and retire the deploy branch.
 
 ## 14. Limitations
 
-- **D-ADG-02:** ADG shows 206 of the 521 canonical directory groups (§6). This is open for the
-  integration lane.
+- **D-ADG-02:** ADG shows 206 of the 521 canonical directory groups (§6). This is an accepted
+  application subset, not an open item; it changes only for a concrete scenario (§15).
 - **D-ADG-01:** the draw seed and labels keep their v1 spellings. A spelling-free
   re-key is a new dataset with new counts.
 - **Shared-file conflicts:** `snapshots/standard-baseline/manifest.json` and two lines of
-  `tests/test_reconciled_universe.py` are also touched by the other lanes. The integration lane
-  should resolve them by rebuilding the baseline with the snapshot CLI (deterministic), not
-  by a hand merge. ADG's lock must then be re-vendored to the integrated commit.
+  `tests/test_reconciled_universe.py` are also touched by the other lanes. They are resolved by
+  the integration procedure in §15, never by `ours`/`theirs` choices on generated files.
 - **Not re-captured:** hosted evidence and screenshots (no deployment in this lane).
 - **Untouched history:** historical ADG reports and handoffs keep their Null Meridian names.
-- **Not deleted:** the U-02 raw capture remains in Git history.
+- **Not deleted:** the U-02 raw capture remains in Git history, so `adg-demo` must be a
+  sanitized export, not a mirror (§13).
+
+## 15. Owner integration guidance (recorded after the lane)
+
+Recorded on 2026-10-27, after the owner accepted the verdict. The lane's code is unchanged;
+these rules bind the cross-application and cutover lanes.
+
+**Final lane SHAs** (the heads when the verdict was given; this amendment adds one
+documentation-only commit on top of each):
+
+| Repository | `feature/SYNTH-ADG-01` |
+|---|---|
+| `40ozs/synthetic-enterprise` | `e062771e9456728fa27da79fadb0fa7741f4fa07` (code `71055a7`, baseline `6f016d8`) |
+| `40ozs/adg` | `77014becbeedf5467ef4a16c542be92413641411` (code `5e7debb`, `28abcff`) |
+
+**Projection scope.** ADG consumes 206 of the 521 canonical directory groups; the other 315
+come from OGWA and are not required. ADG is not expanded to all canonical groups for
+numerical consistency across applications. A group is added only when a concrete
+cross-application scenario requires ADG to see it, and then its effect on the membership
+graph, access routes, finding counts, reset fingerprints, golden outputs and the regression
+gates below is measured and documented. A broad count change is not accepted without the
+scenario requirement that explains it.
+
+**Integrating the synthetic-enterprise branches.** Generated baseline artefacts are not
+hand-merged:
+
+1. integrate the four application-specific projection implementations;
+2. resolve source-level test expectations intentionally (for ADG: the two lines in
+   `tests/test_reconciled_universe.py`, and `tests/test_adg_projection.py`);
+3. regenerate `snapshots/standard-baseline` with the snapshot CLI from the integrated source
+   state (DEVELOPMENT.md, *The shared world*);
+4. verify the resulting manifest (`verify snapshots/standard-baseline`);
+5. re-pin each application's projection (for ADG: `scripts/vendor-synthetic-enterprise.py`
+   from a clean checkout of the integrated commit, then regenerate
+   `docs/demo/genesee-press.manifest.json`);
+6. run the complete cross-app validation suite.
+
+Generated output is derived from the integrated source, never assembled from `ours`/`theirs`
+conflict choices.
+
+**ADG regression gates** (each held at the end of this lane, §8):
+
+| Gate | Value |
+|---|---|
+| Employees | 2,440, all preserved |
+| ADG group membership graph | equal to ADG v1 after renames on every day 2016-10-01 to 2026-10-01; 206 groups, 192 nestings, 4,273 edges on the snapshot |
+| Collector transcripts | 300 transcripts, 41,756 observations, equal after renames |
+| Open findings | 9,386 |
+| Probes | 23/23 |
+| Comparison drill | 221 differences (`timed_out → incomplete → complete`) |
+| Apollo investigation | unchanged (Modify `at_least`, same routes and open questions) |
+| Reset fingerprints | deterministic across resets: Demo Mode `4667d3cf…9b270f08`, logical `b4b93b65…e59445d0` while the pinned projection is unchanged |
+
+The canon, transcript and reset-diff tools in ADG's `SYNTH-ADG-01-evidence/tools/` re-check
+them.
+
+**Legacy draw internals.** The file estate's draw seed and labels keep their v1 spellings
+(D-ADG-01). They are not demo-visible and are not changed for naming consistency. If one ever
+becomes externally visible, that specific leak is fixed and its parity impact documented.
+
+**Machine-captured fixture.** The active fixture uses a synthetic machine identifier, and a
+regression test refuses any other. The raw capture is still in ADG's Git history, so the
+`adg-demo` release is produced from a sanitized, approved tree export and never mirrors ADG's
+history.
+
+**Deployment.** ADG still deploys from `deploy/ADG-HOSTED-NEXT16-01` in its source
+repository. Nothing is deployed during cross-app integration. Final cutover moves the
+deployment source to `adg-demo`.
+
+**Merges.** None is authorized. The cross-app and cutover lanes leave source branches
+merge-ready unless the owner separately authorizes a merge.

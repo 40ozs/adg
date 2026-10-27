@@ -440,9 +440,11 @@ the tests show what changed.
 **ADG's demo estate is ADG's directory catalogue.** The canonical directory holds 521 groups:
 the 206 ADG's file estate was designed around (those whose projection record carries an ADG
 `legacy_name`) and 315 more from the catalogue the world was reconciled with. The demo loads
-every employee, the 206 groups and the memberships among them. Loading the other 315, and the
-20 nestings that join them to the standard share groups, changes every count this document
-pins; that is left to the cross-application lane ([SYNTH-ADG-01 §D-ADG-02](reports/SYNTH-ADG-01-report.md)).
+every employee, the 206 groups and the memberships among them. The other 315 stay out: the
+shared world permits application-specific subsets, and loading them (with the 20 nestings that
+join them to the standard share groups) would change every count this document pins. A group
+is added only when a concrete cross-application scenario needs ADG to see it, with the effect
+measured and documented ([SYNTH-ADG-01 §6, §15](reports/SYNTH-ADG-01-report.md)).
 
 ADG v1's own values survive only in the projection's `legacy_*` and `prior_*` fields and as
 draw keys. ADG no longer exports an identity canon for other applications
