@@ -1,0 +1,128 @@
+{
+ "base": "https://adg-demo-staging.d-walkes.workers.dev",
+ "at": "2026-10-27T17:42:53.501Z",
+ "expected": {
+  "users": 1885,
+  "groups": 238,
+  "groupsDomain": 205
+ },
+ "passed": 23,
+ "total": 23,
+ "results": [
+  {
+   "name": "sign in as viewer",
+   "ok": true,
+   "detail": "200"
+  },
+  {
+   "name": "Users: renders with the exact total",
+   "ok": true,
+   "detail": "Page 1. 1885 users in total, up to 50 per page."
+  },
+  {
+   "name": "Users: Next is a client-side page 2",
+   "ok": true,
+   "detail": "Page 2. 1885 users in total, up to 50 per page."
+  },
+  {
+   "name": "Users: Previous returns to page 1 without a reload",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "Users: name prefix search (client-side)",
+   "ok": true,
+   "detail": "Page 1. 13 users in total, up to 50 per page."
+  },
+  {
+   "name": "Users: SID prefix search",
+   "ok": true,
+   "detail": "Page 1. 32 users in total, up to 50 per page."
+  },
+  {
+   "name": "Users: DOMAIN\\name search",
+   "ok": true,
+   "detail": "NULLMERIDIAN\\brossi — Page 1. 1 users in total, up to 50 per page."
+  },
+  {
+   "name": "Users: the name links to the canonical storage-key route",
+   "ok": true,
+   "detail": "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133"
+  },
+  {
+   "name": "Groups: exact total before filtering",
+   "ok": true,
+   "detail": "Page 1. 238 groups in total, up to 50 per page."
+  },
+  {
+   "name": "Groups: Exclude local groups is off by default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "Groups: turning it on is a client-side navigation",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "Groups: the URL records the state, and the page resets to 1",
+   "ok": true,
+   "detail": "?q=&exclude_local=1"
+  },
+  {
+   "name": "Groups: local groups are gone (exact filtered total, no local kind on the page)",
+   "ok": true,
+   "detail": "Page 1. 205 groups in total, up to 50 per page."
+  },
+  {
+   "name": "Groups: Domain Local groups remain with the filter on",
+   "ok": true,
+   "detail": "global, domain local"
+  },
+  {
+   "name": "Groups: the search term survives (URL and box)",
+   "ok": true,
+   "detail": "Page 1. 41 groups in total, up to 50 per page. → Page 1. 8 groups in total, up to 50 per page."
+  },
+  {
+   "name": "Groups: Back restores the unfiltered state (URL, checkbox, total)",
+   "ok": true,
+   "detail": "Page 1. 41 groups in total, up to 50 per page."
+  },
+  {
+   "name": "Groups: Forward restores the filtered state",
+   "ok": true,
+   "detail": "Page 1. 8 groups in total, up to 50 per page."
+  },
+  {
+   "name": "Groups: client-side sorting on the filtered page",
+   "ok": true,
+   "detail": "ascending: 1,1,1,1,2,2,2,14"
+  },
+  {
+   "name": "Groups: the whole sequence made no full document reload",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "390 px: no horizontal page overflow on 7 surfaces",
+   "ok": true,
+   "detail": "{\"/identities/users\":0,\"/identities/groups?exclude_local=1\":0,\"/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133\":0,\"/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1133/effective-groups\":0,\"/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1108\":0,\"/risks\":0,\"/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-1323&resource=%5C%5CNM-ENG"
+  },
+  {
+   "name": "390 px: DOMAIN\\name stays on one line",
+   "ok": true,
+   "detail": "{\"ws\":\"nowrap\",\"rects\":1}"
+  },
+  {
+   "name": "390 px: the unresolved identity still exposes its SID",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no application console or page errors",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

@@ -1,0 +1,18 @@
+--- /Volumes/T5 EVO/mmm/adg/docs/demo/reports/ADG-NEXT16-POST-DEMO-INTEGRATION-01-evidence/demo-01-ui.script.js	2026-10-27 09:14:51
++++ /Volumes/T5 EVO/mmm/adg-run-logs/PROMOTE-01/harness/demo-01.js	2026-10-27 10:26:38
+@@ -15,13 +15,13 @@
+ const UNRESOLVED = "S-1-5-21-3949361974-1583827165-633756269-1108";
+ 
+ (async () => {
+-  const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
++  const browser = await chromium.launch({ executablePath: "~/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing" });
+   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+   const page = await context.newPage();
+   const consoleErrors = [];
+   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(`${m.text()} @ ${m.location().url}`); });
+   page.on("pageerror", (e) => consoleErrors.push(String(e)));
+-  const login = await page.request.post(`${BASE}/api/auth/dev-login`, { data: { username: "auditor" } });
++  const login = await page.request.post(`${BASE}/api/auth/dev-login`, { data: { username: process.env.ADG_SIGN_IN_AS || "auditor" } });
+   check("sign in as the development auditor", login.ok(), login.status());
+ 
+   // SYSTEM over a share: the mapping is ambiguous, and the answer is not a conclusive negative.

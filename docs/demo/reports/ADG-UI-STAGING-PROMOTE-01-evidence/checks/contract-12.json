@@ -1,0 +1,186 @@
+{
+ "base": "https://adg-demo-staging.d-walkes.workers.dev",
+ "at": "2026-10-27T17:36:08.172Z",
+ "passed": 24,
+ "total": 24,
+ "results": [
+  {
+   "name": "API sign-in as planner",
+   "ok": true,
+   "detail": "HTTP 200"
+  },
+  {
+   "name": "explain: HTTP 200",
+   "ok": true,
+   "detail": "200"
+  },
+  {
+   "name": "explain: schema_version 1.2",
+   "ok": true,
+   "detail": "1.2"
+  },
+  {
+   "name": "explain: ETag carries contract 1.2",
+   "ok": true,
+   "detail": "\"1.2-0d1cc4aa0f1f5f3d86932cdd85c7a0e1-1816ae276af5ed2e100c9558133097fd\""
+  },
+  {
+   "name": "explain: every token entry has path_principals keyed exactly as path, in order",
+   "ok": true,
+   "detail": "35 entries, 0 mismatched"
+  },
+  {
+   "name": "explain: no unresolved hop carries an invented display name",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "name": "explain: multi-hop chains render as names",
+   "ok": true,
+   "detail": "Fatima Gordon → ENG-Mobile → Engineering-Frontend | Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering | Fatima Gordon → ENG-Mobile → Engineering-Frontend → sg-share-product-read-only"
+  },
+  {
+   "name": "resource principals: HTTP 200",
+   "ok": true,
+   "detail": "200"
+  },
+  {
+   "name": "access paths page: schema_version 1.2",
+   "ok": true,
+   "detail": "200 1.2"
+  },
+  {
+   "name": "resource principals: every via entry has path_principals keyed exactly as path",
+   "ok": true,
+   "detail": "294 via entries, 0 mismatched"
+  },
+  {
+   "name": "effective groups (Bianca): every item has path_principals keyed exactly as path",
+   "ok": true,
+   "detail": "HTTP 200, 29 items, 0 mismatched"
+  },
+  {
+   "name": "effective groups (Bianca): the longest chain is six levels of names",
+   "ok": true,
+   "detail": "Bianca Rossi → Sales-Enterprise → GG_Sales → All Staff → AD-Okta-Sync-All → OKTA_Slack_All → sg-okta-slack-user"
+  },
+  {
+   "name": "directory: groups total 238",
+   "ok": true,
+   "detail": "238/238"
+  },
+  {
+   "name": "directory: exclude_local total 205",
+   "ok": true,
+   "detail": "205/205"
+  },
+  {
+   "name": "exclude_local: 33 removed, every one kind local_group",
+   "ok": true,
+   "detail": "{\"local_group\":33}"
+  },
+  {
+   "name": "exclude_local: no local_group remains",
+   "ok": true,
+   "detail": "{\"domain_group\":205}"
+  },
+  {
+   "name": "exclude_local: every AD Domain Local group stays",
+   "ok": true,
+   "detail": "domain-local before 58, after 58; scopes after {\"global\":147,\"domain_local\":58}"
+  },
+  {
+   "name": "exclude_local: kept set ⊂ full set",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "search: name prefix finds Fatima Gordon",
+   "ok": true,
+   "detail": "9"
+  },
+  {
+   "name": "search: SID prefix finds Fatima",
+   "ok": true,
+   "detail": "8"
+  },
+  {
+   "name": "search: DOMAIN\\name finds Fatima",
+   "ok": true,
+   "detail": "NULLMERIDIAN\\fgordon"
+  },
+  {
+   "name": "cache: a 1.1 validator revalidates to 200 with the 1.2 body",
+   "ok": true,
+   "detail": "200 \"1.2-0d1cc4aa0f1f5f3d86932cdd85c7a0e1-1816ae276af5ed2e100c9558133097fd\""
+  },
+  {
+   "name": "cache: the 1.2 validator then answers 304",
+   "ok": true,
+   "detail": "304"
+  },
+  {
+   "name": "cache: and stays 304 (no repeated invalidation)",
+   "ok": true,
+   "detail": "304"
+  }
+ ],
+ "evidence": {
+  "explain_chains": [
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → sg-share-product-read-only",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → Engineering-FS",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → APP-GitHub-Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → APP-Jira-Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → Shared_Drive_Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → Engineering-FS → Share_Engineering_Modify",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → FS-Legacy-Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → GG_IT_Software_R",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → GG_App_Workday",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → APP-Confluence-Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → Remote-Workers-2020",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → APP-GitHub-Users → Okta_GitHub_Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → APP-Jira-Users → Okta-Jira-Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → Engineering-FS → sg-share-engineering-write",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All → OKTA_Slack_All",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All → okta-zoom-users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → GG_App_Workday → Okta_Workday_Users",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All → sg-okta-google-workspace-user",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → APP-GitHub-Users → Okta_GitHub_Users → sg-okta-github-developer",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → APP-Confluence-Users → sg-okta-confluence-user",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → APP-Jira-Users → Okta-Jira-Users → sg-okta-jira-user",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All → sg-okta-1password-user",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All → OKTA_Slack_All → sg-okta-slack-user",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → AD-Okta-Sync-All → okta-zoom-users → sg-okta-zoom-user",
+   "Fatima Gordon → ENG-Mobile → Engineering-Frontend → Engineering → All Staff → GG_App_Workday → Okta_Workday_Users → sg-okta-workday-user"
+  ],
+  "impact_example": [
+   "Nina Coleman → Managers → Eng-Leads",
+   "Nicholas Lee → Managers → Eng-Leads"
+  ],
+  "bianca_longest": [
+   "Bianca Rossi",
+   "Sales-Enterprise",
+   "GG_Sales",
+   "All Staff",
+   "AD-Okta-Sync-All",
+   "OKTA_Slack_All",
+   "sg-okta-slack-user"
+  ],
+  "directory": {
+   "users": 1885,
+   "groups": 238,
+   "groups_exclude_local": 205,
+   "removed_kinds": {
+    "local_group": 33
+   },
+   "kept_scopes": {
+    "global": 147,
+    "domain_local": 58
+   }
+  }
+ }
+}

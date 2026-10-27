@@ -1,0 +1,6 @@
+{
+  "name": "adg-demo-web",
+  "branch": "deploy/ADG-HOSTED-NEXT16-01",
+  "autoDeploy": "no",
+  "suspended": "not_suspended"
+}

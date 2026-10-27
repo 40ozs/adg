@@ -1,0 +1,151 @@
+{
+  "results": [
+    {
+      "name": "sign in as the development auditor",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "demo guide offers the guided investigation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the card states the question",
+      "ok": true,
+      "detail": "Why does Fatima Gordon have access to \\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo?"
+    },
+    {
+      "name": "the walkthrough has eight steps",
+      "ok": true,
+      "detail": "8"
+    },
+    {
+      "name": "the page heading is the investigation question",
+      "ok": true,
+      "detail": "Why does Fatima Gordon have access to \\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo?"
+    },
+    {
+      "name": "the page says the data is synthetic",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "observed: access present, Modify, at_least",
+      "ok": true,
+      "detail": "1. What ADG evaluated\n\nThe observed answer, before any explanation of it.\n\nPrincipal\nFatima Gordon\nResource\n\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo · share Engineering\nEffective access\nAccess present\nThis principal holds rights on this object.\nEffective rights\nModify\nCertainty\nat_least — A lower b"
+    },
+    {
+      "name": "NTFS route: direct, explicit, removal changes nothing",
+      "ok": true,
+      "detail": "Folder permissions (NTFS ACL)\ndirect entry\nset explicitly on this folder\ngrants modify\n\nACL ENTRY NTFS entry #1 names Fatima Gordon: Allow Modify\n\nFatima Gordon\n\nEvidence for hop 1: Observed by the NTFS collector\n\nENTRY APPLIES TO THE OBJECT NTFS entry #1 applies to this folder, set explicitly\n\nEvidence for hop 2: Observed by the NTFS collector\n\nRemoving it changes nothing: other routes deliver th"
+    },
+    {
+      "name": "share route: through ENG-Mobile",
+      "ok": true,
+      "detail": "Share permissions (SMB share ACL)\nthrough 1 group membership\nset on the share\ngrants modify\n\nGROUP MEMBERSHIP Fatima Gordon is a member of ENG-Mobile\n\nFatima Gordon\n\nEvidence for hop 1: Observed by the Active Directory collector\n\nACL ENTRY Share entry #3 names ENG-Mobile: Allow Modify\n\nENG-Mobile\n\nEvidence for hop 2: Observed by the SMB share collector\n\nENTRY APPLIES TO THE OBJECT Share entry #3 a"
+    },
+    {
+      "name": "Tab reaches the first hop's evidence disclosure",
+      "ok": true,
+      "detail": "{\"i\":4,\"text\":\"Evidence for hop 1: Observed by the NTFS collector\"}"
+    },
+    {
+      "name": "Enter opens the disclosure",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the evidence names the collector and scans",
+      "ok": true,
+      "detail": "Evidence for hop 1: Observed by the NTFS collector\n\nA collector reported this relationship; its provenance is below.\n\nCollector\nNTFS collector (System.IO.DirectoryInfo.GetAccessControl)\nFirst observed\n2026-09-03 03:12 UTC run d2df0d45-5261-5806-8a31-c48f84d9a808\nLast observed\n2026-10-01 03:12 UTC run 96daec88-f1a2-5aa7-b42f-f1c6ba225a03 (succeeded)\nStored as\nNTFS entry row \\\\nm-eng-fs01\\engineerin"
+    },
+    {
+      "name": "Enter closes it again",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the focused disclosure shows a focus outline",
+      "ok": true,
+      "detail": "solid"
+    },
+    {
+      "name": "two missing-evidence items, neither affecting the conclusion",
+      "ok": true,
+      "detail": "3. What ADG could not confirm\n\n? Missing evidence\nNULLMERIDIAN\\lhansen\nS-1-5-21-3949361974-1583827165-633756269-1108\nunresolved (deleted)\n\nAn entry names a group whose membership ADG has never collected, or a SID nothing has identified, so nobody can be ruled out of it.\n\nDoes not affect the conclusion. Does not affect whether access exists. The rights shown are a lower bound: this could only widen them.\n\n? Missing evidence\nProj-Zephyr-RW\n\nAn entry names a group whose membership ADG has never collected, or a SID nothing has identified, so nobody can be ruled out of it.\n\nDoes not affect the conc"
+    },
+    {
+      "name": "the orphaned SID stays visibly unresolved",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Proj-Zephyr-RW is named",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the unresolved note is styled as a warning (and worded)",
+      "ok": true,
+      "detail": "rgb(154, 163, 178)"
+    },
+    {
+      "name": "seven questions answered",
+      "ok": true,
+      "detail": "Is access present? | What is the strongest supported path? | Is that path direct or inherited? | What evidence supports it? | What evidence remains incomplete or ambiguous? | Does the uncertainty affect the final conclusion? | What should an investigator inspect next?"
+    },
+    {
+      "name": "the summary says the uncertainty does not take access away",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "three next steps",
+      "ok": true,
+      "detail": "Identify S-1-5-21-3949361974-1583827165-633756269-1108, last known as NULLMERIDIAN\\lhansen: an ACL here names it and no collector could say what it is. Until it is identified, Fatima Gordon cannot be ruled out of it. If it is an account that no longer exists, the orphaned entry is the clean-up. Inspect the SID | Collect the membership of Proj-Zephyr-RW, or confirm it is empty: ADG has never observed a member of it, so Fatima Gordon cannot be ruled out of it. Inspect the group | Review Fatima Gordon's direct entry on the folder permissions (ntfs acl): removing it was measured to change nothing, because other routes deliver the same rights. It is a candidate for clean-up; simulate the removal before changing the ACL. Open the removal analysis"
+    },
+    {
+      "name": "the SID's page shows it unresolved (ADG-DEMO-01 banner)",
+      "ok": true,
+      "detail": "NULLMERIDIAN\\lhansen unresolved\nPart of the estate is unobserved\n\nA collector's most recent run failed. Part of the estate is unobserved, so an empty result here does not mean an empty result in reality. What is shown may be only part of the picture.\n\nOpen Collectors for the detail.\n\nA run saw this "
+    },
+    {
+      "name": "the removal analysis is the anchor target",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the explanation links back to the investigation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM over a share: not determined, ambiguous, never 'No access'",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "SYSTEM locally: present, confirmed mapping",
+      "ok": true,
+      "detail": "ACCESS INVESTIGATION\n\nWhy does SYSTEM have access to \\\\NM-FS-01\\Shared?\n\nSynthetic scenario. Every identity, group, folder and scan below is generated demo data for a fictional company; no directory, file server or real account is involved.\n\nOne request to GET /api/v1/access/explain, computed by ADG"
+    },
+    {
+      "name": "no horizontal scroll at 390px",
+      "ok": true,
+      "detail": "{\"scroll\":390,\"client\":390}"
+    },
+    {
+      "name": "no console errors from the application",
+      "ok": true,
+      "detail": " || "
+    },
+    {
+      "name": "known, pre-existing: /favicon.ico 404",
+      "ok": true,
+      "detail": "Failed to load resource: the server responded with a status of 404 () @ https://adg-demo-staging.d-walkes.workers.dev/favicon.ico"
+    }
+  ],
+  "passed": 29,
+  "total": 29
+}

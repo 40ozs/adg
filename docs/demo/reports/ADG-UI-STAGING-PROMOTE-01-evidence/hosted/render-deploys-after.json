@@ -1,0 +1,18 @@
+[
+  {
+    "id": "dep-dbgdt1o473hc73d6g82g",
+    "status": "live",
+    "commit": "021562b41b859f0a3f0600824ba0ccf95c3b6b69",
+    "trigger": "api",
+    "createdAt": "2026-10-27T17:25:27.165331Z",
+    "finishedAt": "2026-10-27T17:28:20.627278Z"
+  },
+  {
+    "id": "dep-dbg3k3t9fdbs73cm2v40",
+    "status": "deactivated",
+    "commit": "f730d9922f2f76583d0c55eea9afa917293f870a",
+    "trigger": "api",
+    "createdAt": "2026-10-27T05:43:43.76609Z",
+    "finishedAt": "2026-10-27T05:46:14.740336Z"
+  }
+]

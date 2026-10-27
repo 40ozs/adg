@@ -1,0 +1,29 @@
+--- /Volumes/T5 EVO/mmm/adg/docs/demo/reports/ADG-DEMO-03-evidence/browser-walkthrough.script.js	2026-10-27 09:14:30
++++ /Volumes/T5 EVO/mmm/adg-run-logs/PROMOTE-01/harness/demo-03.js	2026-10-27 10:26:39
+@@ -7,7 +7,7 @@
+ const { chromium } = require("playwright");
+ const fs = require("fs");
+ const OUT = process.argv[2];
+-const BASE = "http://localhost:3000";
++const BASE = process.env.ADG_WEB_URL || "http://localhost:3000";
+ const results = [];
+ const timings = [];
+ function check(name, ok, detail = "") { results.push({ name, ok: !!ok, detail: String(detail).slice(0, 600) }); }
+@@ -30,7 +30,7 @@
+ }
+ 
+ (async () => {
+-  const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
++  const browser = await chromium.launch({ executablePath: "~/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing" });
+   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+   const page = await context.newPage();
+   const consoleErrors = [];
+@@ -39,7 +39,7 @@
+   const failed = [];
+   page.on("response", (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`); });
+ 
+-  const login = await page.request.post(`${BASE}/api/auth/dev-login`, { data: { username: "auditor" } });
++  const login = await page.request.post(`${BASE}/api/auth/dev-login`, { data: { username: process.env.ADG_SIGN_IN_AS || "auditor" } });
+   check("sign in as the development auditor", login.ok(), login.status());
+ 
+   // The guide: the second walkthrough follows the investigation.

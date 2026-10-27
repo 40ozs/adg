@@ -1,0 +1,40 @@
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | ^[[36;1mecho "Render deploy ${deploy_id} of ${GITHUB_SHA::12}"^[[0m
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | ^[[36;1m    live) echo "Render deploy ${deploy_id}: live"; break ;;^[[0m
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | ^[[36;1m    *_failed|canceled|deactivated) echo "::error::Render deploy ${deploy_id}: ${status}"; exit 1 ;;^[[0m
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | ^[[36;1m[ "$status" = live ] || { echo "::error::Render deploy ${deploy_id} still ${status}"; exit 1; }^[[0m
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | ^[[36;1mecho "- Render deploy: \`${deploy_id}\` (${GITHUB_SHA::12}) live" >> "$GITHUB_STEP_SUMMARY"^[[0m
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | Render deploy dep-dbgdt1o473hc73d6g82g of 021562b41b85
+Deploy origin (Render: Next.js + API) | Deploy this commit to the Render service and wait until it is live | Render deploy dep-dbgdt1o473hc73d6g82g: live
+Deploy Worker (Workers Free, static files + proxy) | Deploy | ^[[36;1m  echo "- Worker version: \`$(grep -oE 'Current Version ID: [0-9a-f-]+' "$RUNNER_TEMP/deploy.log" | head -1)\`"^[[0m
+Deploy Worker (Workers Free, static files + proxy) | Deploy | ✨ Success! Uploaded 10 files (57 already uploaded) (2.11 sec)
+Deploy Worker (Workers Free, static files + proxy) | Deploy | Current Version ID: 37bc72e1-ecd1-4fe5-9d9c-14f04fd4dabb
+Hosted checks (verify, smoke, browser) | Read-only verify of the hosted demo database | ^[[36;1mpython3 -c "import json; d=json.load(open('verify.json')); print('verify ok:', d['ok'], 'fingerprint:', d['fingerprint']); assert d['ok']"^[[0m
+Hosted checks (verify, smoke, browser) | Read-only verify of the hosted demo database | ^[[36;1mpython3 -c "import json; d=json.load(open('nm-fingerprint.json')); print('null meridian fingerprint:', d['fingerprint'], 'match:', d['match'])"^[[0m
+Hosted checks (verify, smoke, browser) | Read-only verify of the hosted demo database | verify ok: True fingerprint: 228b9dce9b2a05d1cd9c0f190d0614f5a3a6e43efa95532d3e625c74f8f9efd0
+Hosted checks (verify, smoke, browser) | Read-only verify of the hosted demo database | null meridian fingerprint: db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0 match: True
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  an anonymous visitor reads no ADG data from the API — 5 routes → 401
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  development sign-in offers only viewer, planner; every other account is refused — admin, auditor, reviewer, governance, approver → 404
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  the Render origin refuses a request that did not come through the Worker — 12 requests → 403 without the origin key or with a guessed one; only /health/live open
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  homepage loads with the Demo indicator before sign-in — 1358 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  /runtime reports demo / synthetic / null-meridian-v1 and discloses nothing — 97 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  /health/ready is ready in demo mode without connection detail — postgresql 70.225 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  /version reports demo — ADG 0.1.0
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  runtime mode cannot be switched remotely — POST/PUT/PATCH/DELETE → 405; query and header ignored
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  external collector ingestion is refused (anonymous) — 403 demo_only
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  development sign-in through the API (planner) — planner: remediation_planner
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  external collector ingestion is refused (planner) — 3 ingestion routes → 403 demo_only
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  the public account cannot approve, export, alert or run governance (planner) — 8 privileged writes → 403
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  remediation execution does not exist — no execution route (404/405)
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  /api/v1/demo: Null Meridian, three generations applied, scenarios A–H — 3 generations applied, next none
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  web sign-in sets a session — session cookie set
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  web tier forwards no write to ingestion — 405
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  /demo guide lists scenarios A–H — 918 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  scenario A share loads (directory page) — 899 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | FAIL  representative principal loads (scenario F person) — HTTP 307
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  scenario F access explanation loads — 2108 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  scenario G nested path loads — 2314 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  risk UI loads — 1388 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke | PASS  simulation UI loads — 383 ms
+Hosted checks (verify, smoke, browser) | HTTP smoke |   "passed": 22,
+Hosted checks (verify, smoke, browser) | HTTP smoke |   "failed": 1,
+Hosted checks (verify, smoke, browser) | HTTP smoke | ##[error]Process completed with exit code 1.

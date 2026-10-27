@@ -1,0 +1,6 @@
+Source:      Unknown (deployment)
+Message:     ADG staging 021562b41b85 (deploy/ADG-HOSTED-NEXT16-01)
+Version(s):  (100%) 37bc72e1-ecd1-4fe5-9d9c-14f04fd4dabb
+                 Created:  2026-10-27T17:30:46.452Z
+                     Tag:  021562b41b85
+                 Message:  ADG staging 021562b41b85 (deploy/ADG-HOSTED-NEXT16-01)

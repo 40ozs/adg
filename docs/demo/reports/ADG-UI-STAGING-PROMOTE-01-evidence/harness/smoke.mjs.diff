@@ -1,0 +1,11 @@
+--- /Volumes/T5 EVO/mmm/adg/frontend/cloudflare/checks/smoke.mjs	2026-10-27 09:15:02
++++ /Volumes/T5 EVO/mmm/adg-run-logs/PROMOTE-01/harness/smoke.mjs	2026-10-27 10:33:39
+@@ -307,7 +307,7 @@
+   page(`/resources/directory?${q({ key: scenario("A").resource })}`, ["sg-share-design-write"]));
+ await check("representative principal loads (scenario F person)", () => {
+   const person = scenario("F").subjects.find((s) => s.kind === "person");
+-  return page(`/identities/principal?${q({ key: person.sid })}`, [person.name]);
++  return page(`/identities/principal/${encodeURIComponent(person.sid)}`, [person.name]); // PROMOTE-01: canonical path, was ?key=
+ });
+ await check("scenario F access explanation loads", () => {
+   const person = scenario("F").subjects.find((s) => s.kind === "person");
