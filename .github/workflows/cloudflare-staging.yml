@@ -250,7 +250,7 @@ jobs:
     name: Hosted checks (verify, smoke, browser)
     needs: [deploy]
     if: ${{ always() && needs.deploy.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: cloudflare-staging
     steps:
       - uses: actions/checkout@v4
