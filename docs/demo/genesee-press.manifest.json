@@ -19,13 +19,13 @@
  },
  "source": {
   "repository": "40ozs/synthetic-enterprise",
-  "commit": "6f016d8c0753f79669e4432eb42ab04c2f6cc0c7",
+  "commit": "ce7c0c7d9fbc82c67e596dde95cf5e2432acf450",
   "snapshot": "standard-baseline",
   "contract_version": "0.2.0",
-  "dataset": "synthetic-enterprise-world@2.0.0",
+  "dataset": "synthetic-enterprise-world@2.1.0",
   "projection": "adg@0.3.0",
-  "manifest_sha256": "59430e5e2e6b7badedb5d791d69611b5aed6ede8c21c0bf409a16d0ce2665038",
-  "canonical_digest": "c7b742cb606ee90066209dbd0d8f114afd438e233e0eac9d46de05580c94b8d8",
+  "manifest_sha256": "689d4e62dc8f592703830783fd3f0e6519f2e531098c5e07d126080ba559273f",
+  "canonical_digest": "62248ff7658d5fb374811437279ed00114446a0748273eb5d204111b661c83f0",
   "options": {
    "exclude_org_unit_ids": [
     "ou_M970YB9ACZCZ",

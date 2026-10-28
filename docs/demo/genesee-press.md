@@ -437,10 +437,15 @@ To move to a newer snapshot: check out the commit in a local clone, run
 `python scripts/vendor-synthetic-enterprise.py --source PATH`, regenerate the manifest, and let
 the tests show what changed.
 
-**ADG's demo estate is ADG's directory catalogue.** The canonical directory holds 521 groups:
-the 206 ADG's file estate was designed around (those whose projection record carries an ADG
-`legacy_name`) and 315 more from the catalogue the world was reconciled with. The demo loads
-every employee, the 206 groups and the memberships among them. The other 315 stay out: the
+**ADG's demo estate is ADG's directory catalogue.** The canonical directory holds 509 groups
+(dataset 2.1.0): the 206 ADG's file estate was designed around (those whose projection record
+carries an ADG `legacy_name`) and 303 more from the catalogue the world was reconciled with.
+SYNTH-CROSSAPP-01 merged OGWA's 12 case-only duplicates of ADG team groups (`eng-platform` /
+`ENG-Platform`, ...) into ADG's groups, so the directory went from 521 to 509 groups and the
+206 are unchanged; in the `ogwa` projection those groups now carry ADG's SIDs and objectGUIDs
+too ([SYNTH-CROSSAPP-01](https://github.com/40ozs/synthetic-enterprise/blob/integration/SYNTH-CROSSAPP-01/docs/demo/reports/SYNTH-CROSSAPP-01-report.md)).
+The demo loads every employee, the 206 groups and the memberships among them. The other 303
+stay out: the
 shared world permits application-specific subsets, and loading them (with the 20 nestings that
 join them to the standard share groups) would change every count this document pins. A group
 is added only when a concrete cross-application scenario needs ADG to see it, with the effect

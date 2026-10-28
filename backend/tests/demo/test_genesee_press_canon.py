@@ -428,7 +428,7 @@ class TestTheSharedWorld:
         assert re.fullmatch(r"[0-9a-f]{40}", lock["commit"])
         assert lock["projection"] == "adg@0.3.0"
         assert lock["contract_version"] == "0.2.0"
-        assert lock["dataset"] == "synthetic-enterprise-world@2.0.0"
+        assert lock["dataset"] == "synthetic-enterprise-world@2.1.0"  # SYNTH-CROSSAPP-01
         vendor.verify()
 
     def test_an_edited_projection_file_is_refused(
@@ -459,7 +459,9 @@ class TestTheSharedWorld:
 
     def test_the_estate_is_adgs_directory_catalogue(self, canon: Canon) -> None:
         groups = vendor.records("groups.jsonl")
-        assert len(groups) == 521
+        # 521 -> 509 at dataset 2.1.0: OGWA's 12 case-only duplicates of ADG groups are those
+        # groups (SYNTH-CROSSAPP-01, D-XA-01); ADG's catalogue below is unchanged.
+        assert len(groups) == 509
         assert len(canon.groups) == sum(1 for g in groups if g["legacy_name"]) == 206
         assert len(canon.employees) == len(vendor.records("employees.jsonl")) == 2440
         assert len(canon.nesting) == 192

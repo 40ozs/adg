@@ -1,5 +1,5 @@
 {
-  "canonical_digest": "c7b742cb606ee90066209dbd0d8f114afd438e233e0eac9d46de05580c94b8d8",
+  "canonical_digest": "62248ff7658d5fb374811437279ed00114446a0748273eb5d204111b661c83f0",
   "clock": {
     "anchor": "2026-10-01T00:00:00Z",
     "as_of": "2026-10-01T12:00:00Z",
@@ -12,7 +12,7 @@
     "entity:account": 4840,
     "entity:application": 111,
     "entity:environment": 4,
-    "entity:group": 618,
+    "entity:group": 606,
     "entity:host": 34,
     "entity:identity_system": 6,
     "entity:org_unit": 93,
@@ -22,7 +22,7 @@
     "event:employment": 3190,
     "relationship:access_assignment": 247,
     "relationship:deployment": 28,
-    "relationship:group_membership": 23466,
+    "relationship:group_membership": 23083,
     "relationship:group_sync": 251,
     "relationship:ownership": 437,
     "relationship:reports_to": 1846,
@@ -30,7 +30,7 @@
   },
   "dataset": {
     "id": "synthetic-enterprise-world",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "files": {
     "canonical/entities/account.jsonl": {
@@ -46,8 +46,8 @@
       "sha256": "39d0301accb28f0c91ee53ca4241af4229758cb1c08a297b51950f739b01d8ba"
     },
     "canonical/entities/group.jsonl": {
-      "bytes": 195403,
-      "sha256": "525c388bd0aeef582ac3ff6fc86239c855b1c335d56dcee2dce428d8b1b1abd4"
+      "bytes": 191910,
+      "sha256": "027c3ee47ce4d2baf3dea749d01dfd14fd19a38e93805fc87da73ac267de9fc8"
     },
     "canonical/entities/host.jsonl": {
       "bytes": 7755,
@@ -86,8 +86,8 @@
       "sha256": "1ca114ebad9f832588c8b23c8f49f75d8e03f580b82b59595209084e06576a54"
     },
     "canonical/relationships/group_membership.jsonl": {
-      "bytes": 4943793,
-      "sha256": "895d781b786878802cf27497c607b612ea104893f434936ec36b09fae03e7916"
+      "bytes": 4863363,
+      "sha256": "69f888b1531e50d54126623de9e32140bce9e99410a1835936d14525fd1e42e4"
     },
     "canonical/relationships/group_sync.jsonl": {
       "bytes": 42700,
@@ -118,16 +118,16 @@
       "sha256": "c085cf6b66e9d107eddf2da779eafedf51d6a526a83fb3ec769d1fa59651b769"
     },
     "projections/adg/groups.jsonl": {
-      "bytes": 275257,
-      "sha256": "d4f9ce83def58c65c53decede72d1a7ca90a37cda4af51776e695bffb4e0c6df"
+      "bytes": 269856,
+      "sha256": "c9ec36d939c74f8036bd8fd7ceb547236ba7bb9818dd092c97ea6f3a9a367d68"
     },
     "projections/adg/hosts.jsonl": {
       "bytes": 8064,
       "sha256": "31116000975dbd9662fc7649b87f86b5a8979dfc977f4375f9847caf956bf161"
     },
     "projections/adg/memberships.jsonl": {
-      "bytes": 3753600,
-      "sha256": "33dd78ce2c5febf7acbcf21f4b091869c61f2a664a23ff22ef3d96e728470658"
+      "bytes": 3654786,
+      "sha256": "a8ec07f768a7055597df808668b40965f91615875036be7ec2865302a742892d"
     },
     "projections/adg/org_units.jsonl": {
       "bytes": 12524,
@@ -139,71 +139,103 @@
     },
     "projections/adg/projection.json": {
       "bytes": 2909,
-      "sha256": "dc2db25f7f247bf7e1af94078980524f23731d8a42ab5a921240c89183149b17"
+      "sha256": "c8d2b6ab14a0f7b39bf00b707082effdeb9523b40e30c61340fc2afeef1cd300"
     },
     "projections/ao/accounts.jsonl": {
-      "bytes": 21223,
-      "sha256": "105811c1227156aefeeb80e2c7a1a57e9a2e232cb412badc7359720220e39f6f"
+      "bytes": 29341,
+      "sha256": "4c12ea4d924d503b3767829ae75626dd98a1bd40ad9b68e464eac13491990411"
     },
     "projections/ao/groups.jsonl": {
-      "bytes": 5738,
-      "sha256": "3a6126bb2f1477a7f832dc28b1901131ea50ba2ec179e55cae433817c71f8388"
+      "bytes": 12032,
+      "sha256": "881abc4ec835c83032bed2dbfbf7c9f5d792ce6b992cc9f66ef7531f4be44042"
     },
     "projections/ao/manages.jsonl": {
-      "bytes": 6302,
-      "sha256": "40c9de371ffcb3f3a13722771a08509f6e5543757846d7dc6c84279a62c7a1a0"
+      "bytes": 10275,
+      "sha256": "9450806c8c2f973793d706798bae82a75500a9107763493ab563e596f37f632a"
     },
     "projections/ao/memberships.jsonl": {
-      "bytes": 33076,
-      "sha256": "0e58de2f6257c1a2003bc361f3ea7b4fd61e01f590d8fafe6554444d367cc2c7"
+      "bytes": 37044,
+      "sha256": "8af9c7dffd3ae2c2d4793250b81c414dc8a2ed1580e3a19c334b667a08340ab9"
+    },
+    "projections/ao/ownership.jsonl": {
+      "bytes": 4433,
+      "sha256": "0e0492a75514f22084cbfc0c4bfb22ce6bc5b1a1672bda8b7550867fbe3218ee"
     },
     "projections/ao/people.jsonl": {
-      "bytes": 11875,
-      "sha256": "ba507a79bda3417a97cdbfe757a0c6a8170c8f19c38eaf9bf864d3853aee9992"
+      "bytes": 18334,
+      "sha256": "1a94867d77b9ce8a0740a75cd538a822e79666ac08b150cd46aed99b0df30e42"
     },
     "projections/ao/projection.json": {
-      "bytes": 3548,
-      "sha256": "ee345bf30f5772543d672fbb47b3f0eeb9b14af2f3c42358416fd5ca8b1b2d04"
+      "bytes": 3948,
+      "sha256": "773801ec4de3bbef42d980e392612ef6d98f5fb382348f8103d9aabfd60f1194"
+    },
+    "projections/ao/systems.jsonl": {
+      "bytes": 829,
+      "sha256": "0526331da71c0a83d5b99267cf72323ab77944f9df6c24c9be239146d363b0ed"
+    },
+    "projections/ao/units.jsonl": {
+      "bytes": 2119,
+      "sha256": "080157e8e73a5ed89238d39cb274dbc225adeea2ecb8c934f9ab30987fd403db"
     },
     "projections/csw/applications.jsonl": {
-      "bytes": 6303,
-      "sha256": "cc850fad995ff01d11370ba9f514db8cb971b05ae4120eccf1b17fb03dd1b216"
+      "bytes": 9278,
+      "sha256": "2a5f7415f9e8721567aa9f29a8db98dbe8ad32e8c4e0a4148d0fa13367b9125a"
+    },
+    "projections/csw/collection_rounds.jsonl": {
+      "bytes": 1414,
+      "sha256": "74c917937356853d42c7f006eb53309bc5ffdcbe7dbd4701e554e7b9d16d49b4"
     },
     "projections/csw/environments.jsonl": {
-      "bytes": 356,
-      "sha256": "00e6d8f1ee4496b96705bc7925f677b69552846143a9021491b45135d1e23848"
+      "bytes": 524,
+      "sha256": "caee1aeea5f6417ad8116a695bc369f737aec209b92898065069c8ae660ea5fe"
+    },
+    "projections/csw/estate.jsonl": {
+      "bytes": 295,
+      "sha256": "2219238100d686a26f52b352453ff0be9c4031b38dc44d37ccaf08b6cd8951c3"
     },
     "projections/csw/owners.jsonl": {
-      "bytes": 1104,
-      "sha256": "249310e133e739a5c87319eeccfaf70859418e0529c552e46130e57615b712dc"
+      "bytes": 1524,
+      "sha256": "a99892daff700eb1cbab443724d402256f771d1df5f0f224ca888ca4fed78083"
     },
     "projections/csw/projection.json": {
-      "bytes": 2876,
-      "sha256": "7191e53b0f23f969231b184eb136c464e14193240cdfbcdcd42efc77736a651e"
+      "bytes": 3151,
+      "sha256": "ef8e75f47b563ce5f1a4957b4ed6daf5ee271c17615c89e48485b3385681321f"
     },
     "projections/ogwa/applications.jsonl": {
-      "bytes": 16127,
-      "sha256": "e469cf1a01bd153ffe0b6858ca9a1f4a915d6680dd404e05d63fc39bbe0110bd"
+      "bytes": 24317,
+      "sha256": "36d6efb96460e687710f22f30718d85868f5fd7d11292bd403ac338fd35cfe9d"
     },
     "projections/ogwa/assignments.jsonl": {
-      "bytes": 59861,
-      "sha256": "11981083744e04aace6cc468ca1c4d6816f0587212780c55a5d0e75c62bc53df"
+      "bytes": 72723,
+      "sha256": "cd00f9ebacf614594676900960fafa6ba7601b6ae1d95b89009948e809c557b8"
+    },
+    "projections/ogwa/employment_events.jsonl": {
+      "bytes": 689716,
+      "sha256": "9f460af515bc5d8a02f0399138c523fe818b25a3df778e6d30574c6a64fa823a"
     },
     "projections/ogwa/groups.jsonl": {
-      "bytes": 225775,
-      "sha256": "d521704668234b13ceefe0bef9daa7796869a42ccf407dff577564b4cde88803"
+      "bytes": 478225,
+      "sha256": "49366407edf859c990c146c1c7f965c97ab763c557090ed6b4571092b8a48688"
     },
     "projections/ogwa/memberships.jsonl": {
-      "bytes": 6037293,
-      "sha256": "ee46e5ac84d055b4c95a1d99bff227999b7a54be233166ac1169829ac0ce07dd"
+      "bytes": 5938479,
+      "sha256": "1732efe403474bf375789dd2d6dc022004646c8ab4cea1f35f8f25b0554f5e6e"
+    },
+    "projections/ogwa/org_units.jsonl": {
+      "bytes": 12670,
+      "sha256": "aa3a01dabfd69d4265a6fcfff3f8fcdedf7616441333b6eb8d8110b3113a737d"
+    },
+    "projections/ogwa/organization.jsonl": {
+      "bytes": 926,
+      "sha256": "a4b60ec94e1bb7fdf5227749a3eaff951559c96dc9d4c141a8b18ebd9bb473d9"
     },
     "projections/ogwa/people.jsonl": {
-      "bytes": 1341222,
-      "sha256": "714130d5feef82ae6332e786f4155ba2746146ee9c4440242f329d73213b3bb2"
+      "bytes": 2036922,
+      "sha256": "d3c06405150be16df32d79129b1529054b3d7cecf31afd7066b04a3aad60d79e"
     },
     "projections/ogwa/projection.json": {
-      "bytes": 2433,
-      "sha256": "e49ea7f7ed15b4575a220d98ac0edb6984e48266600a68fa8b276095010b3307"
+      "bytes": 2853,
+      "sha256": "3f1aebb7281e88f78c271600364218d113f73b62c2e00cb16257b428d846fd26"
     }
   },
   "format": "synthetic-enterprise-snapshot/1",
@@ -214,23 +246,23 @@
   "profile": null,
   "projections": {
     "adg": {
-      "header_sha256": "dc2db25f7f247bf7e1af94078980524f23731d8a42ab5a921240c89183149b17",
+      "header_sha256": "c8d2b6ab14a0f7b39bf00b707082effdeb9523b40e30c61340fc2afeef1cd300",
       "projection_version": "0.3.0",
       "supported_contract": ">=0.2.0,<0.3.0"
     },
     "ao": {
-      "header_sha256": "ee345bf30f5772543d672fbb47b3f0eeb9b14af2f3c42358416fd5ca8b1b2d04",
-      "projection_version": "0.2.0",
+      "header_sha256": "773801ec4de3bbef42d980e392612ef6d98f5fb382348f8103d9aabfd60f1194",
+      "projection_version": "0.3.0",
       "supported_contract": ">=0.2.0,<0.3.0"
     },
     "csw": {
-      "header_sha256": "7191e53b0f23f969231b184eb136c464e14193240cdfbcdcd42efc77736a651e",
-      "projection_version": "0.2.0",
+      "header_sha256": "ef8e75f47b563ce5f1a4957b4ed6daf5ee271c17615c89e48485b3385681321f",
+      "projection_version": "0.3.0",
       "supported_contract": ">=0.2.0,<0.3.0"
     },
     "ogwa": {
-      "header_sha256": "e49ea7f7ed15b4575a220d98ac0edb6984e48266600a68fa8b276095010b3307",
-      "projection_version": "0.2.0",
+      "header_sha256": "3f1aebb7281e88f78c271600364218d113f73b62c2e00cb16257b428d846fd26",
+      "projection_version": "0.3.1",
       "supported_contract": ">=0.2.0,<0.3.0"
     }
   },
@@ -252,7 +284,7 @@
   ],
   "seed": "baseline-v1",
   "source": {
-    "commit": "71055a72001ce814547683029cd06ecd6462a3ae",
+    "commit": "ee77411fb8667e3b2d7ba5ad098f84fa9c35d574",
     "repository": "40ozs/synthetic-enterprise"
   },
   "synthetic": true

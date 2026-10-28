@@ -18,10 +18,11 @@ group kept beside it. SIDs and objectGUIDs are the directory's opaque identifier
 from the projection unchanged.
 
 **ADG's demo estate is ADG's directory catalogue.** The canonical directory is the union of
-the catalogues the shared world was reconciled from (ADR-0003): 521 groups, 206 of which are
+the catalogues the shared world was reconciled from (ADR-0003): 509 groups (dataset 2.1.0;
+521 before SYNTH-CROSSAPP-01 merged 12 case-only duplicates into ADG's groups), 206 of which are
 the groups ADG's file estate was designed around. Those are the groups whose projection record
 carries an ADG ``legacy_name``; the demo loads them, every employee, and the memberships among
-them. The other 315 groups (and the 20 nestings that join them to ADG's standard share groups)
+them. The other 303 groups (and the 20 nestings that join them to ADG's standard share groups)
 are canonical too, and stay out: an application consumes the subset of the shared world it
 needs. One is added only when a concrete cross-application scenario needs ADG to see it, with
 its effect on memberships, routes, findings, fingerprints and parity measured (SYNTH-ADG-01
