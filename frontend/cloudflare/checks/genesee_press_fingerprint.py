@@ -1,18 +1,19 @@
-"""Null Meridian's logical fingerprint, for comparing a hosted demo database with the canon.
+"""Genesee Press's logical fingerprint, for comparing a hosted demo database with the canon.
 
 Verification only, never imported by ADG. ``fingerprint()``, ``_digest_rows`` and the two
-constants are copied verbatim from Null Meridian's own reset at commit ``4512524``
-(``backend/app/demo/null_meridian/reset.py``), exactly as the integration handoff
+constants are copied verbatim from the dataset's own reset at commit ``4512524`` (then
+``backend/app/demo/null_meridian/reset.py``), exactly as the integration handoff
 (docs/handoffs/adg-demo-integration-01.md §5) ran them from a scratch copy. Demo Mode's
 canonical fingerprint (``python -m app.demo_mode verify``) is the product's check; this one
-answers a different question -- is the *dataset* in this database byte-for-byte Null
-Meridian's -- independently of the database's own metadata.
+answers a different question -- is the *dataset* in this database byte-for-byte Genesee
+Press's -- independently of the database's own metadata. ``EXPECTED`` was re-pinned by
+SYNTH-ADG-01 from a local reset of the vendored synthetic-enterprise projection.
 
-Expected: db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0
+Expected: b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0
 
 Run inside the API image, against the demo database (reads only)::
 
-    docker run --rm -i -e ADG_DATABASE_URL=... <image> python - < null_meridian_fingerprint.py
+    docker run --rm -i -e ADG_DATABASE_URL=... <image> python - < genesee_press_fingerprint.py
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ import sqlalchemy as sa
 
 from app.models.schema import metadata
 
-EXPECTED = "db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0"
+EXPECTED = "b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0"
 
 #: Columns whose values come from the clock or a random id at ingestion time rather than
 #: from the canon. The fingerprint leaves them out; everything else must match exactly.

@@ -1,15 +1,20 @@
-# Null Meridian — the Demo Mode estate
+# Genesee Press — the Demo Mode estate
 
-**Status:** implemented · **Seed:** `null-meridian-v1` · **Snapshot:** 2026-10-01 ·
-**Code:** `backend/app/demo/null_meridian/` · **Machine-readable:**
-[`null-meridian.manifest.json`](null-meridian.manifest.json) (summary, digests, scenarios),
-[`null-meridian.canon.json`](null-meridian.canon.json) (every employee, group and membership)
+**Status:** implemented · **Dataset:** `genesee-press-v1` · **Snapshot:** 2026-10-01 ·
+**Code:** `backend/app/demo/genesee_press/` · **Source:** the `adg` projection of
+[`40ozs/synthetic-enterprise`](https://github.com/40ozs/synthetic-enterprise), vendored in
+[`backend/vendor/synthetic-enterprise/`](../../backend/vendor/synthetic-enterprise/) and pinned
+by its `SYNTHETIC_ENTERPRISE.lock` · **Machine-readable:**
+[`genesee-press.manifest.json`](genesee-press.manifest.json) (summary, provenance, digests,
+scenarios) · **Migration:** [SYNTH-ADG-01](reports/SYNTH-ADG-01-report.md) (formerly
+*Null Meridian*, `null-meridian-v1`)
 
-> **Synthetic.** Null Meridian is a fictional company. Every name, mailbox, account name, SID,
-> GUID, host name, share and path in this document and in the files beside it was generated
-> from the seed. None is copied from, or describes, a real person, organization or system.
+> **Synthetic.** Genesee Press is a fictional company. Every name, mailbox, account name, SID,
+> GUID, host name, share and path in this document and in the files beside it comes from the
+> shared synthetic world or from ADG's own seeded file estate. None is copied from, or
+> describes, a real person, organization or system. Domains are reserved `.example` names.
 
-Null Meridian is a ten-year-old, 1,800-person company whose directory and file servers grew
+Genesee Press is a ten-year-old, 1,800-person company whose directory and file servers grew
 the way real ones do: four generations of group-naming conventions, an Okta rollout that added
 groups beside the AD ones instead of replacing them, a 2023 standard that new work follows and
 old work mostly does not, and enough organic access debt to make governance worth doing. ADG's
@@ -17,27 +22,28 @@ Demo Mode serves it through the real application — the real ingestion endpoint
 model, current-state rules, access engine, risk engine, search, simulation and UI — with no
 directory, file server, collector or credential anywhere near it.
 
-The same canon is the company OGWA's demo describes. Where both applications name an
-employee, department, security group, group creation date or mailbox, the identifiers are the
-ones in `null-meridian.canon.json`.
+Genesee Press is the one organization of the shared synthetic world: OGWA's demo describes the
+same core company, and AO's and CSW's describe its Distribution Division and Digital Estate.
+ADG reads its directory from the vendored projection (§8) and builds only its file estate
+itself.
 
 ---
 
 ## 1. Running it
 
-Null Meridian is the canonical dataset of ADG's **Demo Mode**
+Genesee Press is the canonical dataset of ADG's **Demo Mode**
 ([docs/architecture/demo-mode.md](../architecture/demo-mode.md)) and its default. Demo Mode
 is the runtime, safety, persistence and operation boundary; this package is the data. It
 generates the estate and nothing else — the reset, the database guard, the synthetic scan
-and the status commands are Demo Mode's, and they load Null Meridian through
-`app.demo.null_meridian.synthetic_dataset()`.
+and the status commands are Demo Mode's, and they load Genesee Press through
+`app.demo.genesee_press.synthetic_dataset()`.
 
 A demo is a deployment property, chosen when the process starts:
 
 ```
 ADG_RUNTIME_MODE=demo                                               # production | demo
 ADG_DATABASE_URL=postgresql+psycopg://adg:…@localhost:5432/adg_demo  # 'demo' as a word
-# ADG_DEMO_DATASET unset (or null-meridian-v1): Null Meridian
+# ADG_DEMO_DATASET unset (or genesee-press-v1): Genesee Press
 ```
 
 and the one operation that puts the database into the canonical state:
@@ -56,12 +62,12 @@ reset:
    row in any ADG table — a database with data that was never marked is refused even when its
    name says `demo`, and one marked for production is refused;
 2. runs `alembic upgrade heads` — the production schema, unchanged;
-3. writes the marker (`dataset_key` and `dataset_seed` both `null-meridian-v1`), then, in the
+3. writes the marker (`dataset_key` and `dataset_seed` both `genesee-press-v1`), then, in the
    transaction that locks and re-checks it, empties the ADG tables **of that database only**;
 4. posts the three scan generations, one at a time, through `POST /api/v1/scan-runs`,
    `…/batches` and `…/completion`, in-process, with the same validation, idempotency and
    reconciliation a Windows collector gets;
-5. evaluates the risk rules under Null Meridian's configuration, dated 2026-10-01T06:00Z (the
+5. evaluates the risk rules under Genesee Press's configuration, dated 2026-10-01T06:00Z (the
    pass after the snapshot scan);
 6. checks 23 canonical objects (scenarios A–H and the partial/failed scan promises) in
    current state;
@@ -77,12 +83,13 @@ python -m app.demo_mode scan                    # g2, 2026-09-17, and its risk p
 python -m app.demo_mode scan                    # g3, 2026-10-01 — the canonical state again
 ```
 
-Developer utilities, all pure (no configuration, no database):
+Developer utilities (no configuration, no database; all but the re-vendor are pure):
 
 ```
-python -m app.demo.null_meridian stats                       # counts and distributions
-python -m app.demo.null_meridian manifest --out M.json --canon-out C.json
-python -m app.demo.null_meridian transcripts --out DIR        # all 300 collector transcripts
+python -m app.demo.genesee_press stats                       # counts and distributions
+python -m app.demo.genesee_press manifest --out M.json        # the committed manifest
+python ../scripts/vendor-synthetic-enterprise.py --source PATH  # re-vendor (a deliberate change)
+python -m app.demo.genesee_press transcripts --out DIR        # all 300 collector transcripts
 ```
 
 ### What a demo refuses
@@ -101,18 +108,18 @@ not start if any of these hold (the full table is in the Demo Mode architecture,
 No request can name or change the mode (asserted against the published OpenAPI document); the
 mode is *reported*, read-only, by `GET /runtime`. Every response from a demo deployment carries
 `X-ADG-Runtime-Mode: demo`, and the web shell shows a **Demo environment · Synthetic enterprise
-data · Null Meridian** indicator before anybody signs in, linking to the demo guide (`/demo`),
+data · Genesee Press** indicator before anybody signs in, linking to the demo guide (`/demo`),
 where scenarios A–H link into the real pages. In Demo Mode there is **no** Active Directory or
 LDAP connection, no SMB connection, no Windows credential, no PowerShell collector, no
 production PostgreSQL and no file-system enumeration: the backend never had any of the first
 five (collectors push to it), the reset's only subprocess is the migration, and the DB test
 runs a full reset with Python's socket connect refused.
 
-When `ADG_RISK_CONFIGURATION_PATH` is unset, Demo Mode uses Null Meridian's own risk
-configuration (`app/demo/null_meridian/risk.py`): eleven folders declared sensitive (Finance,
+When `ADG_RISK_CONFIGURATION_PATH` is unset, Demo Mode uses Genesee Press's own risk
+configuration (`app/demo/genesee_press/risk.py`): eleven folders declared sensitive (Finance,
 Payroll, People, Legal, Executive, Board, security incidents, sales commissions…), and one
 threshold moved — `redundant_access_paths.minimum_paths` from 2 to 4. Every migrated share
-carries its legacy group *and* its `sg-share-*` replacement on purpose until migration ends,
+carries its legacy group *and* its `sec-share-*` replacement on purpose until migration ends,
 so two routes is the expected state of most of the estate; at the shipped threshold the rule
 reports ~175,000 informational findings and buries everything else.
 
@@ -122,14 +129,15 @@ reports ~175,000 informational findings and buries everything else.
 
 | Fact | Value |
 | --- | --- |
-| Company | Null Meridian |
-| DNS / UPN domain | `nullmeridian.info` |
-| NetBIOS | `NULLMERIDIAN` |
-| Domain SID | `S-1-5-21-3949361974-1583827165-633756269` (from the seed) |
+| Company | Genesee Press |
+| Mail / UPN domain | `geneseepress.example` |
+| Directory (AD DNS) domain | `corp.geneseepress.example` (`DC=corp,DC=geneseepress,DC=example`) |
+| NetBIOS | `GPCORP` |
+| Domain SID | `S-1-5-21-3949361974-1583827165-633756269` (an opaque synthetic directory identifier, unchanged from ADG v1) |
 | Founded | 2016-10-01 |
 | Snapshot | 2026-10-01 (ten years) |
 | Okta adopted | 2021-10-01 |
-| `sg-*` naming standard | 2023-10-01 |
+| `sec-*` naming standard | 2023-10-01 |
 | Active employees | **exactly 1,800** |
 | Former employees | 640 (85 disabled accounts on the snapshot, 555 deleted) |
 | Leaver policy | disabled at termination, deleted 180 days later |
@@ -157,21 +165,27 @@ reports ~175,000 informational findings and buries everything else.
 Levels: 10 executives (CEO Nina Coleman and nine C-level officers), 13 department heads,
 16 directors, 200 managers, 1,561 individual contributors. Every active employee but the CEO
 has an active manager. 57 active employees transferred between departments; 15 people
-arrived together with the acquisition of Lumen Analytics on 2021-04-01. Hires span the whole
+arrived together with the acquisition of Brindlewood Analytics on 2021-04-01 (formerly *Lumen
+Analytics*). Hires span the whole
 decade — 90 people have more than eight years' tenure, 118 joined in the last 90 days.
 
 ### Identifiers
 
-All derived, none stored; the manifest's `algorithms` block states each precisely.
+Read from the vendored projection, never derived here; the manifest's `source` block names
+the snapshot.
 
-- **Mail = UPN:** `given.family@nullmeridian.info`; the *n*-th holder of a local part (in
-  employee-number order) gets suffix *n* — `maria.lopez2@…`.
+- **Mail = UPN:** `given.family@geneseepress.example`; the *n*-th holder of a local part (in
+  employee-number order) has suffix *n* — `maria.lopez2@…`.
 - **sAMAccountName:** first initial + family name, ≤ 18 characters, numbered the same way.
-- **Employee id:** `NM-00001` … in hire order.
-- **RIDs** follow creation order across accounts and groups, the way a DC allocates them, from
-  1103 (Domain Admins 512, Domain Users 513).
-- **UUIDs:** `uuid5(uuid5(NAMESPACE_DNS, "nullmeridian.info"), "<kind>:<key>")`.
-- **Draws:** `sha256("null-meridian-v1|<label>|<n>")[:8]` — no `random`, no clock.
+- **Employee id:** `GP-00001` … in hire order (ADG v1: `NM-00001`, kept as `legacy_employee_id`).
+- **SIDs and objectGUIDs** are ADG v1's, unchanged: RIDs follow creation order across
+  accounts and groups from 1103 (Domain Admins 512, Domain Users 513), so the frontend's
+  pinned SIDs did not move.
+- **Canonical ids** (`per_…`, `acc_…`, `grp_…`, `hst_…`) are kept beside each person, account,
+  group and server.
+- **Draws** for the file estate: `sha256("null-meridian-v1|<label>|<n>")[:8]`, no `random`, no
+  clock. The seed and the server, group and share names inside labels keep their v1 spellings
+  (`canon.legacy_key`), so the estate is exactly ADG v1's; they are never shown.
 
 ---
 
@@ -184,16 +198,16 @@ All derived, none stored; the manifest's `algorithms` block states each precisel
 | Legacy | 2016-10-01 | 54 | `Finance-RW`, `Finance_Read`, `GG_Finance_RW`, `FS-Finance-R`, `Share_Engineering_Modify`, `Engineering-FS`, `HR Staff` — one convention per administrator |
 | Team & application | 2019-10-01 | 61 | `ENG-Payments`, `Team_Analytics`, `APP-GitHub-Users`, `GG_App_Workday`, `Salesforce-Sales` |
 | Transitional (Okta) | 2021-10-01 | 25 | `Okta_GitHub_Admin`, `Okta-Salesforce-Users`, `OKTA_Slack_All`, `okta-zoom-users` beside AD-style `Share-Data-RW`, `ENG-Payments-Oncall` |
-| Standard | 2023-10-01 | 65 | `sg-share-<department>-read-only\|write`, `sg-okta-<application>-<tier>` |
+| Standard | 2023-10-01 | 65 | `sec-share-<department>-read-only\|write`, `sec-okta-<application>-<tier>` |
 
 62 of the 65 standard-era groups follow the standard; the three that do not are listed and
 asserted (`Finance-Close-FY2024`, `IT-Okta-Break-Glass`, `PRJ-Helios`). No group created
-before 2023-10-01 uses `sg-`; no group mentions Okta before 2021-10-01. The standard's share
+before 2023-10-01 uses `sec-`; no group mentions Okta before 2021-10-01. The standard's share
 groups rolled out department by department from 2023-10-16 (IT) to 2025-01-13 (Executive);
 Legal's arrive on **2026-09-10**, between the first and second scans.
 
 Every legacy application group survived beside its replacement, usually nested into it:
-`APP-GitHub-Users → Okta_GitHub_Users → sg-okta-github-developer`. 54 groups have no owner and
+`APP-GitHub-Users → Okta_GitHub_Users → sec-okta-github-developer`. 54 groups have no owner and
 42 are owned by somebody who has left; every standard-era group has an active owner.
 
 ### The hierarchy
@@ -209,8 +223,8 @@ Valid, acyclic, and cumbersome on purpose: team groups under a redundant
 `Engineering-Backend` layer; `ENG-Platform` in `Engineering` twice; `FS-Legacy-Users` reached
 from everybody by two routes; `GG_Finance_RW` wrapping the domain-local `Finance-RW`;
 `APP-GitHub-Users` nested into the engineering *file-share* group; `Hiring-Managers` and
-`sg-share-projects-read-only` filled with the whole `Managers` group; `Eng-Leads` gaining
-every manager on 2026-09-22. The depth-7 groups are `sg-okta-*-user` groups that reach
+`sec-share-projects-read-only` filled with the whole `Managers` group; `Eng-Leads` gaining
+every manager on 2026-09-22. The depth-7 groups are `sec-okta-*-user` groups that reach
 everyone through `AD-Okta-Sync-All → All Staff`; no ACL names them. The deepest chain that
 grants file access is six groups (Scenario G).
 
@@ -220,7 +234,7 @@ grants file access is six groups (Scenario G).
 
 | | Count |
 | --- | ---: |
-| File servers | 33 (`NM-FS-01` … `NM-FS-05`, `NM-FIN-FS01`, `NM-ENG-FS01`, `NM-CORP-FS02`, …) |
+| File servers | 33 (`GP-FS-01` … `GP-FS-05`, `GP-FIN-FS01`, `GP-ENG-FS01`, `GP-CORP-FS02`, …) |
 | Shares | 91, plus 33 administrative `C$` |
 | Share ACEs | 606 |
 | Folders (NTFS resources) | 824 (depth 0–3) |
@@ -281,9 +295,9 @@ field for intent, which is the point of a review):
 | --- | ---: | --- |
 | nested-group-confusion | 46 | somebody added because the right group was too hard to find |
 | temporary-project | 27 | a procurement lead on `Legal\Vendor-Review`, removed 2026-09-14 |
-| former-user | 16 | home drives on `NM-ARCH-FS01` naming deleted accounts |
+| former-user | 16 | home drives on `GP-ARCH-FS01` naming deleted accounts |
 | migration-leftover | 10 | IT migrators' Full control on `Migrations\FS-Consolidation-2020` |
-| acquisition-migration | 9 | Lumen Analytics staff on `Acquisitions\Lumen-Analytics` |
+| acquisition-migration | 9 | Brindlewood Analytics staff on `Acquisitions\Brindlewood-Analytics` |
 | finance-close-exception | 9 | named accountants on `Finance\Accounting\Close\FY2025` |
 | historical-engineer | 8 | long-tenured engineers on `Engineering\Tools\Build` |
 | executive-assistant | 6 | Hiro Taylor and Eric Lim on `Executive` and `Board` |
@@ -293,90 +307,90 @@ field for intent, which is the point of a review):
 
 Known and kept, so the risk report has something true to say:
 
-- `\\NM-FIN-FS01\Payroll\Vendor-Migration-2023`: **Authenticated Users / Modify** on a sensitive
+- `\\GP-FIN-FS01\Payroll\Vendor-Migration-2023`: **Authenticated Users / Modify** on a sensitive
   folder, left from a 2023 payroll-vendor file drop, plus a direct entry for a leaver.
-- `\\NM-FS-01\Shared\Team-Drops` and `\\NM-FS-02\Team-Space`: All Staff / Modify.
-- `\\NM-FIN-FS01\Finance\Commissions` and `\\NM-SALES-FS01\Commissions`: every seller can read
+- `\\GP-FS-01\Shared\Team-Drops` and `\\GP-FS-02\Team-Space`: All Staff / Modify.
+- `\\GP-FIN-FS01\Finance\Commissions` and `\\GP-SALES-FS01\Commissions`: every seller can read
   every commission statement (`GG_Sales`).
 - 85 disabled accounts; about one in ten leavers kept a team or department group.
-- `Project-Vega` (deleted 2026-09-10) still named on `\\NM-PROD-FS01\Research\Vega` and on the
+- `Project-Vega` (deleted 2026-09-10) still named on `\\GP-PROD-FS01\Research\Vega` and on the
   archive — now an unresolved SID.
 - Three legacy shares with Everyone/Full at the share layer; four with Authenticated Users.
 
-`Everyone` is **not** ubiquitous: one folder ACL (`\\NM-FS-01\Shared\Public`, read) names it.
+`Everyone` is **not** ubiquitous: one folder ACL (`\\GP-FS-01\Shared\Public`, read) names it.
 
 ---
 
 ## 5. Three scans
 
-ADG "went live" at Null Meridian at the start of September 2026. The reset replays what it
+ADG "went live" at Genesee Press at the start of September 2026. The reset replays what it
 would have collected: per generation, one AD run (reconciling the domain), and per server a
 local-groups run, an SMB run and an NTFS run — **300 runs, 41,756 observations**.
 
 | Generation | Observed | Runs | What it shows |
 | --- | --- | --- | --- |
-| `g1` | 2026-09-03 | 99 succeeded, 1 failed | **Initial observation.** `NM-SEC-FS01`'s NTFS scan fails (`access_denied`: the collector account was not yet granted access). Its shares are known; its folders are not. |
-| `g2` | 2026-09-17 | 100 succeeded | **Change.** Joiners and leavers; accounts crossing the 180-day line and the deleted group `Project-Vega` are **tombstoned** with their edges; `\\NM-ENG-FS02\QA\Sprint-Scratch` (deleted 09-12) is **tombstoned** by the reconciled NTFS scan; Legal's `sg-share-legal-*` groups and their ACEs appear; a direct entry is cleaned up; `All Staff` on `Marketing\Campaigns` is replaced by `MKT-Demand-Gen`; `NM-SEC-FS01` is read for the first time. |
-| `g3` | 2026-10-01 | 98 succeeded, 1 partial, 1 failed | **Snapshot.** `NM-FS-03`'s NTFS scan **fails** (`host_unreachable`) and `NM-MIG-FS01`'s is **partial** (`access_denied` on `FS-Consolidation-2020\Restricted`). Neither may remove anything. |
+| `g1` | 2026-09-03 | 99 succeeded, 1 failed | **Initial observation.** `GP-SEC-FS01`'s NTFS scan fails (`access_denied`: the collector account was not yet granted access). Its shares are known; its folders are not. |
+| `g2` | 2026-09-17 | 100 succeeded | **Change.** Joiners and leavers; accounts crossing the 180-day line and the deleted group `Project-Vega` are **tombstoned** with their edges; `\\GP-ENG-FS02\QA\Sprint-Scratch` (deleted 09-12) is **tombstoned** by the reconciled NTFS scan; Legal's `sec-share-legal-*` groups and their ACEs appear; a direct entry is cleaned up; `All Staff` on `Marketing\Campaigns` is replaced by `MKT-Demand-Gen`; `GP-SEC-FS01` is read for the first time. |
+| `g3` | 2026-10-01 | 98 succeeded, 1 partial, 1 failed | **Snapshot.** `GP-FS-03`'s NTFS scan **fails** (`host_unreachable`) and `GP-MIG-FS01`'s is **partial** (`access_denied` on `FS-Consolidation-2020\Restricted`). Neither may remove anything. |
 
 What the current-state rules make of that, asserted against the database after every reset:
 
-- everything `g2` saw on `NM-FS-03` is still current;
-- `\\NM-MIG-FS01\Migrations\Wave-3-Staging` was really deleted on 2026-09-25 and is **still
+- everything `g2` saw on `GP-FS-03` is still current;
+- `\\GP-MIG-FS01\Migrations\Wave-3-Staging` was really deleted on 2026-09-25 and is **still
   current**: the only scan since was partial, and *unobserved is not absent* — ADG keeps it
   until a complete scan says otherwise;
 - the unreadable `Restricted` folder keeps its `g2` state;
 - `Sprint-Scratch`, `Project-Vega` and the crossing accounts are retained in history with an
   open tombstone and are absent from every current-state view;
-- the current folder set is *exactly* `g3`'s, plus `NM-FS-03` as of `g2`, plus `NM-MIG-FS01` as
+- the current folder set is *exactly* `g3`'s, plus `GP-FS-03` as of `g2`, plus `GP-MIG-FS01` as
   of `g2`.
 
 ---
 
 ## 6. Golden scenarios
 
-Present after every reset; asserted in `tests/demo/test_null_meridian_estate.py` (shape) and
-`tests/db/test_null_meridian_demo.py` (through the API).
+Present after every reset; asserted in `tests/demo/test_genesee_press_estate.py` (shape) and
+`tests/db/test_genesee_press_demo.py` (through the API).
 
-**A — Modern healthy share.** `\\NM-CORP-FS02\Design` (2023-11): `sg-share-design-read-only`
-(Read & execute) and `sg-share-design-write` (Modify), people as direct members, no nesting,
+**A — Modern healthy share.** `\\GP-CORP-FS02\Design` (2023-11): `sec-share-design-read-only`
+(Read & execute) and `sec-share-design-write` (Modify), people as direct members, no nesting,
 inheritance unbroken in all eight folders, no person on any ACL.
 
-**B — Legacy finance hierarchy.** `\\NM-FIN-FS01\Finance` (2017): `Finance-RW`, `GG_Finance_RW`,
-`Finance_Read`, `FS-Finance-R`, `sg-share-finance-write`, `sg-share-finance-read-only` on one
+**B — Legacy finance hierarchy.** `\\GP-FIN-FS01\Finance` (2017): `Finance-RW`, `GG_Finance_RW`,
+`Finance_Read`, `FS-Finance-R`, `sec-share-finance-write`, `sec-share-finance-read-only` on one
 root. `FIN-Accounting → Finance-Team → Finance-RW → GG_Finance_RW` grants Modify;
 `FIN-Close-Team` grants it again; about 40% of Finance also hold the modern group directly.
 Close folders name accountants; the controller, Lucia Hart, holds Full control on `Budgets`.
 
-**C — Engineering sprawl.** `\\NM-ENG-FS01\Engineering`: 30+ folders, five root grants,
+**C — Engineering sprawl.** `\\GP-ENG-FS01\Engineering`: 30+ folders, five root grants,
 team folders, the Apollo/Nebula/Orion/Zephyr project folders, historical direct entries, and
 `APP-GitHub-Users` granting file access through `Engineering-FS`.
 
-**D — Sensitive People share.** `\\NM-HR-FS01\People`: migrated to the standard; Employee-
+**D — Sensitive People share.** `\\GP-HR-FS01\People`: migrated to the standard; Employee-
 Relations and Compensation protected and limited to `HR-Confidential`. Exactly two
 exceptions: Recruiting readable by `Hiring-Managers` (every manager), and a Finance payroll
 specialist's direct entry on the payroll-vendor transition folder.
 
-**E — Migration and archive debt.** `\\NM-ARCH-FS01\Archive` and
-`\\NM-MIG-FS01\Migrations\FS-Consolidation-2020`: broken inheritance throughout, `Finance-RW`
+**E — Migration and archive debt.** `\\GP-ARCH-FS01\Archive` and
+`\\GP-MIG-FS01\Migrations\FS-Consolidation-2020`: broken inheritance throughout, `Finance-RW`
 granted twice on one ACL, `Project-Vega` and deleted accounts on ACLs, IT migrators' leftover
 Full control, `FS-Legacy-Users` with Modify.
 
 **F — Cross-department access, two ways.** Brianna Reddy
-(`brianna.reddy@nullmeridian.info`) moved from Finance to Sales Operations on 2022-02-01. On
-`\\NM-FIN-FS01\Finance\Reports\Revenue` she holds Read & execute through
+(`brianna.reddy@geneseepress.example`) moved from Finance to Sales Operations on 2022-02-01. On
+`\\GP-FIN-FS01\Finance\Reports\Revenue` she holds Read & execute through
 `Sales-Ops → Revenue-Reporting` and Modify through a direct entry from her Finance days.
 `/api/v1/access/paths/principals/{sid}/resources/{path}` lists both.
 
-**G — A six-level chain.** Camila Nair (`camila.nair@nullmeridian.info`, payments on-call)
-reaches `\\NM-ENG-FS01\Engineering\Runbooks\Payments-Legacy`, whose only grant is
+**G — A six-level chain.** Camila Nair (`camila.nair@geneseepress.example`, payments on-call)
+reaches `\\GP-ENG-FS01\Engineering\Runbooks\Payments-Legacy`, whose only grant is
 `Share_Engineering_Modify`, through `ENG-Payments-Oncall → ENG-Payments → Engineering-Backend →
 Engineering → Engineering-FS → Share_Engineering_Modify` — and through seven groups via
 `APP-GitHub-Users`.
 
 **The guided investigation (ADG-DEMO-02).** The demo guide opens with one access question
 built on scenarios C and H: *why does Fatima Gordon have access to*
-`\\NM-ENG-FS01\Engineering\Projects\Apollo`? Served by `GET /api/v1/demo` as
+`\\GP-ENG-FS01\Engineering\Projects\Apollo`? Served by `GET /api/v1/demo` as
 `investigations`, answered by the real engine, and read on `/access/investigate`. See
 [access-investigation.md](access-investigation.md).
 
@@ -411,21 +425,40 @@ accounts that kept a team group produce most of the 1,921. The reset report
 
 ---
 
-## 8. OGWA alignment
+## 8. Where the directory comes from
 
-`null-meridian.canon.json` is the shared contract: one record per line for every employee
-(id, UUID, names, mail, account name, SID, objectGUID, department, team, title, level,
-manager, hire/termination/transfer dates), every group (name, UUID, SID, objectGUID, creation
-date, era, category, application, tier, scope, owner, deletion date, DN), every nesting and
-every direct membership on the snapshot. Its `digests` block — SHA-256 over the canonical
-employee, group and membership rows — is pinned by the ADG test suite. An OGWA
-implementation can either read the file or reimplement the algorithms in the manifest and
-compare digests. A change to either is a new canon (`null-meridian-v2`), never an edit to v1.
+The people, accounts, groups, memberships, servers, org units and organization facts are the
+`adg` projection (`adg@0.3.0`) of one snapshot of the shared synthetic world,
+`40ozs/synthetic-enterprise`, copied into `backend/vendor/synthetic-enterprise/` and pinned by
+`SYNTHETIC_ENTERPRISE.lock` (repository, commit, snapshot, contract, dataset, projection,
+manifest SHA-256). `app.demo.genesee_press.vendor` checks the lock, the manifest digest and every
+file digest before anything is read, and refuses an edited file. Nothing is fetched at runtime.
+To move to a newer snapshot: check out the commit in a local clone, run
+`python scripts/vendor-synthetic-enterprise.py --source PATH`, regenerate the manifest, and let
+the tests show what changed.
+
+**ADG's demo estate is ADG's directory catalogue.** The canonical directory holds 509 groups
+(dataset 2.1.0): the 206 ADG's file estate was designed around (those whose projection record
+carries an ADG `legacy_name`) and 303 more from the catalogue the world was reconciled with.
+SYNTH-CROSSAPP-01 merged OGWA's 12 case-only duplicates of ADG team groups (`eng-platform` /
+`ENG-Platform`, ...) into ADG's groups, so the directory went from 521 to 509 groups and the
+206 are unchanged; in the `ogwa` projection those groups now carry ADG's SIDs and objectGUIDs
+too ([SYNTH-CROSSAPP-01](https://github.com/40ozs/synthetic-enterprise/blob/integration/SYNTH-CROSSAPP-01/docs/demo/reports/SYNTH-CROSSAPP-01-report.md)).
+The demo loads every employee, the 206 groups and the memberships among them. The other 303
+stay out: the
+shared world permits application-specific subsets, and loading them (with the 20 nestings that
+join them to the standard share groups) would change every count this document pins. A group
+is added only when a concrete cross-application scenario needs ADG to see it, with the effect
+measured and documented ([SYNTH-ADG-01 §6, §15](reports/SYNTH-ADG-01-report.md)).
+
+ADG v1's own values survive only in the projection's `legacy_*` and `prior_*` fields and as
+draw keys. ADG no longer exports an identity canon for other applications
+(`null-meridian.canon.json` is retired): the shared world is the contract.
 
 ADG's collector contract has no `whenCreated`, department, title, manager or owner field, so
 those facts live in the canon and not in ADG's database; ADG carries the department as the
-user's OU (`OU=Finance,OU=People,DC=nullmeridian,DC=info`) and the naming era as the group's
-OU (`OU=Legacy`, `OU=Teams and Applications`, `OU=Okta Transition`, `OU=Standard`).
+user's OU (`OU=Finance,OU=People,DC=corp,DC=geneseepress,DC=example`) and the naming era as the
+group's OU (`OU=Legacy`, `OU=Teams and Applications`, `OU=Okta Transition`, `OU=Standard`).
 
 ---
 
@@ -443,8 +476,15 @@ produce the same fingerprint, the same per-source digests and the same counts.
 
 Before integration this package fingerprinted ten tables itself (`scan_runs`, `principals`,
 `membership_edges`, `servers`, `smb_shares`, `smb_share_aces`, `ntfs_resources`, `ntfs_aces`,
-`object_versions`, `risk_findings`, risk timestamps included) and recorded
-`db736602…85c28a0`. That algorithm, run unchanged against the integrated reset's database,
-still yields `db736602850a4a82936f861b68466e7c54b61a55192b04f6d062cbe8585c28a0`, every one of
-its ten table digests equal: the integration changed how the estate is loaded and guarded, not
-one row of what is loaded.
+`object_versions`, `risk_findings`, risk timestamps included); that algorithm is kept as
+`frontend/cloudflare/checks/genesee_press_fingerprint.py` for hosted checks.
+
+**After SYNTH-ADG-01** (the move to the shared world and the Genesee Press names), two clean
+resets give Demo Mode fingerprint
+`4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08` (ADG v1:
+`228b9dce…f8f9efd0`) and logical fingerprint
+`b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0` (ADG v1: `db736602…85c28a0`).
+Both moved because names moved — mail, DNs, server, group and share names, run ids — and
+nothing else did: the 300 collector transcripts are identical to ADG v1's once the documented
+renames are applied, and every count, probe, run status and risk total in the reset report is
+unchanged ([SYNTH-ADG-01 report](reports/SYNTH-ADG-01-report.md), parity evidence).

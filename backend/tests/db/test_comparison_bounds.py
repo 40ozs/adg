@@ -1,6 +1,6 @@
 r"""A point-in-time comparison is bounded, and says how it ended (ADG-DEMO-03).
 
-What was measured against the Null Meridian estate, and is pinned here on small estates:
+What was measured against the Genesee Press estate, and is pinned here on small estates:
 
 * **The two sides were cut at different keys.** Each side was read up to the per-side
   ceiling independently, so when the later instant held more objects early in key order its
@@ -104,7 +104,7 @@ async def shares_added_early_in_key_order(client: AsyncClient) -> None:
     """Monday: shares M..P. Friday: two new shares, A and B, that sort before all of them.
 
     With a per-side ceiling of three, Monday is read through ``fs01|o`` and Friday only
-    through ``fs01|m`` -- the shape the Null Meridian comparison had.
+    through ``fs01|m`` -- the shape the Genesee Press comparison had.
     """
     await smb_day(client, h.MONDAY, ["M", "N", "O", "P"])
     await smb_day(client, h.FRIDAY, ["A", "B", "M", "N", "O", "P"])

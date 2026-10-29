@@ -1,0 +1,43 @@
+{
+ "employees": [
+  2440,
+  2440
+ ],
+ "groups": [
+  206,
+  206
+ ],
+ "group_renames": 64,
+ "field_differences": [
+  [
+   "Domain Admins",
+   "dn"
+  ],
+  [
+   "Domain Users",
+   "dn"
+  ],
+  [
+   "FS-Legacy-Users",
+   "description",
+   "Everyone who used NM-FS-01. Nobody remembers why it is separate.",
+   "Everyone who used GP-FS-01. Nobody remembers why it is separate."
+  ],
+  [
+   "LA-Migrated-Users",
+   "description",
+   "People who joined with Lumen Analytics.",
+   "People who joined with Brindlewood Analytics."
+  ],
+  [
+   "sg-okta-okta-admin",
+   "application",
+   "okta",
+   null
+  ]
+ ],
+ "days_compared": 3653,
+ "membership_days_differing": [],
+ "membership_edges_at_snapshot": 4273,
+ "nesting_depths_equal": true
+}

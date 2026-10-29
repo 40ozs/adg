@@ -3,18 +3,18 @@
  *
  * `apollo()` is the canonical demo's response in miniature, shaped field for field like the
  * one `GET /api/v1/access/explain` returns for Fatima Gordon against
- * `\\NM-ENG-FS01\Engineering\Projects\Apollo` after a Null Meridian reset (pinned against
- * the real engine in `backend/tests/db/test_null_meridian_demo.py::TestTheAccessInvestigation`):
+ * `\\GP-ENG-FS01\Engineering\Projects\Apollo` after a Genesee Press reset (pinned against
+ * the real engine in `backend/tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation`):
  *
  * - NTFS: a direct, explicit Modify entry carries the access; an inherited Modify entry
  *   reached through five nested groups is redundant behind it.
  * - Share: ENG-Mobile's Change entry carries it; Fatima's own share entry is redundant.
  * - Removing either carrying route changes nothing.
  * - Two things are not confirmed: an orphaned SID of a former employee (stored as
- *   `unresolved`, last known as NULLMERIDIAN\lhansen) and Proj-Zephyr-RW, whose members
+ *   `unresolved`, last known as GPCORP\lhansen) and Proj-Zephyr-RW, whose members
  *   were never collected. Both can only widen the rights.
  *
- * Every SID and name is synthetic (Null Meridian). The variants change one thing each.
+ * Every SID and name is synthetic (Genesee Press). The variants change one thing each.
  */
 
 import type { FindingView, PrincipalSummary } from "@/lib/contracts";
@@ -46,7 +46,7 @@ const DOMAIN = "S-1-5-21-3949361974-1583827165-633756269";
 export const FATIMA_SID = `${DOMAIN}-1323`;
 export const ORPHAN_SID = `${DOMAIN}-1108`;
 export const ZEPHYR_SID = `${DOMAIN}-1251`;
-export const APOLLO_PATH = "\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo";
+export const APOLLO_PATH = "\\\\GP-ENG-FS01\\Engineering\\Projects\\Apollo";
 const APOLLO_KEY = APOLLO_PATH.toLowerCase();
 
 function group(rid: number, name: string): PrincipalSummary {
@@ -84,7 +84,7 @@ export const ORPHAN = principal({
   display_name: null,
   enabled: null,
   unresolved_reason: "deleted",
-  last_known_name: "NULLMERIDIAN\\lhansen",
+  last_known_name: "GPCORP\\lhansen",
 });
 export const ZEPHYR = group(1251, "Proj-Zephyr-RW");
 
@@ -92,8 +92,8 @@ const SUBJECT = `principal:${FATIMA_SID}`;
 const RESOURCE = `resource:${APOLLO_KEY}`;
 const NTFS_DIRECT = `ntfs-ace:${APOLLO_KEY}:0001`;
 const NTFS_INHERITED = `ntfs-ace:${APOLLO_KEY}:0005`;
-const SMB_GROUP = "smb-ace:nm-eng-fs01|engineering:0003";
-const SMB_DIRECT = "smb-ace:nm-eng-fs01|engineering:0017";
+const SMB_GROUP = "smb-ace:gp-eng-fs01|engineering:0003";
+const SMB_DIRECT = "smb-ace:gp-eng-fs01|engineering:0017";
 const groupNode = (member: PrincipalSummary): string => `group:${member.sid}`;
 
 const G1 = "2026-09-03T03:12:35Z";
@@ -287,8 +287,8 @@ export function apollo(): AccessExplanationResponse {
     ...base,
     schema_version: "1.2",
     subject: FATIMA,
-    resource: { ...base.resource, key: APOLLO_KEY, path: APOLLO_PATH, share_key: "nm-eng-fs01|engineering" },
-    share: share({ key: "nm-eng-fs01|engineering", name: "Engineering", server_key: "nm-eng-fs01" }),
+    resource: { ...base.resource, key: APOLLO_KEY, path: APOLLO_PATH, share_key: "gp-eng-fs01|engineering" },
+    share: share({ key: "gp-eng-fs01|engineering", name: "Engineering", server_key: "gp-eng-fs01" }),
     verdict: verdict({ certainty: "at_least", may_understate: true }),
     effective: {
       ...base.effective,
@@ -307,7 +307,7 @@ export function apollo(): AccessExplanationResponse {
             matched_key: FIVE[4].sid,
             trustee: FIVE[4],
             source: "inherited",
-            inherited_from: "\\\\NM-ENG-FS01\\Engineering",
+            inherited_from: "\\\\GP-ENG-FS01\\Engineering",
             contributed: "0x00000000",
           }),
         ],

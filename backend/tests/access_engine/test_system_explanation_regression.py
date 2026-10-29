@@ -1,6 +1,6 @@
 r"""ADG-DEMO-01: the SYSTEM explanation that contradicted itself.
 
-Asked "what can SYSTEM do to ``\\NM-FS-01\Shared``?", the demo answered, in one response:
+Asked "what can SYSTEM do to ``\\GP-FS-01\Shared``?", the demo answered, in one response:
 
 * verdict ``no_grant``, certainty ``certain`` — *"No entry on either ACL names it with
   anything to give"*;
@@ -68,7 +68,7 @@ NOTHING_NAMES_IT = "No entry on either ACL names it"
 
 
 def share_root() -> ResourceDacl:
-    """A share root exactly as Windows (and Null Meridian's generator) writes one.
+    """A share root exactly as Windows (and Genesee Press's generator) writes one.
 
     SYSTEM and the server's administrators hold Full Control; one team holds Modify; SYSTEM
     owns the directory, which is the ordinary case for anything Windows created.

@@ -1,0 +1,106 @@
+{
+  "canonical_digest": "62248ff7658d5fb374811437279ed00114446a0748273eb5d204111b661c83f0",
+  "clock": {
+    "anchor": "2026-10-01T00:00:00Z",
+    "as_of": "2026-10-01T12:00:00Z",
+    "effective_as_of": "2026-10-01T12:00:00Z",
+    "rebase_days": 0,
+    "rebase_to": null
+  },
+  "contract_version": "0.2.0",
+  "dataset": "synthetic-enterprise-world@2.1.0",
+  "format": "synthetic-enterprise-projection/1",
+  "observations": [
+    {
+      "application": "adg",
+      "at": "2026-09-02T02:00:00Z",
+      "behaviour": "failed",
+      "reason": "access_denied",
+      "scenario": "gp-adg-scan-history",
+      "scope": [
+        "hst_QT513YP43S7S"
+      ],
+      "source": "ntfs:hst_QT513YP43S7S"
+    },
+    {
+      "application": "adg",
+      "at": "2026-10-01T02:00:00Z",
+      "behaviour": "failed",
+      "reason": "host_unreachable",
+      "scenario": "gp-adg-scan-history",
+      "scope": [
+        "hst_JGHDYJS2Z49N"
+      ],
+      "source": "ntfs:hst_JGHDYJS2Z49N"
+    },
+    {
+      "application": "adg",
+      "at": "2026-10-01T02:00:00Z",
+      "behaviour": "partial",
+      "reason": "access_denied on a restricted folder",
+      "scenario": "gp-adg-scan-history",
+      "scope": [
+        "hst_8TM6BGWN5JQN"
+      ],
+      "source": "ntfs:hst_8TM6BGWN5JQN"
+    }
+  ],
+  "options": {
+    "exclude_org_unit_ids": [
+      "ou_M970YB9ACZCZ",
+      "ou_T483WPYQTBE2"
+    ],
+    "organization_id": "org_80AJVSFG78Z0"
+  },
+  "profile": null,
+  "projection": "adg",
+  "projection_version": "0.3.0",
+  "record_files": {
+    "directory.jsonl": {
+      "records": 1,
+      "sha256": "10a32fc44025730e9cfa3cf4b5752b5e4a0651982c4c791435bc744ee7d5f4d3"
+    },
+    "employees.jsonl": {
+      "records": 2440,
+      "sha256": "c085cf6b66e9d107eddf2da779eafedf51d6a526a83fb3ec769d1fa59651b769"
+    },
+    "groups.jsonl": {
+      "records": 509,
+      "sha256": "c9ec36d939c74f8036bd8fd7ceb547236ba7bb9818dd092c97ea6f3a9a367d68"
+    },
+    "hosts.jsonl": {
+      "records": 34,
+      "sha256": "31116000975dbd9662fc7649b87f86b5a8979dfc977f4375f9847caf956bf161"
+    },
+    "memberships.jsonl": {
+      "records": 14104,
+      "sha256": "a8ec07f768a7055597df808668b40965f91615875036be7ec2865302a742892d"
+    },
+    "org_units.jsonl": {
+      "records": 75,
+      "sha256": "cc4cd060a826553a3975fb53d5769cbdd5bc1b8911af250f4433ca78e2dcf6e4"
+    },
+    "organization.jsonl": {
+      "records": 1,
+      "sha256": "6fe69f42260e5ba4f710cafdc88dd49bbbba5977be9f24532be162110e777e23"
+    }
+  },
+  "scenarios": [
+    "ao-collection-incidents",
+    "ao-epoch-2-drift",
+    "csw-estate-collection-rounds",
+    "gp-access-investigation-apollo",
+    "gp-adg-scan-history",
+    "gp-golden-a",
+    "gp-golden-b",
+    "gp-golden-c",
+    "gp-golden-d",
+    "gp-golden-e",
+    "gp-golden-f",
+    "gp-golden-g",
+    "gp-golden-h",
+    "gp-ogwa-lifecycle-candidates"
+  ],
+  "seed": "baseline-v1",
+  "supported_contract": ">=0.2.0,<0.3.0"
+}

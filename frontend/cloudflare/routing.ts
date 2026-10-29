@@ -89,7 +89,7 @@ const HOP_BY_HOP = [
  * Method, path, query, body, cookies and other end-to-end headers go through unchanged; hop-by-hop
  * headers do not. The origin key is always the Worker's: a visitor who sends `X-ADG-Origin-Key`
  * has it replaced. An API answer must carry the API's demo marker. That is the Worker's half of
- * "this deployment serves Null Meridian only": an API in any other mode, or anything else
+ * "this deployment serves Genesee Press only": an API in any other mode, or anything else
  * answering at that address, is a 502, never a page.
  */
 export async function forwardToOrigin(

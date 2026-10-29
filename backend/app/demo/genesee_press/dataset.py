@@ -1,4 +1,4 @@
-r"""Null Meridian, presented through Demo Mode's synthetic-dataset contract.
+r"""Genesee Press, presented through Demo Mode's synthetic-dataset contract.
 
 An adapter and nothing more: every value here is read from the modules that own it and is
 carried to :mod:`app.demo_mode` unchanged.
@@ -30,11 +30,11 @@ from collections.abc import Sequence
 from functools import cached_property
 from typing import Any, Final
 
-from app.demo.null_meridian import canon as nm
-from app.demo.null_meridian.canon import Canon, build_canon
-from app.demo.null_meridian.generations import GENERATIONS, build_generations
-from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
-from app.demo.null_meridian.scenarios import golden_scenarios, investigations
+from app.demo.genesee_press import canon as gp
+from app.demo.genesee_press.canon import Canon, build_canon
+from app.demo.genesee_press.generations import GENERATIONS, build_generations
+from app.demo.genesee_press.risk import DEMO_RISK_CONFIGURATION
+from app.demo.genesee_press.scenarios import golden_scenarios, investigations
 from app.demo_mode.datasets import (
     CANONICAL_DATASET,
     CanonicalProbe,
@@ -47,20 +47,20 @@ from app.demo_mode.datasets import (
 )
 from app.risk_engine.configuration import RiskConfiguration
 
-__all__ = ["NullMeridianDataset", "synthetic_dataset"]
+__all__ = ["GeneseePressDataset", "synthetic_dataset"]
 
-FINANCE: Final = r"\\NM-FIN-FS01\Finance"
-DESIGN: Final = r"\\NM-CORP-FS02\Design"
-ENGINEERING: Final = r"\\NM-ENG-FS01\Engineering"
-PEOPLE: Final = r"\\NM-HR-FS01\People"
-ARCHIVE: Final = r"\\NM-ARCH-FS01\Archive"
+FINANCE: Final = r"\\GP-FIN-FS01\Finance"
+DESIGN: Final = r"\\GP-CORP-FS02\Design"
+ENGINEERING: Final = r"\\GP-ENG-FS01\Engineering"
+PEOPLE: Final = r"\\GP-HR-FS01\People"
+ARCHIVE: Final = r"\\GP-ARCH-FS01\Archive"
 REVENUE: Final = FINANCE + r"\Reports\Revenue"
 PAYMENTS_LEGACY: Final = ENGINEERING + r"\Runbooks\Payments-Legacy"
 ZEPHYR: Final = ENGINEERING + r"\Projects\Zephyr"
 #: Deleted on 2026-09-25; the 2026-10-01 scan of its server was partial, so it stays current.
-WAVE_3_STAGING: Final = r"\\NM-MIG-FS01\Migrations\Wave-3-Staging"
-#: On NM-FS-03, whose 2026-10-01 NTFS scan failed: everything it held stays current.
-COLLABORATION: Final = r"\\NM-FS-03\Collaboration"
+WAVE_3_STAGING: Final = r"\\GP-MIG-FS01\Migrations\Wave-3-Staging"
+#: On GP-FS-03, whose 2026-10-01 NTFS scan failed: everything it held stays current.
+COLLABORATION: Final = r"\\GP-FS-03\Collaboration"
 
 #: The six nested groups of scenario G, innermost first.
 DEEP_CHAIN: Final = (
@@ -73,8 +73,8 @@ DEEP_CHAIN: Final = (
 )
 
 
-class NullMeridianDataset:
-    """The canonical Null Meridian estate as a :class:`~app.demo_mode.datasets.SyntheticDataset`."""
+class GeneseePressDataset:
+    """The canonical Genesee Press estate as a :class:`~app.demo_mode.datasets.SyntheticDataset`."""
 
     #: The reset installs every generation: the canon is the 2026-10-01 snapshot, and the
     #: history that led to it is part of what the demo shows.
@@ -84,14 +84,15 @@ class NullMeridianDataset:
     def metadata(self) -> DemoDatasetMetadata:
         return DemoDatasetMetadata(
             key=CANONICAL_DATASET,
-            company_name=nm.COMPANY,
-            domain=nm.DOMAIN_DNS,
-            snapshot_date=nm.SNAPSHOT,
-            seed=nm.SEED,
+            company_name=gp.COMPANY,
+            domain=gp.DOMAIN_DNS,
+            snapshot_date=gp.SNAPSHOT,
+            seed=gp.DATASET_KEY,
             description=(
-                f"{nm.COMPANY}: a fictional company founded {nm.FOUNDED.year}, ten years of "
+                f"{gp.COMPANY}: a fictional company founded {gp.FOUNDED.year}, ten years of "
                 "directory and file-server history, scanned three times by ADG in September "
-                "and October 2026. Every name, SID, host and path is generated from the seed."
+                "and October 2026. Its people, accounts, groups and servers come from the "
+                "shared synthetic world (40ozs/synthetic-enterprise); its file estate is ADG's own."
             ),
             facts=_facts(),
         )
@@ -182,12 +183,12 @@ class NullMeridianDataset:
             CanonicalProbe("ntfs_resource", "A: the Design share root", {"path": DESIGN}),
             CanonicalProbe(
                 "ntfs_ace",
-                "A: sg-share-design-write on the Design root",
-                {"path": DESIGN, "trustee_sid": group("sg-share-design-write")},
+                "A: sec-share-design-write on the Design root",
+                {"path": DESIGN, "trustee_sid": group("sec-share-design-write")},
             ),
             # B -- legacy finance hierarchy.
             CanonicalProbe(
-                "share", "B: the Finance share", {"server": "NM-FIN-FS01", "share": "Finance"}
+                "share", "B: the Finance share", {"server": "GP-FIN-FS01", "share": "Finance"}
             ),
             CanonicalProbe(
                 "membership",
@@ -207,12 +208,12 @@ class NullMeridianDataset:
             ),
             # D -- the People share.
             CanonicalProbe(
-                "share", "D: the People share", {"server": "NM-HR-FS01", "share": "People"}
+                "share", "D: the People share", {"server": "GP-HR-FS01", "share": "People"}
             ),
             CanonicalProbe(
                 "ntfs_ace",
-                "D: sg-share-people-write on the People root",
-                {"path": PEOPLE, "trustee_sid": group("sg-share-people-write")},
+                "D: sec-share-people-write on the People root",
+                {"path": PEOPLE, "trustee_sid": group("sec-share-people-write")},
             ),
             # E -- archive and migration debt.
             CanonicalProbe("ntfs_resource", "E: the Archive share root", {"path": ARCHIVE}),
@@ -255,12 +256,12 @@ class NullMeridianDataset:
             # Current-state semantics the scan history promises.
             CanonicalProbe(
                 "ntfs_resource",
-                "history: Wave-3-Staging survives the partial 2026-10-01 scan of NM-MIG-FS01",
+                "history: Wave-3-Staging survives the partial 2026-10-01 scan of GP-MIG-FS01",
                 {"path": WAVE_3_STAGING},
             ),
             CanonicalProbe(
                 "ntfs_resource",
-                "history: NM-FS-03's folders survive its failed 2026-10-01 scan",
+                "history: GP-FS-03's folders survive its failed 2026-10-01 scan",
                 {"path": COLLABORATION},
             ),
         )
@@ -272,7 +273,7 @@ class NullMeridianDataset:
 
 def _facts() -> dict[str, str]:
     """Headline counts, read from the manifest the committed JSON is checked against."""
-    from app.demo.null_meridian.manifest import build_manifest
+    from app.demo.genesee_press.manifest import build_manifest
 
     statistics: dict[str, Any] = build_manifest()["statistics"]
     employees, groups, estate = (
@@ -283,7 +284,7 @@ def _facts() -> dict[str, str]:
     runs = sum(int(item["runs"]) for item in statistics["generations"].values())
     observations = sum(int(item["observations"]) for item in statistics["generations"].values())
     return {
-        "Founded": nm.FOUNDED.isoformat(),
+        "Founded": gp.FOUNDED.isoformat(),
         "Active employees": f"{employees['active']:,}",
         "Former employees": f"{employees['former']:,}",
         "Departments": f"{len(employees['by_department']):,}",
@@ -331,6 +332,6 @@ def _investigation(item: dict[str, Any]) -> DemoInvestigation:
     )
 
 
-def synthetic_dataset() -> NullMeridianDataset:
-    """The registry's loader for ``null-meridian-v1``."""
-    return NullMeridianDataset()
+def synthetic_dataset() -> GeneseePressDataset:
+    """The registry's loader for ``genesee-press-v1``."""
+    return GeneseePressDataset()

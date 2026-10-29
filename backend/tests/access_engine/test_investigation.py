@@ -13,7 +13,7 @@ drifted from the explanation it summarizes would fail here rather than on screen
 * whether an open question reaches the conclusion follows from its direction alone;
 * and, carried over from ADG-DEMO-01, no SYSTEM answer is ever summarized as "absent".
 
-The shape of the canonical demo (``\\NM-ENG-FS01\Engineering\Projects\Apollo``) is
+The shape of the canonical demo (``\\GP-ENG-FS01\Engineering\Projects\Apollo``) is
 reproduced in miniature by :func:`apollo` with the Phase 0B synthetic SIDs.
 """
 

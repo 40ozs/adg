@@ -560,7 +560,7 @@ class TestPrincipalDirectory:
         ("kind", "q", "expected"),
         [
             ("users", "alice", [ALICE]),
-            ("users", "NULLMERIDIAN\\Alice", [ALICE]),
+            ("users", "GPCORP\\Alice", [ALICE]),
             ("groups", "finance-t", [FINANCE_TEAM]),
             ("groups", "fin", [FINANCE_TEAM, FINANCE_RW]),
             ("users", ALICE, [ALICE]),

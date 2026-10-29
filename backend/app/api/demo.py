@@ -4,7 +4,7 @@ Two routes. Neither changes the runtime mode, and nothing anywhere does: there i
 that turns a demo into a production deployment or back, because the mode is configuration.
 
 * ``GET /api/v1/demo`` -- the dataset, which of its scan generations are applied, the
-  walkthroughs it is built to show (scenarios A-H for Null Meridian, each naming the folder,
+  walkthroughs it is built to show (scenarios A-H for Genesee Press, each naming the folder,
   people and groups it is about, so the UI can link into the real pages for them), and the
   mutation policy (what each write route does here). Every role may read it.
 * ``POST /api/v1/demo/scans`` -- apply the dataset's next scan generation through the

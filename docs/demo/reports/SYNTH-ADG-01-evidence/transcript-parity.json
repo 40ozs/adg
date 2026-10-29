@@ -1,0 +1,11 @@
+{
+ "transcripts": [
+  300,
+  300
+ ],
+ "file_names_equal_after_rename": true,
+ "observations": 41756,
+ "group_renames_applied": 64,
+ "byte_identical_before_normalization": 0,
+ "differing_after_normalization": []
+}

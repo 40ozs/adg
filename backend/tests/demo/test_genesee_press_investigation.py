@@ -4,18 +4,18 @@ Pure: no database. The seed names a principal and a folder and nothing about the
 what is checked here is that it names the *right* ones — read off the authored ACL by the
 same intents the estate placed them with, synthetic, and stable from one build to the next.
 What ADG answers about the pair is pinned against a reset estate in
-``tests/db/test_null_meridian_demo.py::TestTheAccessInvestigation``.
+``tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation``.
 """
 
 from __future__ import annotations
 
 import datetime as dt
 
-from app.demo.null_meridian.canon import DOMAIN_SID, Canon, build_canon
-from app.demo.null_meridian.dataset import NullMeridianDataset
-from app.demo.null_meridian.estate import AceIntent, build_estate
-from app.demo.null_meridian.generations import GENERATIONS
-from app.demo.null_meridian.scenarios import APOLLO, SCENARIO_IDS, investigations
+from app.demo.genesee_press.canon import DOMAIN_SID, Canon, build_canon
+from app.demo.genesee_press.dataset import GeneseePressDataset
+from app.demo.genesee_press.estate import AceIntent, build_estate
+from app.demo.genesee_press.generations import GENERATIONS
+from app.demo.genesee_press.scenarios import APOLLO, SCENARIO_IDS, investigations
 from app.demo_mode.datasets import dataset_investigations
 
 CANON: Canon = build_canon()
@@ -61,8 +61,8 @@ def test_every_identifier_is_synthetic() -> None:
 
     assert seed["person"]["sid"].startswith(f"{DOMAIN_SID}-")
     assert seed["former"]["sid"].startswith(f"{DOMAIN_SID}-")
-    assert seed["person"]["email"].endswith("@nullmeridian.info")
-    assert APOLLO.startswith("\\\\NM-")
+    assert seed["person"]["email"].endswith("@geneseepress.example")
+    assert APOLLO.startswith("\\\\GP-")
 
 
 def test_it_is_deterministic() -> None:
@@ -70,7 +70,7 @@ def test_it_is_deterministic() -> None:
 
 
 def test_the_dataset_serves_it_through_the_demo_contract() -> None:
-    [served] = dataset_investigations(NullMeridianDataset())
+    [served] = dataset_investigations(GeneseePressDataset())
     [seed] = investigations(CANON)
 
     assert served.key == seed["id"]

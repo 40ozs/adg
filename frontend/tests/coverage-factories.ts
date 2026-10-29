@@ -1,7 +1,7 @@
 /**
- * Bodies for ADG-DEMO-03's tests, shaped like the reset Null Meridian estate's real responses:
- * 100 collection scopes, NTFS on NM-FS-03 unavailable since 2026-10-01 and holding the
- * 2026-09-17 scan's evidence, NTFS on NM-MIG-FS01 partial; 9,386 open findings; the
+ * Bodies for ADG-DEMO-03's tests, shaped like the reset Genesee Press estate's real responses:
+ * 100 collection scopes, NTFS on GP-FS-03 unavailable since 2026-10-01 and holding the
+ * 2026-09-17 scan's evidence, NTFS on GP-MIG-FS01 partial; 9,386 open findings; the
  * first-to-latest comparison drill timing out, stopping incomplete, and recovering.
  */
 
@@ -14,7 +14,7 @@ import type {
 } from "@/lib/contracts";
 import type { BasisView } from "@/lib/derived";
 
-export const APOLLO = "\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo";
+export const APOLLO = "\\\\GP-ENG-FS01\\Engineering\\Projects\\Apollo";
 export const SNAPSHOT: BasisView = {
   token: "3f2a9c41d07e4b5f8a6c2e91b0d47f53",
   runs: 300,
@@ -43,7 +43,7 @@ function scope(overrides: Partial<ScopeCoverage> & Pick<ScopeCoverage, "collecto
 
 export const FS03 = scope({
   collector: "ntfs",
-  target: "NM-FS-03",
+  target: "GP-FS-03",
   state: "unavailable",
   evidence: "stale",
   attempted_at: "2026-10-01T03:35:00Z",
@@ -51,22 +51,22 @@ export const FS03 = scope({
   observations: 0,
   failure_codes: ["host_unreachable"],
   sentence:
-    "ntfs (NM-FS-03): the latest scan could not reach its target. ADG still holds what the run of 2026-09-17 collected; anything that changed since is not reflected.",
+    "ntfs (GP-FS-03): the latest scan could not reach its target. ADG still holds what the run of 2026-09-17 collected; anything that changed since is not reflected.",
 });
 
 export const MIG = scope({
   collector: "ntfs",
-  target: "NM-MIG-FS01",
+  target: "GP-MIG-FS01",
   state: "partial",
   sentence:
-    "ntfs (NM-MIG-FS01): the latest scan was partial. 2 declared scope(s) were not fully enumerated; 1 object(s) could not be read.",
+    "ntfs (GP-MIG-FS01): the latest scan was partial. 2 declared scope(s) were not fully enumerated; 1 object(s) could not be read.",
 });
 
 const APOLLO_SCOPES = [
-  scope({ collector: "active_directory", target: "nullmeridian.info", observations: 8264 }),
-  scope({ collector: "local_groups", target: "NM-ENG-FS01", observations: 3 }),
-  scope({ collector: "ntfs", target: "NM-ENG-FS01", observations: 385 }),
-  scope({ collector: "smb", target: "NM-ENG-FS01", observations: 52 }),
+  scope({ collector: "active_directory", target: "corp.geneseepress.example", observations: 8264 }),
+  scope({ collector: "local_groups", target: "GP-ENG-FS01", observations: 3 }),
+  scope({ collector: "ntfs", target: "GP-ENG-FS01", observations: 385 }),
+  scope({ collector: "smb", target: "GP-ENG-FS01", observations: 52 }),
 ];
 
 const HEADLINE =
@@ -108,7 +108,7 @@ export function apolloCoverage(overrides: Partial<CollectionCoverage> = {}): Col
     scopes: [...APOLLO_SCOPES, FS03, MIG],
     relevant: {
       resource: APOLLO,
-      server: "NM-ENG-FS01",
+      server: "GP-ENG-FS01",
       verdict: "complete",
       complete: true,
       headline: "4 of 4 collection scopes collected completely",
@@ -116,7 +116,7 @@ export function apolloCoverage(overrides: Partial<CollectionCoverage> = {}): Col
       incomplete_elsewhere: 2,
       could_change_answer: false,
       statement:
-        "Every scope this answer reads was collected completely in its latest scan (active_directory (nullmeridian.info), local_groups (NM-ENG-FS01), ntfs (NM-ENG-FS01), smb (NM-ENG-FS01)). 2 scope(s) elsewhere in the estate are not complete. None of them holds this folder, its share, its server's local groups or the directory, so they cannot change this answer.",
+        "Every scope this answer reads was collected completely in its latest scan (active_directory (corp.geneseepress.example), local_groups (GP-ENG-FS01), ntfs (GP-ENG-FS01), smb (GP-ENG-FS01)). 2 scope(s) elsewhere in the estate are not complete. None of them holds this folder, its share, its server's local groups or the directory, so they cannot change this answer.",
     },
     ...overrides,
   };
@@ -128,8 +128,8 @@ export function fs03Coverage(): CollectionCoverage {
   return {
     ...base,
     relevant: {
-      resource: "\\\\NM-FS-03\\Collaboration",
-      server: "NM-FS-03",
+      resource: "\\\\GP-FS-03\\Collaboration",
+      server: "GP-FS-03",
       verdict: "incomplete",
       complete: false,
       headline: "1 of 2 collection scopes collected completely · 1 unavailable · 1 holding older evidence",
@@ -169,15 +169,15 @@ export function riskSummary(overrides: Partial<RiskSummaryResponse> = {}): RiskS
       basis_current: true,
       held: [
         {
-          scope: "ntfs (NM-FS-03)",
-          server: "NM-FS-03",
+          scope: "ntfs (GP-FS-03)",
+          server: "GP-FS-03",
           evidence: "stale",
           evidence_collected_at: "2026-09-17T03:39:00Z",
           open_findings: 189,
         },
         {
-          scope: "ntfs (NM-MIG-FS01)",
-          server: "NM-MIG-FS01",
+          scope: "ntfs (GP-MIG-FS01)",
+          server: "GP-MIG-FS01",
           evidence: "current",
           evidence_collected_at: "2026-10-01T04:34:00Z",
           open_findings: 101,

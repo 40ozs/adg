@@ -487,11 +487,11 @@ describe("collection coverage beside the totals (ADG-DEMO-03)", () => {
     await renderPage();
     const held = screen.getByRole("list", { name: "Findings held from older evidence" });
 
-    expect(held.textContent).toContain("ntfs (NM-FS-03)");
+    expect(held.textContent).toContain("ntfs (GP-FS-03)");
     expect(held.textContent).toContain("189 open finding(s)");
     expect(held.textContent).toContain("Older evidence, from the scan of 2026-09-17");
     // A partial scope's evidence is current; it is a coverage concern, not held evidence.
-    expect(held.textContent).not.toContain("NM-MIG-FS01");
+    expect(held.textContent).not.toContain("GP-MIG-FS01");
   });
 
   it("names the incomplete scopes one disclosure away", async () => {
@@ -502,7 +502,7 @@ describe("collection coverage beside the totals (ADG-DEMO-03)", () => {
     const disclosure = within(line).getByText("Which scopes are not complete (2)");
 
     expect(disclosure.tagName).toBe("SUMMARY");
-    expect(line.textContent).toContain("ntfs (NM-FS-03): the latest scan could not reach its target");
+    expect(line.textContent).toContain("ntfs (GP-FS-03): the latest scan could not reach its target");
     expect(within(line).getByRole("link", { name: /collector status page/ })).toHaveAttribute(
       "href",
       "/collectors",

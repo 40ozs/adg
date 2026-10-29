@@ -90,7 +90,7 @@ class TestSettings:
         assert settings.runtime_mode.data_source == "synthetic"
 
     def test_demo_defaults_to_the_canonical_dataset(self) -> None:
-        assert demo(demo_dataset="").resolved_demo_dataset == "null-meridian-v1"
+        assert demo(demo_dataset="").resolved_demo_dataset == "genesee-press-v1"
 
     def test_demo_needs_no_production_credential(self) -> None:
         """No OIDC, no collector key, no signing key: a demo starts with none of them."""

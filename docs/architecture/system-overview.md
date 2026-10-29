@@ -24,7 +24,7 @@ evidence directly rather than one another's output.
 
 ```text
  SYNTHETIC COLLECTORS / SOURCES            (production: native Windows collectors, collector/)
-   demo/null_meridian/                     the generated estate: 3 scans × 100 collector runs
+   demo/genesee_press/                     the Genesee Press estate: 3 scans × 100 collector runs
    demo_mode/ingest.py, providers.py       SyntheticObservationSource posts each run through
                                            the real POST /api/v1/scan-runs routes, in process
                  │

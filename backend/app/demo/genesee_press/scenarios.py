@@ -9,16 +9,16 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from app.demo.null_meridian.canon import Canon, Employee, build_canon
-from app.demo.null_meridian.estate import AceIntent, catalog
+from app.demo.genesee_press.canon import Canon, Employee, build_canon
+from app.demo.genesee_press.estate import AceIntent, catalog
 
 __all__ = ["APOLLO", "SCENARIO_IDS", "golden_scenarios", "investigations"]
 
 SCENARIO_IDS: Final = ("A", "B", "C", "D", "E", "F", "G", "H")
 
-FINANCE = r"\\NM-FIN-FS01\Finance"
+FINANCE = r"\\GP-FIN-FS01\Finance"
 
-APOLLO: Final = r"\\NM-ENG-FS01\Engineering\Projects\Apollo"
+APOLLO: Final = r"\\GP-ENG-FS01\Engineering\Projects\Apollo"
 """The folder of the canonical access investigation (ADG-DEMO-02)."""
 
 
@@ -43,15 +43,15 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
         {
             "id": "A",
             "title": "Modern healthy share",
-            "resource": r"\\NM-CORP-FS02\Design",
-            "groups": ["sg-share-design-read-only", "sg-share-design-write"],
+            "resource": r"\\GP-CORP-FS02\Design",
+            "groups": ["sec-share-design-read-only", "sec-share-design-write"],
             "demonstrates": (
-                "A 2023 share built to the standard: two sg-share-* groups with people as "
+                "A 2023 share built to the standard: two sec-share-* groups with people as "
                 "direct members, inheritance unbroken, no direct user entries, no legacy groups."
             ),
             "look_at": [
-                "GET /api/v1/resources/{\\\\NM-CORP-FS02\\Design}/acl",
-                "GET /api/v1/groups/{sg-share-design-write SID}/members",
+                "GET /api/v1/resources/{\\\\GP-CORP-FS02\\Design}/acl",
+                "GET /api/v1/groups/{sec-share-design-write SID}/members",
             ],
         },
         {
@@ -64,14 +64,14 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
                 "Finance_Read",
                 "FS-Finance-R",
                 "FIN-Close-Team",
-                "sg-share-finance-write",
-                "sg-share-finance-read-only",
+                "sec-share-finance-write",
+                "sec-share-finance-read-only",
             ],
             "people": [controller],
             "demonstrates": (
                 "Four generations of finance groups on one 2017 ACL. FIN-Accounting -> "
                 "Finance-Team -> Finance-RW -> GG_Finance_RW grants Modify, FIN-Close-Team "
-                "grants it again, and about 40% of Finance also hold sg-share-finance-write "
+                "grants it again, and about 40% of Finance also hold sec-share-finance-write "
                 "directly: the 2024 migration added the modern groups and removed nothing. "
                 "Close folders carry direct entries for named accountants."
             ),
@@ -83,12 +83,12 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
         {
             "id": "C",
             "title": "Engineering sprawl",
-            "resource": r"\\NM-ENG-FS01\Engineering",
+            "resource": r"\\GP-ENG-FS01\Engineering",
             "groups": [
                 "Share_Engineering_Modify",
                 "Engineering-FS",
                 "APP-GitHub-Users",
-                "sg-share-engineering-write",
+                "sec-share-engineering-write",
                 "ENG-Payments",
                 "Proj-Apollo",
                 "PRJ_Nebula",
@@ -102,17 +102,17 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
             ),
             "look_at": [
                 "GET /api/v1/access/resources/"
-                r"{\\NM-ENG-FS01\Engineering\Services\Payments}/principals"
+                r"{\\GP-ENG-FS01\Engineering\Services\Payments}/principals"
             ],
         },
         {
             "id": "D",
             "title": "Sensitive People share",
-            "resource": r"\\NM-HR-FS01\People",
+            "resource": r"\\GP-HR-FS01\People",
             "groups": [
                 "HR_Share_RW",
                 "HR-Confidential",
-                "sg-share-people-write",
+                "sec-share-people-write",
                 "Hiring-Managers",
                 "Payroll_Admins",
             ],
@@ -123,13 +123,13 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
                 "payroll specialist holds a direct entry on the payroll-vendor transition "
                 "folder."
             ),
-            "look_at": [r"GET /api/v1/resources/{\\NM-HR-FS01\People\Compensation}/acl"],
+            "look_at": [r"GET /api/v1/resources/{\\GP-HR-FS01\People\Compensation}/acl"],
         },
         {
             "id": "E",
             "title": "Migration and archive debt",
-            "resource": r"\\NM-ARCH-FS01\Archive",
-            "also": [r"\\NM-MIG-FS01\Migrations\FS-Consolidation-2020"],
+            "resource": r"\\GP-ARCH-FS01\Archive",
+            "also": [r"\\GP-MIG-FS01\Migrations\FS-Consolidation-2020"],
             "groups": [
                 "GG_Archive_R",
                 "FS-Legacy-Users",
@@ -144,7 +144,7 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
                 "scan, an account deleted between the first and second scans, and an IT "
                 "migrator's leftover Full control."
             ),
-            "look_at": [r"GET /api/v1/resources/{\\NM-ARCH-FS01\Archive\Legacy-Home-Drives}/acl"],
+            "look_at": [r"GET /api/v1/resources/{\\GP-ARCH-FS01\Archive\Legacy-Home-Drives}/acl"],
         },
         {
             "id": "F",
@@ -156,7 +156,7 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
                 "Revenue-Reporting",
                 "Finance_Read",
                 "FS-Finance-R",
-                "sg-share-finance-read-only",
+                "sec-share-finance-read-only",
             ],
             "demonstrates": (
                 f"{mover['name']} moved from Finance to Sales Operations on 2022-02-01. "
@@ -174,7 +174,7 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
         {
             "id": "G",
             "title": "A six-level chain",
-            "resource": r"\\NM-ENG-FS01\Engineering\Runbooks\Payments-Legacy",
+            "resource": r"\\GP-ENG-FS01\Engineering\Runbooks\Payments-Legacy",
             "people": [deep],
             "chain": [
                 "ENG-Payments-Oncall",
@@ -194,14 +194,14 @@ def golden_scenarios(canon: Canon | None = None) -> list[dict[str, Any]]:
             "look_at": [
                 f"GET /api/v1/principals/{deep['sid']}/membership-paths",
                 f"GET /api/v1/access/paths/principals/{deep['sid']}/resources/"
-                r"\\NM-ENG-FS01\Engineering\Runbooks\Payments-Legacy",
+                r"\\GP-ENG-FS01\Engineering\Runbooks\Payments-Legacy",
             ],
         },
         {
             "id": "H",
             "title": "A safe first clean-up",
-            "resource": r"\\NM-ENG-FS01\Engineering\Projects\Zephyr",
-            "also": [r"\\NM-ENG-FS01\Projects\Zephyr"],
+            "resource": r"\\GP-ENG-FS01\Engineering\Projects\Zephyr",
+            "also": [r"\\GP-ENG-FS01\Projects\Zephyr"],
             "groups": ["Proj-Zephyr-RW"],
             "demonstrates": (
                 "Proj-Zephyr-RW has had no members since the project ended in 2019 and is still "
@@ -226,14 +226,14 @@ def investigations(canon: Canon | None = None) -> list[dict[str, Any]]:
 
     Nothing here computes the answer. The people are read off the authored ACL by their
     intent, the same way the estate placed them; the summary says what the scans of that ACL
-    show, and ``TestTheAccessInvestigation`` in ``tests/db/test_null_meridian_demo.py`` pins
+    show, and ``TestTheAccessInvestigation`` in ``tests/db/test_genesee_press_demo.py`` pins
     every claim in it against what ADG actually computes after a reset.
     """
     canon = canon or build_canon()
     share = next(
         item
         for item in catalog(canon)
-        if item.server == "NM-ENG-FS01" and item.name == "Engineering"
+        if item.server == "GP-ENG-FS01" and item.name == "Engineering"
     )
     folder = next(item for item in share.folders if item.rel == "Projects/Apollo")
     veteran = _intended(canon, folder.explicit, AceIntent.HISTORICAL_ENGINEER)

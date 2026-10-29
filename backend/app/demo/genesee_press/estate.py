@@ -1,6 +1,6 @@
-r"""Null Meridian's file estate: servers, shares, folders and their permissions, on a date.
+r"""Genesee Press's file estate: servers, shares, folders and their permissions, on a date.
 
-:mod:`.canon` says who works at Null Meridian and which groups exist. This module says what
+:mod:`.canon` says who works at Genesee Press and which groups exist. This module says what
 those people and groups can reach: 33 file servers, about a hundred shares, and some seven
 hundred folders whose ACLs accreted over ten years.
 
@@ -51,7 +51,9 @@ from app.demo.estate import (
     DirectorySpec,
     materialize_directories,
 )
-from app.demo.null_meridian.canon import (
+from app.demo.genesee_press import vendor
+from app.demo.genesee_press.canon import (
+    ACQUISITION_TAG,
     DEPARTMENTS_BY_SLUG,
     DOMAIN_DNS,
     DOMAIN_NETBIOS,
@@ -64,7 +66,9 @@ from app.demo.null_meridian.canon import (
     Group,
     Level,
     build_canon,
+    draw_key,
     era_of,
+    legacy_key,
 )
 from app.domain import AceFlag, AceType, MembershipEdgeKind, UnresolvedReason
 
@@ -74,7 +78,7 @@ __all__ = [
     "AceDef",
     "AceIntent",
     "FolderDef",
-    "NullMeridianEstate",
+    "GeneseePressEstate",
     "Posture",
     "ShareDef",
     "build_estate",
@@ -164,7 +168,7 @@ class AceDef:
     """One explicit entry as an administrator set it.
 
     ``trustee`` is a group name, an alias from :data:`WELL_KNOWN`, ``DOMAIN_USERS``, or an
-    employee id (``NM-00042``).
+    employee id (``GP-00042``).
     """
 
     trustee: str
@@ -232,44 +236,17 @@ def _d(text: str) -> dt.date:
     return dt.date.fromisoformat(text)
 
 
-SERVERS: Final[tuple[ServerDef, ...]] = tuple(
-    ServerDef(name, _d(created), system)
-    for name, created, system in (
-        ("NM-FS-01", "2016-10-12", "Windows Server 2012 R2 Standard"),
-        ("NM-CORP-FS01", "2016-11-07", "Windows Server 2012 R2 Standard"),
-        ("NM-ENG-FS01", "2017-01-16", "Windows Server 2012 R2 Standard"),
-        ("NM-FS-02", "2017-03-06", "Windows Server 2012 R2 Standard"),
-        ("NM-FIN-FS01", "2017-04-03", "Windows Server 2012 R2 Standard"),
-        ("NM-HR-FS01", "2018-01-22", "Windows Server 2016 Standard"),
-        ("NM-SALES-FS01", "2018-02-19", "Windows Server 2016 Standard"),
-        ("NM-FS-03", "2018-04-09", "Windows Server 2016 Standard"),
-        ("NM-LEGAL-FS01", "2018-06-18", "Windows Server 2016 Standard"),
-        ("NM-MKT-FS01", "2018-09-24", "Windows Server 2016 Standard"),
-        ("NM-OPS-FS01", "2019-01-14", "Windows Server 2016 Standard"),
-        ("NM-ENG-FS02", "2019-03-11", "Windows Server 2016 Standard"),
-        ("NM-ARCH-FS01", "2019-06-24", "Windows Server 2016 Standard"),
-        ("NM-DATA-FS01", "2020-01-20", "Windows Server 2019 Standard"),
-        ("NM-CS-FS01", "2020-02-24", "Windows Server 2019 Standard"),
-        ("NM-IT-FS01", "2020-03-16", "Windows Server 2019 Standard"),
-        ("NM-PROD-FS01", "2020-05-18", "Windows Server 2019 Standard"),
-        ("NM-SEC-FS01", "2020-09-21", "Windows Server 2019 Standard"),
-        ("NM-MIG-FS01", "2020-11-09", "Windows Server 2019 Standard"),
-        ("NM-ENG-FS03", "2021-02-15", "Windows Server 2019 Standard"),
-        ("NM-ACQ-FS01", "2021-04-12", "Windows Server 2019 Standard"),
-        ("NM-FS-04", "2021-06-14", "Windows Server 2019 Standard"),
-        ("NM-EXEC-FS01", "2022-03-14", "Windows Server 2022 Standard"),
-        ("NM-PROJ-FS01", "2022-06-20", "Windows Server 2022 Standard"),
-        ("NM-SALES-FS02", "2022-09-19", "Windows Server 2022 Standard"),
-        ("NM-FIN-FS02", "2023-03-13", "Windows Server 2022 Standard"),
-        ("NM-CORP-FS02", "2023-11-13", "Windows Server 2022 Standard"),
-        ("NM-SHARE-FS01", "2024-02-19", "Windows Server 2022 Standard"),
-        ("NM-DATA-FS02", "2024-05-20", "Windows Server 2022 Standard"),
-        ("NM-CS-FS02", "2024-09-16", "Windows Server 2022 Standard"),
-        ("NM-ENG-FS04", "2025-01-20", "Windows Server 2022 Standard"),
-        ("NM-LEGAL-FS02", "2025-03-17", "Windows Server 2022 Standard"),
-        ("NM-FS-05", "2025-06-16", "Windows Server 2022 Standard"),
+def _file_servers() -> tuple[ServerDef, ...]:
+    """The file servers, oldest first: the projection's ``file_server`` hosts."""
+    hosts = [host for host in vendor.records("hosts.jsonl") if host["role"] == "file_server"]
+    return tuple(
+        ServerDef(host["name"], _d(host["commissioned_on"]), host["operating_system"])
+        for host in sorted(hosts, key=lambda host: (host["commissioned_on"], host["name"]))
     )
-)
+
+
+SERVERS: Final[tuple[ServerDef, ...]] = _file_servers()
+
 
 SERVERS_BY_NAME: Final[dict[str, ServerDef]] = {server.name: server for server in SERVERS}
 
@@ -426,7 +403,7 @@ def _fill(
         folders.append(FolderDef(name))
         if "/" in name:
             continue
-        draws = Draws("children", share.casefold(), name.casefold())
+        draws = Draws("children", draw_key(share).casefold(), draw_key(name).casefold())
         for child in sorted(draws.sample(_CHILD_FOLDERS, draws.below(3))):
             folders.append(FolderDef(f"{name}/{child}"))
     return tuple(folders)
@@ -438,7 +415,7 @@ def _fill(
 
 
 def catalog(canon: Canon) -> tuple[ShareDef, ...]:
-    """Every share Null Meridian has, oldest servers first."""
+    """Every share Genesee Press has, oldest servers first."""
 
     def person(
         label: str, predicate: Callable[[Employee], bool], *, active: bool = True, nth: int = 0
@@ -501,8 +478,8 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         )
         for index in range(2)
     ]
-    lumen = [
-        person(f"lumen-{index}", lambda e: "acquired:lumen-analytics" in e.tags, nth=index)
+    acquired = [
+        person(f"lumen-{index}", lambda e: ACQUISITION_TAG in e.tags, nth=index)  # v1 draw label
         for index in range(3)
     ]
     long_gone = [
@@ -586,9 +563,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
             )
         )
 
-    # ---- NM-FS-01: the first file server, 2016 -------------------------------------------
+    # ---- GP-FS-01: the first file server, 2016 -------------------------------------------
     share(
-        "NM-FS-01",
+        "GP-FS-01",
         "Shared",
         "shared",
         "2016-10-12",
@@ -602,7 +579,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="The original company share.",
     )
     share(
-        "NM-FS-01",
+        "GP-FS-01",
         "Departments",
         "shared",
         "2016-10-12",
@@ -619,7 +596,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Department folders from before departments had servers of their own.",
     )
     share(
-        "NM-FS-01",
+        "GP-FS-01",
         "Scans",
         "shared",
         "2017-09-11",
@@ -637,7 +614,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Scan-to-folder target.",
     )
     share(
-        "NM-FS-01",
+        "GP-FS-01",
         "Software",
         "it",
         "2016-11-21",
@@ -646,9 +623,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Installers.",
     )
 
-    # ---- NM-CORP-FS01 -------------------------------------------------------------------
+    # ---- GP-CORP-FS01 -------------------------------------------------------------------
     share(
-        "NM-CORP-FS01",
+        "GP-CORP-FS01",
         "Departments",
         "shared",
         "2016-11-07",
@@ -664,7 +641,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Departmental collaboration, second edition.",
     )
     share(
-        "NM-CORP-FS01",
+        "GP-CORP-FS01",
         "Corporate",
         "operations",
         "2016-11-07",
@@ -677,7 +654,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=2,
     )
     share(
-        "NM-CORP-FS01",
+        "GP-CORP-FS01",
         "Templates",
         "shared",
         "2017-02-20",
@@ -685,9 +662,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-ENG-FS01: Scenario C, G and H ----------------------------------------------
+    # ---- GP-ENG-FS01: Scenario C, G and H ----------------------------------------------
     share(
-        "NM-ENG-FS01",
+        "GP-ENG-FS01",
         "Engineering",
         "engineering",
         "2017-01-16",
@@ -695,8 +672,8 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
             a("Share_Engineering_Modify", "M"),
             a("Share_Engineering_Read", "RX"),
             a("Engineering-FS", "M"),
-            a("sg-share-engineering-write", "M"),
-            a("sg-share-engineering-read-only", "RX"),
+            a("sec-share-engineering-write", "M"),
+            a("sec-share-engineering-read-only", "RX"),
             a("CREATOR_OWNER", "F", INHERIT_ONLY_OI_CI),
         ],
         [
@@ -752,7 +729,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Engineering since 2017.",
     )
     share(
-        "NM-ENG-FS01",
+        "GP-ENG-FS01",
         "Builds",
         "engineering",
         "2017-06-05",
@@ -772,7 +749,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=1,
     )
     share(
-        "NM-ENG-FS01",
+        "GP-ENG-FS01",
         "Projects",
         "projects",
         "2017-08-07",
@@ -784,9 +761,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=2,
     )
 
-    # ---- NM-FS-02 -----------------------------------------------------------------------
+    # ---- GP-FS-02 -----------------------------------------------------------------------
     share(
-        "NM-FS-02",
+        "GP-FS-02",
         "Projects",
         "projects",
         "2017-03-06",
@@ -795,7 +772,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         share_acl="everyone",
     )
     share(
-        "NM-FS-02",
+        "GP-FS-02",
         "Training",
         "shared",
         "2017-05-15",
@@ -803,7 +780,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-FS-02",
+        "GP-FS-02",
         "Team-Space",
         "shared",
         "2018-02-05",
@@ -812,9 +789,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         share_acl="authenticated",
     )
 
-    # ---- NM-FIN-FS01: Scenario B and F --------------------------------------------------
+    # ---- GP-FIN-FS01: Scenario B and F --------------------------------------------------
     share(
-        "NM-FIN-FS01",
+        "GP-FIN-FS01",
         "Finance",
         "finance",
         "2017-04-03",
@@ -823,8 +800,8 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
             a("Finance_Read", "RX"),
             a("GG_Finance_RW", "M"),
             a("FS-Finance-R", "R"),
-            a("sg-share-finance-write", "M"),
-            a("sg-share-finance-read-only", "RX"),
+            a("sec-share-finance-write", "M"),
+            a("sec-share-finance-read-only", "RX"),
             a("DOMAIN_USERS", "RX", THIS_ONLY),
         ],
         [
@@ -871,11 +848,11 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
             FolderDef("Treasury"),
         ],
         scenario="B",
-        description="Finance since 2017. Migration to sg-share-finance-* "
+        description="Finance since 2017. Migration to sec-share-finance-* "
         "started in 2024 and is not finished.",
     )
     share(
-        "NM-FIN-FS01",
+        "GP-FIN-FS01",
         "Payroll",
         "finance",
         "2017-06-12",
@@ -897,7 +874,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Payroll. Sensitive.",
     )
     share(
-        "NM-FIN-FS01",
+        "GP-FIN-FS01",
         "Accounting",
         "finance",
         "2018-03-12",
@@ -905,7 +882,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-FIN-FS01",
+        "GP-FIN-FS01",
         "Audit",
         "finance",
         "2019-02-11",
@@ -919,15 +896,15 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=2,
     )
 
-    # ---- NM-HR-FS01: Scenario D ---------------------------------------------------------
+    # ---- GP-HR-FS01: Scenario D ---------------------------------------------------------
     # People finished its move to the standard in 2024: HR_Share_RW was taken off the root
-    # when sg-share-people-* went on, which is what "well controlled" looks like here.
+    # when sec-share-people-* went on, which is what "well controlled" looks like here.
     share(
-        "NM-HR-FS01",
+        "GP-HR-FS01",
         "People",
         "people",
         "2018-01-22",
-        [a("sg-share-people-write", "M"), a("sg-share-people-read-only", "RX")],
+        [a("sec-share-people-write", "M"), a("sec-share-people-read-only", "RX")],
         [
             FolderDef(
                 "Employee-Relations", (a("HR-Confidential", "M"),), protected=True, organic=False
@@ -954,26 +931,26 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="People team. Mostly well controlled.",
     )
     share(
-        "NM-HR-FS01",
+        "GP-HR-FS01",
         "Recruiting",
         "people",
         "2018-03-05",
         [a("HR-Recruiting", "M"), a("Hiring-Managers", "RX")],
         fill=3,
     )
-    share("NM-HR-FS01", "Benefits", "people", "2019-01-07", [a("HR_Share_RW", "M")], fill=2)
+    share("GP-HR-FS01", "Benefits", "people", "2019-01-07", [a("HR_Share_RW", "M")], fill=2)
 
-    # ---- NM-SALES-FS01 -------------------------------------------------------------------
+    # ---- GP-SALES-FS01 -------------------------------------------------------------------
     share(
-        "NM-SALES-FS01",
+        "GP-SALES-FS01",
         "Sales",
         "sales",
         "2018-02-19",
         [
             a("Sales-RW", "M"),
             a("Sales_Read", "RX"),
-            a("sg-share-sales-write", "M"),
-            a("sg-share-sales-read-only", "RX"),
+            a("sec-share-sales-write", "M"),
+            a("sec-share-sales-read-only", "RX"),
         ],
         [
             FolderDef(
@@ -992,7 +969,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=7,
     )
     share(
-        "NM-SALES-FS01",
+        "GP-SALES-FS01",
         "Proposals",
         "sales",
         "2018-05-14",
@@ -1000,7 +977,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-SALES-FS01",
+        "GP-SALES-FS01",
         "Commissions",
         "sales",
         "2019-01-28",
@@ -1009,9 +986,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Every seller can read every commission statement.",
     )
 
-    # ---- NM-FS-03: fails outright in the third scan ------------------------------------
+    # ---- GP-FS-03: fails outright in the third scan ------------------------------------
     share(
-        "NM-FS-03",
+        "GP-FS-03",
         "Collaboration",
         "shared",
         "2018-04-09",
@@ -1020,7 +997,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         share_acl="authenticated",
     )
     share(
-        "NM-FS-03",
+        "GP-FS-03",
         "Training",
         "shared",
         "2018-06-04",
@@ -1028,7 +1005,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-FS-03",
+        "GP-FS-03",
         "Events",
         "marketing",
         "2019-03-04",
@@ -1036,16 +1013,16 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-LEGAL-FS01 -----------------------------------------------------------------
+    # ---- GP-LEGAL-FS01 -----------------------------------------------------------------
     share(
-        "NM-LEGAL-FS01",
+        "GP-LEGAL-FS01",
         "Legal",
         "legal",
         "2018-06-18",
         [
             a("Legal-RW", "M"),
-            a("sg-share-legal-write", "M", since=_d("2026-09-11")),
-            a("sg-share-legal-read-only", "RX", since=_d("2026-09-11")),
+            a("sec-share-legal-write", "M", since=_d("2026-09-11")),
+            a("sec-share-legal-read-only", "RX", since=_d("2026-09-11")),
         ],
         [
             FolderDef(
@@ -1070,7 +1047,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Legal. Standard groups added in September 2026.",
     )
     share(
-        "NM-LEGAL-FS01",
+        "GP-LEGAL-FS01",
         "Contracts",
         "legal",
         "2019-04-22",
@@ -1078,17 +1055,17 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
 
-    # ---- NM-MKT-FS01 --------------------------------------------------------------------
+    # ---- GP-MKT-FS01 --------------------------------------------------------------------
     share(
-        "NM-MKT-FS01",
+        "GP-MKT-FS01",
         "Marketing",
         "marketing",
         "2018-09-24",
         [
             a("FS-Marketing-RW", "M"),
             a("FS-Marketing-R", "RX"),
-            a("sg-share-marketing-write", "M"),
-            a("sg-share-marketing-read-only", "RX"),
+            a("sec-share-marketing-write", "M"),
+            a("sec-share-marketing-read-only", "RX"),
         ],
         [
             FolderDef(
@@ -1103,7 +1080,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         scenario="H-alt",
     )
     share(
-        "NM-MKT-FS01",
+        "GP-MKT-FS01",
         "Brand",
         "marketing",
         "2018-09-24",
@@ -1111,7 +1088,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-MKT-FS01",
+        "GP-MKT-FS01",
         "Events",
         "marketing",
         "2019-02-25",
@@ -1119,21 +1096,21 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-OPS-FS01 --------------------------------------------------------------------
+    # ---- GP-OPS-FS01 --------------------------------------------------------------------
     share(
-        "NM-OPS-FS01",
+        "GP-OPS-FS01",
         "Operations",
         "operations",
         "2019-01-14",
         [
             a("Ops-Share-RW", "M"),
-            a("sg-share-operations-write", "M"),
-            a("sg-share-operations-read-only", "RX"),
+            a("sec-share-operations-write", "M"),
+            a("sec-share-operations-read-only", "RX"),
         ],
         fill=6,
     )
     share(
-        "NM-OPS-FS01",
+        "GP-OPS-FS01",
         "Facilities",
         "operations",
         "2019-01-14",
@@ -1141,7 +1118,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-OPS-FS01",
+        "GP-OPS-FS01",
         "Procurement",
         "operations",
         "2019-05-06",
@@ -1149,9 +1126,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-ENG-FS02 --------------------------------------------------------------------
+    # ---- GP-ENG-FS02 --------------------------------------------------------------------
     share(
-        "NM-ENG-FS02",
+        "GP-ENG-FS02",
         "Engineering-Archive",
         "engineering",
         "2019-03-11",
@@ -1159,7 +1136,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-ENG-FS02",
+        "GP-ENG-FS02",
         "QA",
         "engineering",
         "2019-03-11",
@@ -1168,7 +1145,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-ENG-FS02",
+        "GP-ENG-FS02",
         "Releases",
         "engineering",
         "2019-10-07",
@@ -1176,16 +1153,16 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-ARCH-FS01: Scenario E -------------------------------------------------------
+    # ---- GP-ARCH-FS01: Scenario E -------------------------------------------------------
     share(
-        "NM-ARCH-FS01",
+        "GP-ARCH-FS01",
         "Archive",
         "archive",
         "2019-06-24",
         [
             a("GG_Archive_R", "RX"),
             a("FS-Legacy-Users", "RX"),
-            a("sg-share-archive-read-only", "RX"),
+            a("sec-share-archive-read-only", "RX"),
             a("IT-Share-Admins", "M"),
         ],
         [
@@ -1231,7 +1208,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Everything nobody would delete.",
     )
     share(
-        "NM-ARCH-FS01",
+        "GP-ARCH-FS01",
         "Archive-Finance",
         "archive",
         "2019-06-24",
@@ -1239,7 +1216,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-ARCH-FS01",
+        "GP-ARCH-FS01",
         "Archive-HR",
         "archive",
         "2019-08-12",
@@ -1247,9 +1224,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-DATA-FS01 -------------------------------------------------------------------
+    # ---- GP-DATA-FS01 -------------------------------------------------------------------
     share(
-        "NM-DATA-FS01",
+        "GP-DATA-FS01",
         "Data",
         "data",
         "2020-01-20",
@@ -1257,19 +1234,22 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
             a("Data-Team", "M"),
             a("Share-Data-RW", "M", since=_d("2022-02-07")),
             a("DATA_Share_Read", "RX", since=_d("2022-02-07")),
-            a("sg-share-data-write", "M"),
-            a("sg-share-data-read-only", "RX"),
+            a("sec-share-data-write", "M"),
+            a("sec-share-data-read-only", "RX"),
         ],
         [
             FolderDef(
-                "Lumen-Models",
-                (a("Acq-Lumen-RW", "M"), a(lumen[0], "F", intent=AceIntent.ACQUISITION_MIGRATION)),
+                "Brindlewood-Models",
+                (
+                    a("Acq-Brindlewood-RW", "M"),
+                    a(acquired[0], "F", intent=AceIntent.ACQUISITION_MIGRATION),
+                ),
             )
         ],
         fill=6,
     )
     share(
-        "NM-DATA-FS01",
+        "GP-DATA-FS01",
         "Analytics",
         "data",
         "2020-01-20",
@@ -1277,7 +1257,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-DATA-FS01",
+        "GP-DATA-FS01",
         "Exports",
         "data",
         "2020-06-22",
@@ -1285,22 +1265,22 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-CS-FS01 ---------------------------------------------------------------------
+    # ---- GP-CS-FS01 ---------------------------------------------------------------------
     share(
-        "NM-CS-FS01",
+        "GP-CS-FS01",
         "CustomerSuccess",
         "customer-success",
         "2020-02-24",
         [
             a("CS-Share-RW", "M"),
             a("CS_Share_Read", "RX", since=_d("2022-11-07")),
-            a("sg-share-customer-success-write", "M"),
-            a("sg-share-customer-success-read-only", "RX"),
+            a("sec-share-customer-success-write", "M"),
+            a("sec-share-customer-success-read-only", "RX"),
         ],
         fill=6,
     )
     share(
-        "NM-CS-FS01",
+        "GP-CS-FS01",
         "Support",
         "customer-success",
         "2020-02-24",
@@ -1308,7 +1288,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-CS-FS01",
+        "GP-CS-FS01",
         "Onboarding",
         "customer-success",
         "2020-06-15",
@@ -1316,17 +1296,21 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-IT-FS01 ---------------------------------------------------------------------
+    # ---- GP-IT-FS01 ---------------------------------------------------------------------
     share(
-        "NM-IT-FS01",
+        "GP-IT-FS01",
         "IT",
         "it",
         "2020-03-16",
-        [a("IT-Share-Admins", "M"), a("sg-share-it-write", "M"), a("sg-share-it-read-only", "RX")],
+        [
+            a("IT-Share-Admins", "M"),
+            a("sec-share-it-write", "M"),
+            a("sec-share-it-read-only", "RX"),
+        ],
         fill=6,
     )
     share(
-        "NM-IT-FS01",
+        "GP-IT-FS01",
         "Software",
         "it",
         "2020-03-16",
@@ -1334,7 +1318,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-IT-FS01",
+        "GP-IT-FS01",
         "Scripts",
         "it",
         "2020-07-06",
@@ -1342,21 +1326,21 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-PROD-FS01 -------------------------------------------------------------------
+    # ---- GP-PROD-FS01 -------------------------------------------------------------------
     share(
-        "NM-PROD-FS01",
+        "GP-PROD-FS01",
         "Product",
         "product",
         "2020-05-18",
         [
             a("Product-FS", "M"),
-            a("sg-share-product-write", "M"),
-            a("sg-share-product-read-only", "RX"),
+            a("sec-share-product-write", "M"),
+            a("sec-share-product-read-only", "RX"),
         ],
         fill=6,
     )
     share(
-        "NM-PROD-FS01",
+        "GP-PROD-FS01",
         "Research",
         "product",
         "2020-05-18",
@@ -1365,7 +1349,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
     share(
-        "NM-PROD-FS01",
+        "GP-PROD-FS01",
         "Roadmaps",
         "product",
         "2021-01-11",
@@ -1373,22 +1357,22 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-SEC-FS01: not readable in the first scan -----------------------------------
+    # ---- GP-SEC-FS01: not readable in the first scan -----------------------------------
     share(
-        "NM-SEC-FS01",
+        "GP-SEC-FS01",
         "Security",
         "security",
         "2020-09-21",
         [
             a("Security-Team", "M"),
             a("SEC-Share-Restricted", "M", since=_d("2022-09-12")),
-            a("sg-share-security-write", "M"),
-            a("sg-share-security-read-only", "RX"),
+            a("sec-share-security-write", "M"),
+            a("sec-share-security-read-only", "RX"),
         ],
         fill=5,
     )
     share(
-        "NM-SEC-FS01",
+        "GP-SEC-FS01",
         "Incidents",
         "security",
         "2020-09-21",
@@ -1407,7 +1391,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=1,
     )
     share(
-        "NM-SEC-FS01",
+        "GP-SEC-FS01",
         "Audits",
         "security",
         "2021-03-01",
@@ -1415,9 +1399,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-MIG-FS01: partial in the third scan ----------------------------------------
+    # ---- GP-MIG-FS01: partial in the third scan ----------------------------------------
     share(
-        "NM-MIG-FS01",
+        "GP-MIG-FS01",
         "Migrations",
         "migrations",
         "2020-11-09",
@@ -1452,7 +1436,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         scenario="E",
     )
     share(
-        "NM-MIG-FS01",
+        "GP-MIG-FS01",
         "Staging",
         "migrations",
         "2021-02-01",
@@ -1460,9 +1444,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-ENG-FS03 --------------------------------------------------------------------
+    # ---- GP-ENG-FS03 --------------------------------------------------------------------
     share(
-        "NM-ENG-FS03",
+        "GP-ENG-FS03",
         "Engineering-Platform",
         "engineering",
         "2021-02-15",
@@ -1470,7 +1454,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=5,
     )
     share(
-        "NM-ENG-FS03",
+        "GP-ENG-FS03",
         "ML-Models",
         "data",
         "2021-02-15",
@@ -1478,20 +1462,20 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
 
-    # ---- NM-ACQ-FS01 --------------------------------------------------------------------
+    # ---- GP-ACQ-FS01 --------------------------------------------------------------------
     share(
-        "NM-ACQ-FS01",
+        "GP-ACQ-FS01",
         "Acquisitions",
         "acquisitions",
         "2021-04-12",
-        [a("Executives", "M"), a("Acq-Lumen-RW", "M"), a("Legal-RW", "M")],
+        [a("Executives", "M"), a("Acq-Brindlewood-RW", "M"), a("Legal-RW", "M")],
         [
             FolderDef(
-                "Lumen-Analytics",
+                "Brindlewood-Analytics",
                 (
-                    a("LA-Migrated-Users", "M"),
-                    a(lumen[1], "F", intent=AceIntent.ACQUISITION_MIGRATION),
-                    a(lumen[2], "M", intent=AceIntent.ACQUISITION_MIGRATION),
+                    a("BA-Migrated-Users", "M"),
+                    a(acquired[1], "F", intent=AceIntent.ACQUISITION_MIGRATION),
+                    a(acquired[2], "M", intent=AceIntent.ACQUISITION_MIGRATION),
                 ),
                 protected=True,
             )
@@ -1499,18 +1483,18 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-ACQ-FS01",
-        "Lumen-Analytics",
+        "GP-ACQ-FS01",
+        "Brindlewood-Analytics",
         "acquisitions",
         "2021-04-12",
-        [a("LA-Migrated-Users", "M"), a("Data-Team", "RX"), a("Acq-Lumen-RW", "M")],
+        [a("BA-Migrated-Users", "M"), a("Data-Team", "RX"), a("Acq-Brindlewood-RW", "M")],
         fill=4,
         description="The acquired company's file server, migrated as it was.",
     )
 
-    # ---- NM-FS-04 -----------------------------------------------------------------------
+    # ---- GP-FS-04 -----------------------------------------------------------------------
     share(
-        "NM-FS-04",
+        "GP-FS-04",
         "Collaboration",
         "shared",
         "2021-06-14",
@@ -1518,7 +1502,7 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=5,
     )
     share(
-        "NM-FS-04",
+        "GP-FS-04",
         "Shared-Projects",
         "projects",
         "2021-06-14",
@@ -1526,23 +1510,23 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
 
-    # ---- NM-EXEC-FS01 -------------------------------------------------------------------
+    # ---- GP-EXEC-FS01 -------------------------------------------------------------------
     share(
-        "NM-EXEC-FS01",
+        "GP-EXEC-FS01",
         "Executive",
         "executive",
         "2022-03-14",
         [
             a("Exec-Share", "M"),
-            a("sg-share-executive-write", "M"),
-            a("sg-share-executive-read-only", "RX"),
+            a("sec-share-executive-write", "M"),
+            a("sec-share-executive-read-only", "RX"),
             a(assistant_1, "M", intent=AceIntent.EXECUTIVE_ASSISTANT),
             a(assistant_2, "M", intent=AceIntent.EXECUTIVE_ASSISTANT),
         ],
         fill=5,
     )
     share(
-        "NM-EXEC-FS01",
+        "GP-EXEC-FS01",
         "Board",
         "executive",
         "2022-03-14",
@@ -1555,9 +1539,9 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-PROJ-FS01 -------------------------------------------------------------------
+    # ---- GP-PROJ-FS01 -------------------------------------------------------------------
     share(
-        "NM-PROJ-FS01",
+        "GP-PROJ-FS01",
         "Projects-2022",
         "projects",
         "2022-06-20",
@@ -1565,38 +1549,38 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=4,
     )
     share(
-        "NM-PROJ-FS01",
+        "GP-PROJ-FS01",
         "Atlas",
         "projects",
         "2022-06-20",
-        [a("PRJ-Atlas-2022", "M"), a("sg-share-projects-read-only", "RX")],
+        [a("PRJ-Atlas-2022", "M"), a("sec-share-projects-read-only", "RX")],
         fill=4,
     )
     share(
-        "NM-PROJ-FS01",
+        "GP-PROJ-FS01",
         "Projects",
         "projects",
         "2024-08-12",
-        [a("sg-share-projects-write", "M"), a("sg-share-projects-read-only", "RX")],
+        [a("sec-share-projects-write", "M"), a("sec-share-projects-read-only", "RX")],
         [FolderDef("Helios", (a("PRJ-Helios", "M"),))],
         fill=4,
     )
 
-    # ---- NM-SALES-FS02 ------------------------------------------------------------------
+    # ---- GP-SALES-FS02 ------------------------------------------------------------------
     share(
-        "NM-SALES-FS02",
+        "GP-SALES-FS02",
         "Sales-Ops",
         "sales",
         "2022-09-19",
         [
             a("Sales-Ops", "M"),
             a("Revenue-Reporting", "RX"),
-            a("sg-share-sales-read-only", "RX", since=_d("2024-07-15")),
+            a("sec-share-sales-read-only", "RX", since=_d("2024-07-15")),
         ],
         fill=5,
     )
     share(
-        "NM-SALES-FS02",
+        "GP-SALES-FS02",
         "Deal-Desk",
         "sales",
         "2022-09-19",
@@ -1604,36 +1588,36 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-FIN-FS02 --------------------------------------------------------------------
+    # ---- GP-FIN-FS02 --------------------------------------------------------------------
     share(
-        "NM-FIN-FS02",
+        "GP-FIN-FS02",
         "Finance-Planning",
         "finance",
         "2023-03-13",
         [
             a("FIN-FPandA", "M"),
             a("Finance_Read", "RX"),
-            a("sg-share-finance-write", "M"),
-            a("sg-share-finance-read-only", "RX"),
+            a("sec-share-finance-write", "M"),
+            a("sec-share-finance-read-only", "RX"),
         ],
         fill=5,
     )
     share(
-        "NM-FIN-FS02",
+        "GP-FIN-FS02",
         "Treasury",
         "finance",
         "2023-03-13",
-        [a("FIN-Close-Approvers", "M"), a("sg-share-finance-read-only", "RX")],
+        [a("FIN-Close-Approvers", "M"), a("sec-share-finance-read-only", "RX")],
         fill=3,
     )
 
-    # ---- NM-CORP-FS02: Scenario A --------------------------------------------------------
+    # ---- GP-CORP-FS02: Scenario A --------------------------------------------------------
     share(
-        "NM-CORP-FS02",
+        "GP-CORP-FS02",
         "Design",
         "design",
         "2023-11-13",
-        [a("sg-share-design-read-only", "RX"), a("sg-share-design-write", "M")],
+        [a("sec-share-design-read-only", "RX"), a("sec-share-design-write", "M")],
         [
             FolderDef(name, organic=False, scenario="A")
             for name in (
@@ -1651,15 +1635,15 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         description="Built to the 2023 standard.",
     )
     share(
-        "NM-CORP-FS02",
+        "GP-CORP-FS02",
         "Product-Collab",
         "product",
         "2024-03-11",
-        [a("sg-share-product-write", "M"), a("sg-share-product-read-only", "RX")],
+        [a("sec-share-product-write", "M"), a("sec-share-product-read-only", "RX")],
         fill=5,
     )
 
-    # ---- NM-SHARE-FS01: the standard's departmental shares ------------------------------
+    # ---- GP-SHARE-FS01: the standard's departmental shares ------------------------------
     for slug, created in (
         ("it", "2024-02-19"),
         ("security", "2024-02-19"),
@@ -1671,83 +1655,86 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
     ):
         folder = DEPARTMENTS_BY_SLUG[slug].name.replace(" / ", "-").replace(" ", "-")
         share(
-            "NM-SHARE-FS01",
+            "GP-SHARE-FS01",
             folder,
             slug,
             created,
-            [a(f"sg-share-{slug}-read-only", "RX"), a(f"sg-share-{slug}-write", "M")],
+            [a(f"sec-share-{slug}-read-only", "RX"), a(f"sec-share-{slug}-write", "M")],
             fill=4,
         )
 
-    # ---- NM-DATA-FS02 -------------------------------------------------------------------
+    # ---- GP-DATA-FS02 -------------------------------------------------------------------
     share(
-        "NM-DATA-FS02",
+        "GP-DATA-FS02",
         "Data-Platform",
         "data",
         "2024-05-20",
-        [a("sg-share-data-write", "M"), a("sg-share-data-read-only", "RX")],
+        [a("sec-share-data-write", "M"), a("sec-share-data-read-only", "RX")],
         fill=5,
     )
     share(
-        "NM-DATA-FS02",
+        "GP-DATA-FS02",
         "Warehouse-Exports",
         "data",
         "2024-05-20",
-        [a("sg-share-data-write", "M"), a("sg-okta-snowflake-analyst", "RX")],
+        [a("sec-share-data-write", "M"), a("sec-okta-snowflake-analyst", "RX")],
         fill=3,
     )
 
-    # ---- NM-CS-FS02 ---------------------------------------------------------------------
+    # ---- GP-CS-FS02 ---------------------------------------------------------------------
     share(
-        "NM-CS-FS02",
+        "GP-CS-FS02",
         "CS-Enablement",
         "customer-success",
         "2024-09-16",
-        [a("sg-share-customer-success-write", "M"), a("sg-share-customer-success-read-only", "RX")],
+        [
+            a("sec-share-customer-success-write", "M"),
+            a("sec-share-customer-success-read-only", "RX"),
+        ],
         fill=4,
     )
     share(
-        "NM-CS-FS02",
+        "GP-CS-FS02",
         "Support-KB",
         "customer-success",
         "2024-09-16",
-        [a("sg-share-customer-success-write", "M"), a("sg-okta-zendesk-agent", "RX")],
+        [a("sec-share-customer-success-write", "M"), a("sec-okta-zendesk-agent", "RX")],
         fill=3,
     )
 
-    # ---- NM-ENG-FS04 --------------------------------------------------------------------
+    # ---- GP-ENG-FS04 --------------------------------------------------------------------
     share(
-        "NM-ENG-FS04",
+        "GP-ENG-FS04",
         "Engineering-Docs",
         "engineering",
         "2025-01-20",
-        [a("sg-share-engineering-write", "M"), a("sg-share-engineering-read-only", "RX")],
+        [a("sec-share-engineering-write", "M"), a("sec-share-engineering-read-only", "RX")],
         fill=6,
     )
     share(
-        "NM-ENG-FS04",
+        "GP-ENG-FS04",
         "Runbooks",
         "engineering",
         "2025-01-20",
-        [a("sg-share-engineering-write", "M"), a("sg-okta-pagerduty-responder", "RX")],
+        [a("sec-share-engineering-write", "M"), a("sec-okta-pagerduty-responder", "RX")],
         fill=4,
     )
 
-    # ---- NM-LEGAL-FS02 ------------------------------------------------------------------
+    # ---- GP-LEGAL-FS02 ------------------------------------------------------------------
     share(
-        "NM-LEGAL-FS02",
+        "GP-LEGAL-FS02",
         "Legal-Matters",
         "legal",
         "2025-03-17",
         [
             a("Legal-RW", "M"),
-            a("sg-share-legal-write", "M", since=_d("2026-09-11")),
-            a("sg-share-legal-read-only", "RX", since=_d("2026-09-11")),
+            a("sec-share-legal-write", "M", since=_d("2026-09-11")),
+            a("sec-share-legal-read-only", "RX", since=_d("2026-09-11")),
         ],
         fill=4,
     )
     share(
-        "NM-LEGAL-FS02",
+        "GP-LEGAL-FS02",
         "Privacy",
         "legal",
         "2025-03-17",
@@ -1755,21 +1742,21 @@ def catalog(canon: Canon) -> tuple[ShareDef, ...]:
         fill=3,
     )
 
-    # ---- NM-FS-05 -----------------------------------------------------------------------
+    # ---- GP-FS-05 -----------------------------------------------------------------------
     share(
-        "NM-FS-05",
+        "GP-FS-05",
         "Cross-Functional",
         "shared",
         "2025-06-16",
-        [a("sg-share-projects-write", "M"), a("sg-share-projects-read-only", "RX")],
+        [a("sec-share-projects-write", "M"), a("sec-share-projects-read-only", "RX")],
         fill=4,
     )
     share(
-        "NM-FS-05",
+        "GP-FS-05",
         "Shared-Modern",
         "shared",
         "2025-06-16",
-        [a("sg-share-operations-write", "M"), a("sg-share-operations-read-only", "RX")],
+        [a("sec-share-operations-write", "M"), a("sec-share-operations-read-only", "RX")],
         fill=3,
     )
 
@@ -1834,7 +1821,7 @@ def _group_pool(canon: Canon, share: ShareDef) -> list[str]:
         and group.deleted is None
         and group.name not in ("Proj-Zephyr-RW",)
     ]
-    return sorted(pool)
+    return sorted(pool, key=legacy_key)
 
 
 def _user_pool(canon: Canon, share: ShareDef) -> list[tuple[AceIntent, list[Employee]]]:
@@ -1861,7 +1848,7 @@ def _user_pool(canon: Canon, share: ShareDef) -> list[tuple[AceIntent, list[Empl
         pools.append(
             (
                 AceIntent.ACQUISITION_MIGRATION,
-                [p for p in active if "acquired:lumen-analytics" in p.tags],
+                [p for p in active if ACQUISITION_TAG in p.tags],
             )
         )
     if share.area in ("migrations", "archive"):
@@ -1902,7 +1889,7 @@ def _pick_user(draws: Draws, canon: Canon, share: ShareDef) -> AceDef:
 
 def _roll(canon: Canon, share: ShareDef, folder: FolderDef) -> tuple[tuple[AceDef, ...], bool]:
     """The organic ACL for one folder: ``(explicit entries, protected)``."""
-    draws = Draws("folder", share.unc.casefold(), folder.rel.casefold())
+    draws = Draws("folder", draw_key(share.unc).casefold(), draw_key(folder.rel).casefold())
     weights = _ROLL_WEIGHTS[share.era]
     if "/" in folder.rel:
         # Deeper folders are mostly created and left alone.
@@ -1948,7 +1935,7 @@ def _roll(canon: Canon, share: ShareDef, folder: FolderDef) -> tuple[tuple[AceDe
             _pick_user(draws, canon, share),
         ), True
     users = {_pick_user(draws, canon, share) for _ in range(1 + draws.below(3))}
-    return (*system, *sorted(users, key=lambda ace: ace.trustee)), True
+    return (*system, *sorted(users, key=lambda ace: legacy_key(ace.trustee))), True
 
 
 # ---------------------------------------------------------------------------
@@ -1974,7 +1961,7 @@ class FolderRecord:
 
 
 @dataclass(frozen=True, slots=True)
-class NullMeridianEstate:
+class GeneseePressEstate:
     day: dt.date
     estate: DemoEstate
     folders: tuple[FolderRecord, ...]
@@ -1991,7 +1978,7 @@ def _resolve_trustee(trustee: str, canon: Canon, server: str) -> str:
         return WELL_KNOWN[trustee]
     if trustee == "DOMAIN_USERS":
         return canon.group("Domain Users").sid
-    if trustee.startswith("NM-"):
+    if trustee.startswith("GP-"):
         return canon.employees_by_id[trustee].sid
     return canon.group(trustee).sid
 
@@ -2000,7 +1987,7 @@ def _trustee_exists(trustee: str, canon: Canon, day: dt.date) -> bool:
     """Whether the trustee existed on ``day`` — or had existed and left its SID behind."""
     if trustee in WELL_KNOWN or trustee == "DOMAIN_USERS":
         return True
-    if trustee.startswith("NM-"):
+    if trustee.startswith("GP-"):
         return canon.employees_by_id[trustee].account_state(day) != "absent"
     return canon.group(trustee).created <= day
 
@@ -2017,11 +2004,11 @@ def _ace(definition: AceDef, sid: str) -> DemoAce:
 def _classify(
     explicit: Sequence[AceDef], protected: bool, canon: Canon, area: str
 ) -> tuple[Posture, str]:
-    people = [ace for ace in explicit if ace.trustee.startswith("NM-")]
+    people = [ace for ace in explicit if ace.trustee.startswith("GP-")]
     groups = [
         ace
         for ace in explicit
-        if not ace.trustee.startswith("NM-")
+        if not ace.trustee.startswith("GP-")
         and ace.trustee not in ("SYSTEM", "ADMINISTRATORS", "CREATOR_OWNER")
     ]
     if not people and not groups:
@@ -2066,8 +2053,8 @@ def _classify(
 
 
 @lru_cache(maxsize=8)
-def build_estate(day: dt.date = SNAPSHOT) -> NullMeridianEstate:
-    """The Null Meridian estate as a complete scan on ``day`` would have found it."""
+def build_estate(day: dt.date = SNAPSHOT) -> GeneseePressEstate:
+    """The Genesee Press estate as a complete scan on ``day`` would have found it."""
     canon = build_canon()
     shares = catalog(canon)
 
@@ -2187,10 +2174,10 @@ def build_estate(day: dt.date = SNAPSHOT) -> NullMeridianEstate:
     )
     referenced = {ace.trustee for record in folders for ace in record.explicit}
     principals, edges = _directory(canon, day, servers, referenced)
-    return NullMeridianEstate(
+    return GeneseePressEstate(
         day=day,
         estate=DemoEstate(
-            profile=f"null-meridian@{day.isoformat()}",
+            profile=f"genesee-press@{day.isoformat()}",
             principals=principals,
             edges=edges,
             servers=servers,
@@ -2214,7 +2201,7 @@ def _share(share: ShareDef, trustees: dict[str, str], canon: Canon) -> DemoShare
             admins,
             *(
                 DemoShareAce(_resolve_trustee(trustee, canon, share.server), permission=level)
-                for trustee, level in sorted(trustees.items())
+                for trustee, level in sorted(trustees.items(), key=lambda item: legacy_key(item[0]))
                 if trustee != "FS-Admins"
             ),
         )
@@ -2288,8 +2275,8 @@ def _directory(
         ),
     ]
     # SIDs left on ACLs by accounts deleted before ADG's first scan.
-    for trustee in sorted(referenced):
-        if not trustee.startswith("NM-"):
+    for trustee in sorted(referenced, key=legacy_key):
+        if not trustee.startswith("GP-"):
             continue
         person = canon.employees_by_id[trustee]
         if person.account_state(FIRST_SCAN) == "deleted":
@@ -2325,7 +2312,10 @@ def _directory(
         )
         for person in people
     ]
-    for parent, member in canon.memberships_on(day):
+    # In the order ADG v1 emitted them (by v1 spelling), so the scan's observations are too.
+    for parent, member in sorted(
+        canon.memberships_on(day), key=lambda edge: (legacy_key(edge[0]), legacy_key(edge[1]))
+    ):
         if member in groups_by_name:
             edges.append(
                 DemoEdge(

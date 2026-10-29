@@ -1,11 +1,12 @@
 # Demo Mode
 
 **Status:** implemented · **Code:** `backend/app/runtime_mode.py`, `backend/app/demo_mode/`,
-`backend/app/demo/null_meridian/`, `backend/app/api/runtime.py`, `backend/app/api/demo.py`,
+`backend/app/demo/genesee_press/`, `backend/app/api/runtime.py`, `backend/app/api/demo.py`,
 `frontend/components/Banners.tsx`, `frontend/components/DemoGuide.tsx` · **Decision:**
 [ADR-0039](../decisions/0039-demo-is-a-deployment-boundary.md) · **Dataset:**
-[Null Meridian](../demo/null-meridian.md) · **Evidence:** [Demo Mode](../handoffs/demo-mode-01.md),
-[Null Meridian](../handoffs/adg-demo-null-meridian-01.md),
+[Genesee Press](../demo/genesee-press.md) · **Evidence:** [Demo Mode](../handoffs/demo-mode-01.md),
+[Null Meridian, the dataset's former name](../handoffs/adg-demo-null-meridian-01.md),
+[SYNTH-ADG-01](../demo/reports/SYNTH-ADG-01-report.md),
 [integration](../handoffs/adg-demo-integration-01.md)
 
 Demo Mode is the real ADG application — the same API, ingestion, history, current-state
@@ -18,10 +19,10 @@ Two things, and only two, make up a demo:
 
 ```text
 Demo Mode     = the runtime, safety, persistence and operation boundary  (app.demo_mode)
-Null Meridian = the deterministic synthetic enterprise dataset it runs on (app.demo.null_meridian)
+Genesee Press = the deterministic synthetic enterprise dataset it runs on (app.demo.genesee_press)
 ```
 
-Null Meridian generates data and nothing else. Every reset, guard, marker, scan and status
+Genesee Press generates data and nothing else. Every reset, guard, marker, scan and status
 command belongs to Demo Mode, which loads the dataset through one contract (§3).
 
 It exists so that ADG can be demonstrated, tested end to end and eventually deployed publicly
@@ -41,7 +42,7 @@ ADG_RUNTIME_MODE=demo         # synthetic data, isolated database, ingestion clo
 value are startup errors naming the accepted values. Only an *unset* variable means
 production, because that is what every deployment predating the setting already is. Case and
 surrounding whitespace are forgiven (`Demo` is unambiguous); nothing else is. In particular
-`standard` — the name an earlier Null Meridian branch used for production — is refused like
+`standard` — the name an earlier Genesee Press branch used for production — is refused like
 any other unrecognized value rather than kept as a synonym.
 
 It is orthogonal to `ADG_ENVIRONMENT`. `ADG_ENVIRONMENT` says how strict a deployment is
@@ -125,30 +126,30 @@ Registered datasets (`DATASETS`), each a lazy `module:callable` loader:
 
 | Key | Loader | Status |
 | --- | --- | --- |
-| `null-meridian-v1` | `app.demo.null_meridian:synthetic_dataset` | **Canonical and the default.** The Null Meridian estate ([docs](../demo/null-meridian.md)). |
+| `genesee-press-v1` | `app.demo.genesee_press:synthetic_dataset` | **Canonical and the default.** The Genesee Press estate ([docs](../demo/genesee-press.md)). |
 | `adg-reference-estate` | `app.demo_mode.reference:synthetic_dataset` | Selectable explicitly, never a fallback. A thin adapter over the small estate in `app.demo` (`corp.example.com`); its transcripts are asserted byte-identical to `app.demo`'s own. Fast enough for the Demo Mode database suite. |
 
-`ADG_DEMO_DATASET` selects one; empty means `null-meridian-v1`. One name throughout: the
+`ADG_DEMO_DATASET` selects one; empty means `genesee-press-v1`. One name throughout: the
 registry key, the dataset's metadata key, its seed and the `dataset_key`/`dataset_seed` on
-the deployment marker all read `null-meridian-v1`. A selected dataset that cannot load — its
+the deployment marker all read `genesee-press-v1`. A selected dataset that cannot load — its
 module absent or failing to build — is a refusal at startup and at reset; nothing substitutes
 another estate, and its risk configuration is never silently replaced by the defaults.
 
-### The Null Meridian adapter
+### The Genesee Press adapter
 
-`app.demo.null_meridian.dataset.NullMeridianDataset` maps the generator onto the contract
+`app.demo.genesee_press.dataset.GeneseePressDataset` maps the estate onto the contract
 and constructs nothing (a test checks it calls no estate constructor):
 
 | Member | Source |
 | --- | --- |
-| `metadata` | `canon` (company, `nullmeridian.info`, snapshot 2026-10-01, seed, founded) and display facts read from `manifest.build_manifest()` — the document the committed `docs/demo/null-meridian.manifest.json` is checked against. No count is hard-coded. |
+| `metadata` | `canon` (company, `corp.geneseepress.example`, snapshot 2026-10-01, dataset key, founded) and display facts read from `manifest.build_manifest()` — the document the committed `docs/demo/genesee-press.manifest.json` is checked against. No count is hard-coded. |
 | `generations()` | `generations.build_generations()`: `g1` 2026-09-03, `g2` 09-17, `g3` 10-01; 100 runs each; each risk pass dated 06:00 UTC on its scan day (`generations.RISK_PASS_AT`). |
 | `baseline_generations` | 3 — the canon is what three scans had collected by the snapshot. |
 | `risk_configuration()` | `risk.DEMO_RISK_CONFIGURATION`: eleven sensitive folders; `redundant_access_paths.minimum_paths` 2 → 4. |
 | `scenarios()` | `scenarios.golden_scenarios()` — A to H. |
-| `probes()` | 23 objects scenarios A–H are about (e.g. the Design root's `sg-share-design-write` entry, every link of G's six-group chain, `Proj-Zephyr-RW` on Zephyr) plus the two history promises: `Wave-3-Staging` survives the partial g3 scan of `NM-MIG-FS01`, and `NM-FS-03`'s folders survive its failed g3 scan. |
+| `probes()` | 23 objects scenarios A–H are about (e.g. the Design root's `sec-share-design-write` entry, every link of G's six-group chain, `Proj-Zephyr-RW` on Zephyr) plus the two history promises: `Wave-3-Staging` survives the partial g3 scan of `GP-MIG-FS01`, and `GP-FS-03`'s folders survive its failed g3 scan. |
 
-`tests/demo_mode/test_datasets.py::TestNullMeridianCanon` and `TestTheNullMeridianAdapter`
+`tests/demo_mode/test_datasets.py::TestGeneseePressCanon` and `TestTheGeneseePressAdapter`
 hold the adapter to the canon (transcripts byte-identical to the generator's, facts equal to
 the committed manifest, every probe present in the generated estate).
 
@@ -173,8 +174,8 @@ against an unmarked database or one holding a different dataset than `ADG_DEMO_D
 Demo Mode uses the real schema; there is no demo-only schema. Production code never reads
 the marker, and a production database simply has none.
 
-`deployment_marker` is the **only** authority. (An earlier Null Meridian branch marked its
-database with `COMMENT ON DATABASE … 'adg-demo:null-meridian-v1'` and accepted any database
+`deployment_marker` is the **only** authority. (An earlier Genesee Press branch marked its
+database with `COMMENT ON DATABASE … 'adg-demo:genesee-press-v1'` and accepted any database
 whose name merely *contained* `demo`; both were removed at integration rather than kept as a
 second, competing authority. A populated database carrying that comment but no marker row is
 refused — a test proves it.)
@@ -182,7 +183,7 @@ refused — a test proves it.)
 ## 5. Initialize and reset — one operator workflow
 
 ```bash
-export ADG_RUNTIME_MODE=demo                       # ADG_DEMO_DATASET unset: Null Meridian
+export ADG_RUNTIME_MODE=demo                       # ADG_DEMO_DATASET unset: Genesee Press
 export ADG_DATABASE_URL=postgresql+psycopg://adg:<pw>@localhost:5432/adg_demo
 cd backend
 python -m app.demo_mode reset    # first run initializes; every run restores the baseline
@@ -190,13 +191,13 @@ python -m app.demo_mode verify   # probes + fingerprint against the database as 
 python -m app                    # serve
 ```
 
-This is the only reset there is. (`python -m app.demo.null_meridian` keeps three pure
+This is the only reset there is. (`python -m app.demo.genesee_press` keeps three pure
 developer utilities — `manifest`, `transcripts`, `stats` — and has no database command.)
 
 `reset` performs, in order: refuse unless demo → load the dataset (refuse if unavailable,
 before touching the database) → `alembic upgrade heads` → identify the database (§4) → lock
 the marker and truncate every ADG table except it → ingest the baseline **one generation at a
-time** through the synthetic provider (Null Meridian: g1, g2, g3 — 300 runs, 41,756
+time** through the synthetic provider (Genesee Press: g1, g2, g3 — 300 runs, 41,756
 observations) → `app.operations.commands.evaluate_risks`, the production operator command,
 under the dataset's risk configuration and dated by the last applied generation → validate:
 every run recorded with the status its transcript claimed, every probe present in current
@@ -222,7 +223,7 @@ counts, fingerprint). All refuse unless demo. `--json` prints machine-readable r
 
 With Docker: `docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build`.
 The override gives PostgreSQL its own volume and an `adg_demo` database, runs a one-shot
-`demo-reset` service (Null Meridian by default; a few minutes), and starts the API only after
+`demo-reset` service (Genesee Press by default; a few minutes), and starts the API only after
 it succeeds.
 
 ## 6. Temporal semantics are untouched
@@ -230,13 +231,13 @@ it succeeds.
 Demo data enters through ingestion, so it gets ADG's real observation model: append-only
 observations, `object_versions`, current state as "no open tombstone", tombstones only from a
 successful authoritative in-scope reconciliation, partial and failed runs closing nothing.
-Null Meridian's three generations walk through every rule: g1's NTFS scan of `NM-SEC-FS01`
+Genesee Press's three generations walk through every rule: g1's NTFS scan of `GP-SEC-FS01`
 **fails** (its shares are known, its folders are not); g2 tombstones accounts crossing the
 180-day deletion line, the deleted `Project-Vega` group with its edges and a deleted folder,
-all through reconciled complete scans; g3's scan of `NM-FS-03` **fails** and that of
-`NM-MIG-FS01` is **partial**, so every folder they did not report stays current — including
+all through reconciled complete scans; g3's scan of `GP-FS-03` **fails** and that of
+`GP-MIG-FS01` is **partial**, so every folder they did not report stays current — including
 `Wave-3-Staging`, really deleted on 2026-09-25 — until a complete scan says otherwise.
-`tests/db/test_null_meridian_demo.py::TestCurrentStateSemantics` asserts each, and that
+`tests/db/test_genesee_press_demo.py::TestCurrentStateSemantics` asserts each, and that
 current state is exactly what the scans justify. The reference estate carries its own partial
 (FS02) and failed (FS03) runs, asserted in `tests/demo_mode/test_demo_database.py`. Demo Mode
 applies the dataset's history and does not author a second one.
@@ -298,7 +299,7 @@ production Active Directory or file servers are connected."), a line saying the 
 itself is real, and the dataset's domain, snapshot and seed; the footer adds that the
 organization is fictional. Nothing is shown in production. It offers no control.
 
-The panel links to **`/demo`, the demo guide**: the dataset's scenarios (Null Meridian's A–H),
+The panel links to **`/demo`, the demo guide**: the dataset's scenarios (Genesee Press's A–H),
 each linking into the real application — the folder's directory page, each person's and
 group's principal page, and the access explanation of each person against the folder — plus
 the scan history and what the demo lets a visitor change. It renders `GET /api/v1/demo` and

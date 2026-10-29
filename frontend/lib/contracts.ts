@@ -91,7 +91,7 @@ export interface DemoScenarioSubject {
 }
 
 /**
- * A walkthrough the demo dataset is built to show — Null Meridian's golden scenarios A–H.
+ * A walkthrough the demo dataset is built to show — Genesee Press's golden scenarios A–H.
  * Display-only: the UI links each one into the real application's pages.
  */
 export interface DemoScenario {

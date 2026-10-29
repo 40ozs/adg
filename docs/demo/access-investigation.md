@@ -2,15 +2,15 @@
 
 Part of the [ADG demo guide](README.md) (Walkthrough 1). This page is the detailed account.
 
-> **Synthetic.** Every identity, group, folder, SID and scan here is generated Null Meridian
+> **Synthetic.** Every identity, group, folder, SID and scan here is generated Genesee Press
 > demo data. None of it describes a real person, organization or system.
 
 **The question:** *Why does Fatima Gordon have access to*
-`\\NM-ENG-FS01\Engineering\Projects\Apollo`*?*
+`\\GP-ENG-FS01\Engineering\Projects\Apollo`*?*
 
 ADG's reviewer-facing demo opens with one access-troubleshooting question and answers it
 with the real application: the real access engine, the real explanation API, and the real
-pages over the reset Null Meridian estate. It is designed to be read in about five minutes.
+pages over the reset Genesee Press estate. It is designed to be read in about five minutes.
 It answers which route carries the access, what evidence supports each hop, what ADG could
 not confirm, whether that matters, and what to inspect next.
 
@@ -41,15 +41,15 @@ The demo guide renders the same eight steps, each linked to its section.
 ## The fixture
 
 The Apollo folder was authored in scenario C, *Engineering sprawl*, to make the question
-honest rather than easy (`backend/app/demo/null_meridian/estate.py`). It needs no new
+honest rather than easy (`backend/app/demo/genesee_press/estate.py`). It needs no new
 fixture names and no change to the estate.
 
 | ACL | Entries that matter here |
 | --- | --- |
-| NTFS, `\\NM-ENG-FS01\Engineering\Projects\Apollo` | `Proj-Apollo` (Modify); **a veteran engineer, directly** (Modify, intent `historical-engineer`); **a former employee's account** (Modify, intent `former-user`; deleted before ADG first scanned, so stored as an `unresolved` SID, last known `NULLMERIDIAN\lhansen`); five inherited engineering grants, among them `Share_Engineering_Modify` |
-| Share, `\\NM-ENG-FS01\Engineering` | every engineering team at Change, `ENG-Mobile` among them; the veteran engineer directly; the former employee's SID; **`Proj-Zephyr-RW`** (scenario H: no members since 2019, so ADG holds none) |
+| NTFS, `\\GP-ENG-FS01\Engineering\Projects\Apollo` | `Proj-Apollo` (Modify); **a veteran engineer, directly** (Modify, intent `historical-engineer`); **a former employee's account** (Modify, intent `former-user`; deleted before ADG first scanned, so stored as an `unresolved` SID, last known `GPCORP\lhansen`); five inherited engineering grants, among them `Share_Engineering_Modify` |
+| Share, `\\GP-ENG-FS01\Engineering` | every engineering team at Change, `ENG-Mobile` among them; the veteran engineer directly; the former employee's SID; **`Proj-Zephyr-RW`** (scenario H: no members since 2019, so ADG holds none) |
 
-The seed (`app.demo.null_meridian.scenarios.investigations`) reads the principal off that
+The seed (`app.demo.genesee_press.scenarios.investigations`) reads the principal off that
 ACL by intent, the same way the estate placed them. It names a pair and says nothing about
 the answer. It reaches the UI through Demo Mode's optional `investigations()` contract and
 `GET /api/v1/demo`.
@@ -57,7 +57,7 @@ the answer. It reaches the UI through Demo Mode's optional `investigations()` co
 ## The answer, as ADG computes it
 
 Pinned against a real reset in
-`backend/tests/db/test_null_meridian_demo.py::TestTheAccessInvestigation`.
+`backend/tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation`.
 
 * **Observed:** `granted`, **Modify**, certainty **`at_least`**, conclusive, over SMB. Both
   ACLs grant Modify, so no layer narrows the answer.

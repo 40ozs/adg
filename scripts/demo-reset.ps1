@@ -1,17 +1,17 @@
 <#
 .SYNOPSIS
-    Reset a Demo Mode database to the canonical Null Meridian estate.
+    Reset a Demo Mode database to the canonical Genesee Press estate.
 
 .DESCRIPTION
     Runs `python -m app.demo_mode reset`, the one Demo Mode reset: migrates the demo
     database, checks it is positively a demo database (named with 'demo' as a word, and
     either empty or carrying a deployment_marker row that says demo), empties it, posts the
-    three Null Meridian scan generations through ADG's own ingestion endpoints in-process,
+    three Genesee Press scan generations through ADG's own ingestion endpoints in-process,
     evaluates the risk rules, checks the canonical objects, and prints a report whose
     fingerprint is identical on every run.
 
     Contacts no directory, file server or collector: the estate is synthetic. See
-    docs\architecture\demo-mode.md and docs\demo\null-meridian.md.
+    docs\architecture\demo-mode.md and docs\demo\genesee-press.md.
 
 .PARAMETER DatabaseUrl
     The demo database. Defaults to the local development server's 'adg_demo' database.

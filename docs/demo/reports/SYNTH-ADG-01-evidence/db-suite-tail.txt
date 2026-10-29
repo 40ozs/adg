@@ -1,0 +1,15 @@
+    severities=_parse_set(severity, Severity, "severity"),
+
+tests/db/test_changes_api.py::TestTheFeed::test_a_cursor_from_another_endpoint_is_refused
+  /home/user/adg/backend/app/api/changes.py:611: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    feed = await ChangeService(session).feed(filters, cursor=_cursor(cursor))
+
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body1-a removal must name the entry it removes]
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body2-protecting must say what happens to the inherited entries]
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body3-a pair scope names both ends]
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body4-a group cannot be a direct member of itself]
+  /home/user/adg/backend/app/api/simulations.py:1089: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    raise _unprocessable(error) from error
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1298 passed, 6150 deselected, 1 xfailed, 68 warnings in 1898.10s (0:31:38)

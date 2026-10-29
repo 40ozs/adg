@@ -5,7 +5,7 @@ One operator command does the whole cycle (``python -m app.demo_mode reset``):
 1. **Refuse unless demo.** ``ADG_RUNTIME_MODE=demo`` and a demo-named database are startup
    conditions of :class:`~app.config.Settings`; the synthetic provider checks the mode again.
 2. **Load the dataset**, before touching the database. An unavailable dataset is a refusal,
-   never a substitution. Null Meridian (``null-meridian-v1``) is the default.
+   never a substitution. Genesee Press (``genesee-press-v1``) is the default.
 3. **Migrate** the database to the current schema (``alembic upgrade heads``), the same
    command an operator runs for production.
 4. **Identify the database** (:mod:`app.demo_mode.marker`): marked demo, or empty and about

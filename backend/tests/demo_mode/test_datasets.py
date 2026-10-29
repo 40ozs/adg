@@ -2,7 +2,7 @@
 
 Both adapters are checked against their generators directly -- their transcripts must be the
 generator's transcripts, byte for byte -- because an adapter that "tidied up" a run id or a
-timestamp would be a second source of synthetic truth. Null Meridian is the canonical
+timestamp would be a second source of synthetic truth. Genesee Press is the canonical
 dataset; its canon tests run unconditionally, because it ships in this build.
 """
 
@@ -78,10 +78,10 @@ class TestTheReferenceAdapter:
 
 
 class TestTheRegistry:
-    def test_the_canonical_dataset_is_null_meridian_and_ships_in_this_build(self) -> None:
+    def test_the_canonical_dataset_is_genesee_press_and_ships_in_this_build(self) -> None:
         entry = DATASETS[CANONICAL_DATASET]
-        assert CANONICAL_DATASET == "null-meridian-v1"
-        assert entry.loader == "app.demo.null_meridian:synthetic_dataset"
+        assert CANONICAL_DATASET == "genesee-press-v1"
+        assert entry.loader == "app.demo.genesee_press:synthetic_dataset"
         assert entry.dependency is None
         assert isinstance(load_dataset(CANONICAL_DATASET), SyntheticDataset)
 
@@ -190,7 +190,7 @@ class TestTheContractIsEnforced:
             )
 
 
-class TestNullMeridianCanon:
+class TestGeneseePressCanon:
     """The canonical values ADG-DEMO-MODE-01 requires Demo Mode to carry unchanged.
 
     Holds the generator's metadata to the canon, so a drift in either place is caught at the
@@ -200,11 +200,11 @@ class TestNullMeridianCanon:
     def test_the_canonical_organization(self) -> None:
         metadata = load_dataset(CANONICAL_DATASET).metadata
 
-        assert metadata.key == "null-meridian-v1"
-        assert metadata.company_name == "Null Meridian"
-        assert metadata.domain == "nullmeridian.info"
+        assert metadata.key == "genesee-press-v1"
+        assert metadata.company_name == "Genesee Press"
+        assert metadata.domain == "corp.geneseepress.example"
         assert metadata.snapshot_date == dt.date(2026, 10, 1)
-        assert metadata.seed == "null-meridian-v1"
+        assert metadata.seed == "genesee-press-v1"
 
     def test_it_offers_a_baseline_and_probes(self) -> None:
         dataset = load_dataset(CANONICAL_DATASET)
@@ -247,11 +247,11 @@ class TestDatasetRiskConfiguration:
         assert settings.risk_configuration is DEFAULT_CONFIGURATION
 
 
-class TestTheNullMeridianAdapter:
-    """``app.demo.null_meridian.synthetic_dataset()`` carries the generator's output unchanged."""
+class TestTheGeneseePressAdapter:
+    """``app.demo.genesee_press.synthetic_dataset()`` carries the generator's output unchanged."""
 
     def test_its_generations_are_the_generators_byte_for_byte(self) -> None:
-        from app.demo.null_meridian.generations import GENERATIONS, build_generations
+        from app.demo.genesee_press.generations import GENERATIONS, build_generations
 
         adapted = load_dataset(CANONICAL_DATASET).generations()
         direct = build_generations()
@@ -269,19 +269,19 @@ class TestTheNullMeridianAdapter:
         assert baseline_generations(dataset) == 3 == len(dataset.generations())
 
     def test_each_risk_pass_is_dated_by_its_generation(self) -> None:
-        from app.demo.null_meridian.generations import GENERATIONS
+        from app.demo.genesee_press.generations import GENERATIONS
 
         dates = [g.evaluated_at for g in load_dataset(CANONICAL_DATASET).generations()]
         assert dates == [
             dt.datetime.combine(generation.day, dt.time(6, 0), tzinfo=dt.UTC)
             for generation in GENERATIONS
         ]
-        # The canonical pass -- after the snapshot scan -- is the one the Null Meridian
+        # The canonical pass -- after the snapshot scan -- is the one the Genesee Press
         # reset used before integration: 2026-10-01T06:00Z.
         assert dates[-1] == dt.datetime(2026, 10, 1, 6, 0, tzinfo=dt.UTC)
 
     def test_the_risk_configuration_is_the_datasets_own(self) -> None:
-        from app.demo.null_meridian.risk import DEMO_RISK_CONFIGURATION
+        from app.demo.genesee_press.risk import DEMO_RISK_CONFIGURATION
 
         supplier = load_dataset(CANONICAL_DATASET).risk_configuration  # type: ignore[attr-defined]
         assert supplier() is DEMO_RISK_CONFIGURATION
@@ -294,7 +294,7 @@ class TestTheNullMeridianAdapter:
                 Path(__file__).resolve().parents[3]
                 / "docs"
                 / "demo"
-                / "null-meridian.manifest.json"
+                / "genesee-press.manifest.json"
             ).read_text(encoding="utf-8")
         )
         statistics = manifest["statistics"]
@@ -315,7 +315,7 @@ class TestTheNullMeridianAdapter:
         )
 
     def test_scenarios_a_to_h_come_from_the_golden_scenarios(self) -> None:
-        from app.demo.null_meridian.scenarios import SCENARIO_IDS, golden_scenarios
+        from app.demo.genesee_press.scenarios import SCENARIO_IDS, golden_scenarios
 
         scenarios = dataset_scenarios(load_dataset(CANONICAL_DATASET))
         golden = golden_scenarios()
@@ -327,7 +327,7 @@ class TestTheNullMeridianAdapter:
             assert scenario.summary == item["demonstrates"]
 
     def test_scenario_subjects_and_probes_name_canon_identifiers(self) -> None:
-        from app.demo.null_meridian.canon import build_canon
+        from app.demo.genesee_press.canon import build_canon
 
         canon = build_canon()
         known = {person.sid for person in canon.employees} | {g.sid for g in canon.groups}
@@ -346,8 +346,8 @@ class TestTheNullMeridianAdapter:
         """A probe is a promise about current state after the reset. Each one names an
         object the 2026-10-01 scans report -- or, for the two history probes, one the
         partial and failed scans may not remove."""
-        from app.demo.null_meridian.canon import SNAPSHOT
-        from app.demo.null_meridian.estate import build_estate
+        from app.demo.genesee_press.canon import SNAPSHOT
+        from app.demo.genesee_press.estate import build_estate
 
         estate = build_estate(SNAPSHOT).estate
         g2 = build_estate(dt.date(2026, 9, 17)).estate
@@ -367,7 +367,7 @@ class TestTheNullMeridianAdapter:
                 assert (key["server"].casefold(), key["share"].casefold()) in shares
 
     def test_two_loads_are_identical(self) -> None:
-        from app.demo.null_meridian import synthetic_dataset
+        from app.demo.genesee_press import synthetic_dataset
 
         first, second = synthetic_dataset(), synthetic_dataset()
         assert first.metadata == second.metadata
@@ -380,7 +380,7 @@ class TestTheNullMeridianAdapter:
         from pathlib import Path
 
         source = (
-            Path(__file__).resolve().parents[2] / "app" / "demo" / "null_meridian" / "dataset.py"
+            Path(__file__).resolve().parents[2] / "app" / "demo" / "genesee_press" / "dataset.py"
         ).read_text(encoding="utf-8")
         called = {
             node.func.id

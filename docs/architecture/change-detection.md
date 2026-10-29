@@ -266,7 +266,7 @@ at once.
 inside the standard window, or compare one kind of object, offered only for kinds that fit the
 ceiling at both instants -- each a real request naming the attempt it recovers from
 (`retry_of`). Container confirmations are answered in one statement for the whole comparison
-rather than one per scan instant; measured on the Null Meridian estate, the bounded estate-wide
+rather than one per scan instant; measured on the Genesee Press estate, the bounded estate-wide
 comparison went from 42 statements to 6. See
 [the ADG-DEMO-03 report](../demo/reports/ADG-DEMO-03-report.md).
 

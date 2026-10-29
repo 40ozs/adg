@@ -2,7 +2,7 @@
 /**
  * The demo guide links every scenario into the real application.
  *
- * The scenarios are the dataset's (Null Meridian's golden scenarios A–H, served by
+ * The scenarios are the dataset's (Genesee Press's golden scenarios A–H, served by
  * `GET /api/v1/demo`); the guide adds nothing but links — to the directory page for the
  * folder, the principal page for each person and group, and the access explanation for each
  * person against the folder. A link that pointed anywhere else would be a second, UI-only
@@ -53,7 +53,7 @@ vi.mock("@/lib/api/adg", () => ({ fetchRuntime: vi.fn(), fetchDemoOverview: vi.f
 
 const MOVER = "S-1-5-21-3949361974-1583827165-633756269-1243";
 const SALES_OPS = "S-1-5-21-3949361974-1583827165-633756269-1437";
-const REVENUE = "\\\\NM-FIN-FS01\\Finance\\Reports\\Revenue";
+const REVENUE = "\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue";
 
 const scenarioF: DemoScenario = {
   key: "F",
@@ -71,13 +71,13 @@ const scenarioH: DemoScenario = {
   key: "H",
   title: "A safe first clean-up",
   summary: "An empty group still granted Modify.",
-  resource: "\\\\NM-ENG-FS01\\Engineering\\Projects\\Zephyr",
+  resource: "\\\\GP-ENG-FS01\\Engineering\\Projects\\Zephyr",
   subjects: [],
-  related_resources: ["\\\\NM-ENG-FS01\\Projects\\Zephyr"],
+  related_resources: ["\\\\GP-ENG-FS01\\Projects\\Zephyr"],
 };
 
 const FATIMA = "S-1-5-21-3949361974-1583827165-633756269-1323";
-const APOLLO = "\\\\NM-ENG-FS01\\Engineering\\Projects\\Apollo";
+const APOLLO = "\\\\GP-ENG-FS01\\Engineering\\Projects\\Apollo";
 
 const apollo: DemoInvestigation = {
   key: "apollo",
@@ -93,11 +93,11 @@ const apollo: DemoInvestigation = {
 const overview: DemoOverview = {
   runtime_mode: "demo",
   dataset: {
-    key: "null-meridian-v1",
-    company_name: "Null Meridian",
-    domain: "nullmeridian.info",
+    key: "genesee-press-v1",
+    company_name: "Genesee Press",
+    domain: "corp.geneseepress.example",
     snapshot_date: "2026-10-01",
-    seed: "null-meridian-v1",
+    seed: "genesee-press-v1",
     synthetic: true,
     description: "A fictional company.",
     facts: {},
@@ -159,7 +159,7 @@ describe("the scenario list", () => {
   it("links related folders too", () => {
     render(<DemoScenarioList scenarios={[scenarioH]} />);
 
-    expect(screen.getByRole("link", { name: "\\\\NM-ENG-FS01\\Projects\\Zephyr" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "\\\\GP-ENG-FS01\\Projects\\Zephyr" })).toBeInTheDocument();
   });
 
   it("says so when a dataset defines no scenarios", () => {
@@ -233,7 +233,7 @@ describe("the guide", () => {
   it("shows the history, and what the demo lets a visitor change", () => {
     render(<DemoGuide overview={overview} />);
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Null Meridian");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Genesee Press");
     const history = screen.getByRole("table");
     expect(within(history).getAllByText("applied")).toHaveLength(2);
     expect(within(history).getByText("not yet applied")).toBeInTheDocument();
@@ -271,7 +271,7 @@ describe("the page", () => {
 
     render(await DemoPage());
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Demo guide: Null Meridian");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Demo guide: Genesee Press");
     expect(adg.fetchDemoOverview).toHaveBeenCalledWith("t");
   });
 

@@ -1,0 +1,16 @@
+# SYNTH-ADG-01: ADG gates, 2026-10-27T17:34:29Z, Python 3.13.17, Node v22.22.0, PostgreSQL 16 (local)
+
+## backend: ruff check / ruff format --check / mypy app tests
+All checks passed!
+414 files already formatted
+Success: no issues found in 413 source files
+
+## backend: pytest -m 'not smoke'
+6025 passed, 124 skipped, 1299 deselected, 7 warnings in 169.89s (0:02:49)
+
+## backend: pytest -m smoke tests/db/test_genesee_press_demo.py (full smoke suite: db-suite-tail.txt, 1298 passed, 1 xfailed)
+51 passed in 437.87s (0:07:17)
+
+## frontend: npm run lint / typecheck / test / build / cf:typecheck
+lint: clean; typecheck: clean; cf:typecheck: clean; build: succeeded
+Test Files  44 passed (44) / Tests  1510 passed (1510)

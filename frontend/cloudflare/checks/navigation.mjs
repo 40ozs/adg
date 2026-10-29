@@ -7,7 +7,7 @@
  *   STAGING_URL=… node cloudflare/checks/navigation.mjs
  *
  * Runs against the hosted demo or a local `next start`; needs `playwright` as browser.mjs
- * does. Reads the Null Meridian dataset as SIGN_IN_AS (default `viewer`) and writes nothing.
+ * does. Reads the Genesee Press dataset as SIGN_IN_AS (default `viewer`) and writes nothing.
  * A reload is detected two ways: a main-frame document request, and a marker set on
  * `window` that only survives a client-side navigation.
  */
@@ -24,9 +24,9 @@ if (!BASE) {
 const SIGN_IN_AS = process.env.SIGN_IN_AS ?? "viewer";
 const TIMEOUT = Number(process.env.CHECK_TIMEOUT_MS ?? 90_000);
 
-// Null Meridian (docs/demo/null-meridian.md): scenario G's six-level chain ends at Bianca.
+// Genesee Press (docs/demo/genesee-press.md): scenario G's six-level chain ends at Bianca.
 const BIANCA = { name: "Bianca Rossi", sid: "S-1-5-21-3949361974-1583827165-633756269-1133" };
-const DEEP_GROUP = "sg-okta-slack-user";
+const DEEP_GROUP = "sec-okta-slack-user";
 const CHAIN_GROUP = "GG_Sales";
 
 const browser = await chromium.launch(
@@ -275,15 +275,15 @@ await check("Groups: search, sort by members, open a group, switch its views", a
   await mark();
   await navigate(page.getByRole("link", { name: "Identities" }), "/identities");
   await navigate(page.getByRole("link", { name: "Groups" }).first(), "/identities/groups");
-  await search("sg-share-design");
-  await page.waitForURL((url) => url.search.includes("q=sg-share-design"));
+  await search("sec-share-design");
+  await page.waitForURL((url) => url.search.includes("q=sec-share-design"));
   await page.waitForLoadState("networkidle");
   const table = page.locator("table").first();
   const header = table.getByRole("columnheader", { name: /^Direct members/ });
   await header.getByRole("button").click();
   await header.getByRole("button").click();
   const first = await table.locator("tbody tr th").first().innerText();
-  expect(first.includes("sg-share-design-write"), `largest group first? ${first}`);
+  expect(first.includes("sec-share-design-write"), `largest group first? ${first}`);
   await navigate(table.locator("tbody tr th a").first(), "/identities/principal/");
   for (const view of ["Effective members", "Direct members", "Parent groups"]) {
     await navigate(page.getByRole("navigation", { name: "Identity sections" }).getByRole("link", { name: view }), "/");

@@ -136,6 +136,13 @@ known passwords. This phase did not build it, and
 | `Invoke-AdgAccessOracle.ps1` | Emits the matrix, asks Windows, writes `ntfs-access-oracle.json` |
 | `Invoke-AdgRealAccessProbe.ps1` | Builds real directories, writes `real-directory-access.json` |
 
+`real-directory-access.json` is a measurement of a real workstation. Before committing a new
+capture, replace the capturing machine's account-domain identifier (the `S-1-5-21-a-b-c` part of
+`subject.user_sid`) with `S-1-5-21-1000000001-1000000002-1000000003` everywhere in the file and
+record it in the `sanitized` block, as SYNTH-ADG-01 did. The masks and SDDL structure are what the
+tests compare; the SID values are not, and
+`test_the_capturing_machine_is_not_identifiable` fails on any other domain SID.
+
 `Get-AdgTokenGroup` in `AdgAuthzProbe.psm1` dumps the group SIDs Windows itself places in a
 context built from a SID. That is the measurement ADG's `TokenAssumption` model is checked
 against; unlike the rest, it needs a SID the local system can resolve.
