@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
+
 import { fetchAuthConfig } from "@/lib/api/adg";
 import { DevelopmentLoginForm } from "@/app/login/LoginForm";
 import { SortableTable } from "@/components/SortableTable";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Sign in") };
 
 /**
  * Sign in.

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
@@ -19,9 +20,11 @@ import {
   evidenceNeedsAttention,
 } from "@/components/Overview";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
-import { visibleNavItems } from "@/lib/nav";
+import { sectionTitle, visibleNavItems } from "@/lib/nav";
 
 import styles from "@/components/overview.module.css";
+
+export const metadata: Metadata = { title: sectionTitle("overview") };
 
 /** The change window the Overview counts, in days: the Changes page's own default. */
 const CHANGE_DAYS = 7;

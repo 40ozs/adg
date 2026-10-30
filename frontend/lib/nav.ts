@@ -125,6 +125,23 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
 ] as const;
 
+/** A document title: what the page is, then the product. Short, so a narrow tab still says it. */
+export function documentTitle(name: string): string {
+  return `${name} — ADG`;
+}
+
+/**
+ * A section's document title, from its nav label, so the browser tab and the nav never
+ * disagree (`/risks` is "Findings — ADG").
+ */
+export function sectionTitle(id: string): string {
+  const item = NAV_ITEMS.find((candidate) => candidate.id === id);
+  if (item === undefined) {
+    throw new Error(`No navigation item "${id}".`);
+  }
+  return documentTitle(item.label);
+}
+
 /** The items a principal holding `capabilities` should be offered. */
 export function visibleNavItems(
   capabilities: readonly string[],
