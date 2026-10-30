@@ -1,4 +1,16 @@
+import { Suspense, use, type JSX } from "react";
 import Link from "next/link";
+
+import type { ApiResult } from "@/lib/api/client";
+import type {
+  ChangeSummaryResponse,
+  ChangesResponse,
+  CollectionStatus,
+  QueueResponse,
+  RiskRulesResponse,
+  RiskSummaryResponse,
+  RuntimeInfo,
+} from "@/lib/contracts";
 
 import {
   fetchChangeSummary,
@@ -56,26 +68,22 @@ export default async function OverviewPage() {
     to: now.toISOString(),
   };
 
-  // Independent reads, in parallel; a section the account cannot open is never requested.
-  const [status, runtime, risk, rules, changeSummary, changeFeed, queue] = await Promise.all([
-    fetchCollectionStatus(token),
-    fetchRuntime(),
-    can("risks:read") ? fetchRiskSummary(token) : null,
-    can("risks:read") ? fetchRiskRules(token) : null,
-    can("changes:read") ? fetchChangeSummary(token, window) : null,
-    can("changes:read") ? fetchChanges(token, { ...window, limit: CHANGE_FEED_LIMIT }) : null,
-    can("governance:read") ? fetchReviewerQueue(token) : null,
-  ]);
+  // Independent reads, all started here, in parallel; a section the account cannot open is
+  // never requested. Each section waits for its own reads only (ADG-UX-PERF-01), so one slow
+  // summary holds back its own section rather than the whole page.
+  const status = fetchCollectionStatus(token);
+  const runtime = fetchRuntime();
+  const risk = can("risks:read") ? fetchRiskSummary(token) : null;
+  const rules = can("risks:read") ? fetchRiskRules(token) : null;
+  const changes = can("changes:read")
+    ? {
+        summary: fetchChangeSummary(token, window),
+        feed: fetchChanges(token, { ...window, limit: CHANGE_FEED_LIMIT }),
+      }
+    : null;
+  const queue = can("governance:read") ? fetchReviewerQueue(token) : null;
 
-  const health = (
-    <DataHealth
-      status={status}
-      risk={risk?.ok ? risk.data : null}
-      runtime={runtime.ok ? runtime.data : null}
-      canOpenCollectors={can("collectors:read")}
-    />
-  );
-  const healthFirst = evidenceNeedsAttention(status, risk);
+  const health = { status, risk, runtime, canOpenCollectors: can("collectors:read") };
   const sections = visibleNavItems(viewer.principal.capabilities).filter(
     (item) => item.id !== "overview",
   );
@@ -86,25 +94,36 @@ export default async function OverviewPage() {
 
       <RoleAdviceBanner principal={viewer.principal} />
 
-      {healthFirst && health}
+      {/* Data health has two places and renders in exactly one. Until its reads say which,
+          the top one holds it: the caveat is assumed to come first until it is known not to. */}
+      <Suspense fallback={<Pending id="health" title="Data health" what="collection status" />}>
+        <HealthSlot first {...health} />
+      </Suspense>
 
-      {risk !== null && <NeedsAttention result={risk} rules={rules?.ok ? rules.data.rules : []} />}
+      {risk !== null && rules !== null && (
+        <Suspense fallback={<Pending id="attention" title="Needs attention" what="findings" />}>
+          <AttentionSlot risk={risk} rules={rules} />
+        </Suspense>
+      )}
 
-      {(changeSummary !== null || queue !== null) && (
+      {(changes !== null || queue !== null) && (
         <div className={styles.pair}>
-          {changeSummary !== null && changeFeed !== null && (
-            <RecentChanges
-              summary={changeSummary}
-              feed={changeFeed}
-              collection={status.ok ? status.data : null}
-              days={CHANGE_DAYS}
-            />
+          {changes !== null && (
+            <Suspense fallback={<Pending id="changes" title="Recent changes" what="changes" />}>
+              <ChangesSlot {...changes} status={status} />
+            </Suspense>
           )}
-          {queue !== null && <Reviews result={queue} />}
+          {queue !== null && (
+            <Suspense fallback={<Pending id="reviews" title="Reviews" what="your review queue" />}>
+              <ReviewsSlot queue={queue} />
+            </Suspense>
+          )}
         </div>
       )}
 
-      {!healthFirst && health}
+      <Suspense fallback={null}>
+        <HealthSlot first={false} {...health} />
+      </Suspense>
 
       <div className="card">
         <h2>Where to start</h2>
@@ -132,5 +151,94 @@ export default async function OverviewPage() {
         </p>
       </div>
     </>
+  );
+}
+
+type Read<T> = Promise<ApiResult<T>>;
+
+/*
+ * Each slot reads its own promises with `use`, inside its own Suspense boundary: the server
+ * streams the rest of the page and fills a slot in when its reads settle. A failure or a
+ * timeout is an ApiResult like any other, so it lands in the section's own state message.
+ */
+
+function HealthSlot({
+  first,
+  status,
+  risk,
+  runtime,
+  canOpenCollectors,
+}: {
+  first: boolean;
+  status: Read<CollectionStatus>;
+  risk: Read<RiskSummaryResponse> | null;
+  runtime: Read<RuntimeInfo>;
+  canOpenCollectors: boolean;
+}): JSX.Element | null {
+  const statusResult = use(status);
+  const riskResult = risk === null ? null : use(risk);
+  const runtimeResult = use(runtime);
+  if (evidenceNeedsAttention(statusResult, riskResult) !== first) {
+    return null;
+  }
+  return (
+    <DataHealth
+      status={statusResult}
+      risk={riskResult?.ok ? riskResult.data : null}
+      runtime={runtimeResult.ok ? runtimeResult.data : null}
+      canOpenCollectors={canOpenCollectors}
+    />
+  );
+}
+
+function AttentionSlot({
+  risk,
+  rules,
+}: {
+  risk: Read<RiskSummaryResponse>;
+  rules: Read<RiskRulesResponse>;
+}): JSX.Element {
+  const riskResult = use(risk);
+  const rulesResult = use(rules);
+  return <NeedsAttention result={riskResult} rules={rulesResult.ok ? rulesResult.data.rules : []} />;
+}
+
+function ChangesSlot({
+  summary,
+  feed,
+  status,
+}: {
+  summary: Read<ChangeSummaryResponse>;
+  feed: Read<ChangesResponse>;
+  status: Read<CollectionStatus>;
+}): JSX.Element {
+  const summaryResult = use(summary);
+  const feedResult = use(feed);
+  // An empty window is worded against collection, so this section also waits for it.
+  const statusResult = use(status);
+  return (
+    <RecentChanges
+      summary={summaryResult}
+      feed={feedResult}
+      collection={statusResult.ok ? statusResult.data : null}
+      days={CHANGE_DAYS}
+    />
+  );
+}
+
+function ReviewsSlot({ queue }: { queue: Read<QueueResponse> }): JSX.Element {
+  return <Reviews result={use(queue)} />;
+}
+
+/**
+ * A section whose reads have not settled: its heading, so the region is already named, and a
+ * sentence that says loading in words. No number, and nothing that could be read as empty.
+ */
+function Pending({ id, title, what }: { id: string; title: string; what: string }): JSX.Element {
+  return (
+    <section className="card" aria-labelledby={`overview-${id}-pending`} aria-busy="true">
+      <h2 id={`overview-${id}-pending`}>{title}</h2>
+      <p className="muted">Loading {what}…</p>
+    </section>
   );
 }

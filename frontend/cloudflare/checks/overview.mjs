@@ -196,12 +196,21 @@ const OVERVIEW_READS = [
 ];
 const SECTIONS = ["Needs attention", "Recent changes", "Reviews", "Data health", "Where to start", "What ADG will not do"];
 
+/**
+ * Sections stream in Suspense boundaries (ADG-UX-PERF-01), and React reveals them on an animation
+ * frame, at most one batch per ~300 ms, so the last one can land after `load`. Read the page only
+ * once no placeholder is left.
+ */
+async function settled(page) {
+  await page.waitForFunction(() => !document.querySelector('#main [aria-busy="true"]'), null, { timeout: 15_000 });
+}
 /** Load the Overview; returns the API requests its render made and the browser's timings. */
 async function overview(page) {
   const from = performance.now();
   const response = await page.goto(`${WEB}/`, { waitUntil: "load" });
   const to = performance.now();
   expect(response?.status() === 200, `/: HTTP ${response?.status()}`);
+  await settled(page);
   await page.waitForFunction(() => performance.getEntriesByName("first-contentful-paint").length > 0, null, { timeout: 5000 }).catch(() => {});
   const timing = await page.evaluate(() => {
     const [nav] = performance.getEntriesByType("navigation");
@@ -707,19 +716,157 @@ await check(`timing: one first load, then ${WARM_RUNS} warm loads (TTFB, FCP, lo
   return `first: TTFB ${runs[0].ttfb} ms, FCP ${runs[0].firstContentfulPaint} ms, load ${runs[0].load} ms; warm median: TTFB ${median(warm.map((r) => r.ttfb))} ms, FCP ${median(warm.map((r) => r.firstContentfulPaint))} ms, load ${median(warm.map((r) => r.load))} ms`;
 });
 
-await check("fault: a 4 s changes summary delays the page, not other sections' content; a 12 s one times out in its section only", async () => {
-  const page = await pageFor("planner");
+/* ------------------------------------------------------------------ progressive rendering (ADG-UX-PERF-01) */
+
+/**
+ * Each section streams in its own Suspense boundary. A streamed section arrives hidden at the end
+ * of <body> and React moves it into #main when it is revealed, so "visible" here is the moment
+ * the real section (not its `…-pending` placeholder) is inside #main.
+ */
+const SECTION_IDS = { "Needs attention": "overview-attention", "Recent changes": "overview-changes", Reviews: "overview-reviews", "Data health": "overview-health" };
+const instrumented = new WeakSet();
+function recordMilestones(ids) {
+  const seen = (window.__perf = { shell: null, h1: null, ready: {}, pending: {} });
+  const scan = () => {
+    const now = performance.now();
+    if (seen.shell === null && document.querySelector("header.shell-header")) seen.shell = now;
+    const main = document.getElementById("main");
+    if (!main) return;
+    if (seen.h1 === null && main.querySelector("h1")) seen.h1 = now;
+    for (const id of ids) {
+      if (seen.ready[id] == null && main.querySelector(`section[aria-labelledby="${id}"]`)) seen.ready[id] = now;
+      if (seen.pending[id] == null && main.querySelector(`section[aria-labelledby="${id}-pending"]`)) seen.pending[id] = now;
+    }
+  };
+  new MutationObserver(scan).observe(document, { childList: true, subtree: true });
+}
+/**
+ * Loads the Overview and returns its milestones in ms from navigation start: shell, h1, each
+ * section, the first and last section, and every page read's end on the same clock. `during`
+ * runs while the document is still streaming.
+ */
+async function progressive(page, during) {
+  if (!instrumented.has(page)) {
+    await page.addInitScript(recordMilestones, Object.values(SECTION_IDS));
+    instrumented.add(page);
+  }
+  const from = performance.now();
+  const navigation = page.goto(`${WEB}/`, { waitUntil: "load" });
+  const midStream = during ? await during() : null;
+  const response = await navigation;
+  expect(response?.status() === 200, `/: HTTP ${response?.status()}`);
+  await settled(page);
+  const { perf, origin } = await page.evaluate(() => ({ perf: window.__perf, origin: performance.timeOrigin }));
+  // A read the web tier abandoned (its 10 s timeout) has no end yet: null.
+  const at = (nodeMs) => (nodeMs === null ? null : Math.round(performance.timeOrigin + nodeMs - origin));
+  const reads = requests.filter((r) => r.start >= from && OVERVIEW_READS.includes(r.path));
+  const sections = Object.fromEntries(
+    Object.entries(SECTION_IDS).filter(([, id]) => perf.ready[id] != null).map(([name, id]) => [name, Math.round(perf.ready[id])]),
+  );
+  const times = Object.values(sections);
+  return {
+    midStream,
+    shell: Math.round(perf.shell),
+    h1: Math.round(perf.h1),
+    sections,
+    pending: Object.fromEntries(Object.entries(SECTION_IDS).filter(([, id]) => perf.pending[id] != null).map(([name, id]) => [name, Math.round(perf.pending[id])])),
+    first_section: Math.min(...times),
+    settled: Math.max(...times),
+    reads: Object.fromEntries(reads.map((r) => [r.path, at(r.end)])),
+    slowest_read_end: Math.max(...reads.map((r) => at(r.end) ?? Infinity)),
+    read_count: reads.length,
+  };
+}
+const brief = (m) => `shell ${m.shell}, h1 ${m.h1}, first section ${m.first_section}, ${Object.entries(m.sections).map(([k, v]) => `${k} ${v}`).join(", ")}, slowest read ends ${m.slowest_read_end} (ms)`;
+measurements.progressive = {};
+
+await check("progressive, all reads healthy: shell, h1 and every section; each read once", async () => {
+  const page = await pageFor("admin", { width: 1440, height: 910 });
+  const runs = [];
+  for (let i = 0; i < 3; i += 1) runs.push(await progressive(page));
+  const m = runs.at(-1);
+  expect(Object.keys(m.sections).length === 4, `sections ${Object.keys(m.sections).join(", ")}`);
+  expect(m.read_count === 7 && Object.keys(m.reads).length === 7, `${m.read_count} reads (${Object.keys(m.reads).join(", ")})`);
+  measurements.progressive.normal = runs;
+  return runs.map(brief).join(" | ");
+});
+
+/** A 4 s read: the shell and every other section become visible before it ends; then its own section does. */
+for (const [name, path, user] of [
+  ["Reviews", "/api/v1/governance/queue", "planner"],
+  ["Recent changes", "/api/v1/changes/summary", "planner"],
+  ["Needs attention", "/api/v1/risks/summary", "admin"],
+]) {
+  await check(`progressive, 4 s ${path}: ${name} waits alone; the shell and independent sections are usable first`, async () => {
+    const page = await pageFor(user, { width: 1440, height: 920 });
+    if (path.startsWith("/api/v1/changes")) shiftChanges();
+    faults.set(path, { ...(faults.get(path) ?? {}), delayMs: 4000 });
+    const m = await progressive(page, async () => {
+      // Mid-stream, the slow section is a named, busy placeholder that says loading in words.
+      const other = name === "Reviews" ? "Needs attention" : "Reviews";
+      await page.locator(`#main section[aria-labelledby="${SECTION_IDS[other]}"]`).waitFor({ timeout: 3500 });
+      const placeholder = page.locator(`#main section[aria-labelledby="${SECTION_IDS[name]}-pending"]`);
+      const state = { busy: await placeholder.getAttribute("aria-busy"), text: squash(await placeholder.innerText()), h1: await page.locator("h1").count() };
+      await shot(page, `progressive-4s-${SECTION_IDS[name]}-midstream-1440`, false);
+      return state;
+    });
+    const end = m.reads[path];
+    // Data health reads the findings summary (and is placed by it), so it waits with Needs attention.
+    const dependent = name === "Needs attention" ? ["Data health"] : [];
+    const independent = Object.keys(m.sections).filter((s) => s !== name && !dependent.includes(s));
+    expect(m.midStream.busy === "true" && /^.+ Loading .+…$/.test(m.midStream.text) && !/\d/.test(m.midStream.text), `placeholder ${JSON.stringify(m.midStream)}`);
+    expect(m.midStream.h1 === 1, `${m.midStream.h1} h1 mid-stream`);
+    expect(end >= 4000, `the delayed read ended at ${end} ms`);
+    expect(m.shell < end - 2000 && m.h1 < end - 2000, `shell ${m.shell} / h1 ${m.h1} vs read end ${end}`);
+    for (const s of independent) expect(m.sections[s] < end - 2000, `${s} visible at ${m.sections[s]} ms, the slow read ended at ${end} ms`);
+    for (const s of [name, ...dependent]) expect(m.sections[s] >= end, `${s} visible at ${m.sections[s]} ms, before its read ended (${end} ms)`);
+    if (name === "Recent changes") expect((await regionText(page, name)).includes("permission or unclassified"), "the slow section lost its content");
+    measurements.progressive[`delay_4s_${name}`] = m;
+    return brief(m);
+  });
+}
+
+await check("progressive, 4 s Reviews: focus stays where the user put it while a section arrives", async () => {
+  const page = await pageFor("planner", { width: 1440, height: 930 });
+  faults.set("/api/v1/governance/queue", { delayMs: 4000 });
+  let focused = null;
+  await progressive(page, async () => {
+    const link = page.locator('#main section[aria-labelledby="overview-attention"] a').first();
+    await link.waitFor({ timeout: 3500 });
+    await link.focus();
+    focused = await link.getAttribute("href");
+  });
+  await region(page, "Reviews").waitFor();
+  const active = await page.evaluate(() => ({ href: document.activeElement?.getAttribute("href"), inAttention: !!document.activeElement?.closest('section[aria-labelledby="overview-attention"]') }));
+  expect(active.inAttention && active.href === focused, `focus moved to ${JSON.stringify(active)} (was ${focused})`);
+  return `focus stayed on ${focused}`;
+});
+
+await check("progressive, 500 /api/v1/governance/queue: Reviews alone shows the error; nothing else fails", async () => {
+  const page = await pageFor("planner", { width: 1440, height: 950 });
+  faults.set("/api/v1/governance/queue", { status: 500 });
+  await progressive(page);
+  expect((await region(page, "Reviews").getByRole("alert").count()) === 1, "no error in Reviews");
+  for (const other of ["Needs attention", "Recent changes", "Data health"]) {
+    expect((await region(page, other).count()) === 1, `${other} missing`);
+  }
+  expect(!/Loading .+…/.test(await page.locator("#main").innerText()), "a placeholder never settled");
+  return "Reviews shows its error; other sections rendered";
+});
+
+await check("progressive, 12 s /api/v1/changes/summary: other sections render long before the 10 s timeout; only Recent changes times out", async () => {
+  const page = await pageFor("planner", { width: 1440, height: 940 });
   const shiftMs = shiftChanges();
-  faults.set("/api/v1/changes/summary", { shiftMs, delayMs: 4000 });
-  const slow = await overview(page);
-  expect((await regionText(page, "Recent changes")).includes("permission or unclassified"), "the slow section lost its content");
   faults.set("/api/v1/changes/summary", { shiftMs, delayMs: 12_000 });
-  const hung = await overview(page);
+  const m = await progressive(page);
   const section = region(page, "Recent changes");
   expect((await section.getByRole("alert").innerText()).includes("ADG did not answer in time"), "no timeout message");
   expect((await regionText(page, "Needs attention")).includes("critical"), "Needs attention lost its counts");
-  measurements.slow = { delay_4s_ttfb_ms: Math.round(slow.timing.ttfb), delay_12s_ttfb_ms: Math.round(hung.timing.ttfb) };
-  return `TTFB with a 4 s read ${Math.round(slow.timing.ttfb)} ms; with a 12 s read ${Math.round(hung.timing.ttfb)} ms (client timeout 10 s)`;
+  const others = Object.entries(m.sections).filter(([s]) => s !== "Recent changes");
+  for (const [s, at] of others) expect(at < 5000, `${s} visible at ${at} ms`);
+  expect(m.sections["Recent changes"] >= 9500, `Recent changes settled at ${m.sections["Recent changes"]} ms, before the timeout`);
+  measurements.progressive.timeout_12s = m;
+  return brief(m);
 });
 
 /* ------------------------------------------------------------------ responsive */
