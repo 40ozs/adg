@@ -1,0 +1,12 @@
+# ADG-UX-ENTITY-02 backend gates (Python 3.13 venv, PYTHONPATH = this worktree's backend, 2026-10-30)
+## pytest -q tests/risk_engine tests/alerts tests/api tests/contracts tests/demo tests/demo_mode
+1493 passed, 28 skipped, 5 warnings in 167.13s (0:02:47)
+(skips are the DB-gated cases; no database was configured for this run)
+## ruff check / ruff format --check (catalog.py, test_model.py)
+All checks passed!
+2 files already formatted
+## evaluation unchanged
+python -m app.demo_mode reset (fresh local DB): 300 runs, 41,756 observations, probes 23/23,
+risk pass 9,666 matched / 9,386 open, fingerprint
+9c8177e245506cfbc26075b54ccd2160257fe8231111009ba9efdbc59fdbf634 = the Wave A integration reset
+(ADG-UX-WAVE-A-INTEGRATION-01-evidence/demo-reset.txt), byte for byte.
