@@ -54,7 +54,7 @@ export default async function AccessExplanationPage({
       <>
         <h1>Access explanation</h1>
         <p className="muted">
-          An explanation is always about one principal and one directory. Name both.
+          An explanation is always about one identity and one directory. Name both.
         </p>
         <div className="card">
           <ExplainLauncher

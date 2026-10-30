@@ -101,7 +101,7 @@ export default async function PrincipalLayout({
         <div className="banner banner-warning" role="alert">
           <h2>No run has described this SID</h2>
           <p>
-            ADG holds no principal record for <code>{principal.key}</code>
+            ADG holds no identity record for <code>{principal.key}</code>
             {principal.unresolved_reason
               ? ` (${principal.unresolved_reason.replace(/_/g, " ")})`
               : ""}
@@ -219,7 +219,7 @@ function IdentityInformation({ principal }: { principal: PrincipalDetail }): JSX
           <h3>Names this SID has been seen under</h3>
           <p className="muted">
             A SID keeps its identity when its name changes. An ACE written under an old name
-            still names this principal.
+            still names this identity.
           </p>
           <SortableTable
             rowHeader={1}

@@ -91,7 +91,7 @@ export function VerdictPanel({
         <div className="banner banner-warning" role="alert">
           <h3>Not a finding of no access</h3>
           <p>
-            This response does not support the conclusion that this principal cannot reach
+            This response does not support the conclusion that this identity cannot reach
             this directory. Something it depends on has not been collected, and it could be
             hiding a grant.
           </p>

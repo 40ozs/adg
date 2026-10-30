@@ -317,7 +317,7 @@ await check("scenario G nested path loads", () => {
   const person = scenario("G").subjects.find((s) => s.kind === "person");
   return page(`/access/explain?${q({ principal: person.sid, resource: scenario("G").resource })}`, ["ENG-Payments-Oncall", "Engineering-Backend"]);
 });
-await check("risk UI loads", () => page("/risks", ["Risk findings, most consequential first"]));
+await check("risk UI loads", () => page("/risks", ["Findings, most consequential first"]));
 await check("simulation UI loads", () => page("/simulations", ["What-if proposals"]));
 
 const failed = results.filter((r) => !r.ok);

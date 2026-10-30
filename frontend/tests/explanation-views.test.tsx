@@ -455,7 +455,7 @@ describe("asking the question", () => {
     // Cartesian product of the estate wearing a query string.
     render(<ExplainLauncher />);
 
-    expect(screen.getByLabelText("Principal")).toBeRequired();
+    expect(screen.getByLabelText("Identity")).toBeRequired();
     expect(screen.getByLabelText("Directory")).toBeRequired();
     expect(screen.getByLabelText("Host (optional)")).not.toBeRequired();
   });
@@ -470,7 +470,7 @@ describe("asking the question", () => {
   it("keeps what was already asked", () => {
     render(<ExplainLauncher principal="S-1-5-18" resource="\\\\FS01\\Finance" host="fs01" />);
 
-    expect(screen.getByLabelText("Principal")).toHaveValue("S-1-5-18");
+    expect(screen.getByLabelText("Identity")).toHaveValue("S-1-5-18");
     expect(screen.getByLabelText("Host (optional)")).toHaveValue("fs01");
   });
 });

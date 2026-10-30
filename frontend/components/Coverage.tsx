@@ -178,7 +178,7 @@ export function AnswerCoveragePanel({ coverage }: { coverage: CollectionCoverage
         questions are in sections 1 and 3. {snapshotWords(coverage.snapshot)}
       </p>
       <p>
-        <Link href="/risks#risk-coverage">Risk totals and their coverage</Link> ·{" "}
+        <Link href="/risks#risk-coverage">Finding totals and their data coverage</Link> ·{" "}
         <Link href="/collectors">Every scope, on the collector status page</Link>
       </p>
     </section>

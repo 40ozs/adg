@@ -71,10 +71,48 @@ describe("the primary navigation", () => {
     render(<PrimaryNav capabilities={VIEWER} />);
     const user = userEvent.setup();
 
-    await user.tab();
-    expect(screen.getByRole("link", { name: /Overview/ })).toHaveFocus();
-    await user.tab();
-    expect(screen.getByRole("link", { name: /Resources/ })).toHaveFocus();
+    // The group names are text, not stops: Tab goes link to link, across group boundaries.
+    for (const name of ["Overview", "Findings", "Access", "Changes", "Identities", "Resources", "Collectors"]) {
+      await user.tab();
+      expect(screen.getByRole("link", { name })).toHaveFocus();
+    }
+  });
+
+  it("names each group for assistive technology, as a list of its links", () => {
+    pathname = "/";
+    render(<PrimaryNav capabilities={VIEWER} />);
+
+    const investigate = screen.getByRole("list", { name: "Investigate" });
+    expect(
+      within(investigate)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Overview", "Findings", "Access", "Changes"]);
+    expect(screen.getByRole("list", { name: "Directory" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "System" })).toBeInTheDocument();
+    // A viewer can open nothing under Act, so the group is not offered at all.
+    expect(screen.queryByRole("list", { name: "Act" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Act")).not.toBeInTheDocument();
+  });
+
+  it("marks Findings current on /risks and on a deep link into it", () => {
+    for (const path of ["/risks", "/risks?finding=abc"]) {
+      pathname = path.split("?")[0];
+      const { unmount } = render(<PrimaryNav capabilities={VIEWER} />);
+      expect(screen.getByRole("link", { name: "Findings" })).toHaveAttribute("aria-current", "page");
+      expect(screen.getByRole("link", { name: "Findings" })).toHaveAttribute("href", "/risks");
+      unmount();
+    }
+  });
+
+  it("carries each section's description on its link", () => {
+    pathname = "/";
+    render(<PrimaryNav capabilities={VIEWER} />);
+
+    expect(screen.getByRole("link", { name: "Access" })).toHaveAttribute(
+      "title",
+      "Who can reach a resource, what an identity can reach, and the access paths that explain why.",
+    );
   });
 
   it("omits a section the account has no capability for", () => {
@@ -98,6 +136,7 @@ describe("the primary navigation", () => {
             id: "future",
             label: "Future",
             href: "/future",
+            group: "system",
             requires: null,
             placeholder: true,
             description: "Arrives in a later phase.",
@@ -110,11 +149,11 @@ describe("the primary navigation", () => {
     expect(within(section).getByLabelText("not yet available")).toBeInTheDocument();
   });
 
-  it("shows Risks without a badge, now that it has data behind it", () => {
+  it("shows Findings without a badge, now that it has data behind it", () => {
     pathname = "/";
     render(<PrimaryNav capabilities={VIEWER} />);
 
-    const risks = screen.getByRole("link", { name: /Risks/ });
+    const risks = screen.getByRole("link", { name: /Findings/ });
     expect(within(risks).queryByLabelText("not yet available")).not.toBeInTheDocument();
   });
 });

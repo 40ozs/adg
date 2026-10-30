@@ -157,7 +157,7 @@ export function FindingTable({
       className="acl-table"
       caption={
         <>
-          Risk findings, most consequential first. Each row links to the records it was
+          Findings, most consequential first. Each row links to the records it was
           matched on. Sorting orders the rows on this page.
         </>
       }

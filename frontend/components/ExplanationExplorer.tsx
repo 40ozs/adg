@@ -47,7 +47,7 @@ export function ExplanationExplorer({
       <div className="card">
         <h2>How the rights arrive</h2>
         <p className="muted">
-          Each route runs from the principal, through the groups that carry it, to the entry
+          Each access path runs from the identity, through the groups that carry it, to the entry
           that named one of them, and on to the object. Select a route to open it.
         </p>
 
