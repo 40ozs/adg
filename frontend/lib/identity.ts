@@ -260,7 +260,7 @@ export function principalViews(principal: AnyPrincipal): PrincipalView[] {
     {
       id: "groups",
       label: group === true ? "Parent groups" : "Direct groups",
-      hint: "Groups whose membership list names this principal directly.",
+      hint: "Groups whose membership list names this identity directly.",
     },
     {
       id: "effective-groups",
@@ -275,7 +275,7 @@ export function principalViews(principal: AnyPrincipal): PrincipalView[] {
     {
       id: "directories",
       label: "Reachable directories",
-      hint: "Engine answers for directories whose ACLs could involve this principal.",
+      hint: "Engine answers for directories whose ACLs could involve this identity.",
     },
     {
       id: "acl-references",

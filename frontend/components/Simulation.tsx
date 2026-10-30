@@ -97,7 +97,7 @@ export function ImpactPanel({ report }: { report: SimulationReportView }): JSX.E
       <p>{headline.detail}</p>
       <dl className="simulation-counts">
         <div>
-          <dt>Principals affected</dt>
+          <dt>Identities affected</dt>
           <dd>{summary.principals_affected}</dd>
         </div>
         <div>
@@ -202,7 +202,7 @@ export function TruncationPanel({ report }: { report: SimulationReportView }): J
         ))}
       </ul>
       <p className="muted">
-        Principals or directories exist that this report does not mention. Do not read the list
+        Identities or directories exist that this report does not mention. Do not read the list
         below as complete.
       </p>
     </div>
@@ -223,7 +223,7 @@ export function DeltaTable({ report }: { report: SimulationReportView }): JSX.El
       <div className="card">
         <h2>Who it affects</h2>
         <p className="muted">
-          No principal/directory pair was evaluated. With nothing applied there is nothing to
+          No identity/directory pair was evaluated. With nothing applied there is nothing to
           evaluate; see what became of each change above.
         </p>
       </div>
@@ -240,7 +240,7 @@ export function DeltaTable({ report }: { report: SimulationReportView }): JSX.El
         className="access-table"
         rowHeader={null}
         columns={[
-          { label: "Principal" },
+          { label: "Identity" },
           { label: "Directory" },
           { label: "Today", type: "number" },
           { label: "Would be", type: "number" },
@@ -336,7 +336,7 @@ export function CostFooter({ report }: { report: SimulationReportView }): JSX.El
         edges read, in {report.cost.elapsed_ms} ms.
       </p>
       <p className="muted">
-        Limits: {report.bounds.max_principals} principals, {report.bounds.max_resources}{" "}
+        Limits: {report.bounds.max_principals} identities, {report.bounds.max_resources}{" "}
         directories, {report.bounds.max_pairs} pairs, {report.bounds.max_explanations}{" "}
         alternate-path analyses, {report.bounds.time_budget_ms} ms. Scope:{" "}
         <code>{report.scope.kind}</code>, access path <code>{report.scope.path}</code>.

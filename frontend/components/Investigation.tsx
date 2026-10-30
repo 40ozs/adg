@@ -96,7 +96,7 @@ export function ObservedAccessPanel({
       <p className="muted">The observed answer, before any explanation of it.</p>
       <dl className={styles.facts}>
         <div>
-          <dt>Principal</dt>
+          <dt>Identity</dt>
           <dd>
             <PrincipalName principal={explanation.subject} />
           </dd>
@@ -211,7 +211,7 @@ function PrimaryRoute({
   return (
     <article className={styles.route} aria-labelledby={headingId}>
       <h3 id={headingId}>{layerLabel(route.layer)}</h3>
-      <ul className={styles.tags} aria-label="How this route reaches the principal">
+      <ul className={styles.tags} aria-label="How this route reaches the identity">
         <li className="badge badge-explicit">{routeKindLabel(route.route, route.membership_hops)}</li>
         <li className={route.placement === "inherited" ? "badge badge-inherited" : "badge badge-explicit"}>
           {placementLabel(route.placement, route.layer)}
@@ -237,7 +237,7 @@ function HopList({
 }): JSX.Element {
   const hops = routeHops(explanation, path);
   return (
-    <ol className={styles.hops} aria-label={`Hops on route ${path.id}, principal first`}>
+    <ol className={styles.hops} aria-label={`Hops on route ${path.id}, identity first`}>
       {hops.map((hop, index) => (
         <li key={hop.edge.id} className={styles.hop}>
           <HopItem hop={hop} position={index + 1} />

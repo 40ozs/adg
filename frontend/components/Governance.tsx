@@ -89,7 +89,7 @@ export function CampaignTable({ campaigns }: { campaigns: readonly CampaignView[
           <>
             <Link href={`/governance/campaigns/${campaign.campaign_id}`}>{campaign.name}</Link>
             <div className="muted">
-              {campaign.focus === "principal" ? "By principal" : "By resource"} ·{" "}
+              {campaign.focus === "principal" ? "By identity" : "By resource"} ·{" "}
               {campaign.scopes.map((scope) => `${scope.kind}:${scope.key}`).join(", ")}
             </div>
           </>,
@@ -504,7 +504,7 @@ export function ReachPanel({ context }: { context: ItemContextResponse }): JSX.E
       {reach.available ? (
         <p className="muted">
           {reach.direct_paths} direct {reach.direct_paths === 1 ? "route" : "routes"} naming
-          this principal, {reach.group_paths} through a group or well-known trustee.
+          this identity, {reach.group_paths} through a group or well-known trustee.
         </p>
       ) : null}
       {reach.routes.length > 0 ? (
@@ -604,10 +604,10 @@ export function FindingsPanel({
               confidence)
               <div className="muted">
                 {finding.relation === "access"
-                  ? "About this principal on this target."
+                  ? "About this identity on this target."
                   : finding.relation === "target"
                     ? "About this target, whoever is named on it."
-                    : "About this principal, elsewhere in the estate."}{" "}
+                    : "About this identity, elsewhere in the estate."}{" "}
                 Open since {instant(finding.first_detected_at)}.
               </div>
             </li>

@@ -68,7 +68,7 @@ export function ExplanationExplorer({
         <h2>Routes</h2>
         {explanation.paths.length === 0 ? (
           <p className="muted">
-            No entry on either ACL reached this principal, so there is no route to show.
+            No entry on either ACL reached this identity, so there is no route to show.
           </p>
         ) : (
           <>

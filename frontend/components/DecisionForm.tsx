@@ -274,7 +274,7 @@ export function SelectableItems({
         className="acl-table"
         caption={
           <>
-            {items.length.toLocaleString()} items. Each is one grant — a principal and a
+            {items.length.toLocaleString()} items. Each is one grant — an identity and a
             target — with every entry that creates it. Sorting orders the rows on this page.
           </>
         }
@@ -326,7 +326,7 @@ export function SelectableItems({
                 href={`/governance/campaigns/${campaignId}?principal=${encodeURIComponent(
                   item.principal_key,
                 )}`}
-                title="Every grant this principal has in this campaign"
+                title="Every grant this identity has in this campaign"
               >
                 (all theirs)
               </a>

@@ -305,7 +305,7 @@ export function impactHeadline(report: SimulationReportView): ImpactHeadline {
       headline: "This proposal changes nobody's access.",
       detail:
         summary.alternate_paths_retained > 0
-          ? `Every principal it touches reaches the same directories another way. ` +
+          ? `Every identity it touches reaches the same directories another way. ` +
             `${summary.alternate_paths_retained} alternate ${plural(summary.alternate_paths_retained, "route", "routes")} ` +
             `${summary.alternate_paths_retained === 1 ? "survives" : "survive"} the change.`
           : "It was applied to the baseline and no evaluated pair moved.",
@@ -314,20 +314,20 @@ export function impactHeadline(report: SimulationReportView): ImpactHeadline {
   if (losing > 0 && gaining === 0) {
     return {
       tone: "loss",
-      headline: `${describeCount(summary.principals_losing.length, "principal")} would lose access or rights.`,
+      headline: `${summary.principals_losing.length} ${plural(summary.principals_losing.length, "identity", "identities")} would lose access or rights.`,
       detail: `${summary.lost_access} would hold nothing at all afterwards; ${summary.reduced} would hold less.`,
     };
   }
   if (gaining > 0 && losing === 0) {
     return {
       tone: "gain",
-      headline: `${describeCount(summary.principals_gaining.length, "principal")} would gain access or rights.`,
+      headline: `${summary.principals_gaining.length} ${plural(summary.principals_gaining.length, "identity", "identities")} would gain access or rights.`,
       detail: `${summary.gained_access} would reach something they cannot reach today; ${summary.expanded} would hold more.`,
     };
   }
   return {
     tone: "mixed",
-    headline: `${summary.principals_affected} ${plural(summary.principals_affected, "principal", "principals")} would be affected, in both directions.`,
+    headline: `${summary.principals_affected} ${plural(summary.principals_affected, "identity", "identities")} would be affected, in both directions.`,
     detail: `${gaining} gained, ${losing} lost, ${summary.changed} rewritten.`,
   };
 }
@@ -435,7 +435,7 @@ export function reportText(report: SimulationReportView, name?: string): string 
     );
   }
   lines.push("");
-  lines.push("Per principal");
+  lines.push("Per identity");
   for (const delta of orderedDeltas(report.deltas)) {
     lines.push(
       `  - ${delta.subject.display_name ?? delta.subject.key} on ${delta.resource.resource_key}: ` +
@@ -468,10 +468,6 @@ export function reportJson(report: SimulationReportView): string {
 
 function plural(count: number, one: string, many: string): string {
   return count === 1 ? one : many;
-}
-
-function describeCount(count: number, noun: string): string {
-  return `${count} ${plural(count, noun, `${noun}s`)}`;
 }
 
 /** What the summary says in one line, for a listing row. */

@@ -166,7 +166,7 @@ export function PrincipalAccessTable({
       className="access-table"
       caption="Sorting orders the rows on this page."
       columns={[
-        { label: "Principal" },
+        { label: "Identity" },
         { label: "Access" },
         { label: "Rights" },
         { label: "Reaches it through" },
@@ -190,7 +190,7 @@ export function PrincipalAccessTable({
           </>,
           <Rights key="rights" rights={item.rights} />,
           item.via.length === 0 ? (
-            <span className="muted">the ACL names this principal directly</span>
+            <span className="muted">the ACL names this identity directly</span>
           ) : (
             <ul className="via-list">
               {item.via.map((entry) => (
@@ -270,7 +270,7 @@ export function EnumerationNotice({
           {enumeration.unenumerable_trustees
             .map((trustee) => trustee.display_name ?? trustee.sid)
             .join(", ")}
-          . Each one means principals hold rights here that are not in the list below.
+          . Each one means identities hold rights here that are not in the list below.
         </p>
       )}
       {enumeration.unenumerable_trustees.length === 0 && !enumeration.trustees_truncated && (
