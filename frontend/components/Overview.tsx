@@ -333,7 +333,7 @@ export function DataHealth({
 }): JSX.Element {
   const state = classify(status, { isEmpty: () => false, subject: "collectors" });
   return (
-    <section className="card" aria-labelledby="overview-health">
+    <section className={`card ${styles.health}`} aria-labelledby="overview-health">
       <h2 id="overview-health">Data health</h2>
       {state.kind !== "ready" ? (
         <StateMessage state={state} />
@@ -386,7 +386,7 @@ function HealthFacts({
         )}
         {risk !== null && reading !== null && (
           <>
-            <dt>Risk evaluation</dt>
+            <dt>Findings evaluation</dt>
             <dd>
               {risk.coverage.has_ever_run ? (
                 <>

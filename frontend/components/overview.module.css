@@ -28,3 +28,16 @@
 .counts strong {
   font-size: 1.5rem;
 }
+
+/* On a phone the facts' label column ("Findings evaluation") would leave each value a few
+   characters wide, broken mid-word; stack label above value instead. */
+@media (max-width: 40rem) {
+  .health :global(dl.facts) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .health :global(dl.facts dd) {
+    margin-bottom: 0.5rem;
+  }
+}
