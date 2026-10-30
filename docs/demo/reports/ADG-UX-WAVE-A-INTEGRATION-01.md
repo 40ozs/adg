@@ -128,7 +128,7 @@ script:
 
 The committed gate ran unchanged. It made the same 43 checks as UX-06B and all pass. Load
 average was 16–27 during the run. Output:
-[`overview-gate.log`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/overview-gate.log) and
+[`overview-gate.txt`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/overview-gate.txt) and
 [`overview-gate.json`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/overview-gate.json).
 
 Highlights on the integrated tree:
@@ -190,7 +190,7 @@ Highlights on the integrated tree:
 
 [`integration-check.mjs`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/integration-check.mjs) is new
 and kept as evidence, not as a CI gate. It checks what neither lane could check alone. Output:
-[`integration-check.log`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/integration-check.log) and
+[`integration-check.txt`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/integration-check.txt) and
 [`integration-check.json`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/integration-check.json).
 
 | Check | Result |
@@ -289,9 +289,9 @@ before the slowest read settles:
 
 [`ADG-UX-WAVE-A-INTEGRATION-01-evidence/`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/):
 
-- `overview-gate.log`, `overview-gate.json`, `overview-gate.load.txt`: the committed Overview
+- `overview-gate.txt`, `overview-gate.json`, `overview-gate.load.txt`: the committed Overview
   gate, 43/43.
-- `integration-check.mjs`, `integration-check.log`, `integration-check.json`: 14/14.
+- `integration-check.mjs`, `integration-check.txt`, `integration-check.json`: 14/14.
 - `ux01-nav-check.txt`: UX-01's committed nav check, 26/26.
 - `frontend-gates.txt`: lint, typecheck, cf:typecheck, tests, builds.
 - `demo-reset.txt`: dataset summary and fingerprint.
