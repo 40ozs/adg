@@ -357,6 +357,16 @@ either source lane. Candidates, in the order the limitations suggest:
 
 Added by ADG-UX-WAVE-A-DOCS-01 (docs only, no application change).
 
+```
+Wave B UX baseline: integration/ADG-UX-WAVE-A-01 @ 6d226e384db99edf2d07e5910868aec2c1428088
+```
+
+`6d226e3` is the last content commit (evidence-link cleanup + this section). The branch head is
+the metadata-only commit that recorded the line above; it changes only this report, so its
+application tree is identical to `6d226e3` and to `0de3d6e`. Wave B starts from the final pushed
+branch head (the handoff names its SHA). Superseded only by a later repository-owned report that
+establishes a newer validated Wave B baseline.
+
 Wave A integration is complete and validated (§6–§7). **New Wave B UX lanes must branch from the
 final pushed head of `origin/integration/ADG-UX-WAVE-A-01`**, not from:
 
