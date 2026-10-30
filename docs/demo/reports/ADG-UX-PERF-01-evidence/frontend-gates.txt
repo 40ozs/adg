@@ -1,0 +1,25 @@
+ADG-UX-PERF-01 frontend gates — Fri Oct 30 21:05:33 UTC 2026, Node v22.23.3 arm64, worktree on exFAT T5
+
+npm run lint          -> exit 0 (no output)
+npm run typecheck     -> exit 0
+npm run cf:typecheck  -> exit 0
+
+--- npx vitest run (full suite) ---
+ Test Files  45 passed (45)
+      Tests  1555 passed (1555)
+   Duration  30.47s (transform 15.72s, setup 42.38s, collect 27.70s, tests 44.28s, environment 36.62s, prepare 18.32s)
+vitest exit 0
+
+--- ADG_NEXT_OUTPUT=standalone npm run build ---
+▲ Next.js 16.4.1 (webpack)
+✓ Running next.config.mjs took 41ms
+✓ Compiled successfully in 30.0s
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 273ms
+build exit 0
+
+--- red-before check: tests/overview-page.test.tsx against the baseline app/page.tsx (fcb7928) ---
+6 failed | 31 passed (37): every slow-read test (Reviews, Findings, collection status, change feed, hidden-section placeholder, reads-start-together) times out at 5 s on the baseline's Promise.all; the failed/timeout/normal tests pass on both, as those behaviors pre-existed.
