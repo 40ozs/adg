@@ -1,0 +1,26 @@
+PASS desktop/light: four named groups in order — Investigate / Directory / Act / System
+PASS desktop/light: Findings is current, h1 says Findings — weight 600 + accent bar (not colour alone)
+PASS desktop/light: no horizontal page overflow — 1280 <= 1280
+PASS desktop/light: group label contrast >= 4.5 — 7.43:1
+PASS desktop/dark: four named groups in order — Investigate / Directory / Act / System
+PASS desktop/dark: Findings is current, h1 says Findings — weight 600 + accent bar (not colour alone)
+PASS desktop/dark: no horizontal page overflow — 1280 <= 1280
+PASS desktop/dark: group label contrast >= 4.5 — 7.43:1
+PASS phone/light: four named groups in order — Investigate / Directory / Act / System
+PASS phone/light: Findings is current, h1 says Findings — weight 600 + accent bar (not colour alone)
+PASS phone/light: no horizontal page overflow — 375 <= 375
+PASS phone/light: group label contrast >= 4.5 — 7.43:1
+PASS phone/dark: four named groups in order — Investigate / Directory / Act / System
+PASS phone/dark: Findings is current, h1 says Findings — weight 600 + accent bar (not colour alone)
+PASS phone/dark: no horizontal page overflow — 375 <= 375
+PASS phone/dark: group label contrast >= 4.5 — 7.43:1
+PASS skip link is the first stop and moves focus to main
+PASS Tab walks the nav links in group order, no group label takes focus — 10 links, visible focus outline on each
+PASS Enter on a focused nav link navigates (native link)
+PASS deep link /risks/alerts marks Findings — HTTP 200
+PASS deep link /risks?finding=does-not-exist marks Findings — HTTP 200
+PASS deep link /identities/users marks Identities — HTTP 200
+PASS deep link /resources marks Resources — HTTP 200
+PASS deep link /simulations marks What-if — HTTP 200
+PASS deep link /governance marks Reviews — HTTP 200
+PASS viewer: no Act group, no Settings, no What-if/Reviews links — INVESTIGATE | Overview | Findings | Access | Changes | DIRECTORY | Identities | Resources | SYSTEM | Collectors
