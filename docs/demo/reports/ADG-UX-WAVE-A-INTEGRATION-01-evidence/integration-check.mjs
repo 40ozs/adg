@@ -87,6 +87,9 @@ async function pageFor(username, viewport = { width: 1440, height: 900 }) {
   return page;
 }
 const nav = (page) => page.getByRole("navigation", { name: "Primary" });
+// Since ADG-UX-PERF-01 the Overview streams its sections and React can reveal them after `load`
+// (Wave B integration): read it only once no placeholder is left, as overview.mjs's settled() does.
+const settled = (page) => page.waitForFunction(() => !document.querySelector('#main [aria-busy="true"]'), null, { timeout: 15_000 });
 async function groups(page) {
   return nav(page).locator("ul[aria-labelledby]").evaluateAll((uls) => uls.map((ul) => document.getElementById(ul.getAttribute("aria-labelledby")).textContent.trim()));
 }
@@ -107,6 +110,7 @@ for (const viewport of VIEWPORTS) {
   await check(`admin ${viewport.width}px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view`, async () => {
     const page = await pageFor("admin", viewport);
     const response = await page.goto(`${WEB}/`);
+    await settled(page);
     expect(response?.status() === 200, `HTTP ${response?.status()}`);
     expect((await page.locator("h1").innerText()).trim() === "Overview", "h1");
     const names = await groups(page);
@@ -137,6 +141,7 @@ for (const viewport of VIEWPORTS) {
 await check("terminology: the rendered Overview and nav use no retired user-facing term (UX-01 §3)", async () => {
   const page = await pageFor("admin");
   await page.goto(`${WEB}/`);
+  await settled(page);
   // Text plus the attributes a screen reader or tooltip exposes.
   let text = await page.evaluate(() => {
     const roots = [document.querySelector('nav[aria-label="Primary"]'), document.querySelector("#main")];
@@ -162,6 +167,7 @@ await check("terminology: the rendered Overview and nav use no retired user-faci
 await check("client navigation: grouped nav from the Overview to Findings and Reviews, no reload, current item follows, Back returns", async () => {
   const page = await pageFor("admin");
   await page.goto(`${WEB}/`);
+  await settled(page);
   const marker = await page.evaluate(() => (window.__waveA = Math.random()));
   const seen = [];
   for (const [label, path, h1] of [["Findings", "/risks", "Findings"], ["Reviews", "/governance", "Access reviews"]]) {
@@ -184,6 +190,7 @@ await check("client navigation: grouped nav from the Overview to Findings and Re
 await check("keyboard on the Overview: skip link, then the 10 nav links in group order with visible focus, then the Overview body", async () => {
   const page = await pageFor("admin");
   await page.goto(`${WEB}/`);
+  await settled(page);
   await page.keyboard.press("Tab");
   const first = await page.evaluate(() => document.activeElement.textContent.trim());
   expect(first === "Skip to main content", `first stop: ${first}`);
@@ -210,6 +217,7 @@ await check("keyboard on the Overview: skip link, then the 10 nav links in group
 await check("viewer on the Overview: no Act group, no Reviews section, Overview current", async () => {
   const page = await pageFor("viewer");
   await page.goto(`${WEB}/`);
+  await settled(page);
   const names = await groups(page);
   expect(names.join() === "Investigate,Directory,System", names.join());
   expect((await page.getByRole("region", { name: "Reviews", exact: true }).count()) === 0, "Reviews section rendered");
