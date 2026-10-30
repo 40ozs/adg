@@ -1,0 +1,21 @@
+# Frontend gates, tree = 0341198 (Node 22.23.3 arm64, frontend/)
+lint exit=0 42s
+typecheck exit=0 55s
+cf:typecheck exit=0 5s
+test exit=0 62s
+build exit=0 252s
+
+## npm run test (tail)
+
+ Test Files  45 passed (45)
+      Tests  1544 passed (1544)
+   Start at  12:37:38
+   Duration  53.79s (transform 31.12s, setup 69.52s, collect 65.44s, tests 70.12s, environment 69.74s, prepare 19.77s)
+
+
+## npm run build (next build --webpack)
+▲ Next.js 16.4.1 (webpack)
+✓ Compiled successfully in 86s
+
+## ADG_NEXT_OUTPUT=standalone npm run build (stack for the browser gates)
+✓ Compiled successfully in 46s
