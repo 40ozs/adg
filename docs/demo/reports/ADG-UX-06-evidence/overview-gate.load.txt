@@ -1,0 +1,3 @@
+# load average before and after the final gate run
+11:27  up 9 days, 11:54, 3 users, load averages: 25.94 39.85 70.00
+11:28  up 9 days, 11:55, 3 users, load averages: 15.32 34.29 65.87

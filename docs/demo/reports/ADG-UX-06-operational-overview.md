@@ -1,7 +1,8 @@
 # ADG-UX-06: Operational Overview
 
 - **Date:** 2026-10-30
-- **Lane:** ADG-UX-06 (concurrent with ADG-UX-01, Information Architecture)
+- **Lane:** ADG-UX-06, then ADG-UX-06B (browser validation and performance gate, §10). Ran
+  concurrently with ADG-UX-01 (Information Architecture).
 - **Branch:** `feature/ADG-UX-06-operational-overview` (pushed, not merged, no pull request)
 - **Worktree:** `/Volumes/T5 EVO/mmm/worktrees/adg-UX-06`
 
@@ -9,19 +10,34 @@
 STARTING_MAIN_SHA=bc178c920155970a9c3abb51b3a275a99ac58317
 BRANCH_NAME=feature/ADG-UX-06-operational-overview
 WORKTREE_PATH=/Volumes/T5 EVO/mmm/worktrees/adg-UX-06
-LAST_CODE_SHA=eb17f895673a9d9b9c29e3a5cf1aa66658d437fc
-FINAL_SHA=the commit that adds this report (the branch head)
+UX06_CODE_SHA=eb17f895673a9d9b9c29e3a5cf1aa66658d437fc
+UX06_REPORT_SHA=a03f72a23cac6aa8e72d3691ad10225742aeec19
+UX06B_START_SHA=a03f72a23cac6aa8e72d3691ad10225742aeec19
+LAST_CODE_SHA=dc2bff8c143967a1829b49fd0a4ec2433817794b
+FINAL_SHA=the commit that adds this revision of the report (the branch head)
 ```
 
 ---
 
 ## 1. Verdict
 
-**`READY_FOR_ADG_UX_OVERVIEW_WITH_LIMITATIONS`**
+**`READY_FOR_ADG_UX_OVERVIEW_INTEGRATION_WITH_LIMITATIONS`** (ADG-UX-06B, after browser
+validation; the UX-06 verdict was `READY_FOR_ADG_UX_OVERVIEW_WITH_LIMITATIONS`)
 
 The Overview now answers four of the five operational questions. Each section shows the
 counts the API returned, the caveat that decides how to read them, and a link to the records
 behind them. The fifth question, *Recently viewed*, is deferred (§9).
+
+UX-06B ran the page in a real browser against the real API and the Genesee Press demo. The
+new browser gate passed 43/43. The run found three defects, and all three are fixed (§10.2):
+
+- a duplicate `/runtime` read on every render;
+- unreadable Data health values at phone widths;
+- one label that broke UX-01's terminology contract.
+
+The verdict carries limitations rather than being a plain "ready" for one main reason: a
+**slow** read holds back the whole page until it answers or the 10 s client timeout passes.
+A **failed** read already degrades only its own section (§10.6).
 
 Nothing was deployed. No backend, contract, navigation, shell or shared-stylesheet file
 changed.
@@ -95,7 +111,8 @@ A section is rendered and requested only when the account holds the capability i
 
 - **No backend change** and no new endpoint. All endpoints were already in the client
   (`lib/api/adg.ts`) and the published contract.
-- **Seven reads, issued together with `Promise.all`:**
+- **Seven reads, issued together with `Promise.all`** (one of them, `/runtime`, is shared with
+  the shell; see §10.4):
   - collection status;
   - runtime;
   - risk summary and risk rules, with `risks:read`;
@@ -147,8 +164,10 @@ Existing helpers were reused rather than duplicated:
 - **Responsive.** The pair grid uses `repeat(auto-fit, minmax(min(100%, 22rem), 1fr))`, so it
   stacks to one column on narrow screens with no horizontal overflow. The count row wraps.
 - **No motion, no charts, no hover-only content.**
-- **Not done:** an automated axe or browser audit. The suite has no axe dependency, and the
-  semantic assertions are in the component tests (§7).
+- **Checked in a real browser in UX-06B** (§10.7): keyboard reach, focus order, visible focus,
+  reading order at 1440 and 375 px, link names, and no nested links or clickable cards.
+- **Still not done:** an automated scanner run (no axe or similar is installed) and a formal
+  WCAG audit.
 
 ## 7. Tests, lint, typecheck, build
 
@@ -184,15 +203,26 @@ npm run build     exit 0   next build --webpack, 16.4.1, all routes compiled
 vitest tests/overview-page.test.tsx after the fixture fix: 26/26 passed
 ```
 
-The repository has no frontend end-to-end suite that runs locally against `/`. The hosted
-checks (`frontend/cloudflare/checks/browser.mjs`, `smoke.mjs`) assert only the shell and the
-demo indicator on `/`, and this change touches neither, so they were not run (no deploy).
+UX-06 had no browser run. UX-06B adds one: `frontend/cloudflare/checks/overview.mjs` (§10).
+The UX-06B gate results on the final tree are in §10.9.
 
 ## 8. UX-01 reconciliation
 
-- **State at the time of writing.** UX-01 is in progress in its own worktree
-  (`/Volumes/T5 EVO/mmm/worktrees/adg-UX-01`, locked, at the same base `bc178c9`). It is
-  uncommitted and unpushed, with no remote branch and no report in `docs/demo/reports/`.
+- **State at UX-06 time:** in progress, uncommitted and unpushed, in its locked worktree.
+- **State at UX-06B time:** committed and pushed as
+  `origin/feature/ADG-UX-01-information-architecture` @ `6ded5ed`. Its worktree is clean and
+  unlocked. It has its own report, `docs/demo/reports/ADG-UX-01-information-architecture.md`,
+  with an IA and terminology contract in §3. UX-06B neither modified nor merged it.
+- **UX-06B rechecks against `6ded5ed`:**
+  - `git merge-tree` of `6ded5ed` with UX-06 code head `dc2bff8` is clean;
+  - the two branches share no files;
+  - UX-01 keeps the ids `risks`, `changes`, `governance` and `collectors`, and keeps
+    `href: "/risks"`;
+  - its shell keeps `header.shell-header`, `#main` and one `nav[aria-label="Primary"]`, so the
+    UX-06B gate's selectors still hold.
+- **The one item UX-01 raised against UX-06 is fixed.** UX-01's report flagged
+  `<dt>Risk evaluation</dt>` as breaking its terminology contract; it now reads "Findings
+  evaluation" (`dc2bff8`).
 - **What I read there, without changing it:**
   - its working-tree `lib/nav.ts` keeps the ids (`risks`, `changes`, `governance`,
     `collectors`) and the route `/risks`;
@@ -235,8 +265,288 @@ demo indicator on `/`, and this change touches neither, so they were not run (no
 - **Recent change lines show no time.** `at` is when a collector looked, not when the change
   happened (ADR-0019, Changes page docstring). The section links to the full feed, where every
   row carries its window.
-- **Seven reads per Overview render, up from one.** All are independent summary reads issued
-  in parallel, and the risk summary is the heaviest because it computes collection coverage.
-  This was not measured against the hosted stack (no deploy).
-- **Not verified in a running browser.** Verification is component-level only. There was no
-  local full-stack walkthrough and no screenshot.
+- **A slow read delays the whole page** (measured in §10.6). The page renders on the server
+  only after all of its reads settle; a section cannot appear before the others. A 4 s read
+  gives a 4.05 s first byte. A hung read is cut off by the existing 10 s client timeout, after
+  which only its section says "ADG did not answer in time". Every ADG page works this way
+  (each awaits all of its reads). Streaming the Changes and Reviews sections behind `Suspense`
+  would lift this for them, but Data health and Needs attention decide the page order and must
+  arrive first. Left for a follow-up, because the reads take 59–182 ms locally.
+- **Timings are local only and load-sensitive.** They were not measured against the hosted
+  stack (no deploy). Other work on this Mac held the load average between 15 and 190 during
+  the runs (§10.5).
+- **The demo has no changes in a window ending today.** The Genesee Press scans are dated up
+  to 2026-10-01, so on the demo the Recent changes section always shows its "a collector
+  failed" empty state. This is honest, but it means the demo never shows the populated
+  section. The gate covers the populated section with a time shift (§10.1).
+- **`/favicon.ico` returns 404.** This predates this branch (no icon exists in `public/` or
+  `app/`) and is the only console error in the run.
+
+## 10. Browser validation (ADG-UX-06B)
+
+### 10.1 Environment and method
+
+**Stack.** The application ran locally, from `a03f72a`, with each fix rebuilt and re-run.
+
+| Part | What ran |
+| --- | --- |
+| Database | Throwaway Postgres 16.2 (native arm64, from the `pgserver` wheel; Docker is not installed on this Mac), on 127.0.0.1:55435, with a UTF8 database `adg_demo` |
+| Dataset | `python -m app.demo_mode reset` with Genesee Press: 225 s, 300 runs (297 succeeded, 2 failed, 1 partial), 41,756 observations, probes 23/23, 9,386 open findings (`ADG-UX-06-evidence/demo-reset.txt`) |
+| API | FastAPI `python -m app` on 127.0.0.1:8000, `ADG_RUNTIME_MODE=demo`, development auth. The backend code is identical to `main`, so the canonical checkout's venv was used |
+| Web | Next.js standalone `server.js` (`ADG_NEXT_OUTPUT=standalone next build --webpack`) on 127.0.0.1:3000, with the same environment `render/gate.ts` gives it |
+| Browser | Google Chrome 156.0.8078.74 (arm64), driven by Playwright 1.62.1 under Node 22.23.3 arm64 |
+
+Nothing hosted was touched.
+
+**Deviation from the deployed path: no gate or Worker in front of Next.js.** `render/gate.ts`
+fixes Next's API address at `127.0.0.1:8000`. The validation needs a recorder on that hop
+(below), so the two processes the gate supervises were started directly, with the gate's
+web environment, and `ADG_INTERNAL_API_URL` pointed at the recorder. The gate and the Worker
+are transparent proxies for this page. The hosted checks (`browser.mjs`, `smoke.mjs`) cover
+them.
+
+**The gate: `frontend/cloudflare/checks/overview.mjs`** (committed).
+
+- **A recording proxy.** The Overview is a server component, so its reads leave the Next.js
+  server, never the browser. The gate's proxy sits between Next.js and the API and records
+  every read (path, query, start, end, status). That is how permission gating and fan-out
+  are checked at the request level.
+- **Fixtures.** The proxy can also fail, delay or rewrite one path, which produces the states
+  the dataset does not contain. Every check that uses this is named "fixture" or "fault":
+  - complete totals, zero findings, never evaluated;
+  - healthy or `no_data` collection;
+  - a past-due campaign;
+  - long unbroken names;
+  - HTTP 500/503 failures and 4 s / 12 s delays.
+- **A time shift for changes.** The dataset's changes end at 2026-10-01, so "the last 7 days"
+  from today is empty. A time-shift fixture moves the `from`/`to` of every `/api/v1/changes*`
+  request back by the same offset. The Overview and the Changes page then both read
+  2026-09-24 → 2026-10-01 (99 changes, 89 in the default view) under identical semantics.
+- **One real review campaign.** It was created through the API as `governance` on share
+  `gp-acq-fs01|acquisitions` (17 items), assigned to `dev:reviewer` and activated, as the demo
+  mutation policy allows. The gate refuses non-loopback targets.
+- **Run it:**
+  `WEB_URL=http://127.0.0.1:3000 API_URL=http://127.0.0.1:8000 PROXY_PORT=8100 CHROMIUM_PATH=… node cloudflare/checks/overview.mjs`
+
+**Evidence: `docs/demo/reports/ADG-UX-06-evidence/`**
+
+- `overview-gate.log`: the final run, 43/43.
+- `overview-gate.json`: results and measurements.
+- `overview-gate.load.txt`: the load average around the final run.
+- `cold-render.txt`: the cold server render timing.
+- `demo-reset.txt`
+- `screens/`:
+  - `overview-demo-{1440,1280,1024,768,375,320}.png`
+  - `overview-healthy-fixture-1440.png`
+  - `overview-long-names-{1440,320}.png`
+
+### 10.2 Defects the browser run found, all fixed in `dc2bff8`
+
+1. **Duplicate read: `/runtime` twice per Overview render.**
+   - **Cause:** the shell and the page each called `fetchRuntime()`. The same duplicate already
+     existed on `/demo` and `/access/investigate`.
+   - **Fix:** `fetchRuntime` is now wrapped in React `cache`, the pattern `currentViewer`
+     already uses, so it is read once per request (`lib/api/adg.ts`).
+   - **Re-measured:** every path is read exactly once per render (§10.4).
+2. **Data health was unreadable on phones.**
+   - **Cause:** the shared `dl.facts` grid keeps a label column as wide as "Findings
+     evaluation". At 320 px that left values about 80 px wide, broken mid-word ("unobserve /
+     d").
+   - **Fix:** Data health stacks each label above its value at widths of 40rem and below. This
+     is scoped through `overview.module.css`, so `globals.css` (a UX-01 file) is untouched.
+   - **Guarded:** the gate now asserts that no Data health value is narrower than
+     min(240 px, 60 % of the section).
+3. **Terminology.** "Risk evaluation" → "Findings evaluation" (UX-01 report §3 and §9.6).
+
+Gate-side mistakes found and corrected while writing the gate are not product defects:
+
+- the seed assigned the reviewer as `reviewer` instead of the signed-in subject `dev:reviewer`;
+- word checks read CSS-uppercased text instead of DOM text (`.badge` is lowercased by CSS; the
+  DOM, which is what a screen reader reads, says "Not a total" and "Failed").
+
+### 10.3 Sections, as rendered
+
+**Section order (demo dataset as it is).** The dataset has collection `failed`, 98 of 100
+scopes trustworthy, 2 concerns, and a findings reading of `incomplete`. The rendered order is:
+
+Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do
+
+**Needs attention**
+- **Demo as it is (incomplete):** "⚠ Not a total" appears with the backend's own reason text.
+  The page never says "latest completed evaluation" here.
+- **Complete-totals fixture:**
+  - links read "3 critical findings", "8 high findings" and "9,386 open findings in all";
+  - the top rules are `redundant_access_paths` 6,795, `disabled_principal_retains_access`
+    1,921 and `direct_user_ace` 308;
+  - no "Not a total" appears.
+- **Following each link** lands on Findings with the filter active (`aria-current` on the
+  severity or rule, and on "open only"). The pager says "3 findings in total", "8 findings in
+  total", or the rule's count, which match the Overview.
+- **Never-evaluated fixture:** the section contains no digit at all.
+- **Zero-findings fixture:** "No open findings in the latest completed evaluation." appears
+  only over a complete reading. Over an incomplete one it reads "No open findings were
+  returned, but that is not a complete answer."
+
+**Recent changes**
+- **Demo as it is:** "No changes in the last 7 days found — but a collector failed", as an
+  alert, with no zero and no "quiet week".
+- **Time-shifted fixture:**
+  - "89 permission or unclassified changes", "10 more changes … are outside that view" and
+    "most severe high" all equal the API's summary;
+  - three rows, with no date shown as a change time;
+  - the first row opens `/changes?kind=ntfs_ace&key=…` with the heading "History";
+  - "View changes from the last 7 days" opens `/changes?days=7`, whose summary says "99
+    changes recorded, 89 shown", the same 89.
+
+**Reviews**
+- **Real campaign (`reviewer`):**
+  - "17 items assigned to you across 1 campaign", "Due 2026-11-13";
+  - the campaign link opens `/governance/campaigns/<id>?mine=1` with the campaign's name as its
+    `h1`;
+  - "Open my review queue" opens `/governance`.
+- **Past-due fixture:** "1 campaign past due", "Overdue — … left · Was due 2026-10-01".
+- **`auditor`** (`governance:read`, nothing assigned): "Nothing is assigned to you.", no alert,
+  and a "See review campaigns" link.
+
+**Data health (demo as it is)**
+- Collection "✕ Failed", plus the backend summary.
+- "98 of 100 collection scopes have a latest run that succeeded with no errors".
+- The coverage headline from the API.
+- "Findings evaluation: ⚠ Not a total, Last ran 2026-10-01 06:00:00 UTC (full)".
+- Both concerns listed.
+- "Synthetic demo data for Genesee Press. No production directory or file server is
+  connected."
+- No `%` and no "score".
+
+**Data health state fixtures:** each state is a word plus a symbol, checked in DOM text:
+"✓ Complete", "◐ Incomplete", "✕ Failed", "∅ Never collected". `no_data` shows no "0 of 0".
+
+**Promotion** (measured as DOM order):
+
+| Condition | Data health position |
+| --- | --- |
+| Collection unhealthy (demo as it is) | first |
+| Collection status HTTP 503 | first, with an alert, and the other sections intact |
+| Healthy collection but totals not complete | first |
+| Healthy collection and complete totals | back to fourth, after Reviews |
+
+### 10.4 Permissions and fan-out, at the request level
+
+Permission variants, from the proxy log of each render:
+
+| Account | Sections | Overview reads sent |
+| --- | --- | --- |
+| `planner` | all four | 7 |
+| `auditor` | all four | 7 |
+| `viewer` (no `governance:read`) | no Reviews | 6; **no `/governance/queue` request** |
+| `nobody` (`remediator` only, no capability) | Data health only | `/runtime` and `/collection/status` only; **no risks, changes or governance request**. The status read is refused with 403, and Data health says "Your account cannot see this" rather than a state |
+
+Unauthorized summary data is never fetched and hidden afterwards: each section's read is not
+sent at all.
+
+Fan-out of one render (`planner`, final run, from the proxy log):
+
+- **9 API requests, each path exactly once.** The three shell reads are `/auth/config`,
+  `/runtime` and `/auth/me`. The six page reads are collection status, risk summary, risk
+  rules, change summary, the change feed (`limit=6`) and the reviewer queue. `/runtime` is now
+  shared between the shell and the page.
+- **Two stages, and no waterfall within either.** The six page reads need the viewer's token
+  and capabilities, so they start after `/auth/me` returns (17 ms into the render), within
+  4 ms of each other.
+- **Slowest read:** the risk summary at 104 ms in this render. It was the slowest in every
+  load measured.
+- **No table reads:** no `/risks/findings`, `/principals`, `/scan-runs` or campaign-list read.
+  No failed or cancelled requests, no repeat-fetch loop and no reload (client navigation was
+  checked separately, §10.8).
+
+### 10.5 Timing (local)
+
+**Final gate run.** Load average 25.9 → 15.3. Each load used a new browser context (no cache).
+
+| Load | First byte | First paint (FCP) | Load event | Slowest read |
+| --- | --- | --- | --- | --- |
+| First in the timing check | 133 ms | 236 ms | 257 ms | risk summary 108 ms |
+| Warm, 5 loads, median | 92 ms | 128 ms | 117 ms | risk summary 59–182 ms |
+
+**Cold server.** First render after restarting Next.js, measured with curl
+(`cold-render.txt`, load about 37):
+
+- cold: 629 ms to first byte;
+- the next three requests: 334, 227 and 292 ms.
+
+**What the shell timing means.** The shell and the sections arrive in the same server
+response: there is no streaming, so "shell visible" equals "sections settled". FCP is the
+time at which both are on screen.
+
+**Earlier runs were noisier.** One run started at a load average of about 190; its warm
+first byte ranged from 213 to 800 ms. Numbers on this Mac are load-sensitive.
+
+### 10.6 Slow and failing reads
+
+| Fault | Result |
+| --- | --- |
+| Collection status HTTP 503 | Data health shows the error and moves to the top. Needs attention keeps its counts. Every section renders. No page error. |
+| Findings summary HTTP 500 | Needs attention shows "Something went wrong" with no count links and no zero. Data health and Recent changes render. |
+| Changes summary delayed 4 s | First byte at 4,052 ms. Every section renders complete. The page waits for the slowest read (limitation, §9). |
+| Changes summary delayed 12 s | First byte at 10,017 ms. The 10 s client timeout ends the wait, Recent changes alone says "ADG did not answer in time", and Needs attention keeps its counts. |
+
+### 10.7 Accessibility (browser semantics; not a formal audit)
+
+- One `h1`. Each Overview section is a named region (`getByRole("region", { name })`).
+- The 18 links in `#main` all have names, and none is "Learn more", "Details", "Explore" or
+  "here".
+- No nested links, no link wrapping a card or section, no clickable sections, and no positive
+  `tabindex`.
+- **Keyboard:** Tab reaches all 10 section links in DOM order. Each shows a focus indicator
+  (outline or box-shadow present on focus).
+- **Reading order:** section DOM order matches visual order at 1440 px (Changes left of
+  Reviews on one row) and at 375 px (stacked).
+- Every status badge carries a word; colour is never the only signal.
+- **Not done:** an automated scanner and a WCAG audit.
+
+### 10.8 Navigation
+
+All of these use client navigation: a marker set on `window` survives each one, so there was
+no document reload. Back returns to the same Overview document.
+
+- severity → Findings (critical, high);
+- rule → Findings (three rules);
+- change row → object history;
+- "View changes from the last 7 days" → Changes;
+- campaign → campaign page;
+- "Open my review queue" → Reviews;
+- every "Where to start" link: `/resources`, `/identities`, `/access`, `/risks`, `/changes`,
+  `/simulations`, `/governance`, `/collectors`.
+
+### 10.9 Responsive, and the final gates
+
+**Responsive.** At every width: no sideways scroll, no overlapping headings, no clipped or
+overflowing sections, and readable Data health values.
+
+| Viewport | Recent changes / Reviews |
+| --- | --- |
+| 1440 × 900 | side by side |
+| 1280 × 800 | side by side |
+| 1024 × 768 | side by side |
+| 768 × 1024 | side by side |
+| 375 × 812 | stacked |
+| 320 × 640 | stacked |
+
+An unbroken 120-character rule title, change headline and campaign name keep the page in
+bounds at both 320 and 1440 px.
+
+**Final gates** (Node 22.23.3 arm64, tree = `dc2bff8`):
+
+```
+browser gate  overview.mjs   43/43 passed (one console error: pre-existing /favicon.ico 404)
+npm test                      45 files, 1536 tests passed
+npm run lint                  exit 0 (lints the new .mjs too)
+npm run typecheck             exit 0
+npm run build                 exit 0 (next build --webpack, compiled)
+```
+
+**Backend.** No backend change. The demo reset's probes (23/23) and the API under the gate are
+the backend evidence used, as the lane allows.
+
+**Recently viewed** is still not implemented, by design (§9). Its follow-up recommendation is
+unchanged.
