@@ -1,0 +1,80 @@
+{
+  "passed": 14,
+  "total": 14,
+  "results": [
+    {
+      "name": "admin 1440px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view",
+      "ok": true,
+      "detail": "1440 <= 1440"
+    },
+    {
+      "name": "admin 1280px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view",
+      "ok": true,
+      "detail": "1280 <= 1280"
+    },
+    {
+      "name": "admin 1024px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view",
+      "ok": true,
+      "detail": "1024 <= 1024"
+    },
+    {
+      "name": "admin 768px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view",
+      "ok": true,
+      "detail": "768 <= 768"
+    },
+    {
+      "name": "admin 375px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view",
+      "ok": true,
+      "detail": "375 <= 375"
+    },
+    {
+      "name": "admin 320px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view",
+      "ok": true,
+      "detail": "320 <= 320"
+    },
+    {
+      "name": "terminology: the rendered Overview and nav use no retired user-facing term (UX-01 §3)",
+      "ok": true,
+      "detail": "3412 characters scanned; Findings → /risks; backend-supplied rule titles with a retired term: none"
+    },
+    {
+      "name": "client navigation: grouped nav from the Overview to Findings and Reviews, no reload, current item follows, Back returns",
+      "ok": true,
+      "detail": "Findings ↔ Overview, Reviews ↔ Overview"
+    },
+    {
+      "name": "keyboard on the Overview: skip link, then the 10 nav links in group order with visible focus, then the Overview body",
+      "ok": true,
+      "detail": "10 nav links, then \"Check collection status\" in #main"
+    },
+    {
+      "name": "viewer on the Overview: no Act group, no Reviews section, Overview current",
+      "ok": true,
+      "detail": "Investigate / Directory / System"
+    },
+    {
+      "name": "/runtime: read once per render on /, and again on the next render (request-scoped)",
+      "ok": true,
+      "detail": "renders read 9 and 9 paths, /runtime once each, no duplicates"
+    },
+    {
+      "name": "/runtime: read once per render on /demo, and again on the next render (request-scoped)",
+      "ok": true,
+      "detail": "renders read 4 and 4 paths, /runtime once each, no duplicates"
+    },
+    {
+      "name": "/runtime: read once per render on /access/investigate, and again on the next render (request-scoped)",
+      "ok": true,
+      "detail": "renders read 3 and 3 paths, /runtime once each, no duplicates"
+    },
+    {
+      "name": "no page errors",
+      "ok": true,
+      "detail": "1 console error(s): admin: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "consoleErrors": [
+    "admin: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "pageErrors": []
+}
