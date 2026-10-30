@@ -1,0 +1,30 @@
+/*
+ * The Overview (ADG-UX-06). A module rather than globals.css: nothing here is reused, and the
+ * shell stylesheet is the navigation lane's (ADG-UX-01) to change.
+ */
+
+/* Changes and Reviews side by side when there is room, stacked when there is not. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 0 1rem;
+  align-items: start;
+}
+
+.counts {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.counts a {
+  display: inline-block;
+  padding: 0.25rem 0;
+}
+
+.counts strong {
+  font-size: 1.5rem;
+}
