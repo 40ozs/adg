@@ -40,7 +40,7 @@ export function ExplainLauncher({
       action={mode === "investigate" ? INVESTIGATE_PATH : EXPLAIN_PATH}
     >
       <div className={styles.launcherField}>
-        <label htmlFor={id("principal")}>Principal</label>
+        <label htmlFor={id("principal")}>Identity</label>
         <input
           id={id("principal")}
           name="principal"
@@ -70,7 +70,7 @@ export function ExplainLauncher({
         <label htmlFor={id("host")}>Host (optional)</label>
         <input id={id("host")} name="host" defaultValue={host} placeholder="fs01" />
         <span className="muted">
-          Scopes a bare SID to one computer, when the principal is a local group.
+          Scopes a bare SID to one computer, when the identity is a local group.
         </span>
       </div>
 

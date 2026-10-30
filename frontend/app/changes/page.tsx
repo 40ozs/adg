@@ -102,7 +102,8 @@ export default async function ChangesPage({
     <>
       <h1>Changes</h1>
       <p className="muted">
-        Every change is bounded by the observations either side of it, never dated to the
+        See what changed in the estate and whether those changes affected access. Every
+        change is bounded by the observations either side of it, never dated to the
         scan that found it.
       </p>
 

@@ -66,7 +66,7 @@ export function DemoEnvironmentIndicator({
         </p>
         <p className="muted">
           The application is real: every answer comes from ADG&rsquo;s own API, access engine,
-          history and risk rules. The organization, its people and its file servers are
+          history and finding rules. The organization, its people and its file servers are
           fictional.
         </p>
         <p>

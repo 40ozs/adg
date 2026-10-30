@@ -665,9 +665,11 @@ same information from the browser's point of view.
 
 ## The web application
 
-`http://localhost:3000`. Sections: Overview, Resources, Identities, Access, Risks, Changes,
-Collectors, Settings — each shown only when the signed-in account holds
-the capability behind it.
+`http://localhost:3000`. Sections, in four groups: **Investigate** (Overview, Findings, Access,
+Changes), **Directory** (Identities, Resources), **Act** (Reviews, What-if) and **System**
+(Collectors, Settings) — each shown only when the signed-in account holds the capability
+behind it. Findings lives at `/risks`; the user-facing terms are fixed in
+[`docs/demo/reports/ADG-UX-01-information-architecture.md`](docs/demo/reports/ADG-UX-01-information-architecture.md).
 
 In development mode, sign in at `/login` and pick `viewer`, `auditor`, `admin`, `reviewer`
 or `governance` to see the
@@ -862,7 +864,7 @@ operator declares which resources are sensitive in `ADG_RISK_CONFIGURATION_PATH`
 reference and [`docs/architecture/risk-model.md`](docs/architecture/risk-model.md) for the
 model.
 
-The **Risks** page shows all of it, with the caveat that makes it readable: above the counts,
+The **Findings** page (`/risks`) shows all of it, with the caveat that makes it readable: above the counts,
 what the last evaluation actually covered. An empty table under *"the rules have never been
 evaluated"* means nothing has looked — which is the single most dangerous sentence this
 product could accidentally say, and the one it therefore says out loud. Each row opens an

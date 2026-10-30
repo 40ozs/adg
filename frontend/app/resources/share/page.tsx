@@ -299,7 +299,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
   const state = classify(result, {
     isEmpty: (data) => data.items.length === 0,
     coverage,
-    subject: "principals with access",
+    subject: "identities with access",
   });
 
   return (
@@ -323,7 +323,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
               nextCursor: state.data.page.next_cursor,
             })}
             page={state.data.page}
-            subject="principals"
+            subject="identities"
           />
         </>
       )}

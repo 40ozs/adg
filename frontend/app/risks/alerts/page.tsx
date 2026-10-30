@@ -90,7 +90,7 @@ export default async function AlertsPage({
     <>
       <h1>Alerts</h1>
       <p className="muted">
-        <Link href="/risks">Back to risks</Link>
+        <Link href="/risks">Back to findings</Link>
       </p>
 
       {queueState !== null && (

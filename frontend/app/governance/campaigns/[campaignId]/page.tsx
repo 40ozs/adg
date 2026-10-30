@@ -95,7 +95,7 @@ export default async function CampaignPage({
       <p className="muted">
         {report.campaign.status} · frozen against{" "}
         {new Date(report.campaign.baseline_at).toISOString().slice(0, 16).replace("T", " ")} ·{" "}
-        {report.campaign.focus === "principal" ? "enumerated by principal" : "enumerated by resource"}
+        {report.campaign.focus === "principal" ? "enumerated by identity" : "enumerated by resource"}
       </p>
       {report.campaign.description === null ? null : <p>{report.campaign.description}</p>}
 
@@ -166,7 +166,7 @@ export default async function CampaignPage({
             ) : null}
           </p>
           <p className="muted">
-            Reviewing one resource or one principal at a time: follow a target or a principal
+            Reviewing one resource or one identity at a time: follow a target or an identity
             from the table below. A campaign&rsquo;s focus decides what it claims to be
             complete about; these filters narrow only what you are reading.
           </p>

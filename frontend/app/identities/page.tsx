@@ -51,7 +51,7 @@ export default async function IdentitiesPage() {
           <dt>Membership</dt>
           <dd>Direct members, effective members, and every chain that puts one inside another.</dd>
           <dt>Reach</dt>
-          <dd>The shares and directories a principal can reach, and by which grant.</dd>
+          <dd>The shares and directories an identity can reach, and by which grant.</dd>
           <dt>History of names</dt>
           <dd>Every name ever observed for a SID, with the window it was seen in.</dd>
         </dl>

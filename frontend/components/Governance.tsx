@@ -590,11 +590,11 @@ export function FindingsPanel({
 }): JSX.Element {
   return (
     <section className="card" aria-labelledby="findings">
-      <h2 id="findings">Risk findings</h2>
+      <h2 id="findings">Findings</h2>
       {findings.length === 0 ? (
         <p className="muted">
-          No open finding names this target or this principal. That is what the risk engine
-          currently holds, not a statement that nothing is wrong.
+          No open finding names this target or this identity. That is what ADG&apos;s rules
+          currently report, not a statement that nothing is wrong.
         </p>
       ) : (
         <ul>

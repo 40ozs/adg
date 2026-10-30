@@ -44,7 +44,8 @@ export default async function GovernancePage(): Promise<JSX.Element> {
     <div className="shell-body">
       <h1>Access reviews</h1>
       <p className="muted">
-        A campaign is frozen against an instant. Reviewers certify what was true then, and
+        Review access decisions that require human confirmation. A campaign is frozen against
+        an instant. Reviewers certify what was true then, and
         ADG records the conclusion beside the observation without ever changing the
         observation: a revoke decision produces a proposal, and ADG performs none of them.
       </p>

@@ -60,7 +60,7 @@ export function AccessGraph({
         height={layout.height + headerHeight}
         viewBox={`0 0 ${layout.width} ${layout.height + headerHeight}`}
       >
-        <title>How this principal reaches this directory</title>
+        <title>How this identity reaches this directory</title>
         <desc>{graphSummary(explanation, layout)}</desc>
         <g aria-hidden="true">
           {layout.columns.map((column) => (

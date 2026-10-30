@@ -51,7 +51,7 @@ function NoIdentityChosen(): JSX.Element {
     <>
       <h1>Identity</h1>
       <div className="card">
-        <h2>Which principal?</h2>
+        <h2>Which identity?</h2>
         <p className="muted">
           This page needs a SID or a host-scoped key. Search for one, or follow a trustee
           from an ACL.
