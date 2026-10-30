@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -12,6 +13,9 @@ import type { SearchResults } from "@/lib/contracts";
 import { principalHrefForKey } from "@/lib/identity";
 import { directoryHref, serverHref, shareHref } from "@/lib/resources";
 import { classify, coverageCaveat } from "@/lib/state";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Search") };
 
 /**
  * Search results.

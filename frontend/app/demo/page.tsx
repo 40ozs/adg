@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import { fetchDemoOverview, fetchRuntime } from "@/lib/api/adg";
@@ -6,6 +7,9 @@ import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
 import { DemoGuide } from "@/components/DemoGuide";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Demo guide") };
 
 export const dynamic = "force-dynamic";
 
