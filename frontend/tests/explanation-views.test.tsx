@@ -335,7 +335,7 @@ describe("the routes", () => {
   it("says there is no route rather than showing an empty table", () => {
     render(<ExplanationExplorer explanation={noGrant()} />);
 
-    expect(screen.getByText(/No entry on either ACL reached this principal/)).toBeInTheDocument();
+    expect(screen.getByText(/No entry on either ACL reached this identity/)).toBeInTheDocument();
   });
 
   it("warns on the route table itself when the enumeration was cut short", () => {

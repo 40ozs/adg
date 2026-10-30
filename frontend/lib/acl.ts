@@ -36,7 +36,7 @@ export const RAW_ACL_NOTICE =
 /** The matching wording wherever an engine answer is shown. */
 export const EFFECTIVE_ACCESS_NOTICE =
   "These are access-check results from the ADG engine: the share ACL and the NTFS ACL " +
-  "evaluated in order against a token built from the principal's memberships. Each answer " +
+  "evaluated in order against a token built from the identity's memberships. Each answer " +
   "carries its own certainty.";
 
 export type Tone = "ok" | "warn" | "bad" | "info";

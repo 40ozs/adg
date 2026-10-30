@@ -1,0 +1,20 @@
+# ADG-UX-ENTITY-02 frontend gates (Node v22.23.3 arm64, 2026-10-30)
+## vitest run
+ Test Files  45 passed (45)
+      Tests  1547 passed (1547)
+   Duration  31.27s (transform 39.05s, setup 54.98s, collect 65.70s, tests 35.77s, environment 29.26s, prepare 11.56s)
+exit 0
+## lint (eslint .)
+exit 0, no output
+## typecheck (tsc --noEmit)
+exit 0
+## cf:typecheck
+exit 0
+## build (ADG_NEXT_OUTPUT=standalone next build --webpack)
+✓ Compiled successfully in 52s
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 270ms
+build exit 0

@@ -247,7 +247,7 @@ describe("a filtered page says what it hid", () => {
 
 describe("an impact verdict is never worded as reassurance", () => {
   it("says what is missing rather than that nothing happened", () => {
-    expect(impactWording("needs_a_subject").explanation).toContain("Name a principal");
+    expect(impactWording("needs_a_subject").explanation).toContain("Name an identity");
     expect(impactWording("unbounded").explanation).toContain("name a resource");
   });
 

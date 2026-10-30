@@ -198,6 +198,12 @@ describe("a principal's relationship views", () => {
     expect(principalViews(principal({ is_group: null }))).toHaveLength(7);
   });
 
+  it("describes every view in identity terms, not 'principal'", () => {
+    for (const view of principalViews(principal({ is_group: null }))) {
+      expect(`${view.label} ${view.hint}`).not.toMatch(/\bprincipals?\b/i);
+    }
+  });
+
   it("addresses each view under the key", () => {
     expect(principalHrefForKey("fs01|S-1-5-32-544", "effective-members")).toBe(
       "/identities/principal/fs01%7CS-1-5-32-544/effective-members",

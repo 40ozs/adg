@@ -316,29 +316,29 @@ export function impactWording(verdict: ImpactVerdict): { label: string; explanat
       };
     case "needs_a_subject":
       return {
-        label: "Needs a principal",
+        label: "Needs an identity",
         explanation:
           "This change is about a resource, and effective access is always about somebody " +
-          "as well. Name a principal to see what it could do before and after.",
+          "as well. Name an identity to see what it could do before and after.",
       };
     case "needs_a_resource":
       return {
         label: "Needs a resource",
         explanation:
-          "This change is about a principal and names no resource. Name one to resolve " +
-          "what that principal could do to it.",
+          "This change is about an identity and names no resource. Name one to resolve " +
+          "what that identity could do to it.",
       };
     case "unbounded":
       return {
         label: "Reaches too much to resolve at once",
         explanation:
           "A membership change reaches every resource that group reaches. The groups the " +
-          "principal reached either side are shown; name a resource for the rest.",
+          "identity reached either side are shown; name a resource for the rest.",
       };
     case "not_applicable":
       return {
         label: "No access question",
-        explanation: "This change is about neither a principal nor a resource.",
+        explanation: "This change is about neither an identity nor a resource.",
       };
     default:
       return { label: verdict, explanation: "" };

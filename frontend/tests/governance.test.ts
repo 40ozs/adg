@@ -339,7 +339,7 @@ describe("what a batch may cover", () => {
         item({ principal_key: "alice", principal_display_name: "Alice" }),
         item({ item_id: "two", principal_key: "bob", principal_display_name: "Bob" }),
       ]),
-    ).toBe("2 principals on \\\\fs01\\finance");
+    ).toBe("2 identities on \\\\fs01\\finance");
   });
 });
 

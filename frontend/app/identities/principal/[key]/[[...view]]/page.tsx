@@ -136,9 +136,9 @@ async function directGroupsPanel(options: PanelOptions): Promise<JSX.Element> {
   });
 
   return (
-    <FactSection title="Groups this principal is directly inside" id="panel-groups">
+    <FactSection title="Groups this identity is directly inside" id="panel-groups">
       <p className="muted">
-        Only groups whose own membership list names this principal. Nesting is the next
+        Only groups whose own membership list names this identity. Nesting is the next
         section, and the two are different answers.
       </p>
       <StateMessage state={state} />
@@ -151,6 +151,7 @@ async function directGroupsPanel(options: PanelOptions): Promise<JSX.Element> {
               foreign: item.is_foreign_security_principal,
               lastSeen: item.last_observed_at,
             }))}
+            columnLabel="Group"
             membership={{ subjectKey: key, direction: "groups-of" }}
           />
           <Pager
@@ -180,10 +181,10 @@ async function effectiveGroupsPanel(options: PanelOptions): Promise<JSX.Element>
   });
 
   return (
-    <FactSection title="Every group this principal ends up inside" id="panel-effective-groups">
+    <FactSection title="Every group this identity ends up inside" id="panel-effective-groups">
       <p className="muted">
         Direct memberships and every nesting hop beyond them. This is the set that becomes
-        SIDs in the principal&apos;s access token.
+        SIDs in this identity&apos;s access token.
       </p>
       <StateMessage state={state} />
       {state.kind === "ready" && (
@@ -227,7 +228,7 @@ async function directMembersPanel(options: PanelOptions): Promise<JSX.Element> {
   return (
     <FactSection title="Direct members" id="panel-members">
       <p className="muted">
-        The principals this group&apos;s own membership list names. A nested group appears
+        The identities this group&apos;s own membership list names. A nested group appears
         here as one row, whatever it contains.
       </p>
       <StateMessage state={state} />
@@ -240,6 +241,7 @@ async function directMembersPanel(options: PanelOptions): Promise<JSX.Element> {
               foreign: item.is_foreign_security_principal,
               lastSeen: item.last_observed_at,
             }))}
+            columnLabel="Member"
             membership={{ subjectKey: key, direction: "members-of" }}
           />
           <Pager
@@ -283,7 +285,7 @@ async function effectiveMembersPanel(options: PanelOptions): Promise<JSX.Element
   return (
     <FactSection title="Everything that ends up inside this group" id="panel-effective-members">
       <p className="muted">
-        Every principal reached through nesting, with the shortest chain that puts it there.
+        Every identity reached through nesting, with the shortest chain that puts it there.
         Filtering happens on the server, so the page count is a count of what matched.
       </p>
       <nav className="filter-strip" aria-label="Member kinds">
@@ -337,11 +339,11 @@ async function aclReferencesPanel(options: PanelOptions): Promise<JSX.Element> {
   const state = classify(result, {
     isEmpty: (data) => data.items.length === 0,
     coverage,
-    subject: "share ACLs naming this principal",
+    subject: "share ACLs naming this identity",
   });
 
   return (
-    <RawLayer title="Share ACLs that name this principal" id="panel-acl-references" layer="SMB share">
+    <RawLayer title="Share ACLs that name this identity" id="panel-acl-references" layer="SMB share">
       <StateMessage state={state} />
       {state.kind === "ready" && (
         <>
@@ -349,7 +351,7 @@ async function aclReferencesPanel(options: PanelOptions): Promise<JSX.Element> {
             Scope: <code>{state.data.scope}</code>.{" "}
             {state.data.scope === "sid"
               ? "Every server where this SID appears, which for a BUILTIN SID spans servers on purpose."
-              : "One host-scoped principal on one server."}
+              : "One host-scoped identity on one server."}
           </p>
           {state.data.items.map((item) => (
             <section key={item.share_key} className="acl-group">
@@ -396,7 +398,7 @@ async function reachPanel(
     subject: subject === "share" ? "reachable shares" : "reachable directories",
   });
 
-  const title = subject === "share" ? "Shares this principal can reach" : "Directories this principal can reach";
+  const title = subject === "share" ? "Shares this identity can reach" : "Directories this identity can reach";
 
   return (
     <EffectiveLayer title={title} id={`panel-${subject}s`}>
@@ -473,6 +475,7 @@ function RightSummary({
 
 function MembershipTable({
   rows,
+  columnLabel,
   membership,
 }: {
   rows: readonly {
@@ -481,6 +484,7 @@ function MembershipTable({
     foreign: boolean;
     lastSeen: string;
   }[];
+  columnLabel: string;
   /**
    * Which end of each edge this page is looking from, so a `Simulate` action can name the
    * group and the member the right way round. Omitted, no action is offered: a row that
@@ -494,7 +498,7 @@ function MembershipTable({
     <SortableTable
       caption="Sorting orders the rows on this page."
       columns={[
-        { label: "Principal" },
+        { label: columnLabel },
         { label: "Edge" },
         { label: "Last observed", type: "date", className: "muted" },
         ...(membership ? [{ label: "What if", sortable: false }] : []),

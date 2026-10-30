@@ -421,7 +421,7 @@ describe("the findings panel", () => {
       />,
     );
 
-    expect(screen.getByText(/About this principal on this target/)).toBeTruthy();
+    expect(screen.getByText(/About this identity on this target/)).toBeTruthy();
   });
 });
 

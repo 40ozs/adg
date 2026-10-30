@@ -282,7 +282,7 @@ describe("who reaches a directory", () => {
       />,
     );
 
-    expect(screen.getByText("the ACL names this principal directly")).toBeInTheDocument();
+    expect(screen.getByText("the ACL names this identity directly")).toBeInTheDocument();
   });
 
   it("warns, as an alert, when the list is not everybody", () => {

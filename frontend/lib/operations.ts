@@ -175,7 +175,7 @@ export interface CountRow {
 const COUNT_LABELS: ReadonlyArray<{ key: keyof ObjectCounts; label: string; empty: string }> = [
   {
     key: "principals",
-    label: "Principals",
+    label: "Identities",
     empty: "No identity has been collected, so no ACL entry can be attributed to anybody.",
   },
   {

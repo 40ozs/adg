@@ -139,7 +139,7 @@ describe("the impact headline", () => {
     );
 
     expect(headline.tone).toBe("loss");
-    expect(headline.headline).toContain("2 principals");
+    expect(headline.headline).toContain("2 identities");
   });
 
   it("calls a proposal that moves access in both directions mixed", () => {

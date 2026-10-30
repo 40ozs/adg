@@ -72,7 +72,7 @@ export const DECISION_OPTIONS: readonly DecisionOption[] = [
   {
     value: "modify",
     label: "Propose narrower rights",
-    meaning: "The principal should keep access at different rights. Say which in the comment.",
+    meaning: "The identity should keep access at different rights. Say which in the comment.",
     alwaysNeedsComment: true,
   },
   {
@@ -217,7 +217,7 @@ export function reachVerdict(reach: ReachView): ReachVerdict {
     tone: "ok",
     headline: "Removing this entry would end their access",
     detail:
-      "ADG found no other route from this principal to this target. A revoke proposal here " +
+      "ADG found no other route from this identity to this target. A revoke proposal here " +
       "describes a change that would actually take the access away.",
   };
 }
@@ -273,9 +273,9 @@ export function bulkEligibility(items: readonly ItemView[]): BulkEligibility {
     return {
       eligible: false,
       reason:
-        `This covers ${principals.size} principals across ${targets.size} targets, which is ` +
-        "not one question. Select one principal across many targets, or one target across " +
-        "many principals.",
+        `This covers ${principals.size} identities across ${targets.size} targets, which is ` +
+        "not one question. Select one identity across many targets, or one target across " +
+        "many identities.",
     };
   }
   return { eligible: true, reason: "" };
@@ -300,7 +300,7 @@ export function bulkSubject(items: readonly ItemView[]): string {
   if (principals.size === 1) {
     return `${principalLabel(first)} on ${countNoun(targets.size, "target", "targets")}`;
   }
-  return `${countNoun(principals.size, "principal", "principals")} on ${targetLabel(first)}`;
+  return `${countNoun(principals.size, "identity", "identities")} on ${targetLabel(first)}`;
 }
 
 export function principalLabel(item: ItemView): string {

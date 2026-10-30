@@ -106,7 +106,7 @@ export default async function ChangeImpactPage({
                   <p>
                     These disagree, and that is the answer rather than a contradiction. The
                     edit describes what the entry grants; effective access is what survives
-                    the other layer, any Deny entry, and the principal&apos;s own state.
+                    the other layer, any Deny entry, and the identity&apos;s own state.
                   </p>
                 </div>
               )}
