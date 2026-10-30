@@ -1,0 +1,25 @@
+### npm run lint
+> adg-frontend@0.1.0 lint
+> eslint .
+### exit lint=0
+### npm run typecheck
+> adg-frontend@0.1.0 typecheck
+> tsc --noEmit
+### exit typecheck=0
+### npm run cf:typecheck
+> adg-frontend@0.1.0 cf:typecheck
+> tsc -p cloudflare/tsconfig.json
+### exit cf:typecheck=0
+### npm run test
+> adg-frontend@0.1.0 test
+> vitest run
+ Test Files  46 passed (46)
+      Tests  1580 passed (1580)
+### exit test=0
+### npm run build
+> adg-frontend@0.1.0 build
+> next build --webpack
+✓ Compiled successfully in 25.2s
+✓ Generating static pages using 7 workers (8/8) in 3.1s
+Route (app)
+### exit build=0
