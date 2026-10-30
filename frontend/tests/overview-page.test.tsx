@@ -9,7 +9,7 @@
  * being a link to the records behind it.
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApiResult } from "@/lib/api/client";
@@ -260,8 +260,12 @@ function stub({
   vi.mocked(adg.fetchReviewerQueue).mockResolvedValue(queue);
 }
 
+/** Renders the page and lets every section whose reads have settled fill in. */
 async function renderOverview() {
-  render(await OverviewPage());
+  const page = await OverviewPage();
+  await act(async () => {
+    render(page);
+  });
 }
 
 function section(name: string): HTMLElement {
@@ -554,5 +558,174 @@ describe("existing Overview behavior", () => {
     vi.mocked(currentViewer).mockResolvedValue({ status: "signed-out" } as never);
     render(await OverviewPage());
     expect(adg.fetchCollectionStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("progressive rendering (ADG-UX-PERF-01)", () => {
+  /** A read that has not answered yet, settled by the test when it chooses. */
+  function pending<T>() {
+    let settle!: (value: ApiResult<T>) => void;
+    const promise = new Promise<ApiResult<T>>((resolve) => {
+      settle = resolve;
+    });
+    return { promise, settle };
+  }
+
+  const timedOut = <T,>(): ApiResult<T> => ({
+    ok: false,
+    failure: {
+      kind: "timeout",
+      status: null,
+      message: "The ADG API did not answer within 10 seconds.",
+    },
+  });
+
+  const h2s = () => screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+
+  function expectLoading(name: string) {
+    const region = section(name);
+    expect(region).toHaveAttribute("aria-busy", "true");
+    expect(region).toHaveTextContent(/Loading .+…/);
+    // Loading is never a number, a zero, an empty state or a failure.
+    expect(region).not.toHaveTextContent(/\d/);
+    expect(within(region).queryByRole("alert")).not.toBeInTheDocument();
+  }
+
+  function expectReady(name: string) {
+    expect(section(name)).not.toHaveAttribute("aria-busy");
+    expect(section(name)).not.toHaveTextContent(/Loading .+…/);
+  }
+
+  it("renders every section without waiting when all reads have answered", async () => {
+    stub();
+    await renderOverview();
+    for (const name of ["Needs attention", "Recent changes", "Reviews", "Data health"]) {
+      expectReady(name);
+    }
+    expect(screen.queryByText(/Loading .+…/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("region", { name: "Data health" })).toHaveLength(1);
+  });
+
+  it("a slow review queue holds back only Reviews", async () => {
+    stub();
+    const queue = pending<QueueResponse>();
+    vi.mocked(adg.fetchReviewerQueue).mockReturnValue(queue.promise);
+    await renderOverview();
+    expectLoading("Reviews");
+    expect(section("Needs attention")).toHaveTextContent("open findings in all");
+    expect(section("Recent changes")).toHaveTextContent("permission or unclassified change");
+    expect(within(section("Data health")).getByText("Complete")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Where to start" })).toBeInTheDocument();
+
+    await act(async () => queue.settle(ok(QUEUE)));
+    expectReady("Reviews");
+    expect(section("Reviews")).toHaveTextContent("assigned to you");
+  });
+
+  it("a slow findings summary holds back Needs attention and Data health, not changes or reviews", async () => {
+    stub();
+    const risk = pending<RiskSummaryResponse>();
+    vi.mocked(adg.fetchRiskSummary).mockReturnValue(risk.promise);
+    await renderOverview();
+    expectLoading("Needs attention");
+    // Data health reads the findings evaluation and is placed by it, so it waits — at the top.
+    expectLoading("Data health");
+    expect(h2s()[0]).toBe("Data health");
+    expectReady("Recent changes");
+    expectReady("Reviews");
+
+    await act(async () => risk.settle(ok(completeRiskSummary())));
+    expectReady("Needs attention");
+    // Healthy and a total: Data health takes its ordinary place, after the other sections.
+    expect(screen.getAllByRole("region", { name: "Data health" })).toHaveLength(1);
+    expect(h2s().indexOf("Data health")).toBeGreaterThan(h2s().indexOf("Reviews"));
+  });
+
+  it("a slow collection status holds back Data health and Recent changes, which is worded by it", async () => {
+    stub();
+    const status = pending<CollectionStatus>();
+    vi.mocked(adg.fetchCollectionStatus).mockReturnValue(status.promise);
+    await renderOverview();
+    expectLoading("Data health");
+    expectLoading("Recent changes");
+    expectReady("Needs attention");
+    expectReady("Reviews");
+
+    await act(async () => status.settle(ok(FAILED)));
+    expect(h2s()[0]).toBe("Data health");
+    expect(within(section("Data health")).getByText("Failed")).toBeInTheDocument();
+    expectReady("Recent changes");
+  });
+
+  it("a slow change feed holds back only Recent changes", async () => {
+    stub();
+    const feed = pending<ChangesResponse>();
+    vi.mocked(adg.fetchChanges).mockReturnValue(feed.promise);
+    await renderOverview();
+    expectLoading("Recent changes");
+    expectReady("Needs attention");
+    expectReady("Reviews");
+    expectReady("Data health");
+  });
+
+  it.each([
+    ["Reviews", "fetchReviewerQueue"],
+    ["Recent changes", "fetchChangeSummary"],
+    ["Needs attention", "fetchRiskSummary"],
+  ] as const)("a failed read shows its error in %s only", async (name, read) => {
+    stub();
+    vi.mocked(adg[read]).mockResolvedValue(failed());
+    await renderOverview();
+    expect(within(section(name)).getByRole("alert")).toHaveTextContent("ADG could not reach its API");
+    for (const other of ["Needs attention", "Recent changes", "Reviews", "Data health"]) {
+      if (other !== name) {
+        expectReady(other);
+        expect(within(section(other)).queryByRole("alert")).not.toBeInTheDocument();
+      }
+    }
+  });
+
+  it("a timed-out read is a timeout in its own section, not a zero and not a healthy state", async () => {
+    stub({ risk: timedOut() });
+    await renderOverview();
+    const attention = section("Needs attention");
+    expect(within(attention).getByRole("alert")).toHaveTextContent("ADG did not answer in time");
+    expect(attention).not.toHaveTextContent(/\b0\b/);
+    expectReady("Recent changes");
+    expectReady("Reviews");
+    // Data health says nothing about an evaluation it could not read: no "Total".
+    expect(within(section("Data health")).queryByText("Total")).not.toBeInTheDocument();
+  });
+
+  it("shows no placeholder, and sends no read, for a section the account cannot open", async () => {
+    stub({ capabilities: ["resources:read"] });
+    const status = pending<CollectionStatus>();
+    vi.mocked(adg.fetchCollectionStatus).mockReturnValue(status.promise);
+    await renderOverview();
+    expect(screen.queryByRole("region", { name: "Needs attention" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Recent changes" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Reviews" })).not.toBeInTheDocument();
+    expectLoading("Data health");
+    for (const read of ["fetchRiskSummary", "fetchRiskRules", "fetchChangeSummary", "fetchChanges", "fetchReviewerQueue"] as const) {
+      expect(adg[read]).not.toHaveBeenCalled();
+    }
+  });
+
+  it("starts every permitted read once, together, before any section renders", async () => {
+    stub();
+    const status = pending<CollectionStatus>();
+    vi.mocked(adg.fetchCollectionStatus).mockReturnValue(status.promise);
+    await OverviewPage();
+    for (const read of [
+      "fetchCollectionStatus",
+      "fetchRuntime",
+      "fetchRiskSummary",
+      "fetchRiskRules",
+      "fetchChangeSummary",
+      "fetchChanges",
+      "fetchReviewerQueue",
+    ] as const) {
+      expect(adg[read]).toHaveBeenCalledTimes(1);
+    }
   });
 });
