@@ -232,6 +232,11 @@ Report commit: this file plus `docs/demo/reports/ADG-UX-01-evidence/`.
 6. **Concurrency with UX-06.** UX-06 had no branch on `origin` when this lane started, and
    this lane did not edit `app/page.tsx` or Overview components. A conflict is only possible
    if UX-06 edits `lib/nav.ts`, `PrimaryNav.tsx` or the nav CSS block.
+   **Update after push:** `origin/feature/ADG-UX-06-operational-overview` @ `a03f72a` appeared
+   while this lane was finishing. It shares no files with this branch, and
+   `git merge-tree` of the two heads is clean. It adds one user-facing label that breaks §3:
+   `<dt>Risk evaluation</dt>` in `frontend/components/Overview.tsx`. It should read
+   "Findings evaluation" (or similar) when the two lanes are integrated.
 7. **Two backend and docs names still say "risk"**, by design: `docs/architecture/risk-model.md`
    and the handoffs. These are internal and technical documents, so they are out of scope.
 
