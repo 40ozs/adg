@@ -32,7 +32,8 @@ MERGE_PERF=6017acb0b5f83bb3620eedb48597f2db7ce86748
 MERGE_ENTITY=0478a34b7cf734a89837d36c159cb961698c6945
 MERGE_TITLES=88e5d633dcfe2a218b143e3cbd824dfca9b75717   (last product-code commit)
 HARNESS_FIX=a4988a5   (Wave A integration check waits for streamed sections; test-only)
-FINAL_SHA=see "Next UX baseline" below
+REPORT_SHA=c0984cf   (report + evidence; integration CI 41133244038 success)
+FINAL_SHA=head of origin/integration/ADG-UX-WAVE-B-01 (docs-only commit after c0984cf; see "Next UX baseline")
 ```
 
 **Preflight.** `fcb7928` is the head of `origin/integration/ADG-UX-WAVE-A-01`, and the Wave A
@@ -218,14 +219,18 @@ No secrets, databases or `node_modules` are committed.
 
 | Run | Head | Result |
 |---|---|---|
-| ENTITY-02 source `41129249976` | `a0a54de` | queued at handoff; see "Next UX baseline" |
-| PERF-01 source `41128664235` | `9a7a2a5` | in progress at handoff |
-| TITLES-03 source `41128800868` | `76e3c46` | queued at handoff |
-| Integration | this branch | see "Next UX baseline" |
+| Wave A baseline `41124851436` | `fcb7928` | success |
+| PERF-01 source `41128664235` | `9a7a2a5` | success |
+| TITLES-03 source `41128800868` | `76e3c46` | success |
+| ENTITY-02 source `41129249976` | `a0a54de` | success |
+| Integration `41133244038` | `c0984cf` | success |
 
-The source runs sat queued because the single `k3s-adg` ARC scale set (max 2 runners) only came
-back online at about 21:22Z and was still working through the Wave A and PERF runs. The
-Collector (Pester) job, which runs on GitHub-hosted runners, passed for ENTITY.
+Every run passed all four required jobs: Backend (lint, types, tests), Frontend (lint, types,
+tests, build), Docker Compose configuration and Collector (Pester). In each run, "Fork PR Linux
+gates" was skipped, as it is designed to be on non-fork pushes. Integration run `41132991934`
+(`a4988a5`) was cancelled as superseded: `c0984cf` contains the same code plus documentation
+only. The runs were slow because the single `k3s-adg` ARC scale set (max 2 runners) was offline
+until about 21:22Z. No required source CI failure is unresolved.
 
 ## 10. Scope
 
@@ -251,6 +256,14 @@ Collector (Pester) job, which runs on GitHub-hosted runners, passed for ENTITY.
   and not representative of hosted performance.
 
 None of these got worse when the lanes were combined.
+
+## Next UX baseline
+
+Future ADG UX lanes must start from the final pushed head of `origin/integration/ADG-UX-WAVE-B-01`,
+unless a newer validated integration baseline supersedes it. That head is the docs-only commit
+that adds this section and the CI results above. Its application tree is identical to `c0984cf`,
+which integration CI run `41133244038` validated. Session scratchpads, temporary worktrees and
+the local demo database are not project truth.
 
 ## 12. Evidence
 
