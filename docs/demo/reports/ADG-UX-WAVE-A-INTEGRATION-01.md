@@ -334,9 +334,9 @@ None of these is new, and none is a blocker.
 
 ## 12. Recommended Wave B starting point
 
-Branch Wave B lanes from **`integration/ADG-UX-WAVE-A-01` at this report's commit**, or from
-`main` once the owner merges this branch. Do not branch from either source lane. Candidates, in
-the order the limitations suggest:
+Superseded by **Wave B baseline** (end of this report), added by ADG-UX-WAVE-A-DOCS-01: branch
+Wave B lanes from the final pushed head of `integration/ADG-UX-WAVE-A-01`, not from `main` or
+either source lane. Candidates, in the order the limitations suggest:
 
 1. **ADG-UX-PERF-01**: progressive Overview rendering and slow-read isolation.
 2. **The entity-context lane**: the deeper Principal → Identity cleanup, including the backend
@@ -352,3 +352,35 @@ the order the limitations suggest:
 - No backend, contract or migration change.
 - No streaming or Suspense redesign.
 - No `/findings` alias.
+
+## Wave B baseline
+
+Added by ADG-UX-WAVE-A-DOCS-01 (docs only, no application change).
+
+Wave A integration is complete and validated (§6–§7). **New Wave B UX lanes must branch from the
+final pushed head of `origin/integration/ADG-UX-WAVE-A-01`**, not from:
+
+- `main` (it does not contain Wave A until the owner merges this branch),
+- `feature/ADG-UX-01-information-architecture` or `feature/ADG-UX-06-operational-overview`
+  (historical source lanes after this integration),
+- stale or session-local copies.
+
+The baseline contains UX-01 Information Architecture, UX-06 Operational Overview, the UX-06B
+browser fixes, the `CollectionSummary` removal, and this report's evidence. The §11 limitations
+are inherited unless a later lane explicitly addresses them: whole-page SSR waits for the slowest
+Overview summary read; Recently Viewed is deferred; the deeper Principal → Identity cleanup
+remains, and the backend-supplied rule title still says "principal"; per-page document titles
+are deferred; no manual screen-reader pass; hosted Overview timing is not measured. The
+pre-existing `/favicon.ico` 404 (the gate's one console error) is unrelated and non-blocking.
+None of these blocks Wave B.
+
+**Continuity rule for Wave B prompts.** Before starting Wave B work, verify the configured base
+is the current validated Wave B baseline. Do not start from `main` merely because it is the
+default branch. If newer validated Wave B integration work exists, use the newest verified
+baseline and reconcile repository-owned evidence before implementation. Repository-owned reports
+and evidence are authoritative; session scratchpads and temp directories are not.
+
+**Evidence-link reconciliation.** UX-06 §10 named `overview-gate.log`, which was never committed
+(`*.log` is gitignored). It now points to the committed equivalents. Every other evidence path
+in the UX-01, UX-06 and this report resolves to a committed file. No result, count, SHA, timing
+or limitation was changed.

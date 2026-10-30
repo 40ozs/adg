@@ -330,8 +330,15 @@ them.
 
 **Evidence: `docs/demo/reports/ADG-UX-06-evidence/`**
 
-- `overview-gate.log`: the final run, 43/43.
-- `overview-gate.json`: results and measurements.
+- `overview-gate.json`: results and measurements of the final run, 43/43 (every result
+  `ok: true`).
+- The final run's console output was saved as `overview-gate.log`, which was never committed
+  because `.gitignore` ignores `*.log`. The committed text output of the same gate, rerun
+  unchanged on the integrated Wave A tree (43/43), is
+  [`ADG-UX-WAVE-A-INTEGRATION-01-evidence/overview-gate.txt`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/overview-gate.txt)
+  (data:
+  [`overview-gate.json`](ADG-UX-WAVE-A-INTEGRATION-01-evidence/overview-gate.json)).
+  (Evidence-link note added by ADG-UX-WAVE-A-DOCS-01.)
 - `overview-gate.load.txt`: the load average around the final run.
 - `cold-render.txt`: the cold server render timing.
 - `demo-reset.txt`
