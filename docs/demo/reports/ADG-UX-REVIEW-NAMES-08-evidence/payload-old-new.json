@@ -1,0 +1,118 @@
+{
+  "route": "GET /api/v1/governance/campaigns (local synthetic Genesee Press demo; only name/focus/scopes shown)",
+  "old_559dbaf": [
+    {
+      "name": "REVIEW-NAMES-08 unresolved identity",
+      "focus": "principal",
+      "scopes": [
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-1243"
+        },
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-999999"
+        }
+      ]
+    },
+    {
+      "name": "COPY-04 resource review",
+      "focus": "resource",
+      "scopes": [
+        {
+          "kind": "directory_tree",
+          "key": "\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue"
+        },
+        {
+          "kind": "share",
+          "key": "gp-fin-fs01|finance"
+        }
+      ]
+    },
+    {
+      "name": "COPY-04 identity review",
+      "focus": "principal",
+      "scopes": [
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-1243"
+        },
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-2471"
+        }
+      ]
+    },
+    {
+      "name": "Overview gate review",
+      "focus": "resource",
+      "scopes": [
+        {
+          "kind": "share",
+          "key": "gp-acq-fs01|acquisitions"
+        }
+      ]
+    }
+  ],
+  "new_this_branch": [
+    {
+      "name": "REVIEW-NAMES-08 unresolved identity",
+      "focus": "principal",
+      "scopes": [
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-1243",
+          "display_name": "Brianna Reddy"
+        },
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-999999",
+          "display_name": null
+        }
+      ]
+    },
+    {
+      "name": "COPY-04 resource review",
+      "focus": "resource",
+      "scopes": [
+        {
+          "kind": "directory_tree",
+          "key": "\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue",
+          "display_name": null
+        },
+        {
+          "kind": "share",
+          "key": "gp-fin-fs01|finance",
+          "display_name": null
+        }
+      ]
+    },
+    {
+      "name": "COPY-04 identity review",
+      "focus": "principal",
+      "scopes": [
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-1243",
+          "display_name": "Brianna Reddy"
+        },
+        {
+          "kind": "principal",
+          "key": "S-1-5-21-3949361974-1583827165-633756269-2471",
+          "display_name": "sec-share-design-read-only"
+        }
+      ]
+    },
+    {
+      "name": "Overview gate review",
+      "focus": "resource",
+      "scopes": [
+        {
+          "kind": "share",
+          "key": "gp-acq-fs01|acquisitions",
+          "display_name": null
+        }
+      ]
+    }
+  ]
+}

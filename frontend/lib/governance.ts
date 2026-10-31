@@ -322,16 +322,16 @@ const SCOPE_KINDS: Record<string, string> = {
 /**
  * A campaign or reviewer scope in words. The `kind:key` token on the wire is unchanged.
  *
- * An identity is named only from names the page already holds, never by one lookup per row.
- * Without one its key is shown and the label says the name was not loaded, rather than
- * passing a SID off as a name.
+ * An identity is named by the scope's own `display_name`, else from names the page already
+ * holds, never by one lookup per row. Without one its key is shown and the label says the
+ * name was not loaded, rather than passing a SID off as a name.
  */
 export function scopeLabel(scope: ScopeView, names?: ReadonlyMap<string, string>): string {
   const kind = SCOPE_KINDS[scope.kind] ?? scope.kind.replace(/_/g, " ");
   if (scope.kind !== "principal") {
     return `${kind}: ${scope.key}`;
   }
-  const name = names?.get(scope.key);
+  const name = scope.display_name ?? names?.get(scope.key);
   return name === undefined ? `${kind}: ${scope.key} (name not loaded)` : `${kind}: ${name}`;
 }
 
