@@ -56,8 +56,8 @@ release and deployment record is [`deployment.txt`](ADG-WAVE-D-STAGING-RELEASE-0
   - Frontend: 1696.
   - Pester and Compose also passed.
 - **The docs-only head.** Its own push run,
-  [41228396705](https://github.com/40ozs/adg/actions/runs/41228396705) on `bb370f8`, is recorded in
-  §23.
+  [41228396705](https://github.com/40ozs/adg/actions/runs/41228396705) on `bb370f8`, is also a
+  **success** (§23).
 
 ## 4. Synthetic-enterprise spec update
 
@@ -418,9 +418,7 @@ not a failure, and it did not buffer.
    one window (about 18:40Z). The raw probe cannot decode `zstd`, so Chrome's `zstd` path is shown
    by the browser timeline only (HS-11 limitations 1–5).
 4. **Staging runs an integration branch, not `adg` `main`.** Wave D is not merged to `main`.
-5. **The docs-only head `bb370f8` has its own CI run** (§23). The release rests on run 41223498140
-   for the identical code tree.
-6. **The Wave D product limitations are carried unchanged.** See Wave D §22: the filter links still
+5. **The Wave D product limitations are carried unchanged.** See Wave D §22: the filter links still
    reload, focus lands on `BODY`, the `?principal=` heading can fall back to the SID, the scope label
    shows the current name while items keep the baseline name, missing-object pages answer HTTP 200,
    and SVG tooltips show raw SIDs.
@@ -439,7 +437,11 @@ The Wave C hosted-streaming gate (HS-11) is closed and is not a defect.
 
 ## 23. CI on the docs-only Wave D head
 
-Pending at report time; recorded by the follow-up commit.
+Run [41228396705](https://github.com/40ozs/adg/actions/runs/41228396705) on `bb370f8e4531…`, the
+exact deployed source SHA, is a **success**: Backend (lint, types, tests, DB), Frontend, Pester and
+Compose. The fork-PR job was skipped, as it is on every push. Both the tested tree `fc7c7a2` and the
+pinned head `bb370f8` are therefore green. This section was added by a docs-only commit on this
+report branch.
 
 ## Security
 
