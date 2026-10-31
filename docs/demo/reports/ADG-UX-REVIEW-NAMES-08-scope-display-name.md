@@ -17,7 +17,8 @@ BASE_SHA=559dbaf913a02e0df4ddf18be89ef81f03e48596   (origin/integration/ADG-UX-W
 BRANCH=feature/ADG-UX-REVIEW-NAMES-08-scope-display-name
 WORKTREE=/Volumes/T5 EVO/mmm/worktrees/adg-UX-REVIEW-NAMES-08
 CODE_SHA=9411659   (feat(adg-ux): include review scope display names)
-REPORT_SHA=the commit that adds this report
+REPORT_SHA=138fb59   (report + evidence; CI 41175363477 success)
+FINAL_SHA=head of the branch (docs-only commit adding §13a)
 ```
 
 **Baseline.** On 2026-10-31 `git fetch` found `559dbaf` at the head of
@@ -252,6 +253,22 @@ Unchanged:
 
 The field is never written: `CreateCampaignRequest` and `AssignReviewerRequest` scopes still
 take only `kind` and `key`.
+
+## 13a. CI
+
+Run [41175363477](https://github.com/40ozs/adg/actions/runs/41175363477) on `138fb59` (code
+`9411659` plus this report and evidence) passed:
+
+| Job | Result |
+|---|---|
+| Backend (lint, types, tests) | **success**: ruff, format, mypy; unit 6052 passed, 124 skipped (Wave C CI: 6048, +4); Database tests **1305 passed**, 1 xfailed |
+| Frontend (lint, types, tests, build) | **success**: 49 files, **1694** passed; lint, typecheck, build |
+| Collector (Pester) | success (1049 passed, 1 skipped) |
+| Docker Compose configuration | success |
+| Fork PR Linux gates | skipped (push event) |
+
+This section was added by a docs-only commit after the run. That commit's own CI run is not
+part of this record.
 
 ## 14. Environment
 
