@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -14,6 +15,9 @@ import {
   ReviewerProgressTable,
 } from "@/components/Governance";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Review campaign") };
 
 /**
  * One campaign: how far it has got, who is behind, what has moved, and its items.

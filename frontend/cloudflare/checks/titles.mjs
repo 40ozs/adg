@@ -7,7 +7,8 @@
  *   STAGING_URL=… SIGN_IN_AS=admin node cloudflare/checks/titles.mjs
  *
  * Runs against the hosted demo or a local `next start`; needs `playwright` as browser.mjs
- * does. Titles depend on the route alone, so the check reads no dataset and writes nothing.
+ * does. Titles depend on the route alone, and the check writes nothing. The deeper-page
+ * journey (ADG-UX-DEEP-TITLES-06) clicks real links, so it needs a dataset that offers them.
  * SIGN_IN_AS should hold every section's capability (`admin` locally); a narrower account
  * checks only the sections its nav offers, and says how many.
  */
@@ -175,6 +176,138 @@ await check("an unknown page: a stable not-found title", async () => {
   const title = await page.title();
   expect(title !== "" && !/undefined|loading/i.test(title), `title "${title}"`);
   return `HTTP 404, server ${JSON.stringify(titles)}, document "${title}"`;
+});
+
+/* ---------------------------------------------- deeper pages (ADG-UX-DEEP-TITLES-06) */
+
+// A title must never carry an identifier or a path: SID, GUID, UNC/drive path, raw token.
+const LEAKS = /S-1-\d|[0-9a-f]{8}-[0-9a-f]{4}-|\\|[A-Z]:\/|principal:|\/\//i;
+
+/**
+ * One journey through the deeper pages, every move a click on a link the page offers (or a
+ * nav item), so each is a client-side navigation. `link` is a selector inside the main
+ * content; `nav` is a primary nav label. A missing link fails the step: the journey needs a
+ * dataset with changes in the last 90 days, a review campaign with an item, and one What-if
+ * proposal. `fullLoad` marks a move whose link is a plain <a> before this lane: the campaign's
+ * item list (components/DecisionForm.tsx) loads the item as a new document. Its title is still
+ * checked; the document loads it causes, there and on Back/Forward across it, are not reloads.
+ */
+const JOURNEY = [
+  { nav: "Findings", title: "Findings", current: "Findings" },
+  { link: 'a[href="/risks/alerts"]', title: "Alerts", current: "Findings" },
+  { nav: "Changes", title: "Changes", current: "Changes" },
+  { link: 'a[href="/changes?days=90"]', title: "Changes", current: "Changes" },
+  { link: 'a[href^="/changes?kind="]', title: "History", current: "Changes" },
+  { link: 'a[href="/changes"]', title: "Changes", current: "Changes" },
+  { link: 'a[href="/changes?days=90"]', title: "Changes", current: "Changes" },
+  { link: 'a[href^="/changes/impact?"]', title: "Why access changed", current: "Changes" },
+  { nav: "Changes", title: "Changes", current: "Changes" },
+  { link: 'a[href="/changes/compare"]', title: "Compare two points in time", current: "Changes" },
+  { nav: "Identities", title: "Identities", current: "Identities" },
+  { link: 'a[href^="/identities/users"]', title: "Users", current: "Identities" },
+  { link: 'a[href^="/identities/groups"]', title: "Groups", current: "Identities" },
+  { link: 'a[href^="/identities/principal/"]', title: "Identity", current: "Identities" },
+  { nav: "Reviews", title: "Reviews", current: "Reviews" },
+  { link: 'a[href^="/governance/campaigns/"]', title: "Review campaign", current: "Reviews" },
+  { link: 'a[href^="/governance/items/"]', title: "Review item", current: "Reviews", fullLoad: true },
+  { nav: "What-if", title: "What-if", current: "What-if" },
+  { link: 'a[href^="/simulations/"]:not([href^="/simulations/new"])', title: "What-if proposal", current: "What-if" },
+  { nav: "What-if", title: "What-if", current: "What-if" },
+  { link: 'a[href^="/simulations/new"]', title: "Propose a change", current: "What-if" },
+];
+const deepVisited = [];
+const deepPaths = new Map();
+// Pages either side of a `fullLoad` move: entering or leaving one by history loads a document.
+const fullLoadPages = new Set();
+const reloads = () => documents.filter((href) => !fullLoadPages.has(new URL(href).pathname));
+
+await check("deeper pages: each client move titles the page it lands on", async () => {
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    window.__adgNoReload = true;
+  });
+  documents.length = 0;
+  for (const step of JOURNEY) {
+    const before = page.url();
+    if (step.fullLoad) fullLoadPages.add(new URL(before).pathname);
+    const target = step.nav
+      ? nav().getByRole("link", { name: step.nav, exact: true })
+      : page.locator(`#main ${step.link}`).first();
+    expect((await target.count()) > 0, `no link for "${step.title}" (${step.link ?? step.nav}) on ${before}`);
+    await target.click();
+    await page.waitForURL((url) => url.href !== before);
+    const want = `${step.title}${SUFFIX}`;
+    const title = await titleBecomes(want);
+    expect(title === want, `${page.url()}: title "${title}", wanted "${want}"`);
+    expect(!LEAKS.test(title), `identifier in title "${title}"`);
+    const marked = await current();
+    expect(marked === step.current, `${page.url()}: nav marks "${marked}", wanted "${step.current}"`);
+    const url = new URL(page.url());
+    if (step.fullLoad) fullLoadPages.add(url.pathname);
+    deepVisited.push(step.title);
+    deepPaths.set(step.title, `${url.pathname}${url.search}`);
+  }
+  expect(reloads().length === 0, `a move reloaded the document (${reloads().join(", ")})`);
+  return `${deepVisited.length} moves, no reload (known full load: ${[...fullLoadPages].pop()})`;
+});
+
+await check("deeper pages: Back restores every earlier title", async () => {
+  for (let i = deepVisited.length - 2; i >= 0; i--) {
+    await page.goBack();
+    const want = `${deepVisited[i]}${SUFFIX}`;
+    const title = await titleBecomes(want);
+    expect(title === want, `Back to ${page.url()}: title "${title}", wanted "${want}"`);
+  }
+  await page.goBack();
+  const title = await titleBecomes(`Overview${SUFFIX}`);
+  expect(title === `Overview${SUFFIX}`, `Back to the start: "${title}"`);
+  return `${deepVisited.length} steps back to Overview`;
+});
+
+await check("deeper pages: Forward restores every later title", async () => {
+  for (const label of deepVisited) {
+    await page.goForward();
+    const want = `${label}${SUFFIX}`;
+    const title = await titleBecomes(want);
+    expect(title === want, `Forward to ${page.url()}: title "${title}", wanted "${want}"`);
+  }
+  expect(reloads().length === 0, `Back/Forward reloaded the document (${reloads().join(", ")})`);
+  return `${deepVisited.length} steps forward, no reload outside the known full load`;
+});
+
+await check("deeper pages: the server sends one matching <title> on a direct load", async () => {
+  const direct = new Map(deepPaths);
+  const sid = new URLSearchParams(direct.get("History")?.split("?")[1] ?? "").get("key") ?? DETAIL_SID;
+  direct.set("Access investigation", `/access/investigate?principal=${encodeURIComponent(sid)}`);
+  direct.set("Access explanation", `/access/explain?principal=${encodeURIComponent(sid)}`);
+  const seen = [];
+  for (const [label, path] of direct) {
+    const { status, titles } = await serverTitle(path);
+    expect(status === 200, `${path}: HTTP ${status}`);
+    expect(titles.length === 1 && titles[0] === `${label}${SUFFIX}`, `${path}: server <title> ${JSON.stringify(titles)}`);
+    seen.push(label);
+  }
+  await page.goto(`${BASE}${direct.get("History")}`, { waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "networkidle" });
+  const title = await titleBecomes(`History${SUFFIX}`);
+  expect(title === `History${SUFFIX}`, `History after a hard reload: "${title}"`);
+  return `${seen.length} pages: ${seen.join(", ")}; History survives a hard reload`;
+});
+
+await check("deeper pages: an unknown or invalid object keeps a coherent title", async () => {
+  const cases = [
+    ["/governance/campaigns/00000000-0000-4000-8000-000000000000", "Review campaign"],
+    ["/governance/items/00000000-0000-4000-8000-000000000000", "Review item"],
+    ["/simulations/00000000-0000-4000-8000-000000000000", "What-if proposal"],
+    [`/identities/principal/${encodeURIComponent(DETAIL_SID)}/no-such-view`, "Identity"],
+  ];
+  const seen = [];
+  for (const [path, label] of cases) {
+    const { status, titles } = await serverTitle(path);
+    expect(titles.length === 1 && titles[0] === `${label}${SUFFIX}`, `${path}: server <title> ${JSON.stringify(titles)}`);
+    seen.push(`${label} (HTTP ${status})`);
+  }
+  return seen.join(", ");
 });
 
 await check("no hydration error on any page", async () => {

@@ -1,5 +1,5 @@
 /**
- * Document titles (ADG-UX-TITLES-03).
+ * Document titles (ADG-UX-TITLES-03, sub-pages ADG-UX-DEEP-TITLES-06).
  *
  * Every page's title, resolved the way Next resolves it: the page's own title, else the
  * nearest layout's. Each title is a whole string; a `title.template` would not reach the root
@@ -8,7 +8,7 @@
  */
 
 import type { Metadata } from "next";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { NAV_ITEMS, documentTitle, sectionTitle } from "@/lib/nav";
 
@@ -19,16 +19,16 @@ const modules = import.meta.glob<RouteModule>("../app/**/{layout,page,not-found}
 const EXPECTED: Record<string, string> = {
   "/": "Overview — ADG",
   "/risks": "Findings — ADG",
-  "/risks/alerts": "Findings — ADG",
+  "/risks/alerts": "Alerts — ADG",
   "/access": "Access — ADG",
-  "/access/explain": "Access — ADG",
-  "/access/investigate": "Access — ADG",
+  "/access/explain": "Access explanation — ADG",
+  "/access/investigate": "Access investigation — ADG",
   "/changes": "Changes — ADG",
-  "/changes/compare": "Changes — ADG",
-  "/changes/impact": "Changes — ADG",
+  "/changes/compare": "Compare two points in time — ADG",
+  "/changes/impact": "Why access changed — ADG",
   "/identities": "Identities — ADG",
-  "/identities/users": "Identities — ADG",
-  "/identities/groups": "Identities — ADG",
+  "/identities/users": "Users — ADG",
+  "/identities/groups": "Groups — ADG",
   "/identities/principal": "Identity — ADG",
   "/identities/principal/[key]/[[...view]]": "Identity — ADG",
   "/resources": "Resources — ADG",
@@ -36,11 +36,11 @@ const EXPECTED: Record<string, string> = {
   "/resources/share": "Share — ADG",
   "/resources/directory": "Directory — ADG",
   "/governance": "Reviews — ADG",
-  "/governance/campaigns/[campaignId]": "Reviews — ADG",
-  "/governance/items/[itemId]": "Reviews — ADG",
+  "/governance/campaigns/[campaignId]": "Review campaign — ADG",
+  "/governance/items/[itemId]": "Review item — ADG",
   "/simulations": "What-if — ADG",
-  "/simulations/new": "What-if — ADG",
-  "/simulations/[simulationId]": "What-if — ADG",
+  "/simulations/new": "Propose a change — ADG",
+  "/simulations/[simulationId]": "What-if proposal — ADG",
   "/collectors": "Collectors — ADG",
   "/settings": "Settings — ADG",
   "/login": "Sign in — ADG",
@@ -90,12 +90,34 @@ describe("document titles", () => {
 
   it("keeps the /risks route but titles it Findings", () => {
     expect(resolvedTitle("/risks")).toBe("Findings — ADG");
-    expect(Object.values(EXPECTED).join()).not.toMatch(/Risks/);
+    expect(Object.values(EXPECTED).join()).not.toMatch(/Risk/);
   });
 
-  it("never reads data for a title: every title is static", () => {
+  it("never reads data for a title: every title is static but one object's history", () => {
     for (const [file, module] of Object.entries(modules)) {
-      expect(module.generateMetadata, file).toBeUndefined();
+      if (file !== "../app/changes/page.tsx") {
+        expect(module.generateMetadata, file).toBeUndefined();
+      }
+    }
+  });
+
+  it("titles one object's history from the query alone, with no read and no key", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const generate = modules["../app/changes/page.tsx"].generateMetadata as (props: {
+      searchParams: Promise<Record<string, string>>;
+    }) => Promise<Metadata>;
+    const key = "S-1-5-21-1004336348-1177238915-682003330-1001";
+    const history = await generate({ searchParams: Promise.resolve({ kind: "principal", key }) });
+    expect(history.title).toBe("History — ADG");
+    expect((await generate({ searchParams: Promise.resolve({ key }) })).title).toBe(resolvedTitle("/changes"));
+    expect((await generate({ searchParams: Promise.resolve({ days: "30" }) })).title).toBe("Changes — ADG");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("puts no identifier or path in any title", () => {
+    for (const title of Object.values(EXPECTED)) {
+      expect(title).not.toMatch(/S-1-|\\|[/:]|[0-9a-f]{8}-[0-9a-f]{4}|principal/i);
     }
   });
 
