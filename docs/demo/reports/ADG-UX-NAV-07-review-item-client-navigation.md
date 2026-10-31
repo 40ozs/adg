@@ -236,4 +236,7 @@ identity wording, hosted streaming, routes, IDs, APIs and authorization.
 
 | Commit | Run | Result |
 |---|---|---|
-| `d38c68b` (code) | `41170824147` | queued at report time |
+| `d38c68b` (code) | `41170824147` | **success**: Frontend (lint, types, tests, build), Backend (lint, types, tests), Compose, Collector; fork-PR job skipped |
+| `2f56576` (report + evidence) | `41170951089` | **success**: the same jobs |
+
+The commit that adds this table changes docs only. It is the branch's final head.
