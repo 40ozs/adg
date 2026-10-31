@@ -1,0 +1,19 @@
+load before: 2.67 4.03 4.17
+PASS  sign in as admin — login page titled "Sign in — ADG"
+PASS  direct load: the server sends the section title (/risks → Findings) — server <title>Findings — ADG</title>, nav marks Findings
+PASS  client navigation: every primary nav link updates the title — 10 sections, no reload: Overview, Findings, Access, Changes, Identities, Resources, Reviews, What-if, Collectors, Settings
+PASS  Back restores each earlier title — Collectors ← What-if ← Reviews ← Resources
+PASS  Forward restores each later title — Reviews → What-if
+PASS  hard reload keeps the title
+PASS  a filtered list keeps its section title
+PASS  detail route: a generic title, no SID — "Identity — ADG", nav marks Identities
+PASS  an unknown page: a stable not-found title — HTTP 404, server ["Page not found — ADG"], document "Page not found — ADG"
+FAIL  deeper pages: each client move titles the page it lands on — no link for "History" (a[href^="/changes?kind="]) on http://127.0.0.1:3091/changes?days=90
+PASS  deeper pages: Back restores every earlier title — 4 steps back to Overview
+PASS  deeper pages: Forward restores every later title — 4 steps forward, no reload outside the known full load
+FAIL  deeper pages: the server sends one matching <title> on a direct load — page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+PASS  deeper pages: an unknown or invalid object keeps a coherent title — Review campaign (HTTP 200), Review item (HTTP 200), What-if proposal (HTTP 200), Identity (HTTP 200)
+PASS  no hydration error on any page — 0 page errors, 2 console errors, none about hydration
+
+13/15 passed
+exit 1 (9 s, load after: 2.64 3.98 4.15)
