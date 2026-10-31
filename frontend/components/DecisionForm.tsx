@@ -24,6 +24,7 @@
  */
 
 import { useState, useTransition, type JSX } from "react";
+import Link from "next/link";
 
 import { recordBulkDecision, recordDecision, type ActionResult } from "@/app/governance/actions";
 import type { ItemView } from "@/lib/contracts";
@@ -317,9 +318,10 @@ export function SelectableItems({
                 ]
               : []),
             <>
-              <a href={`/governance/items/${item.item_id}`}>
+              {/* No prefetch: a campaign lists up to 100 items, each its own page of reads. */}
+              <Link href={`/governance/items/${item.item_id}`} prefetch={false}>
                 {item.principal_display_name ?? item.principal_sid}
-              </a>
+              </Link>
               {" "}
               <a
                 className="muted"

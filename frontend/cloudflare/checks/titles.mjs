@@ -188,9 +188,8 @@ const LEAKS = /S-1-\d|[0-9a-f]{8}-[0-9a-f]{4}-|\\|[A-Z]:\/|principal:|\/\//i;
  * nav item), so each is a client-side navigation. `link` is a selector inside the main
  * content; `nav` is a primary nav label. A missing link fails the step: the journey needs a
  * dataset with changes in the last 90 days, a review campaign with an item, and one What-if
- * proposal. `fullLoad` marks a move whose link is a plain <a> before this lane: the campaign's
- * item list (components/DecisionForm.tsx) loads the item as a new document. Its title is still
- * checked; the document loads it causes, there and on Back/Forward across it, are not reloads.
+ * proposal. No move may load a document, Back and Forward across them included: the campaign's
+ * item list was the last plain <a> on this journey (a known full load until ADG-UX-NAV-07).
  */
 const JOURNEY = [
   { nav: "Findings", title: "Findings", current: "Findings" },
@@ -208,8 +207,9 @@ const JOURNEY = [
   { link: 'a[href^="/identities/groups"]', title: "Groups", current: "Identities" },
   { link: 'a[href^="/identities/principal/"]', title: "Identity", current: "Identities" },
   { nav: "Reviews", title: "Reviews", current: "Reviews" },
-  { link: 'a[href^="/governance/campaigns/"]', title: "Review campaign", current: "Reviews" },
-  { link: 'a[href^="/governance/items/"]', title: "Review item", current: "Reviews", fullLoad: true },
+  // A campaign whose Items cell is non-zero: an empty campaign offers no item to open.
+  { link: 'tr:has(td:last-child:text-matches("^[1-9]")) a[href^="/governance/campaigns/"]:not([href*="?"])', title: "Review campaign", current: "Reviews" },
+  { link: 'a[href^="/governance/items/"]', title: "Review item", current: "Reviews" },
   { nav: "What-if", title: "What-if", current: "What-if" },
   { link: 'a[href^="/simulations/"]:not([href^="/simulations/new"])', title: "What-if proposal", current: "What-if" },
   { nav: "What-if", title: "What-if", current: "What-if" },
@@ -217,9 +217,6 @@ const JOURNEY = [
 ];
 const deepVisited = [];
 const deepPaths = new Map();
-// Pages either side of a `fullLoad` move: entering or leaving one by history loads a document.
-const fullLoadPages = new Set();
-const reloads = () => documents.filter((href) => !fullLoadPages.has(new URL(href).pathname));
 
 await check("deeper pages: each client move titles the page it lands on", async () => {
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
@@ -229,7 +226,6 @@ await check("deeper pages: each client move titles the page it lands on", async 
   documents.length = 0;
   for (const step of JOURNEY) {
     const before = page.url();
-    if (step.fullLoad) fullLoadPages.add(new URL(before).pathname);
     const target = step.nav
       ? nav().getByRole("link", { name: step.nav, exact: true })
       : page.locator(`#main ${step.link}`).first();
@@ -243,12 +239,12 @@ await check("deeper pages: each client move titles the page it lands on", async 
     const marked = await current();
     expect(marked === step.current, `${page.url()}: nav marks "${marked}", wanted "${step.current}"`);
     const url = new URL(page.url());
-    if (step.fullLoad) fullLoadPages.add(url.pathname);
     deepVisited.push(step.title);
     deepPaths.set(step.title, `${url.pathname}${url.search}`);
   }
-  expect(reloads().length === 0, `a move reloaded the document (${reloads().join(", ")})`);
-  return `${deepVisited.length} moves, no reload (known full load: ${[...fullLoadPages].pop()})`;
+  const kept = await page.evaluate(() => window.__adgNoReload === true);
+  expect(kept && documents.length === 0, `a move reloaded the document (${documents.join(", ")})`);
+  return `${deepVisited.length} moves, no reload`;
 });
 
 await check("deeper pages: Back restores every earlier title", async () => {
@@ -271,8 +267,9 @@ await check("deeper pages: Forward restores every later title", async () => {
     const title = await titleBecomes(want);
     expect(title === want, `Forward to ${page.url()}: title "${title}", wanted "${want}"`);
   }
-  expect(reloads().length === 0, `Back/Forward reloaded the document (${reloads().join(", ")})`);
-  return `${deepVisited.length} steps forward, no reload outside the known full load`;
+  const kept = await page.evaluate(() => window.__adgNoReload === true);
+  expect(kept && documents.length === 0, `Back/Forward reloaded the document (${documents.join(", ")})`);
+  return `${deepVisited.length} steps forward, no reload`;
 });
 
 await check("deeper pages: the server sends one matching <title> on a direct load", async () => {

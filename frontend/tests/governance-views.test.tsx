@@ -17,7 +17,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { DecisionForm } from "@/components/DecisionForm";
+import { DecisionForm, SelectableItems } from "@/components/DecisionForm";
 import {
   CampaignProgress,
   CampaignTable,
@@ -515,6 +515,35 @@ describe("the decision form", () => {
     render(<DecisionForm itemId="i1" commentRequirement="standard" readOnly={null} />);
 
     expect(screen.getByText(/not about whatever the grant is now/)).toBeTruthy();
+  });
+});
+
+describe("the campaign's item table", () => {
+  it("opens an item by client navigation, unprefetched, at the item's own URL", () => {
+    // ADG-UX-NAV-07: a plain <a> here reloaded the whole document on every item opened.
+    render(
+      <SelectableItems campaignId="c1" items={[item()]} commentRequirement="standard" canDecide={false} />,
+    );
+
+    const link = screen.getByRole("link", { name: "CONTOSO\\alice" });
+    expect(link).toHaveAttribute("href", "/governance/items/i1");
+    // The next/link mock marks prefetch={false}; a plain anchor carries no such mark.
+    expect(link).toHaveAttribute("data-prefetch", "off");
+  });
+
+  it("keeps the identity and target filters on the campaign's own URL", () => {
+    render(
+      <SelectableItems campaignId="c1" items={[item()]} commentRequirement="standard" canDecide={false} />,
+    );
+
+    expect(screen.getByRole("link", { name: "(all theirs)" })).toHaveAttribute(
+      "href",
+      "/governance/campaigns/c1?principal=S-1-5-21-1-2-3-1001",
+    );
+    expect(screen.getByRole("link", { name: "\\\\fs01\\finance" })).toHaveAttribute(
+      "href",
+      `/governance/campaigns/c1?target=${encodeURIComponent("\\\\fs01\\finance")}`,
+    );
   });
 });
 
