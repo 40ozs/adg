@@ -1,0 +1,34 @@
+# Logging / leak search over the product code this lane changed (frontend/app, components, lib)
+$ grep -rnE "console\.|logger|sendBeacon|navigator\.|localStorage|indexedDB|document\.cookie" frontend/lib/recent.ts frontend/lib/recent-owner.ts frontend/components/RecentlyViewed.tsx frontend/components/SignOutButton.tsx
+(no matches above = none)
+
+$ grep -rn "recentlyViewed\|readRecent\|recordRecent\|RECENT_STORAGE_KEY\|recentOwner" frontend --include=*.ts --include=*.tsx --include=*.mjs (excluding node_modules, .next, tests)
+frontend/app/page.tsx:37:import { recentOwner } from "@/lib/recent-owner";
+frontend/app/page.tsx:137:          owner={recentOwner(viewer.principal.subject)}
+frontend/app/identities/principal/[key]/layout.tsx:5:import { recentOwner } from "@/lib/recent-owner";
+frontend/app/identities/principal/[key]/layout.tsx:64:          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="identity" entityKey={key} />
+frontend/app/identities/principal/[key]/layout.tsx:90:        owner={recentOwner(viewer.principal.subject)}
+frontend/app/resources/directory/page.tsx:19:import { recentOwner } from "@/lib/recent-owner";
+frontend/app/resources/directory/page.tsx:79:          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="directory" entityKey={key} />
+frontend/app/resources/directory/page.tsx:104:        owner={recentOwner(viewer.principal.subject)}
+frontend/app/resources/server/page.tsx:6:import { recentOwner } from "@/lib/recent-owner";
+frontend/app/resources/server/page.tsx:58:          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="server" entityKey={key} />
+frontend/app/resources/server/page.tsx:85:        owner={recentOwner(viewer.principal.subject)}
+frontend/app/resources/share/page.tsx:13:import { recentOwner } from "@/lib/recent-owner";
+frontend/app/resources/share/page.tsx:74:          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="share" entityKey={key} />
+frontend/app/resources/share/page.tsx:99:        owner={recentOwner(viewer.principal.subject)}
+frontend/components/RecentlyViewed.tsx:10:  readRecentFor,
+frontend/components/RecentlyViewed.tsx:12:  recordRecent,
+frontend/components/RecentlyViewed.tsx:38:    if (storage) recordRecent(storage, owner, { kind, key: entityKey, label });
+frontend/components/RecentlyViewed.tsx:84:    setShown(storage ? readRecentFor(storage, owner, capabilities) : "blocked");
+frontend/lib/recent-owner.ts:10:export function recentOwner(subject: string): string {
+frontend/lib/recent.ts:19:export const RECENT_STORAGE_KEY = "adg.recentlyViewed.v1";
+frontend/lib/recent.ts:70:export function readRecent(storage: Storage, owner: string, now = Date.now()): RecentEntry[] {
+frontend/lib/recent.ts:78:export function readRecentFor(
+frontend/lib/recent.ts:94:export function recordRecent(
+frontend/lib/recent.ts:128:    storage?.removeItem(RECENT_STORAGE_KEY);
+frontend/lib/recent.ts:171:    raw = storage.getItem(RECENT_STORAGE_KEY);
+frontend/lib/recent.ts:197:    storage.setItem(RECENT_STORAGE_KEY, JSON.stringify(value));
+
+$ git diff 10c73d1 -U0 -- frontend/app frontend/components frontend/lib | grep -E "^\+.*console\."
+(no matches above = no console output added; lib/recent*.ts and RecentlyViewed.tsx are new files, covered by the first grep)
