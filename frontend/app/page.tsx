@@ -31,8 +31,10 @@ import {
   Reviews,
   evidenceNeedsAttention,
 } from "@/components/Overview";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { sectionTitle, visibleNavItems } from "@/lib/nav";
+import { recentOwner } from "@/lib/recent-owner";
 
 import styles from "@/components/overview.module.css";
 
@@ -127,6 +129,15 @@ export default async function OverviewPage() {
       <Suspense fallback={null}>
         <HealthSlot first={false} {...health} />
       </Suspense>
+
+      {/* Personal, filled from this tab's storage after hydration: outside every Suspense slot,
+          and below them, so it neither waits for nor shifts the operational sections. */}
+      {(can("identities:read") || can("resources:read")) && (
+        <RecentlyViewed
+          owner={recentOwner(viewer.principal.subject)}
+          capabilities={viewer.principal.capabilities}
+        />
+      )}
 
       <div className="card">
         <h2>Where to start</h2>

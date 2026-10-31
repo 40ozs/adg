@@ -1,6 +1,8 @@
 import type { JSX, ReactNode } from "react";
 
 import { currentViewer } from "@/lib/auth/current";
+import { identityLabel } from "@/lib/recent";
+import { recentOwner } from "@/lib/recent-owner";
 import type { PrincipalDetail } from "@/lib/contracts";
 import {
   deletedState,
@@ -16,6 +18,7 @@ import { CoverageCaveat, StateMessage } from "@/components/Banners";
 import { FactList, Maybe, NotReported, TriState } from "@/components/Facts";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { PrincipalViewTabs } from "@/components/PrincipalViewTabs";
+import { ForgetRecentView, RecordRecentView } from "@/components/RecentlyViewed";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { SortableTable } from "@/components/SortableTable";
 
@@ -57,6 +60,9 @@ export default async function PrincipalLayout({
   if (!detail.ok) {
     return (
       <>
+        {detail.failure.kind === "not_found" && (
+          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="identity" entityKey={key} />
+        )}
         <h1>Identity</h1>
         <p className="muted">
           <code>{key}</code>
@@ -79,6 +85,13 @@ export default async function PrincipalLayout({
   const principal = detail.data;
   return (
     <>
+      {/* In the layout, not the view page: moving between views is the same identity. */}
+      <RecordRecentView
+        owner={recentOwner(viewer.principal.subject)}
+        kind="identity"
+        entityKey={principal.key}
+        label={identityLabel(principal)}
+      />
       <h1>
         {principalLabel(principal)}{" "}
         <span className="title-kind">{principalKindLabel(principal)}</span>
