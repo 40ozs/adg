@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import pathlib
 import re
+from collections.abc import Mapping
+from typing import Any
 
 import pytest
 
@@ -39,7 +41,7 @@ TERMS_OF_ART = re.compile(
     re.IGNORECASE,
 )
 
-PROSE = {
+PROSE: dict[str, Mapping[Any, str]] = {
     "verdict": OUTCOME_DESCRIPTIONS,
     "no-grant between layers": _NO_GRANT_BETWEEN_LAYERS,
     "conditions": CONDITION_DESCRIPTIONS,
