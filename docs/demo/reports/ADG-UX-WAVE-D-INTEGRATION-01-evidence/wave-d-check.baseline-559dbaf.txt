@@ -1,0 +1,19 @@
+# wave-d-check.baseline-559dbaf: node ../docs/demo/reports/ADG-UX-WAVE-D-INTEGRATION-01-evidence/wave-d-check.mjs @ 7a12b8e, 2026-10-31T17:06:46Z, load 15.76 15.98 15.01
+PASS  1. Reviews loads — 4 campaigns
+FAIL  2. Reviews: identity scopes show the current display name; unresolved keeps the fallback — "COPY-04 identity review" lacks "Identity: Brianna Reddy"
+PASS  3. Reviews → campaign by click: client-side, "Review campaign — ADG" — COPY-04 identity review, 4 items
+PASS  4. Campaign: reviewer scopes use the current display names — Brianna Reddy, sec-share-design-read-only
+FAIL  5. Campaign → item by click: no document load, "Review item — ADG", no layout re-read, no repeated read — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  6. Back: the campaign, its title, no document load — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b, http://127.0.0.1:3112/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6)
+FAIL  7. Forward: the item, its title, no document load — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b, http://127.0.0.1:3112/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6, http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  8. Changes journey on a 2028-01-01 clock: History and "Why access changed", anchored, client-side — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b, http://127.0.0.1:3112/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6, http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  9. Reviews and campaign: Wave C web-tier calls, no identity lookup in the web tier or the browser — recorded.itemMove is not iterable
+FAIL  10. 1440px: Reviews → campaign → item stays client-side; no page scrolls sideways — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  11. 1024px: Reviews → campaign → item stays client-side; no page scrolls sideways — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  12. 768px: Reviews → campaign → item stays client-side; no page scrolls sideways — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  13. 375px: Reviews → campaign → item stays client-side; no page scrolls sideways — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+FAIL  14. 320px: Reviews → campaign → item stays client-side; no page scrolls sideways — document loaded (http://127.0.0.1:3112/governance/items/2022282a-9384-4afd-96d0-397af868731b)
+PASS  15. no page error, no hydration error — 0 page errors, 0 hydration; console errors: http://127.0.0.1:3112/governance: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+4/15 checks passed
+# exit=1, load after 14.16 15.63 14.90

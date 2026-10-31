@@ -1,0 +1,692 @@
+[
+  {
+    "path": "/",
+    "kind": "document",
+    "before": 9,
+    "after": 9,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Overview — ADG",
+      "Overview — ADG"
+    ]
+  },
+  {
+    "path": "/",
+    "kind": "rsc",
+    "before": 9,
+    "after": 9,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Overview — ADG",
+      "Overview — ADG"
+    ]
+  },
+  {
+    "path": "/risks",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Findings — ADG",
+      "Findings — ADG"
+    ]
+  },
+  {
+    "path": "/risks",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Findings — ADG",
+      "Findings — ADG"
+    ]
+  },
+  {
+    "path": "/risks/alerts",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Alerts — ADG",
+      "Alerts — ADG"
+    ]
+  },
+  {
+    "path": "/risks/alerts",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Alerts — ADG",
+      "Alerts — ADG"
+    ]
+  },
+  {
+    "path": "/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-2103&resource=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Access investigation — ADG",
+      "Access investigation — ADG"
+    ]
+  },
+  {
+    "path": "/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-2103&resource=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Access investigation — ADG",
+      "Access investigation — ADG"
+    ]
+  },
+  {
+    "path": "/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-2103&resource=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Access explanation — ADG",
+      "Access explanation — ADG"
+    ]
+  },
+  {
+    "path": "/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-2103&resource=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Access explanation — ADG",
+      "Access explanation — ADG"
+    ]
+  },
+  {
+    "path": "/changes?days=90",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Changes — ADG",
+      "Changes — ADG"
+    ]
+  },
+  {
+    "path": "/changes?days=90",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Changes — ADG",
+      "Changes — ADG"
+    ]
+  },
+  {
+    "path": "/changes?kind=ntfs_ace&key=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014%7CS-1-5-21-3949361974-1583827165-633756269-2103%7Callow%7C0x001301bf%7C0x13",
+    "kind": "document",
+    "before": 4,
+    "after": 4,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "History — ADG",
+      "History — ADG"
+    ]
+  },
+  {
+    "path": "/changes?kind=ntfs_ace&key=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014%7CS-1-5-21-3949361974-1583827165-633756269-2103%7Callow%7C0x001301bf%7C0x13",
+    "kind": "rsc",
+    "before": 4,
+    "after": 4,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "History — ADG",
+      "History — ADG"
+    ]
+  },
+  {
+    "path": "/changes/compare",
+    "kind": "document",
+    "before": 3,
+    "after": 3,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Compare two points in time — ADG",
+      "Compare two points in time — ADG"
+    ]
+  },
+  {
+    "path": "/changes/compare",
+    "kind": "rsc",
+    "before": 3,
+    "after": 3,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Compare two points in time — ADG",
+      "Compare two points in time — ADG"
+    ]
+  },
+  {
+    "path": "/changes/impact?kind=ntfs_ace&key=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014%7CS-1-5-21-3949361974-1583827165-633756269-2103%7Callow%7C0x001301bf%7C0x13&at=2026-09-30T21%3A26%3A51-07%3A00",
+    "kind": "document",
+    "before": 4,
+    "after": 4,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Why access changed — ADG",
+      "Why access changed — ADG"
+    ]
+  },
+  {
+    "path": "/changes/impact?kind=ntfs_ace&key=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014%7CS-1-5-21-3949361974-1583827165-633756269-2103%7Callow%7C0x001301bf%7C0x13&at=2026-09-30T21%3A26%3A51-07%3A00",
+    "kind": "rsc",
+    "before": 4,
+    "after": 4,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Why access changed — ADG",
+      "Why access changed — ADG"
+    ]
+  },
+  {
+    "path": "/identities/users",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Users — ADG",
+      "Users — ADG"
+    ]
+  },
+  {
+    "path": "/identities/users",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Users — ADG",
+      "Users — ADG"
+    ]
+  },
+  {
+    "path": "/identities/groups",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Groups — ADG",
+      "Groups — ADG"
+    ]
+  },
+  {
+    "path": "/identities/groups",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Groups — ADG",
+      "Groups — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/items/2022282a-9384-4afd-96d0-397af868731b",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review item — ADG",
+      "Review item — ADG"
+    ]
+  },
+  {
+    "path": "/governance/items/2022282a-9384-4afd-96d0-397af868731b",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review item — ADG",
+      "Review item — ADG"
+    ]
+  },
+  {
+    "path": "/simulations/new",
+    "kind": "document",
+    "before": 4,
+    "after": 4,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Propose a change — ADG",
+      "Propose a change — ADG"
+    ]
+  },
+  {
+    "path": "/simulations/new",
+    "kind": "rsc",
+    "before": 4,
+    "after": 4,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Propose a change — ADG",
+      "Propose a change — ADG"
+    ]
+  },
+  {
+    "path": "/simulations/eeba3f72-0be9-44ed-9be0-22ed219433da",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "What-if proposal — ADG",
+      "What-if proposal — ADG"
+    ]
+  },
+  {
+    "path": "/simulations/eeba3f72-0be9-44ed-9be0-22ed219433da",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "What-if proposal — ADG",
+      "What-if proposal — ADG"
+    ]
+  },
+  {
+    "path": "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-2103",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Identity — ADG",
+      "Identity — ADG"
+    ]
+  },
+  {
+    "path": "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-2103",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Identity — ADG",
+      "Identity — ADG"
+    ]
+  },
+  {
+    "path": "/resources/server?key=gp-fin-fs01",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Server — ADG",
+      "Server — ADG"
+    ]
+  },
+  {
+    "path": "/resources/server?key=gp-fin-fs01",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Server — ADG",
+      "Server — ADG"
+    ]
+  },
+  {
+    "path": "/resources/share?key=gp-fin-fs01%7Cfinance",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Share — ADG",
+      "Share — ADG"
+    ]
+  },
+  {
+    "path": "/resources/share?key=gp-fin-fs01%7Cfinance",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Share — ADG",
+      "Share — ADG"
+    ]
+  },
+  {
+    "path": "/resources/directory?key=%5C%5Cgp-fin-fs01%5Cfinance%5Creports%5Crevenue",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Directory — ADG",
+      "Directory — ADG"
+    ]
+  },
+  {
+    "path": "/resources/directory?key=%5C%5Cgp-fin-fs01%5Cfinance%5Creports%5Crevenue",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Directory — ADG",
+      "Directory — ADG"
+    ]
+  },
+  {
+    "path": "/governance",
+    "kind": "document",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Reviews — ADG",
+      "Reviews — ADG"
+    ]
+  },
+  {
+    "path": "/governance",
+    "kind": "rsc",
+    "before": 5,
+    "after": 5,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Reviews — ADG",
+      "Reviews — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/f1d2a703-3047-4a02-bfc6-3377406a0f81",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/f1d2a703-3047-4a02-bfc6-3377406a0f81",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/6c4a0324-943f-4e68-92e7-b5214aa22224",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/6c4a0324-943f-4e68-92e7-b5214aa22224",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6?principal=S-1-5-21-3949361974-1583827165-633756269-2471",
+    "kind": "document",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  },
+  {
+    "path": "/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6?principal=S-1-5-21-3949361974-1583827165-633756269-2471",
+    "kind": "rsc",
+    "before": 6,
+    "after": 6,
+    "added": [],
+    "status": [
+      200,
+      200
+    ],
+    "title": [
+      "Review campaign — ADG",
+      "Review campaign — ADG"
+    ]
+  }
+]

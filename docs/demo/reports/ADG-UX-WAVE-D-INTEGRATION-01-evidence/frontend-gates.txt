@@ -1,0 +1,24 @@
+# Frontend gates, 2026-10-31T16:47:11Z, HEAD abf2d00, node v22.23.3 arm64
+## npm run lint
+exit=0
+## npm run typecheck
+exit=0
+## npm run cf:typecheck
+exit=0
+## npm run test
+ ✓ tests/config.test.ts (8 tests) 5ms
+ ✓ tests/titles.test.ts (38 tests) 11ms
+
+ Test Files  49 passed (49)
+      Tests  1696 passed (1696)
+   Start at  09:47:56
+   Duration  37.06s (transform 36.14s, setup 52.88s, collect 49.65s, tests 25.65s, environment 65.62s, prepare 5.87s)
+
+exit=0
+## ADG_NEXT_OUTPUT=standalone npm run build
+exit=0
+└ ƒ /status
+
+
+ƒ  (Dynamic)  server-rendered on demand
+

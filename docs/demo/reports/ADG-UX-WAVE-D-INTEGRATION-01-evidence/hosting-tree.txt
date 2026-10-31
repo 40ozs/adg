@@ -1,0 +1,43 @@
+# Hosting-path tree comparison: Wave C 559dbaf vs Wave D abf2d00
+# git diff --stat 559dbaf HEAD -- <path> (empty = byte-identical)
+frontend/cloudflare/worker.ts: IDENTICAL
+frontend/cloudflare: CHANGED (1 files): frontend/cloudflare/checks/titles.mjs 
+frontend/render: IDENTICAL
+frontend/render/gate.ts: IDENTICAL
+frontend/next.config.ts: (not in tree)
+frontend/next.config.mjs: IDENTICAL
+frontend/wrangler.jsonc: IDENTICAL
+docker/Dockerfile.render: IDENTICAL
+frontend/middleware.ts: (not in tree)
+frontend/proxy.ts: (not in tree)
+frontend/lib/env.ts: (not in tree)
+frontend/lib/config.ts: IDENTICAL
+frontend/app/page.tsx: IDENTICAL
+frontend/app/layout.tsx: IDENTICAL
+frontend/components/Overview.tsx: IDENTICAL
+frontend/components/overview.module.css: IDENTICAL
+frontend/components/RecentlyViewed.tsx: IDENTICAL
+frontend/lib/api: IDENTICAL
+frontend/app/api: IDENTICAL
+frontend/package.json: IDENTICAL
+frontend/package-lock.json: IDENTICAL
+backend/pyproject.toml: IDENTICAL
+database: IDENTICAL
+.github: IDENTICAL
+
+## every path changed 559dbaf..HEAD outside docs/
+backend/app/api/governance.py
+backend/app/api/scan_runs.py
+backend/tests/auth/test_roles.py
+backend/tests/contracts/test_scope_display_name.py
+backend/tests/db/test_governance_api.py
+frontend/app/governance/campaigns/[campaignId]/page.tsx
+frontend/cloudflare/checks/titles.mjs
+frontend/components/DecisionForm.tsx
+frontend/lib/contracts.ts
+frontend/lib/governance.ts
+frontend/tests/contracts.test.ts
+frontend/tests/governance-views.test.tsx
+
+## files using <Suspense> or loading.tsx (Overview streaming architecture)
+IDENTICAL frontend/app/page.tsx
