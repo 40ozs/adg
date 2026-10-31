@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 /**
+ * Historical (ADG-UX-WAVE-D-INTEGRATION-01): this gate is COPY-04's record, 17/17 in Wave C. From
+ * Wave D on its Reviews-list check fails by design (REVIEW-NAMES-08 names identity scopes). The
+ * current gate is ADG-UX-WAVE-D-INTEGRATION-01-evidence/copy-check.wave-d.mjs. Only this comment was added.
+ *
  * ADG-UX-BACKEND-COPY-04: backend identity wording and readable identifiers, on the real
  * local demo stack.
  *
