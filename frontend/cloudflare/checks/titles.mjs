@@ -11,8 +11,21 @@
  * journey (ADG-UX-DEEP-TITLES-06) clicks real links, so it needs a dataset that offers them.
  * SIGN_IN_AS should hold every section's capability (`admin` locally); a narrower account
  * checks only the sections its nav offers, and says how many.
+ *
+ * Locally, run it with the proxy (ADG-UX-TEST-STABILITY-09), so the result does not depend on
+ * today's date:
+ *
+ *   STAGING_URL=http://127.0.0.1:3000 API_URL=http://127.0.0.1:8000 PROXY_PORT=8100 \
+ *   SIGN_IN_AS=admin node cloudflare/checks/titles.mjs      (Next.js ADG_INTERNAL_API_URL → the proxy)
+ *
+ * The Changes page asks for a window that ends now, and the demo's changes end at DATASET_NOW.
+ * Once that date leaves the 90-day window, the journey has no rows to click. The proxy moves each
+ * window read (the same two paths overview.mjs shifts) so it ends at DATASET_NOW, and keeps its
+ * length. Every other read passes through unchanged. Without API_URL and PROXY_PORT there is no
+ * proxy, as against the hosted demo, and the journey needs changes in the real last 90 days.
  */
 
+import http from "node:http";
 import { createRequire } from "node:module";
 
 const { chromium } = await import("playwright").catch(() => createRequire(import.meta.url)("playwright"));
@@ -27,6 +40,40 @@ const TIMEOUT = Number(process.env.CHECK_TIMEOUT_MS ?? 90_000);
 const SUFFIX = " — ADG";
 // A syntactically valid SID nobody has; the title must not carry it either way.
 const DETAIL_SID = "S-1-5-21-1111111111-2222222222-3333333333-1001";
+
+/* ------------------------------------------------------- date-anchoring proxy (optional) */
+
+const API = process.env.API_URL;
+const PROXY_PORT = Number(process.env.PROXY_PORT ?? 0);
+/** The dataset's newest change, plus a margin, as in overview.mjs. */
+const DATASET_NOW = Date.parse(process.env.DATASET_NOW ?? "2026-10-01T12:00:00Z");
+const WINDOW_READS = new Set(["/api/v1/changes", "/api/v1/changes/summary"]);
+const PROXIED = Boolean(API && PROXY_PORT);
+let anchored = 0;
+if (PROXIED) {
+  const proxy = http.createServer((req, res) => {
+    const url = new URL(req.url, API);
+    const from = Date.parse(url.searchParams.get("from"));
+    const to = Date.parse(url.searchParams.get("to"));
+    // Moved by the request's own `to`, not this script's clock: the window ends at DATASET_NOW
+    // whatever date the Next.js server thinks it is.
+    if (WINDOW_READS.has(url.pathname) && to > DATASET_NOW && !Number.isNaN(from)) {
+      url.searchParams.set("from", new Date(from - (to - DATASET_NOW)).toISOString());
+      url.searchParams.set("to", new Date(DATASET_NOW).toISOString());
+      anchored++;
+    }
+    const upstream = http.request(url, { method: req.method, headers: { ...req.headers, host: url.host } }, (up) => {
+      res.writeHead(up.statusCode, up.headers);
+      up.pipe(res);
+    });
+    upstream.on("error", () => {
+      if (!res.headersSent) res.writeHead(502);
+      res.end();
+    });
+    req.pipe(upstream);
+  });
+  await new Promise((resolve) => proxy.listen(PROXY_PORT, "127.0.0.1", resolve));
+}
 
 const browser = await chromium.launch(
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -187,8 +234,8 @@ const LEAKS = /S-1-\d|[0-9a-f]{8}-[0-9a-f]{4}-|\\|[A-Z]:\/|principal:|\/\//i;
  * One journey through the deeper pages, every move a click on a link the page offers (or a
  * nav item), so each is a client-side navigation. `link` is a selector inside the main
  * content; `nav` is a primary nav label. A missing link fails the step: the journey needs a
- * dataset with changes in the last 90 days, a review campaign with an item, and one What-if
- * proposal. `fullLoad` marks a move whose link is a plain <a> before this lane: the campaign's
+ * dataset with changes in the 90 days before DATASET_NOW (with the proxy; before now without
+ * it), a review campaign with an item, and one What-if proposal. `fullLoad` marks a move whose link is a plain <a> before this lane: the campaign's
  * item list (components/DecisionForm.tsx) loads the item as a new document. Its title is still
  * checked; the document loads it causes, there and on Back/Forward across it, are not reloads.
  */
@@ -208,7 +255,8 @@ const JOURNEY = [
   { link: 'a[href^="/identities/groups"]', title: "Groups", current: "Identities" },
   { link: 'a[href^="/identities/principal/"]', title: "Identity", current: "Identities" },
   { nav: "Reviews", title: "Reviews", current: "Reviews" },
-  { link: 'a[href^="/governance/campaigns/"]', title: "Review campaign", current: "Reviews" },
+  // The list is newest first, and the newest can be an empty draft: take one with items.
+  { link: 'tr:has(td:last-child:text-matches("^[1-9]")) a[href^="/governance/campaigns/"]', title: "Review campaign", current: "Reviews" },
   { link: 'a[href^="/governance/items/"]', title: "Review item", current: "Reviews", fullLoad: true },
   { nav: "What-if", title: "What-if", current: "What-if" },
   { link: 'a[href^="/simulations/"]:not([href^="/simulations/new"])', title: "What-if proposal", current: "What-if" },
@@ -248,7 +296,9 @@ await check("deeper pages: each client move titles the page it lands on", async 
     deepPaths.set(step.title, `${url.pathname}${url.search}`);
   }
   expect(reloads().length === 0, `a move reloaded the document (${reloads().join(", ")})`);
-  return `${deepVisited.length} moves, no reload (known full load: ${[...fullLoadPages].pop()})`;
+  expect(!PROXIED || anchored > 0, `no window read reached the proxy on :${PROXY_PORT} (Next.js ADG_INTERNAL_API_URL?)`);
+  const window = PROXIED ? `${anchored} window reads anchored to ${new Date(DATASET_NOW).toISOString()}` : "live window";
+  return `${deepVisited.length} moves, no reload (known full load: ${[...fullLoadPages].pop()}); ${window}`;
 });
 
 await check("deeper pages: Back restores every earlier title", async () => {
