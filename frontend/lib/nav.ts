@@ -11,15 +11,31 @@
  * state. Nothing here is load-bearing for security.
  */
 
+/**
+ * The conceptual groups the navigation is arranged in (ADG-UX-01). The order here is the
+ * order on screen. A group is a label, not a section: it has no page and is never a focus
+ * stop.
+ */
+export const NAV_GROUPS = [
+  { id: "investigate", label: "Investigate" },
+  { id: "directory", label: "Directory" },
+  { id: "act", label: "Act" },
+  { id: "system", label: "System" },
+] as const;
+
+export type NavGroupId = (typeof NAV_GROUPS)[number]["id"];
+
 export interface NavItem {
   /** Stable id, used as the React key and in tests. */
   id: string;
   label: string;
   href: string;
+  group: NavGroupId;
   /** The capability required to see anything on this page, or null for always-visible. */
   requires: string | null;
   /** Shown as a badge; the section exists but has no data behind it yet. */
   placeholder?: boolean;
+  /** What the section is for, in one sentence. Also the link's tooltip. */
   description: string;
 }
 
@@ -28,73 +44,103 @@ export const NAV_ITEMS: readonly NavItem[] = [
     id: "overview",
     label: "Overview",
     href: "/",
+    group: "investigate",
     requires: null,
     description: "Collection state and where to start.",
   },
   {
-    id: "resources",
-    label: "Resources",
-    href: "/resources",
-    requires: "resources:read",
-    description: "Servers, shares, and the directories beneath them.",
-  },
-  {
-    id: "identities",
-    label: "Identities",
-    href: "/identities",
-    requires: "identities:read",
-    description: "Users, groups, and the memberships that connect them.",
+    // The route stays /risks: deep links, the hosted checks and the API (`risks:read`) all
+    // use it. Only the user-facing word changed, because these are rule matches, not scores.
+    id: "risks",
+    label: "Findings",
+    href: "/risks",
+    group: "investigate",
+    requires: "risks:read",
+    description:
+      "Conditions ADG detected in the collected access data, with the evidence behind each.",
   },
   {
     id: "access",
     label: "Access",
     href: "/access",
+    group: "investigate",
     requires: "access:read",
-    description: "Who can reach what, and the reasoning behind each answer.",
-  },
-  {
-    id: "risks",
-    label: "Risks",
-    href: "/risks",
-    requires: "risks:read",
-    description: "Findings across the estate, the records behind each one, and the alerts.",
+    description: "Who can reach a resource, what an identity can reach, and the access paths that explain why.",
   },
   {
     id: "changes",
     label: "Changes",
     href: "/changes",
+    group: "investigate",
     requires: "changes:read",
-    description: "What moved in the estate, whether it matters, and what it did to access.",
+    description: "What changed in the estate, and whether those changes affected access.",
   },
   {
-    id: "simulations",
-    label: "What-if",
-    href: "/simulations",
-    requires: "simulations:read",
-    description: "Propose a permission change and measure what it would do. Changes nothing.",
+    id: "identities",
+    label: "Identities",
+    href: "/identities",
+    group: "directory",
+    requires: "identities:read",
+    description: "Users, groups, and the memberships that connect them.",
+  },
+  {
+    id: "resources",
+    label: "Resources",
+    href: "/resources",
+    group: "directory",
+    requires: "resources:read",
+    description: "Servers, shares, and the directories beneath them.",
   },
   {
     id: "governance",
     label: "Reviews",
     href: "/governance",
+    group: "act",
     requires: "governance:read",
-    description: "Access review campaigns, your queue, and the decisions recorded.",
+    description: "Review access decisions that require human confirmation.",
+  },
+  {
+    id: "simulations",
+    label: "What-if",
+    href: "/simulations",
+    group: "act",
+    requires: "simulations:read",
+    description: "Propose a permission change and measure what it would do. Changes nothing.",
   },
   {
     id: "collectors",
     label: "Collectors",
     href: "/collectors",
+    group: "system",
     requires: "collectors:read",
-    description: "Scan runs, coverage, and what each run could not read.",
+    description: "Scan runs, data coverage, and what each run could not read.",
   },
   {
     id: "settings",
     label: "Settings",
     href: "/settings",
+    group: "system",
     requires: "settings:read",
     description: "Deployment configuration and the authorization model.",
   },
 ] as const;
+
+/** A document title: what the page is, then the product. Short, so a narrow tab still says it. */
+export function documentTitle(name: string): string {
+  return `${name} — ADG`;
+}
+
+/**
+ * A section's document title, from its nav label, so the browser tab and the nav never
+ * disagree (`/risks` is "Findings — ADG").
+ */
+export function sectionTitle(id: string): string {
+  const item = NAV_ITEMS.find((candidate) => candidate.id === id);
+  if (item === undefined) {
+    throw new Error(`No navigation item "${id}".`);
+  }
+  return documentTitle(item.label);
+}
 
 /** The items a principal holding `capabilities` should be offered. */
 export function visibleNavItems(
@@ -103,6 +149,19 @@ export function visibleNavItems(
 ): NavItem[] {
   const held = new Set(capabilities);
   return items.filter((item) => item.requires === null || held.has(item.requires));
+}
+
+/**
+ * `items` arranged under their groups, in group order. A group with nothing visible is
+ * dropped, so a heading never announces a section the account cannot open.
+ */
+export function groupNavItems(
+  items: readonly NavItem[],
+): { id: NavGroupId; label: string; items: NavItem[] }[] {
+  return NAV_GROUPS.map((group) => ({
+    ...group,
+    items: items.filter((item) => item.group === group.id),
+  })).filter((group) => group.items.length > 0);
 }
 
 /**

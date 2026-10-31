@@ -1,0 +1,42 @@
+--- 559dbaf:ADG-UX-BACKEND-COPY-04-evidence/copy-check.mjs
++++ ADG-UX-WAVE-D-INTEGRATION-01-evidence/copy-check.wave-d.mjs
+@@ -3,6 +3,11 @@
+  * ADG-UX-BACKEND-COPY-04: backend identity wording and readable identifiers, on the real
+  * local demo stack.
+  *
++ * WAVE D CURRENT COPY (ADG-UX-WAVE-D-INTEGRATION-01). Only the Reviews-list check differs from
++ * ADG-UX-BACKEND-COPY-04-evidence/copy-check.mjs: REVIEW-NAMES-08 names identity scopes from the
++ * API, so the list shows the identity's name, never its SID, and keeps the explicit fallback for
++ * an identity ADG does not describe (UNRESOLVED_SID, seeded by setup-fixtures.sh).
++ *
+  * Signs in as `admin`, takes the scenario person and group from /api/v1/demo and the two
+  * campaigns `campaign-setup.py` created (CAMPAIGNS_JSON), and checks:
+  *
+@@ -31,6 +36,11 @@
+ const SCREENSHOTS = process.env.SCREENSHOT_DIR ?? "";
+ const REPORT = process.env.REPORT_JSON ?? "";
+ const CAMPAIGNS = JSON.parse(readFileSync(process.env.CAMPAIGNS_JSON ?? "campaigns.json", "utf8"));
++const UNRESOLVED_SID = process.env.UNRESOLVED_SID ?? "";
++if (!UNRESOLVED_SID) {
++  console.error("Set UNRESOLVED_SID (setup-fixtures.sh prints it).");
++  process.exit(2);
++}
+ for (const url of [WEB, API]) {
+   if (!["127.0.0.1", "localhost"].includes(new URL(url).hostname)) {
+     console.error(`Refusing a non-loopback target: ${url}.`);
+@@ -217,11 +227,13 @@
+ });
+ 
+ // --- reviews ------------------------------------------------------------------------------
+-await check("Reviews list: scope tokens rendered as words, explicit fallback without a name", async () => {
++await check("Reviews list: scope tokens rendered as words, identities named, explicit fallback without a name", async () => {
+   await visit("/governance");
+   const text = await page.locator("main").innerText();
+   expect(!/\bprincipal:S-1-/.test(text) && !/\bdirectory_tree:/.test(text) && !/\bshare:/.test(text), "a raw scope token is rendered");
+-  expect(text.includes(`Identity: ${group.sid} (name not loaded)`), "identity scope fallback missing");
++  expect(text.includes(`Identity: ${group.name}`) && text.includes(`Identity: ${person.name}`), "identity scope names missing");
++  expect(!text.includes(group.sid) && !text.includes(person.sid), "a named identity's SID is rendered");
++  expect(text.includes(`Identity: ${UNRESOLVED_SID} (name not loaded)`), "unresolved identity fallback missing");
+   expect(text.includes(`Share: ${CAMPAIGNS.share}`), "share scope label missing");
+   expect(text.includes(`Directory tree: ${CAMPAIGNS.resource}`), "directory tree scope label missing");
+   await noGenericPrincipal();

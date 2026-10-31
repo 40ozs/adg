@@ -208,7 +208,7 @@ describe("when the question is incomplete", () => {
   it("asks for both halves rather than guessing one", async () => {
     render(await AccessExplanationPage({ searchParams: params({ principal: "S-1-5-18" }) }));
 
-    expect(screen.getByText(/always about one principal and one directory/)).toBeInTheDocument();
+    expect(screen.getByText(/always about one identity and one directory/)).toBeInTheDocument();
     expect(screen.getByLabelText("Directory")).toHaveValue("");
     expect(explain.fetchAccessExplanation).not.toHaveBeenCalled();
   });
@@ -216,7 +216,7 @@ describe("when the question is incomplete", () => {
   it("keeps what was already typed", async () => {
     render(await AccessExplanationPage({ searchParams: params({ principal: "S-1-5-18" }) }));
 
-    expect(screen.getByLabelText("Principal")).toHaveValue("S-1-5-18");
+    expect(screen.getByLabelText("Identity")).toHaveValue("S-1-5-18");
   });
 });
 
@@ -234,7 +234,7 @@ describe("when the API cannot answer", () => {
     render(await AccessExplanationPage({ searchParams: params(ASKED) }));
 
     expect(screen.getByText("Your account cannot see this")).toBeInTheDocument();
-    expect(screen.getByLabelText("Principal")).toBeInTheDocument();
+    expect(screen.getByLabelText("Identity")).toBeInTheDocument();
   });
 
   it("does not render a verdict it does not have", async () => {

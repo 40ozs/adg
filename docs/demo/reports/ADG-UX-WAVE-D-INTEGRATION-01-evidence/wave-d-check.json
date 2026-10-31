@@ -1,0 +1,103 @@
+{
+  "results": [
+    {
+      "name": "1. Reviews loads",
+      "ok": true,
+      "detail": "4 campaigns"
+    },
+    {
+      "name": "2. Reviews: identity scopes show the current display name; unresolved keeps the fallback",
+      "ok": true,
+      "detail": "Brianna Reddy, sec-share-design-read-only; unresolved 999999 → fallback"
+    },
+    {
+      "name": "3. Reviews → campaign by click: client-side, \"Review campaign — ADG\"",
+      "ok": true,
+      "detail": "COPY-04 identity review, 4 items"
+    },
+    {
+      "name": "4. Campaign: reviewer scopes use the current display names",
+      "ok": true,
+      "detail": "Brianna Reddy, sec-share-design-read-only"
+    },
+    {
+      "name": "5. Campaign → item by click: no document load, \"Review item — ADG\", no layout re-read, no repeated read",
+      "ok": true,
+      "detail": "3 API reads: GET /auth/me | GET /api/v1/governance/items/2022282a-9384-4afd-96d0-397af868731b | GET /api/v1/governance/items/2022282a-9384-4afd-96d0-397af868731b/context"
+    },
+    {
+      "name": "6. Back: the campaign, its title, no document load",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "7. Forward: the item, its title, no document load",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "8. Changes journey on a 2028-01-01 clock: History and \"Why access changed\", anchored, client-side",
+      "ok": true,
+      "detail": "4 window reads moved to 2028-01-01T00:00:00.000Z and anchored to 2026-10-01T12:00:00.000Z"
+    },
+    {
+      "name": "9. Reviews and campaign: Wave C web-tier calls, no identity lookup in the web tier or the browser",
+      "ok": true,
+      "detail": "Reviews 5, campaign 6; 0 identity lookups over 92 browser requests"
+    },
+    {
+      "name": "10. 1440px: Reviews → campaign → item stays client-side; no page scrolls sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "11. 1024px: Reviews → campaign → item stays client-side; no page scrolls sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "12. 768px: Reviews → campaign → item stays client-side; no page scrolls sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "13. 375px: Reviews → campaign → item stays client-side; no page scrolls sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "14. 320px: Reviews → campaign → item stays client-side; no page scrolls sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "15. no page error, no hydration error",
+      "ok": true,
+      "detail": "0 page errors, 0 hydration; console errors: http://127.0.0.1:3110/governance: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "recorded": {
+    "reviews": [
+      "GET /api/v1/governance/campaigns?limit",
+      "GET /api/v1/governance/queue",
+      "GET /auth/config",
+      "GET /auth/me",
+      "GET /runtime"
+    ],
+    "itemMove": [
+      "GET /auth/me",
+      "GET /api/v1/governance/items/2022282a-9384-4afd-96d0-397af868731b",
+      "GET /api/v1/governance/items/2022282a-9384-4afd-96d0-397af868731b/context"
+    ],
+    "campaign": [
+      "GET /api/v1/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6/drift?limit",
+      "GET /api/v1/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6/items?limit",
+      "GET /api/v1/governance/campaigns/0c1fe912-fda6-435b-aa2a-30507cc556b6/status",
+      "GET /auth/config",
+      "GET /auth/me",
+      "GET /runtime"
+    ]
+  },
+  "simulated": 4,
+  "anchored": 4
+}

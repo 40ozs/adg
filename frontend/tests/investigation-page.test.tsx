@@ -151,7 +151,7 @@ describe("1. the question", () => {
     expect(explain.fetchAccessExplanation).not.toHaveBeenCalled();
     expect(container.querySelector("form")?.getAttribute("action")).toBe("/access/investigate");
     expect(screen.getByRole("button", { name: "Investigate this access" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Principal")).toHaveValue(FATIMA_SID);
+    expect(screen.getByLabelText("Identity")).toHaveValue(FATIMA_SID);
   });
 });
 

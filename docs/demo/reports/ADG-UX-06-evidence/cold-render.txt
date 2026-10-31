@@ -1,0 +1,8 @@
+# Cold Next.js server render of / (signed in as planner), measured with curl right after
+# restarting the standalone server, Next.js pointed straight at the API (no recording proxy).
+# 2026-10-30 11:19 PDT, load averages 36.79 138.05 110.53 (other work on this Mac).
+dev-login 200 0.290768s
+cold GET / 200 ttfb=0.629027s total=0.630783s bytes=29437
+warm1 GET / 200 ttfb=0.333849s total=0.334799s bytes=29437
+warm2 GET / 200 ttfb=0.226728s total=0.229541s bytes=29437
+warm3 GET / 200 ttfb=0.291875s total=0.292945s bytes=29437

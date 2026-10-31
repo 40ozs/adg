@@ -1,0 +1,48 @@
+ADG-UX-DEEP-TITLES-06 frontend gates — Node v22.23.3 arm64, worktree tree = branch head code commit
+
+## npm run lint
+
+> adg-frontend@0.1.0 lint
+> eslint .
+
+
+## npm run typecheck
+
+> adg-frontend@0.1.0 typecheck
+> tsc --noEmit
+
+
+## npm run cf:typecheck
+
+> adg-frontend@0.1.0 cf:typecheck
+> tsc -p cloudflare/tsconfig.json
+
+
+## npm test
+ Test Files  46 passed (46)
+      Tests  1596 passed (1596)
+   Duration  95.55s (transform 25.01s, setup 74.03s, collect 40.06s, tests 9.98s, environment 428.44s, prepare 17.41s)
+
+## ADG_NEXT_OUTPUT=standalone npm run build
+▲ Next.js 16.4.1 (webpack)
+✓ Running next.config.mjs took 1510ms
+✓ Compiled successfully in 56s
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 696ms
+### lint
+exit 0
+### typecheck
+exit 0
+### cf:typecheck
+exit 0
+### test
+exit 0
+### build
+exit 0
+
+## Re-run after the titles.mjs edit
+lint exit 0
+cf:typecheck exit 0

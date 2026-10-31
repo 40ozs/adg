@@ -1,0 +1,79 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05B/frontend
+
+ ✓ tests/views.test.tsx (32 tests) 508ms
+ ✓ tests/risks-page.test.tsx (23 tests) 1125ms
+ ✓ tests/governance-views.test.tsx (23 tests) 311ms
+ ✓ tests/overview-page.test.tsx (41 tests) 1655ms
+ ✓ tests/pages.test.tsx (27 tests) 1192ms
+stderr | tests/investigation-page.test.tsx > 1. the question > asks the API for exactly the pair in the URL, once
+Received `false` for a non-boolean attribute `prefetch`.
+
+If you want to write it to the DOM, pass a string instead: prefetch="false" or prefetch={value.toString()}.
+
+If you used to conditionally omit it with prefetch={condition && value}, pass prefetch={condition ? value : undefined} instead.
+
+ ✓ tests/explanation-views.test.tsx (49 tests) 2173ms
+ ✓ tests/investigation-page.test.tsx (30 tests) 3146ms
+   ✓ 1. the question > asks the API for exactly the pair in the URL, once 392ms
+ ✓ tests/demo-guide.test.tsx (18 tests) 286ms
+ ✓ tests/simulation-views.test.tsx (20 tests) 156ms
+ ✓ tests/alerts-page.test.tsx (14 tests) 211ms
+ ✓ tests/collectors-page.test.tsx (17 tests) 521ms
+ ✓ tests/components.test.tsx (24 tests) 807ms
+ ✓ tests/compare-page.test.tsx (18 tests) 403ms
+ ✓ tests/directory.test.tsx (18 tests) 848ms
+ ✓ tests/changes-views.test.tsx (18 tests) 1046ms
+   ✓ a change on screen > never calls a first sighting an addition 309ms
+ ✓ tests/demo-indicator.test.tsx (8 tests) 755ms
+   ✓ the demo environment indicator > names the environment and the fictional organization 310ms
+   ✓ the demo environment indicator > points to the demo guide, where the scenarios link into the real pages 306ms
+ ✓ tests/system-mapping.test.tsx (23 tests) 680ms
+   ✓ the verdict panel > shows the ambiguous mapping beside an answer that withholds a conclusion 510ms
+ ✓ tests/recently-viewed.test.tsx (14 tests) 1258ms
+   ✓ RecentlyViewed > lists entries newest first, each with its kind and a link to the canonical route 508ms
+ ✓ tests/simulations-page.test.tsx (7 tests) 951ms
+   ✓ the proposals listing > says nothing will be applied before it lists anything 534ms
+ ✓ tests/recent-routes.test.tsx (39 tests) 1308ms
+   ✓ the identity detail route > records only after its primary read is ok, with the API's key and the short label 321ms
+ ✓ tests/explanation-page.test.tsx (15 tests) 2634ms
+   ✓ the explanation screen against a captured response > asks the API for exactly the pair in the URL 536ms
+   ✓ the explanation screen against a captured response > leads with the verdict and the rights 751ms
+   ✓ the explanation screen against a captured response > shows why, without anybody traversing AD by hand 410ms
+ ✓ tests/operations.test.ts (30 tests) 18ms
+ ✓ tests/governance.test.ts (36 tests) 76ms
+ ✓ tests/explanation.test.ts (82 tests) 41ms
+ ✓ tests/recent.test.ts (33 tests) 45ms
+ ✓ tests/explanation-contract.test.ts (97 tests) 94ms
+ ✓ tests/contracts.test.ts (471 tests) 147ms
+ ✓ tests/identity.test.ts (27 tests) 47ms
+ ✓ tests/changes.test.ts (29 tests) 21ms
+ ✓ tests/investigation.test.ts (20 tests) 25ms
+ ✓ tests/simulation.test.ts (23 tests) 52ms
+ ✓ tests/coverage.test.ts (29 tests) 145ms
+ ✓ tests/cloudflare/routing.test.ts (39 tests) 128ms
+ ✓ tests/risks.test.ts (17 tests) 30ms
+ ✓ tests/render/gate.test.ts (38 tests) 1114ms
+   ✓ startup > does not start, start a process or open a port without the key 460ms
+ ✓ tests/auth.test.ts (29 tests) 140ms
+ ✓ tests/state.test.ts (15 tests) 13ms
+ ✓ tests/alerts.test.ts (16 tests) 14ms
+ ✓ tests/acl.test.ts (23 tests) 17ms
+ ✓ tests/nav.test.ts (18 tests) 11ms
+ ✓ tests/proxy.test.ts (14 tests) 9ms
+ ✓ tests/access.test.ts (17 tests) 45ms
+ ✓ tests/paging.test.ts (16 tests) 11ms
+ ✓ tests/config.test.ts (8 tests) 8ms
+ ✓ tests/resources.test.ts (17 tests) 14ms
+ ✓ tests/cloudflare/environment.test.ts (12 tests) 13ms
+ ✓ tests/sort.test.ts (8 tests) 5ms
+ ✓ tests/sortable-table.test.tsx (6 tests) 187ms
+ ✓ tests/titles.test.ts (36 tests) 13ms
+
+ Test Files  49 passed (49)
+      Tests  1684 passed (1684)
+   Start at  17:52:57
+   Duration  90.45s (transform 83.64s, setup 94.02s, collect 128.09s, tests 24.46s, environment 211.45s, prepare 47.90s)
+
+exit 0

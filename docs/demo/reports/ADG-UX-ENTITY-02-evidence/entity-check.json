@@ -1,0 +1,80 @@
+{
+  "results": [
+    {
+      "name": "User: direct groups: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"Brianna Reddy user\"; 12/12 links checked"
+    },
+    {
+      "name": "User: effective groups: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"Brianna Reddy user\"; 30/43 links checked"
+    },
+    {
+      "name": "User: reachable shares: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"Brianna Reddy user\"; 30/94 links checked"
+    },
+    {
+      "name": "User: reachable directories: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"Brianna Reddy user\"; 30/207 links checked"
+    },
+    {
+      "name": "User: named on share ACLs: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"Brianna Reddy user\"; 8/8 links checked"
+    },
+    {
+      "name": "Group: direct members: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"sec-share-design-read-only domain group\"; 24/24 links checked"
+    },
+    {
+      "name": "Group: effective members: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"sec-share-design-read-only domain group\"; 20/20 links checked"
+    },
+    {
+      "name": "Group: parent groups: header names the object, identity copy, links work",
+      "ok": true,
+      "detail": "h1 \"sec-share-design-read-only domain group\"; 8/8 links checked"
+    },
+    {
+      "name": "Server, share and directory: header names the object with its kind, no generic principal",
+      "ok": true,
+      "detail": "server \"GP-ACQ-FS01 server\"; share \"\\\\gp-acq-fs01\\Acquisitions share\"; directory \"\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue directory\""
+    },
+    {
+      "name": "Findings: redundant-routes rule title says identity, filter key unchanged",
+      "ok": true,
+      "detail": "rule filter ?rule=redundant_access_paths still selects the rule"
+    },
+    {
+      "name": "Access path: investigate and explain for the scenario person use Identity",
+      "ok": true,
+      "detail": "/access/investigate, /access/explain"
+    },
+    {
+      "name": "375px: identity and findings pages do not scroll sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "320px: identity and findings pages do not scroll sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "deferred": [
+    "/access/investigate: This principal holds rights on this object.",
+    "/access/explain: This principal holds rights on this object."
+  ],
+  "person": "S-1-5-21-3949361974-1583827165-633756269-1243",
+  "group": "S-1-5-21-3949361974-1583827165-633756269-2471"
+}

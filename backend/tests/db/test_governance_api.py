@@ -18,13 +18,17 @@ Three properties are the reason this file exists rather than more unit tests:
 from __future__ import annotations
 
 import datetime as dt
+import re
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager
+from typing import Any
 
 import pytest
+import sqlalchemy as sa
 from httpx import AsyncClient
 
 from app.auth.roles import Role
+from app.db import Database
 from tests.support import history as h
 from tests.support.ingest import replay
 
@@ -593,3 +597,169 @@ class TestRequestsTheApiRefuses:
 
         assert response.status_code == 401
         assert response.headers["WWW-Authenticate"] == "Bearer"
+
+
+class StatementLog:
+    """Every statement the engine issues while the block is open (as in test_query_cost.py)."""
+
+    def __init__(self, engine: Any) -> None:
+        self._engine = engine.sync_engine
+        self.statements: list[str] = []
+
+    def _record(self, conn: Any, cursor: Any, statement: str, *rest: Any) -> None:
+        self.statements.append(" ".join(statement.split()))
+
+    def __enter__(self) -> StatementLog:
+        self.statements = []
+        sa.event.listen(self._engine, "before_cursor_execute", self._record)
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        sa.event.remove(self._engine, "before_cursor_execute", self._record)
+
+    def reading(self, table: str) -> int:
+        pattern = re.compile(rf"\bFROM\s+{re.escape(table)}\b", re.IGNORECASE)
+        return sum(1 for statement in self.statements if pattern.search(statement))
+
+
+UNKNOWN = "S-1-5-21-1004336348-1177238915-682003330-9999"
+
+
+def identity_campaign(*keys: str, name: str = "Alice review") -> dict[str, object]:
+    return campaign_body(
+        name=name, focus="principal", scopes=[{"kind": "principal", "key": key} for key in keys]
+    )
+
+
+async def scopes_in_list(client: AsyncClient) -> dict[str, list[dict[str, object]]]:
+    response = await client.get(f"{BASE}/campaigns")
+    assert response.status_code == 200, response.text
+    return {item["name"]: item["scopes"] for item in response.json()["items"]}
+
+
+class TestScopeDisplayNames:
+    """An identity scope carries its current name; the scope itself is unchanged."""
+
+    async def test_an_identity_scope_is_named_and_keeps_its_token(
+        self, estate: None, manager: AsyncClient
+    ) -> None:
+        created = await manager.post(f"{BASE}/campaigns", json=identity_campaign(ALICE))
+        assert created.status_code == 201, created.text
+        campaign_id = created.json()["campaign_id"]
+        named = {"kind": "principal", "key": ALICE, "display_name": "CONTOSO\\alice"}
+
+        assert created.json()["scopes"] == [named]
+        assert (await scopes_in_list(manager))["Alice review"] == [named]
+        detail = await manager.get(f"{BASE}/campaigns/{campaign_id}")
+        assert detail.json()["scopes"] == [named]
+
+    async def test_a_reviewer_scope_is_named_on_assignments_and_status(
+        self, estate: None, manager: AsyncClient, reviewer: AsyncClient
+    ) -> None:
+        created = await manager.post(f"{BASE}/campaigns", json=identity_campaign(ALICE))
+        campaign_id = created.json()["campaign_id"]
+        await manager.post(f"{BASE}/campaigns/{campaign_id}/generation")
+        assigned = await manager.post(
+            f"{BASE}/campaigns/{campaign_id}/assignments",
+            json={
+                "reviewer_subject": await subject_of(reviewer),
+                "scope": {"kind": "principal", "key": ALICE},
+            },
+        )
+        assert assigned.status_code == 201, assigned.text
+        named = {"kind": "principal", "key": ALICE, "display_name": "CONTOSO\\alice"}
+
+        assert assigned.json()["assignment"]["scope"] == named
+        listed = await manager.get(f"{BASE}/campaigns/{campaign_id}/assignments")
+        assert [item["scope"] for item in listed.json()["items"]] == [named]
+        status = await reviewer.get(f"{BASE}/campaigns/{campaign_id}/status")
+        assert status.json()["campaign"]["scopes"] == [named]
+        assert [item["scope"] for item in status.json()["reviewers"]] == [named]
+
+    async def test_an_identity_adg_does_not_describe_has_no_name_and_its_row_survives(
+        self, estate: None, manager: AsyncClient
+    ) -> None:
+        created = await manager.post(
+            f"{BASE}/campaigns", json=identity_campaign(ALICE, UNKNOWN, name="Mixed")
+        )
+        assert created.status_code == 201, created.text
+
+        assert sorted(
+            (scope["key"], scope["display_name"])
+            for scope in (await scopes_in_list(manager))["Mixed"]
+        ) == sorted([(ALICE, "CONTOSO\\alice"), (UNKNOWN, None)])
+
+    async def test_a_resource_scope_is_unchanged_and_unnamed(
+        self, estate: None, manager: AsyncClient
+    ) -> None:
+        await manager.post(f"{BASE}/campaigns", json=campaign_body())
+
+        assert (await scopes_in_list(manager))["Q1 Finance review"] == [
+            {"kind": "share", "key": SHARE_KEY, "display_name": None}
+        ]
+
+    async def test_an_auditor_reads_the_name_and_a_viewer_still_reads_nothing(
+        self, estate: None, manager: AsyncClient, client_as: ClientFactory
+    ) -> None:
+        await manager.post(f"{BASE}/campaigns", json=identity_campaign(ALICE))
+
+        async with client_as(Role.AUDITOR) as auditor:
+            assert (await scopes_in_list(auditor))["Alice review"][0]["display_name"] == (
+                "CONTOSO\\alice"
+            )
+        async with client_as(Role.VIEWER) as viewer:
+            assert (await viewer.get(f"{BASE}/campaigns")).status_code == 403
+
+    async def test_a_renamed_identity_reads_current_in_its_scope_and_baseline_on_its_items(
+        self, client: AsyncClient, estate: None, manager: AsyncClient
+    ) -> None:
+        """Deliberate (REVIEW-NAMES-08 §6): the scope points at the identity as it is now; an
+        item is frozen evidence of the baseline instant."""
+        created = await manager.post(f"{BASE}/campaigns", json=identity_campaign(ALICE))
+        campaign_id = created.json()["campaign_id"]
+        generated = await manager.post(f"{BASE}/campaigns/{campaign_id}/generation")
+        assert generated.status_code == 200, generated.text
+        await replay(
+            client,
+            h.ad_scan(
+                observations=[
+                    h.principal(ALICE, at=h.WEDNESDAY, display_name="CONTOSO\\alice.renamed")
+                ],
+                started_at=h.WEDNESDAY,
+            ),
+        )
+
+        detail = await manager.get(f"{BASE}/campaigns/{campaign_id}")
+        items = (await manager.get(f"{BASE}/campaigns/{campaign_id}/items")).json()["items"]
+
+        assert detail.json()["scopes"][0]["display_name"] == "CONTOSO\\alice.renamed"
+        assert items, "the campaign must have generated an item for the identity"
+        assert {item["principal_display_name"] for item in items} == {"CONTOSO\\alice"}
+
+    async def test_the_list_names_every_row_with_one_lookup(
+        self, estate: None, manager: AsyncClient, database: Database
+    ) -> None:
+        """N+1 = no: the statement count does not grow with the number of rows."""
+        await manager.post(f"{BASE}/campaigns", json=identity_campaign(ALICE, name="c0"))
+        with StatementLog(database.engine) as one:
+            await scopes_in_list(manager)
+        for index in range(1, 6):
+            await manager.post(
+                f"{BASE}/campaigns", json=identity_campaign(ALICE, UNKNOWN, name=f"c{index}")
+            )
+        await manager.post(f"{BASE}/campaigns", json=campaign_body())
+        with StatementLog(database.engine) as seven:
+            listed = await scopes_in_list(manager)
+
+        assert len(listed) == 7
+        assert len(seven.statements) == len(one.statements)
+        assert seven.reading("principals") == one.reading("principals") == 1
+
+    async def test_a_page_with_no_identity_scope_makes_no_lookup(
+        self, estate: None, manager: AsyncClient, database: Database
+    ) -> None:
+        await manager.post(f"{BASE}/campaigns", json=campaign_body())
+        with StatementLog(database.engine) as log:
+            await scopes_in_list(manager)
+
+        assert log.reading("principals") == 0

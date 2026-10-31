@@ -1,0 +1,24 @@
+# Contract safety: ADG-UX-BACKEND-COPY-04 (code e8fd2dd vs baseline 10c73d1)
+
+## Files under docs/contracts changed
+ docs/contracts/v1/derived/examples/access-explanation.json | 2 +-
+ docs/contracts/v1/derived/examples/access-paths.json       | 2 +-
+ docs/contracts/v1/derived/examples/resource-impact.json    | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+## The only lines changed under docs/contracts
+-    "reason": "This principal holds rights on this object."
++    "reason": "This identity holds rights on this object."
+-    "reason": "This principal holds rights on this object."
++    "reason": "This identity holds rights on this object."
+-        "reason": "This principal holds rights on this object."
++        "reason": "This identity holds rights on this object."
+
+## openapi.json / derived schemas changed?
+no (byte-identical; tests/contracts/test_openapi_snapshot.py passes against the app)
+
+## Backend: any changed line touching a Field/Query/alias/route/enum/rule id/version?
+none
+
+## Backend app lines changed that are not string-literal lines
+none (every changed line in backend/app is a string literal or an enum-keyed prose entry)

@@ -259,7 +259,7 @@ class ChangeImpactService:
                 at,
                 ImpactVerdict.NOT_APPLICABLE,
                 membership,
-                "This change is about neither a principal nor a resource, so there is no "
+                "This change is about neither an identity nor a resource, so there is no "
                 "access question to ask about it.",
             )
         if subject is None:
@@ -269,8 +269,8 @@ class ChangeImpactService:
                 at,
                 ImpactVerdict.NEEDS_A_SUBJECT,
                 membership,
-                f"This change is about {resource}, and effective access is always about a "
-                "principal as well. Name one to see what it could do before and after.",
+                f"This change is about {resource}, and effective access is always about an "
+                "identity as well. Name one to see what it could do before and after.",
             )
         if resource is None:
             verdict = (
@@ -522,7 +522,7 @@ def _explain(change: ObjectChange, access: AccessDelta) -> str:
         return (
             f"The {change.kind.value} changed and effective access for "
             f"{access.subject_key} on {access.resource_key} did not move. The other layer, "
-            f"a Deny entry, or the principal's own state still governs.{qualifier}"
+            f"a Deny entry, or the identity's own state still governs.{qualifier}"
         )
     return (
         f"Effective access for {access.subject_key} on {access.resource_key} "

@@ -1,0 +1,707 @@
+{
+  "results": [
+    {
+      "name": "setup: the reviewer has a real campaign in their queue",
+      "ok": true,
+      "detail": "created campaign 8ea00a17-bc4f-48e8-a1f7-f2d91a503127 on share gp-acq-fs01|acquisitions, assigned to dev:reviewer"
+    },
+    {
+      "name": "demo dataset as it is: one h1, one shell, every section a named region, Data health first",
+      "ok": true,
+      "detail": "Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do"
+    },
+    {
+      "name": "fixture healthy + complete totals: the ordinary order returns",
+      "ok": true,
+      "detail": "Needs attention > Recent changes > Reviews > Data health > Where to start > What ADG will not do"
+    },
+    {
+      "name": "fixture: healthy collection but totals not complete still promotes Data health",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fault: collection status HTTP 503 promotes Data health and says so, the rest stays useful",
+      "ok": true,
+      "detail": "ADG could not reach its API Injected by the overview gate."
+    },
+    {
+      "name": "Needs attention, demo totals (incomplete): counts shown as Not a total with the backend's reason",
+      "ok": true,
+      "detail": "Collection is incomplete: 98 of 100 collection scopes collec"
+    },
+    {
+      "name": "fixture complete totals: critical, high, total, top three rules; no Not a total",
+      "ok": true,
+      "detail": "3 critical, 8 high, 9386 open; rules redundant_access_paths=6795, disabled_principal_retains_access=1921, direct_user_ace=308"
+    },
+    {
+      "name": "navigation: each severity link opens Findings filtered to it (client navigation, Back returns)",
+      "ok": true,
+      "detail": "critical: 3 in total, filters critical+open only+any; high: 8 in total, filters high+open only+any"
+    },
+    {
+      "name": "navigation: each rule link opens Findings filtered to that rule",
+      "ok": true,
+      "detail": "redundant_access_paths=6795, disabled_principal_retains_access=1921, direct_user_ace=308"
+    },
+    {
+      "name": "fixture never evaluated: no numerical finding totals at all",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture zero findings: 'No open findings' only over a complete evaluation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fault: findings summary HTTP 500 shows an error, no zero, and the other sections stay",
+      "ok": true,
+      "detail": "Something went wrong Injected by the overview gate."
+    },
+    {
+      "name": "demo dataset as it is: the last 7 days hold no changes, worded against collection rather than as a quiet week",
+      "ok": true,
+      "detail": "No changes in the last 7 days found — but a collector failed A collector's most recent run failed. P"
+    },
+    {
+      "name": "fixture time shift: count, excluded, most severe match the API's 7-day default view; rows link to history",
+      "ok": true,
+      "detail": "89 shown, 10 excluded, most severe high, 3 rows; first → /changes?kind=ntfs_ace&key=\\\\gp-sec-fs01\\incidents\\ir-2026-014|S-1-5-2"
+    },
+    {
+      "name": "fixture time shift: the Recent changes link lands on /changes?days=7 showing the same count",
+      "ok": true,
+      "detail": "Overview 89; Changes: In this window 99 changes recorded, 89 shown. Most severe: h"
+    },
+    {
+      "name": "Reviews (reviewer): assigned, campaigns, past due, entries, due dates, campaign link",
+      "ok": true,
+      "detail": "17 items, 1 campaign(s), Due 2026-11-13"
+    },
+    {
+      "name": "fixture past-due campaign: the count and the entry say past due in words",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Reviews (auditor, governance:read, nothing assigned): 'Nothing is assigned to you', no collection warning",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "permissions (planner): sections Needs attention, Recent changes, Reviews; only their reads are sent",
+      "ok": true,
+      "detail": "7 reads"
+    },
+    {
+      "name": "permissions (auditor): sections Needs attention, Recent changes, Reviews; only their reads are sent",
+      "ok": true,
+      "detail": "7 reads"
+    },
+    {
+      "name": "permissions (viewer): sections Needs attention, Recent changes; only their reads are sent",
+      "ok": true,
+      "detail": "6 reads"
+    },
+    {
+      "name": "permissions (nobody): sections none; only their reads are sent",
+      "ok": true,
+      "detail": "2 reads; 403 from /api/v1/collection/status"
+    },
+    {
+      "name": "Data health, demo dataset: state word + symbol, clean scopes, coverage, evaluation, concerns, demo source",
+      "ok": true,
+      "detail": "✕ Failed, 98/100 scopes, 2 concerns"
+    },
+    {
+      "name": "fixture Data health healthy: worded \"✓ Complete\" (text and symbol)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture Data health incomplete: worded \"◐ Incomplete\" (text and symbol)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture Data health failed: worded \"✕ Failed\" (text and symbol)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fixture Data health no_data: worded \"∅ Never collected\" (text and symbol)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "fan-out: one /runtime shared with the shell; the six page reads start together after /auth/me; no duplicates; no table reads",
+      "ok": true,
+      "detail": "9 API requests: /auth/config×1 /runtime×1 /auth/me×1 /api/v1/collection/status×1 /api/v1/risks/summary×1 /api/v1/risks/rules×1 /api/v1/changes/summary×1 /api/v1/changes×1 /api/v1/governance/queue×1; the 6 page reads start 14 ms in (after /auth/me), spread 2 ms; slowest /api/v1/risks/summary 140 ms"
+    },
+    {
+      "name": "timing: one first load, then 5 warm loads (TTFB, FCP, load, slowest read)",
+      "ok": true,
+      "detail": "first: TTFB 27 ms, FCP 268 ms, load 332 ms; warm median: TTFB 34 ms, FCP 80 ms, load 153 ms"
+    },
+    {
+      "name": "progressive, all reads healthy: shell, h1 and every section; each read once",
+      "ok": true,
+      "detail": "shell 51, h1 51, first section 373, Needs attention 373, Recent changes 373, Reviews 373, Data health 373, slowest read ends 167 (ms) | shell 46, h1 46, first section 359, Needs attention 359, Recent changes 359, Reviews 359, Data health 359, slowest read ends 143 (ms) | shell 45, h1 45, first section 352, Needs attention 352, Recent changes 352, Reviews 352, Data health 352, slowest read ends 133 (ms)"
+    },
+    {
+      "name": "progressive, 4 s /api/v1/governance/queue: Reviews waits alone; the shell and independent sections are usable first",
+      "ok": true,
+      "detail": "shell 34, h1 34, first section 357, Needs attention 657, Recent changes 357, Reviews 4055, Data health 657, slowest read ends 4048 (ms)"
+    },
+    {
+      "name": "progressive, 4 s /api/v1/changes/summary: Recent changes waits alone; the shell and independent sections are usable first",
+      "ok": true,
+      "detail": "shell 87, h1 87, first section 129, Needs attention 431, Recent changes 4123, Reviews 129, Data health 431, slowest read ends 4119 (ms)"
+    },
+    {
+      "name": "progressive, 4 s /api/v1/risks/summary: Needs attention waits alone; the shell and independent sections are usable first",
+      "ok": true,
+      "detail": "shell 32, h1 32, first section 348, Needs attention 4074, Recent changes 348, Reviews 348, Data health 4074, slowest read ends 4063 (ms)"
+    },
+    {
+      "name": "progressive, 4 s Reviews: focus stays where the user put it while a section arrives",
+      "ok": true,
+      "detail": "focus stayed on /risks?severity=critical"
+    },
+    {
+      "name": "progressive, 500 /api/v1/governance/queue: Reviews alone shows the error; nothing else fails",
+      "ok": true,
+      "detail": "Reviews shows its error; other sections rendered"
+    },
+    {
+      "name": "progressive, 12 s /api/v1/changes/summary: other sections render long before the 10 s timeout; only Recent changes times out",
+      "ok": true,
+      "detail": "shell 31, h1 31, first section 343, Needs attention 343, Recent changes 10049, Reviews 343, Data health 343, slowest read ends Infinity (ms)"
+    },
+    {
+      "name": "responsive wide-desktop 1440px: no sideways scroll, pair side by side or stacked, no overlap",
+      "ok": true,
+      "detail": "side by side"
+    },
+    {
+      "name": "responsive laptop 1280px: no sideways scroll, pair side by side or stacked, no overlap",
+      "ok": true,
+      "detail": "side by side"
+    },
+    {
+      "name": "responsive tablet 1024px: no sideways scroll, pair side by side or stacked, no overlap",
+      "ok": true,
+      "detail": "side by side"
+    },
+    {
+      "name": "responsive narrow 768px: no sideways scroll, pair side by side or stacked, no overlap",
+      "ok": true,
+      "detail": "side by side"
+    },
+    {
+      "name": "responsive phone 375px: no sideways scroll, pair side by side or stacked, no overlap",
+      "ok": true,
+      "detail": "stacked"
+    },
+    {
+      "name": "responsive minimum 320px: no sideways scroll, pair side by side or stacked, no overlap",
+      "ok": true,
+      "detail": "stacked"
+    },
+    {
+      "name": "fixture long names at 320 px and 1440 px: an unbroken rule title, change headline and campaign name keep the page in bounds",
+      "ok": true,
+      "detail": "320px ok, 1440px ok"
+    },
+    {
+      "name": "a11y: one h1, named regions, descriptive links, no nested links or clickable cards, no positive tabindex",
+      "ok": true,
+      "detail": "18 links in main, all named"
+    },
+    {
+      "name": "a11y keyboard: Tab reaches every link in the Overview sections, in DOM order, each with a visible focus indicator",
+      "ok": true,
+      "detail": "10 section links reached in order, all with a focus ring"
+    },
+    {
+      "name": "a11y reading order at 1440px: section DOM order matches visual order",
+      "ok": true,
+      "detail": "Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do"
+    },
+    {
+      "name": "a11y reading order at 375px: section DOM order matches visual order",
+      "ok": true,
+      "detail": "Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do"
+    },
+    {
+      "name": "navigation: every 'Where to start' link opens its section by client navigation, and Back returns",
+      "ok": true,
+      "detail": "/risks /access /changes /identities /resources /governance /simulations /collectors"
+    },
+    {
+      "name": "no page errors across every check",
+      "ok": true,
+      "detail": "1 console errors: planner: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "measurements": {
+    "dataset": {
+      "collection_health": "failed",
+      "scopes": 100,
+      "trustworthy_scopes": 98,
+      "concerns": 2,
+      "risk_reading": "incomplete",
+      "open_findings": 9386,
+      "severity_counts": {
+        "informational": 6995,
+        "low": 423,
+        "medium": 1957,
+        "high": 8,
+        "critical": 3
+      }
+    },
+    "changes": {
+      "shifted_window": [
+        "2026-09-24T12:00:00.000Z",
+        "2026-10-01T12:00:00.000Z"
+      ],
+      "total": 99,
+      "returned": 89,
+      "excluded": 10,
+      "highest_severity": "high"
+    },
+    "permissions": {
+      "planner": {
+        "sent": [
+          "/runtime",
+          "/api/v1/collection/status",
+          "/api/v1/risks/summary",
+          "/api/v1/risks/rules",
+          "/api/v1/changes/summary",
+          "/api/v1/changes",
+          "/api/v1/governance/queue"
+        ],
+        "refused": []
+      },
+      "auditor": {
+        "sent": [
+          "/runtime",
+          "/api/v1/collection/status",
+          "/api/v1/risks/summary",
+          "/api/v1/risks/rules",
+          "/api/v1/changes/summary",
+          "/api/v1/changes",
+          "/api/v1/governance/queue"
+        ],
+        "refused": []
+      },
+      "viewer": {
+        "sent": [
+          "/runtime",
+          "/api/v1/collection/status",
+          "/api/v1/risks/summary",
+          "/api/v1/risks/rules",
+          "/api/v1/changes/summary",
+          "/api/v1/changes"
+        ],
+        "refused": []
+      },
+      "nobody": {
+        "sent": [
+          "/runtime",
+          "/api/v1/collection/status"
+        ],
+        "refused": [
+          "/api/v1/collection/status"
+        ]
+      }
+    },
+    "fanout": {
+      "reads": [
+        {
+          "path": "/auth/config",
+          "query": "",
+          "status": 200,
+          "start_ms": 0,
+          "duration_ms": 7
+        },
+        {
+          "path": "/runtime",
+          "query": "",
+          "status": 200,
+          "start_ms": 0,
+          "duration_ms": 7
+        },
+        {
+          "path": "/auth/me",
+          "query": "",
+          "status": 200,
+          "start_ms": 1,
+          "duration_ms": 10
+        },
+        {
+          "path": "/api/v1/collection/status",
+          "query": "",
+          "status": 200,
+          "start_ms": 14,
+          "duration_ms": 89
+        },
+        {
+          "path": "/api/v1/risks/summary",
+          "query": "",
+          "status": 200,
+          "start_ms": 14,
+          "duration_ms": 140
+        },
+        {
+          "path": "/api/v1/risks/rules",
+          "query": "",
+          "status": 200,
+          "start_ms": 15,
+          "duration_ms": 42
+        },
+        {
+          "path": "/api/v1/changes/summary",
+          "query": "?from=2026-10-23T21%3A37%3A24.730Z&to=2026-10-30T21%3A37%3A24.730Z",
+          "status": 200,
+          "start_ms": 15,
+          "duration_ms": 43
+        },
+        {
+          "path": "/api/v1/changes",
+          "query": "?from=2026-10-23T21%3A37%3A24.730Z&to=2026-10-30T21%3A37%3A24.730Z&limit=6",
+          "status": 200,
+          "start_ms": 15,
+          "duration_ms": 85
+        },
+        {
+          "path": "/api/v1/governance/queue",
+          "query": "",
+          "status": 200,
+          "start_ms": 15,
+          "duration_ms": 85
+        }
+      ],
+      "viewer_read_ends_ms": 11,
+      "total_requests": 9,
+      "overview_reads": 6,
+      "start_spread_ms": 2,
+      "slowest": {
+        "path": "/api/v1/risks/summary",
+        "ms": 140
+      },
+      "by_path": {
+        "/auth/config": 1,
+        "/runtime": 1,
+        "/auth/me": 1,
+        "/api/v1/collection/status": 1,
+        "/api/v1/risks/summary": 1,
+        "/api/v1/risks/rules": 1,
+        "/api/v1/changes/summary": 1,
+        "/api/v1/changes": 1,
+        "/api/v1/governance/queue": 1
+      },
+      "failed": []
+    },
+    "timing": [
+      {
+        "ttfb": 27,
+        "responseEnd": 160,
+        "domContentLoaded": 161,
+        "load": 332,
+        "firstContentfulPaint": 268,
+        "slowest": "/api/v1/risks/summary 134"
+      },
+      {
+        "ttfb": 47,
+        "responseEnd": 183,
+        "domContentLoaded": 184,
+        "load": 184,
+        "firstContentfulPaint": 136,
+        "slowest": "/api/v1/risks/summary 113"
+      },
+      {
+        "ttfb": 34,
+        "responseEnd": 154,
+        "domContentLoaded": 155,
+        "load": 155,
+        "firstContentfulPaint": 88,
+        "slowest": "/api/v1/risks/summary 106"
+      },
+      {
+        "ttfb": 34,
+        "responseEnd": 153,
+        "domContentLoaded": 153,
+        "load": 153,
+        "firstContentfulPaint": 80,
+        "slowest": "/api/v1/risks/summary 106"
+      },
+      {
+        "ttfb": 24,
+        "responseEnd": 134,
+        "domContentLoaded": 134,
+        "load": 135,
+        "firstContentfulPaint": 56,
+        "slowest": "/api/v1/risks/summary 111"
+      },
+      {
+        "ttfb": 27,
+        "responseEnd": 136,
+        "domContentLoaded": 137,
+        "load": 137,
+        "firstContentfulPaint": 76,
+        "slowest": "/api/v1/risks/summary 110"
+      }
+    ],
+    "progressive": {
+      "normal": [
+        {
+          "midStream": null,
+          "shell": 51,
+          "h1": 51,
+          "sections": {
+            "Needs attention": 373,
+            "Recent changes": 373,
+            "Reviews": 373,
+            "Data health": 373
+          },
+          "pending": {
+            "Needs attention": 51,
+            "Recent changes": 51,
+            "Reviews": 51,
+            "Data health": 51
+          },
+          "first_section": 373,
+          "settled": 373,
+          "reads": {
+            "/runtime": 23,
+            "/api/v1/collection/status": 71,
+            "/api/v1/risks/summary": 167,
+            "/api/v1/risks/rules": 53,
+            "/api/v1/changes/summary": 61,
+            "/api/v1/changes": 70,
+            "/api/v1/governance/queue": 70
+          },
+          "slowest_read_end": 167,
+          "read_count": 7
+        },
+        {
+          "midStream": null,
+          "shell": 46,
+          "h1": 46,
+          "sections": {
+            "Needs attention": 359,
+            "Recent changes": 359,
+            "Reviews": 359,
+            "Data health": 359
+          },
+          "pending": {
+            "Needs attention": 46,
+            "Recent changes": 46,
+            "Reviews": 46,
+            "Data health": 46
+          },
+          "first_section": 359,
+          "settled": 359,
+          "reads": {
+            "/runtime": 18,
+            "/api/v1/collection/status": 66,
+            "/api/v1/risks/summary": 143,
+            "/api/v1/risks/rules": 49,
+            "/api/v1/changes/summary": 60,
+            "/api/v1/changes": 65,
+            "/api/v1/governance/queue": 64
+          },
+          "slowest_read_end": 143,
+          "read_count": 7
+        },
+        {
+          "midStream": null,
+          "shell": 45,
+          "h1": 45,
+          "sections": {
+            "Needs attention": 352,
+            "Recent changes": 352,
+            "Reviews": 352,
+            "Data health": 352
+          },
+          "pending": {
+            "Needs attention": 45,
+            "Recent changes": 45,
+            "Reviews": 45,
+            "Data health": 45
+          },
+          "first_section": 352,
+          "settled": 352,
+          "reads": {
+            "/runtime": 24,
+            "/api/v1/collection/status": 63,
+            "/api/v1/risks/summary": 133,
+            "/api/v1/risks/rules": 56,
+            "/api/v1/changes/summary": 62,
+            "/api/v1/changes": 63,
+            "/api/v1/governance/queue": 63
+          },
+          "slowest_read_end": 133,
+          "read_count": 7
+        }
+      ],
+      "delay_4s_Reviews": {
+        "midStream": {
+          "busy": "true",
+          "text": "Reviews Loading your review queue…",
+          "h1": 1
+        },
+        "shell": 34,
+        "h1": 34,
+        "sections": {
+          "Needs attention": 657,
+          "Recent changes": 357,
+          "Reviews": 4055,
+          "Data health": 657
+        },
+        "pending": {
+          "Needs attention": 34,
+          "Recent changes": 34,
+          "Reviews": 34,
+          "Data health": 34
+        },
+        "first_section": 357,
+        "settled": 4055,
+        "reads": {
+          "/runtime": 12,
+          "/api/v1/collection/status": 68,
+          "/api/v1/risks/summary": 245,
+          "/api/v1/risks/rules": 32,
+          "/api/v1/changes/summary": 68,
+          "/api/v1/changes": 70,
+          "/api/v1/governance/queue": 4048
+        },
+        "slowest_read_end": 4048,
+        "read_count": 7
+      },
+      "delay_4s_Recent changes": {
+        "midStream": {
+          "busy": "true",
+          "text": "Recent changes Loading changes…",
+          "h1": 1
+        },
+        "shell": 87,
+        "h1": 87,
+        "sections": {
+          "Needs attention": 431,
+          "Recent changes": 4123,
+          "Reviews": 129,
+          "Data health": 431
+        },
+        "pending": {
+          "Needs attention": 87,
+          "Recent changes": 87,
+          "Reviews": 87,
+          "Data health": 87
+        },
+        "first_section": 129,
+        "settled": 4123,
+        "reads": {
+          "/runtime": 46,
+          "/api/v1/collection/status": 109,
+          "/api/v1/risks/summary": 334,
+          "/api/v1/governance/queue": 107,
+          "/api/v1/risks/rules": 106,
+          "/api/v1/changes/summary": 4119,
+          "/api/v1/changes": 187
+        },
+        "slowest_read_end": 4119,
+        "read_count": 7
+      },
+      "delay_4s_Needs attention": {
+        "midStream": {
+          "busy": "true",
+          "text": "Needs attention Loading findings…",
+          "h1": 1
+        },
+        "shell": 32,
+        "h1": 32,
+        "sections": {
+          "Needs attention": 4074,
+          "Recent changes": 348,
+          "Reviews": 348,
+          "Data health": 4074
+        },
+        "pending": {
+          "Needs attention": 32,
+          "Recent changes": 32,
+          "Reviews": 32,
+          "Data health": 32
+        },
+        "first_section": 348,
+        "settled": 4074,
+        "reads": {
+          "/runtime": 14,
+          "/api/v1/collection/status": 50,
+          "/api/v1/risks/summary": 4063,
+          "/api/v1/changes/summary": 49,
+          "/api/v1/risks/rules": 49,
+          "/api/v1/changes": 50,
+          "/api/v1/governance/queue": 50
+        },
+        "slowest_read_end": 4063,
+        "read_count": 7
+      },
+      "timeout_12s": {
+        "midStream": null,
+        "shell": 31,
+        "h1": 31,
+        "sections": {
+          "Needs attention": 343,
+          "Recent changes": 10049,
+          "Reviews": 343,
+          "Data health": 343
+        },
+        "pending": {
+          "Needs attention": 31,
+          "Recent changes": 31,
+          "Reviews": 31,
+          "Data health": 31
+        },
+        "first_section": 343,
+        "settled": 10049,
+        "reads": {
+          "/runtime": 16,
+          "/api/v1/collection/status": 52,
+          "/api/v1/risks/summary": 128,
+          "/api/v1/risks/rules": 38,
+          "/api/v1/changes/summary": null,
+          "/api/v1/changes": 102,
+          "/api/v1/governance/queue": 51
+        },
+        "slowest_read_end": null,
+        "read_count": 7
+      }
+    },
+    "responsive": {
+      "wide-desktop": "side by side",
+      "laptop": "side by side",
+      "tablet": "side by side",
+      "narrow": "side by side",
+      "phone": "stacked",
+      "minimum": "stacked"
+    },
+    "a11y": {
+      "h1": 1,
+      "emptyLinks": 0,
+      "vague": [],
+      "nested": 0,
+      "cardLinks": 0,
+      "positiveTabindex": 0,
+      "badgesWithoutWords": 0,
+      "linkCount": 18
+    }
+  },
+  "consoleErrors": [
+    "planner: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "pageErrors": []
+}

@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import type { JSX } from "react";
 import { useState } from "react";
 
+import { clearRecent } from "@/lib/recent";
+
 /**
  * Sign out.
  *
@@ -21,6 +23,8 @@ export function SignOutButton(): JSX.Element {
       disabled={busy}
       onClick={async () => {
         setBusy(true);
+        // Before the request, so a logout that hangs or fails has already cleared the list.
+        clearRecent();
         try {
           await fetch("/api/auth/logout", { method: "POST" });
           router.push("/login");

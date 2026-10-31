@@ -234,7 +234,7 @@ class ItemDrift:
                 )
             return (
                 "This grant no longer exists: the target has been read since the baseline "
-                "and no entry names this principal. ADG cannot tell whether somebody acted "
+                "and no entry names this identity. ADG cannot tell whether somebody acted "
                 "on a review or removed it for another reason. Your decision still records "
                 "what should have been true of the grant as it stood."
             )

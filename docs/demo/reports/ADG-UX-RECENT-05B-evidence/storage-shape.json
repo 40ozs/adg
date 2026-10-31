@@ -1,0 +1,30 @@
+{
+  "v": 1,
+  "owner": "100d115b892142a297afc079d6743fd03a60141fe84c6d1c06c41e20a3c5d29e",
+  "entries": [
+    {
+      "kind": "identity",
+      "key": "S-1-5-21-3949361974-1583827165-633756269-1372",
+      "label": "Chen Dunn",
+      "at": 1793409357108
+    },
+    {
+      "kind": "server",
+      "key": "gp-fin-fs01",
+      "label": "GP-FIN-FS01",
+      "at": 1793409356633
+    },
+    {
+      "kind": "share",
+      "key": "gp-fin-fs01|finance",
+      "label": "Finance",
+      "at": 1793409356202
+    },
+    {
+      "kind": "directory",
+      "key": "\\\\gp-fin-fs01\\finance\\reports\\revenue",
+      "label": "Revenue",
+      "at": 1793409355749
+    }
+  ]
+}

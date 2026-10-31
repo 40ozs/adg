@@ -157,7 +157,7 @@ export function DemoInvestigationList({
  * comparison page, through the actions it offers.
  */
 export const COVERAGE_WALKTHROUGH: readonly { step: string; target: "risks" | "coverage" | "collectors" | "answer" | "drill" | null }[] = [
-  { step: "View the risk totals, and how ADG says they may be read.", target: "risks" },
+  { step: "View the finding totals, and how ADG says they may be read.", target: "risks" },
   { step: "Inspect the collection coverage beside the counts.", target: "coverage" },
   {
     step: "Identify the unavailable source: one server's folder scan could not reach it, and ADG still holds its older evidence.",
@@ -214,7 +214,7 @@ export function DemoCoverageAndRecovery({
     <section aria-labelledby="demo-coverage-recovery" className="card demo-investigation">
       <h2 id="demo-coverage-recovery">Then: how complete is the evidence, and what if a comparison cannot finish?</h2>
       <p>
-        A number is only as good as the collection behind it. ADG shows, beside every risk total
+        A number is only as good as the collection behind it. ADG shows, beside every finding total
         and every access answer, which collection scopes the evidence came from, which are
         incomplete, and whether that could change the conclusion. And when a comparison cannot
         finish inside its interactive window, ADG stops, says so, and offers comparisons that can.

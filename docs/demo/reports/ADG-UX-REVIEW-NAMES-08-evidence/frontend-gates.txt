@@ -1,0 +1,11 @@
+== frontend gates (Node 22.23.3 arm64) ==
+lint exit=0 16s
+typecheck exit=0 5s
+cf:typecheck exit=0 0s
+test exit=0 27s
+build exit=0 89s
+ Test Files  49 passed (49)
+      Tests  1694 passed (1694)
+
+ƒ  (Dynamic)  server-rendered on demand
+

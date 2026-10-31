@@ -318,7 +318,7 @@ _DEFINITIONS: Final[tuple[RuleDefinition, ...]] = (
         version="1.0",
         title="A disabled account still holds granted access",
         detects=(
-            "A principal ADG has described as disabled that is named on an access control "
+            "An identity ADG has described as disabled that is named on an access control "
             "list, directly or through a group it belongs to."
         ),
         matters_because=(
@@ -363,7 +363,7 @@ _DEFINITIONS: Final[tuple[RuleDefinition, ...]] = (
         version="1.0",
         title="An access control list names a SID nothing can resolve",
         detects=(
-            "An entry whose trustee has no principal record, or whose record says the "
+            "An entry whose trustee has no identity record, or whose record says the "
             "account is unresolved or deleted."
         ),
         matters_because=(
@@ -381,7 +381,7 @@ _DEFINITIONS: Final[tuple[RuleDefinition, ...]] = (
             ),
             caution=(
                 "An unresolvable SID is not automatically dead. Removing an entry that names "
-                "a live principal in an uncollected domain removes that principal's access."
+                "a live identity in an uncollected domain removes that identity's access."
             ),
         ),
         subject_kind=SubjectKind.ACCESS,
@@ -475,9 +475,9 @@ _DEFINITIONS: Final[tuple[RuleDefinition, ...]] = (
     RuleDefinition(
         id=RuleId.REDUNDANT_ACCESS_PATHS,
         version="1.0",
-        title="One principal reaches a resource by several independent routes",
+        title="One identity reaches a resource by several independent routes",
         detects=(
-            "A principal that belongs to more than the configured number of distinct "
+            "An identity that belongs to more than the configured number of distinct "
             "trustees named on one resource's access control lists."
         ),
         matters_because=(
@@ -488,14 +488,14 @@ _DEFINITIONS: Final[tuple[RuleDefinition, ...]] = (
         remediation=Remediation(
             summary="Reduce the routes to one, so that removing it actually removes access.",
             steps=(
-                "List the trustees that reach this principal and establish which one "
+                "List the trustees that reach this identity and establish which one "
                 "represents the intended grant.",
                 "Remove the memberships or entries that duplicate it.",
                 "Re-check effective access afterwards rather than assuming the removal took.",
             ),
             caution=(
                 "The routes may grant different rights. Keeping the wrong one can silently "
-                "reduce or widen what the principal can do."
+                "reduce or widen what the identity can do."
             ),
         ),
         subject_kind=SubjectKind.ACCESS,

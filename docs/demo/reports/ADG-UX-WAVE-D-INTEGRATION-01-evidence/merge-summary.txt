@@ -1,0 +1,83 @@
+# Merge summary (integration/ADG-UX-WAVE-D-01, --no-ff, no squash, no rebase)
+
+3fbb0adafb1fb9e28a0c86f2b77cbbb70dd8e8de  merge: ADG-UX-NAV-07 review-item client navigation
+  parents: 559dbaf913a02e0df4ddf18be89ef81f03e48596 70d08e7bfd418305cf53a8cc58968732c25dfbeb
+7544c9c338af4c8648c81bfed5f7ed657a3c3c9f  merge: ADG-UX-REVIEW-NAMES-08 scope display names
+  parents: 3fbb0adafb1fb9e28a0c86f2b77cbbb70dd8e8de 68770398ea4d3de5e17045fe829a3310f99a3c95
+abf2d00dc81fcb4247c4d3642fb5bc78b111115f  merge: ADG-UX-TEST-STABILITY-09 deterministic titles journey
+  parents: 7544c9c338af4c8648c81bfed5f7ed657a3c3c9f 9c67d2c1456ceaec933b9250713236adc5293a72
+7a12b8e7146a7b42de5cb0125f5706bc074d1dd4  test(adg-ux): pin current scope name vs frozen item name
+  parents: abf2d00dc81fcb4247c4d3642fb5bc78b111115f
+
+## Overlap check: each file changed 559dbaf..abf2d00 vs the source lane(s) that changed it
+byte-identical to the one lane that changed it: NAV-07 14, REVIEW-NAMES-08 26, TEST-STABILITY-09 18 (of 60 files)
+changed in NAV-07 + TEST-STABILITY-09: frontend/cloudflare/checks/titles.mjs
+changed in NAV-07 + REVIEW-NAMES-08: frontend/tests/governance-views.test.tsx
+
+## Textual conflicts
+NAV-07 merge 3fbb0ad: none
+REVIEW-NAMES-08 merge 7544c9c: none (frontend/tests/governance-views.test.tsx auto-merged: NAV's item-table tests + RN's scope-name tests, both kept)
+TEST-STABILITY-09 merge abf2d00: frontend/cloudflare/checks/titles.mjs, 3 hunks, resolved keeping both sides
+
+## Resolution (git show --remerge-diff abf2d00: conflicted merge -> committed)
+diff --git a/frontend/cloudflare/checks/titles.mjs b/frontend/cloudflare/checks/titles.mjs
+remerge CONFLICT (content): Merge conflict in frontend/cloudflare/checks/titles.mjs
+index ae355f6..d45ba8d 100644
+--- a/frontend/cloudflare/checks/titles.mjs
++++ b/frontend/cloudflare/checks/titles.mjs
+@@ -234,16 +234,10 @@ const LEAKS = /S-1-\d|[0-9a-f]{8}-[0-9a-f]{4}-|\\|[A-Z]:\/|principal:|\/\//i;
+  * One journey through the deeper pages, every move a click on a link the page offers (or a
+  * nav item), so each is a client-side navigation. `link` is a selector inside the main
+  * content; `nav` is a primary nav label. A missing link fails the step: the journey needs a
+-<<<<<<< 7544c9c (merge: ADG-UX-REVIEW-NAMES-08 scope display names)
+- * dataset with changes in the last 90 days, a review campaign with an item, and one What-if
+- * proposal. No move may load a document, Back and Forward across them included: the campaign's
+- * item list was the last plain <a> on this journey (a known full load until ADG-UX-NAV-07).
+-=======
+  * dataset with changes in the 90 days before DATASET_NOW (with the proxy; before now without
+- * it), a review campaign with an item, and one What-if proposal. `fullLoad` marks a move whose link is a plain <a> before this lane: the campaign's
+- * item list (components/DecisionForm.tsx) loads the item as a new document. Its title is still
+- * checked; the document loads it causes, there and on Back/Forward across it, are not reloads.
+->>>>>>> 9c67d2c (docs(adg-ux): ADG-UX-TEST-STABILITY-09 report and evidence)
++ * it), a review campaign with an item, and one What-if proposal. No move may load a document,
++ * Back and Forward across them included: the campaign's item list was the last plain <a> on
++ * this journey (a known full load until ADG-UX-NAV-07).
+  */
+ const JOURNEY = [
+   { nav: "Findings", title: "Findings", current: "Findings" },
+@@ -261,15 +255,9 @@ const JOURNEY = [
+   { link: 'a[href^="/identities/groups"]', title: "Groups", current: "Identities" },
+   { link: 'a[href^="/identities/principal/"]', title: "Identity", current: "Identities" },
+   { nav: "Reviews", title: "Reviews", current: "Reviews" },
+-<<<<<<< 7544c9c (merge: ADG-UX-REVIEW-NAMES-08 scope display names)
+-  // A campaign whose Items cell is non-zero: an empty campaign offers no item to open.
++  // The list is newest first, and the newest can be an empty draft: take one with items.
+   { link: 'tr:has(td:last-child:text-matches("^[1-9]")) a[href^="/governance/campaigns/"]:not([href*="?"])', title: "Review campaign", current: "Reviews" },
+   { link: 'a[href^="/governance/items/"]', title: "Review item", current: "Reviews" },
+-=======
+-  // The list is newest first, and the newest can be an empty draft: take one with items.
+-  { link: 'tr:has(td:last-child:text-matches("^[1-9]")) a[href^="/governance/campaigns/"]', title: "Review campaign", current: "Reviews" },
+-  { link: 'a[href^="/governance/items/"]', title: "Review item", current: "Reviews", fullLoad: true },
+->>>>>>> 9c67d2c (docs(adg-ux): ADG-UX-TEST-STABILITY-09 report and evidence)
+   { nav: "What-if", title: "What-if", current: "What-if" },
+   { link: 'a[href^="/simulations/"]:not([href^="/simulations/new"])', title: "What-if proposal", current: "What-if" },
+   { nav: "What-if", title: "What-if", current: "What-if" },
+@@ -302,16 +290,11 @@ await check("deeper pages: each client move titles the page it lands on", async
+     deepVisited.push(step.title);
+     deepPaths.set(step.title, `${url.pathname}${url.search}`);
+   }
+-<<<<<<< 7544c9c (merge: ADG-UX-REVIEW-NAMES-08 scope display names)
+   const kept = await page.evaluate(() => window.__adgNoReload === true);
+   expect(kept && documents.length === 0, `a move reloaded the document (${documents.join(", ")})`);
+-  return `${deepVisited.length} moves, no reload`;
+-=======
+-  expect(reloads().length === 0, `a move reloaded the document (${reloads().join(", ")})`);
+   expect(!PROXIED || anchored > 0, `no window read reached the proxy on :${PROXY_PORT} (Next.js ADG_INTERNAL_API_URL?)`);
+-  const window = PROXIED ? `${anchored} window reads anchored to ${new Date(DATASET_NOW).toISOString()}` : "live window";
+-  return `${deepVisited.length} moves, no reload (known full load: ${[...fullLoadPages].pop()}); ${window}`;
+->>>>>>> 9c67d2c (docs(adg-ux): ADG-UX-TEST-STABILITY-09 report and evidence)
++  const windowNote = PROXIED ? `${anchored} window reads anchored to ${new Date(DATASET_NOW).toISOString()}` : "live window";
++  return `${deepVisited.length} moves, no reload; ${windowNote}`;
+ });
+ 
+ await check("deeper pages: Back restores every earlier title", async () => {

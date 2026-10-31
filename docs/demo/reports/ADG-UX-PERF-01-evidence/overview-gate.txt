@@ -1,0 +1,51 @@
+PASS  setup: the reviewer has a real campaign in their queue — queue already holds 1 campaign(s)
+PASS  demo dataset as it is: one h1, one shell, every section a named region, Data health first — Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do
+PASS  fixture healthy + complete totals: the ordinary order returns — Needs attention > Recent changes > Reviews > Data health > Where to start > What ADG will not do
+PASS  fixture: healthy collection but totals not complete still promotes Data health
+PASS  fault: collection status HTTP 503 promotes Data health and says so, the rest stays useful — ADG could not reach its API Injected by the overview gate.
+PASS  Needs attention, demo totals (incomplete): counts shown as Not a total with the backend's reason — Collection is incomplete: 98 of 100 collection scopes collec
+PASS  fixture complete totals: critical, high, total, top three rules; no Not a total — 3 critical, 8 high, 9386 open; rules redundant_access_paths=6795, disabled_principal_retains_access=1921, direct_user_ace=308
+PASS  navigation: each severity link opens Findings filtered to it (client navigation, Back returns) — critical: 3 in total, filters critical+open only+any; high: 8 in total, filters high+open only+any
+PASS  navigation: each rule link opens Findings filtered to that rule — redundant_access_paths=6795, disabled_principal_retains_access=1921, direct_user_ace=308
+PASS  fixture never evaluated: no numerical finding totals at all
+PASS  fixture zero findings: 'No open findings' only over a complete evaluation
+PASS  fault: findings summary HTTP 500 shows an error, no zero, and the other sections stay — Something went wrong Injected by the overview gate.
+PASS  demo dataset as it is: the last 7 days hold no changes, worded against collection rather than as a quiet week — No changes in the last 7 days found — but a collector failed A collector's most recent run failed. P
+PASS  fixture time shift: count, excluded, most severe match the API's 7-day default view; rows link to history — 89 shown, 10 excluded, most severe high, 3 rows; first → /changes?kind=ntfs_ace&key=\\gp-sec-fs01\incidents\ir-2026-014|S-1-5-2
+PASS  fixture time shift: the Recent changes link lands on /changes?days=7 showing the same count — Overview 89; Changes: In this window 99 changes recorded, 89 shown. Most severe: h
+PASS  Reviews (reviewer): assigned, campaigns, past due, entries, due dates, campaign link — 17 items, 1 campaign(s), Due 2026-11-13
+PASS  fixture past-due campaign: the count and the entry say past due in words
+PASS  Reviews (auditor, governance:read, nothing assigned): 'Nothing is assigned to you', no collection warning
+PASS  permissions (planner): sections Needs attention, Recent changes, Reviews; only their reads are sent — 7 reads
+PASS  permissions (auditor): sections Needs attention, Recent changes, Reviews; only their reads are sent — 7 reads
+PASS  permissions (viewer): sections Needs attention, Recent changes; only their reads are sent — 6 reads
+PASS  permissions (nobody): sections none; only their reads are sent — 2 reads; 403 from /api/v1/collection/status
+PASS  Data health, demo dataset: state word + symbol, clean scopes, coverage, evaluation, concerns, demo source — ✕ Failed, 98/100 scopes, 2 concerns
+PASS  fixture Data health healthy: worded "✓ Complete" (text and symbol)
+PASS  fixture Data health incomplete: worded "◐ Incomplete" (text and symbol)
+PASS  fixture Data health failed: worded "✕ Failed" (text and symbol)
+PASS  fixture Data health no_data: worded "∅ Never collected" (text and symbol)
+PASS  fan-out: one /runtime shared with the shell; the six page reads start together after /auth/me; no duplicates; no table reads — 9 API requests: /auth/config×1 /runtime×1 /auth/me×1 /api/v1/collection/status×1 /api/v1/risks/summary×1 /api/v1/risks/rules×1 /api/v1/changes/summary×1 /api/v1/changes×1 /api/v1/governance/queue×1; the 6 page reads start 19 ms in (after /auth/me), spread 1 ms; slowest /api/v1/risks/summary 192 ms
+PASS  timing: one first load, then 5 warm loads (TTFB, FCP, load, slowest read) — first: TTFB 40 ms, FCP 328 ms, load 383 ms; warm median: TTFB 90 ms, FCP 432 ms, load 663 ms
+PASS  progressive, all reads healthy: shell, h1 and every section; each read once — shell 97, h1 97, first section 455, Needs attention 755, Recent changes 455, Reviews 455, Data health 755, slowest read ends 461 (ms) | shell 105, h1 105, first section 197, Needs attention 197, Recent changes 197, Reviews 197, Data health 197, slowest read ends 173 (ms) | shell 279, h1 279, first section 317, Needs attention 618, Recent changes 317, Reviews 317, Data health 618, slowest read ends 425 (ms)
+PASS  progressive, 4 s /api/v1/governance/queue: Reviews waits alone; the shell and independent sections are usable first — shell 94, h1 94, first section 181, Needs attention 635, Recent changes 181, Reviews 4113, Data health 635, slowest read ends 4086 (ms)
+PASS  progressive, 4 s /api/v1/changes/summary: Recent changes waits alone; the shell and independent sections are usable first — shell 285, h1 285, first section 384, Needs attention 685, Recent changes 4350, Reviews 384, Data health 685, slowest read ends 4326 (ms)
+PASS  progressive, 4 s /api/v1/risks/summary: Needs attention waits alone; the shell and independent sections are usable first — shell 140, h1 140, first section 309, Needs attention 4184, Recent changes 309, Reviews 309, Data health 4184, slowest read ends 4176 (ms)
+PASS  progressive, 4 s Reviews: focus stays where the user put it while a section arrives — focus stayed on /risks?severity=critical
+PASS  progressive, 500 /api/v1/governance/queue: Reviews alone shows the error; nothing else fails — Reviews shows its error; other sections rendered
+PASS  progressive, 12 s /api/v1/changes/summary: other sections render long before the 10 s timeout; only Recent changes times out — shell 31, h1 31, first section 357, Needs attention 357, Recent changes 10088, Reviews 357, Data health 357, slowest read ends Infinity (ms)
+PASS  responsive wide-desktop 1440px: no sideways scroll, pair side by side or stacked, no overlap — side by side
+PASS  responsive laptop 1280px: no sideways scroll, pair side by side or stacked, no overlap — side by side
+PASS  responsive tablet 1024px: no sideways scroll, pair side by side or stacked, no overlap — side by side
+PASS  responsive narrow 768px: no sideways scroll, pair side by side or stacked, no overlap — side by side
+PASS  responsive phone 375px: no sideways scroll, pair side by side or stacked, no overlap — stacked
+PASS  responsive minimum 320px: no sideways scroll, pair side by side or stacked, no overlap — stacked
+PASS  fixture long names at 320 px and 1440 px: an unbroken rule title, change headline and campaign name keep the page in bounds — 320px ok, 1440px ok
+PASS  a11y: one h1, named regions, descriptive links, no nested links or clickable cards, no positive tabindex — 18 links in main, all named
+PASS  a11y keyboard: Tab reaches every link in the Overview sections, in DOM order, each with a visible focus indicator — 10 section links reached in order, all with a focus ring
+PASS  a11y reading order at 1440px: section DOM order matches visual order — Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do
+PASS  a11y reading order at 375px: section DOM order matches visual order — Data health > Needs attention > Recent changes > Reviews > Where to start > What ADG will not do
+PASS  navigation: every 'Where to start' link opens its section by client navigation, and Back returns — /risks /access /changes /identities /resources /governance /simulations /collectors
+PASS  no page errors across every check — 1 console errors: planner: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+49/49 checks passed.

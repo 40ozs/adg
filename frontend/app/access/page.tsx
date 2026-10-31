@@ -21,7 +21,8 @@ export default async function AccessPage() {
     <>
       <h1>Access</h1>
       <p className="muted">
-        Who can reach what, and why. Start from a principal or from a path.
+        See who can reach a resource, what an identity can reach, and the access paths that
+        explain why.
       </p>
 
       <div className="card">
@@ -32,8 +33,8 @@ export default async function AccessPage() {
       <div className="card">
         <h2>Explain one answer</h2>
         <p className="muted">
-          Name a principal and a directory and ADG shows the whole derivation: the verdict,
-          both ACLs, every route the rights arrive by, and what removing each one would
+          Name an identity and a directory and ADG shows the whole derivation: the verdict,
+          both ACLs, every access path the rights arrive by, and what removing each one would
           actually do.
         </p>
         <ExplainLauncher />
@@ -42,8 +43,8 @@ export default async function AccessPage() {
       <div className="card">
         <h2>Investigate one answer</h2>
         <p className="muted">
-          The same answer, read as an investigation: what ADG evaluated, the route that carries
-          the access and where each hop was observed, what could not be confirmed and whether
+          The same answer, read as an investigation: what ADG evaluated, the access path that
+          carries the access and where each hop was observed, what could not be confirmed and whether
           it matters, and what to look at next.
         </p>
         <ExplainLauncher mode="investigate" />
@@ -53,7 +54,7 @@ export default async function AccessPage() {
         <h2>How ADG answers</h2>
         <p>
           An effective-access answer is an access check: the share ACL and the NTFS ACL are
-          evaluated against a token built from the principal&apos;s memberships, in that order,
+          evaluated against a token built from the identity&apos;s memberships, in that order,
           and the narrower of the two wins. The answer carries its certainty — a directory
           whose descriptor no run has read is reported as unknown, never as &ldquo;nobody has
           access&rdquo;.

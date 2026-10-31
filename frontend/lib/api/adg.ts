@@ -8,6 +8,8 @@
 
 import "server-only";
 
+import { cache } from "react";
+
 import type { ApiResult, RequestOptions } from "@/lib/api/client";
 import { apiRequest } from "@/lib/api/client";
 import type { SimulationRequestBody } from "@/lib/simulation";
@@ -153,10 +155,15 @@ export function fetchAuthConfig(options: RequestOptions = {}): Promise<ApiResult
 /**
  * Public: whether this deployment runs on real or synthetic data. Read by the shell on every
  * page, before sign-in, so the demo indicator is never something only a signed-in user sees.
+ *
+ * Cached per request: the shell and a page that also needs it (the Overview, the demo guide)
+ * would otherwise read it twice for one render.
  */
-export function fetchRuntime(options: RequestOptions = {}): Promise<ApiResult<RuntimeInfo>> {
+export const fetchRuntime = cache(function fetchRuntime(
+  options: RequestOptions = {},
+): Promise<ApiResult<RuntimeInfo>> {
   return apiRequest<RuntimeInfo>("/runtime", options);
-}
+});
 
 /**
  * Paths only a demo deployment serves. Asserted against `docs/contracts/v1/openapi.demo.json`

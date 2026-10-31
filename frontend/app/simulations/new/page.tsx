@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import { fetchSimulationVocabulary } from "@/lib/api/adg";
@@ -5,6 +6,9 @@ import { currentViewer } from "@/lib/auth/current";
 import { seedFromQuery } from "@/lib/simulation";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { SimulationEditor } from "@/components/SimulationEditor";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Propose a change") };
 
 /**
  * Writing a proposal.

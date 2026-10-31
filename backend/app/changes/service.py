@@ -238,7 +238,7 @@ class ChangeFilter:
         if self.scope is None and self.window_to - self.window_from > MAX_UNSCOPED_WINDOW:
             raise DomainValidationError(
                 f"An estate-wide change window is limited to {MAX_UNSCOPED_WINDOW.days} "
-                "days; narrow the window, or name a server, share, directory, principal or "
+                "days; narrow the window, or name a server, share, directory, identity or "
                 "group and ask for any interval.",
                 field="window_from",
             )

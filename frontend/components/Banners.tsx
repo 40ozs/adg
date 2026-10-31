@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import Link from "next/link";
 
-import type { AuthConfig, CollectionStatus, Principal, RuntimeInfo } from "@/lib/contracts";
+import type { AuthConfig, Principal, RuntimeInfo } from "@/lib/contracts";
 import type { Caveat, ViewState } from "@/lib/state";
 
 /**
@@ -66,7 +66,7 @@ export function DemoEnvironmentIndicator({
         </p>
         <p className="muted">
           The application is real: every answer comes from ADG&rsquo;s own API, access engine,
-          history and risk rules. The organization, its people and its file servers are
+          history and finding rules. The organization, its people and its file servers are
           fictional.
         </p>
         <p>
@@ -208,30 +208,6 @@ export function RoleAdviceBanner({ principal }: { principal: Principal }): JSX.E
       <h2>This account may see less than expected</h2>
       {problems.map((problem) => (
         <p key={problem}>{problem}</p>
-      ))}
-    </div>
-  );
-}
-
-/** The collection verdict, rendered on its own rather than as a caveat over data. */
-export function CollectionSummary({ status }: { status: CollectionStatus }): JSX.Element {
-  const tone =
-    status.health === "healthy"
-      ? "banner banner-info"
-      : status.health === "failed"
-        ? "banner banner-error"
-        : "banner banner-warning";
-  return (
-    <div className={tone} role={status.health === "healthy" ? "status" : "alert"}>
-      <h2>
-        Collection: <span className="visually-hidden">status </span>
-        {status.health.replace("_", " ")}
-      </h2>
-      <p>{status.summary}</p>
-      {status.concerns.map((concern) => (
-        <p key={concern} className="muted">
-          {concern}
-        </p>
       ))}
     </div>
   );

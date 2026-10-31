@@ -213,7 +213,7 @@ export function verdict(overrides: Partial<VerdictView> = {}): VerdictView {
     conclusive: true,
     may_overstate: false,
     may_understate: false,
-    reason: "This principal holds rights on this object.",
+    reason: "This identity holds rights on this object.",
     denials: [],
     ...overrides,
   };
@@ -539,7 +539,7 @@ export function noGrant(): AccessExplanationResponse {
     ...base,
     verdict: verdict({
       outcome: "no_grant",
-      reason: "No entry on either ACL names this principal or any group it belongs to.",
+      reason: "No entry on either ACL names this identity or any group it belongs to.",
     }),
     effective: {
       ...base.effective,
@@ -623,7 +623,7 @@ export function noGrantBetweenLayers(): AccessExplanationResponse {
     verdict: verdict({
       outcome: "no_grant",
       reason:
-        "This principal holds no rights here and nothing denied any. The NTFS permissions " +
+        "This identity holds no rights here and nothing denied any. The NTFS permissions " +
         "grant it rights, but the share permissions give it none, so nothing survives both layers.",
     }),
     effective: {

@@ -10,6 +10,7 @@ import {
   fetchShareRootAcl,
 } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
+import { recentOwner } from "@/lib/recent-owner";
 import type { CollectionStatus, ShareDetailView } from "@/lib/contracts";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation, type Trail } from "@/lib/paging";
 import { directoryHref, serverHref } from "@/lib/resources";
@@ -25,6 +26,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { EffectiveLayer, FactSection, RawLayer } from "@/components/Layer";
 import { PagePosition, Pager } from "@/components/Pager";
 import { NtfsAceTable, ShareAceTable } from "@/components/RawAcl";
+import { ForgetRecentView, RecordRecentView } from "@/components/RecentlyViewed";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { Tabs, type TabDefinition } from "@/components/Tabs";
 
@@ -68,6 +70,9 @@ export default async function SharePage({
   if (!detail.ok) {
     return (
       <>
+        {detail.failure.kind === "not_found" && (
+          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="share" entityKey={key} />
+        )}
         <h1>Share</h1>
         <p className="muted">
           <code>{key}</code>
@@ -90,6 +95,12 @@ export default async function SharePage({
 
   return (
     <>
+      <RecordRecentView
+        owner={recentOwner(viewer.principal.subject)}
+        kind="share"
+        entityKey={share.key}
+        label={share.name}
+      />
       <nav className="breadcrumb" aria-label="Location">
         <ol>
           <li>
@@ -299,7 +310,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
   const state = classify(result, {
     isEmpty: (data) => data.items.length === 0,
     coverage,
-    subject: "principals with access",
+    subject: "identities with access",
   });
 
   return (
@@ -323,7 +334,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
               nextCursor: state.data.page.next_cursor,
             })}
             page={state.data.page}
-            subject="principals"
+            subject="identities"
           />
         </>
       )}

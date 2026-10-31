@@ -1,0 +1,127 @@
+# Merge summary — integration/ADG-UX-WAVE-C-01
+
+Base: 10c73d1fcb5b12b31fa54e57b95da3483c079fba (origin/integration/ADG-UX-WAVE-B-01, fetched 2026-10-31T02:35Z, still its head)
+
+## Merges (git merge --no-ff, no squash, no rebase)
+a1fcb6c4e9854fd26aa50b06b6845f9c69ba6229  parents 10c73d1fcb5b12b31fa54e57b95da3483c079fba 9cec0b087b6d43b812b17d851fe7be2c8a24d787
+    merge: ADG-UX-BACKEND-COPY-04 identity wording into Wave C integration
+    Source: feature/ADG-UX-BACKEND-COPY-04-identity-wording @ 9cec0b087b6d43b812b17d851fe7be2c8a24d787
+4e08956726b1b868c0a8aa5f1469836f25629297  parents a1fcb6c4e9854fd26aa50b06b6845f9c69ba6229 c226516335d81cfd078578ffdc19d15736fa45ca
+    merge: ADG-UX-DEEP-TITLES-06 contextual titles into Wave C integration
+    Source: feature/ADG-UX-DEEP-TITLES-06-contextual-titles @ c226516335d81cfd078578ffdc19d15736fa45ca
+66f954897f1aae5c6c0e195b12baeac2bebea548  parents 4e08956726b1b868c0a8aa5f1469836f25629297 44d1a3c0ca8460b2423688b82c858573820ae52e
+    merge: ADG-UX-RECENT-05B Recently Viewed into Wave C integration
+    Source: feature/ADG-UX-RECENT-05B-recently-viewed @ 44d1a3c0ca8460b2423688b82c858573820ae52e
+
+## Graph
+*   66f9548 merge: ADG-UX-RECENT-05B Recently Viewed into Wave C integration
+|\  
+| * 44d1a3c docs(adg-ux): record Recently Viewed CI results
+| * 9d6a68d docs(adg-ux): record Recently Viewed implementation evidence
+| * 7393d03 feat(adg-ux): add tab-local Recently Viewed
+* |   4e08956 merge: ADG-UX-DEEP-TITLES-06 contextual titles into Wave C integration
+|\ \  
+| * | c226516 docs(adg-ux): DEEP-TITLES-06 report and evidence
+| * | 014783a feat(ui): contextual titles for deeper pages
+| |/  
+* |   a1fcb6c merge: ADG-UX-BACKEND-COPY-04 identity wording into Wave C integration
+|\ \  
+| |/  
+|/|   
+| * 9cec0b0 test(adg-ux): expect identity wording in the change-impact DB test
+| * c04a3e8 docs(adg-ux): record COPY-04 mypy fix and CI
+| * 6ec9c2b test(adg-ux): type the identity-wording prose table for mypy
+| * 6fbb7a1 docs(adg-ux): ADG-UX-BACKEND-COPY-04 report and evidence
+| * e8fd2dd feat(adg-ux): identity wording in backend prose, readable removal and scope labels
+|/  
+* 10c73d1 docs(adg-ux): record Wave B CI results and next UX baseline
+
+## Attempt 1 (local only, never pushed)
+The branch was first built with BACKEND-COPY-04 at c04a3e8 (merges 23e6e50, b9faa32, c9cf188). The local DB suite and CI run 41158333420 then showed c04a3e8 red at Database tests (tests/db/test_change_impact.py:384 pinned the old "principal" wording). With the owner's approval a one-line test-only commit 9cec0b0 was pushed to the source branch (fast-forward), and the unpushed integration branch was rebuilt from 10c73d1 with 9cec0b0 in the same order. Attempt 1 vs final differ only in that test line and the COPY-04 report's CI note:
+ backend/tests/db/test_change_impact.py                       | 2 +-
+ docs/demo/reports/ADG-UX-BACKEND-COPY-04-identity-wording.md | 8 +++++++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+frontend tree identical: e0def3a25fd34ef066ad5dfc5d28713d92883cdc == e0def3a25fd34ef066ad5dfc5d28713d92883cdc (so the standalone build and every browser gate run on attempt 1 are the final frontend)
+backend/app tree identical: 11abdd43df28f66ed0211be65a6de12d2074df8e == 11abdd43df28f66ed0211be65a6de12d2074df8e
+
+## Source lane file sets (excluding docs/demo/reports)
+### 9cec0b0
+backend/app/access_engine/conditions.py
+backend/app/access_engine/verdict.py
+backend/app/api/graph.py
+backend/app/changes/impact.py
+backend/app/changes/rules.py
+backend/app/changes/service.py
+backend/app/domain/graph.py
+backend/app/governance/drift.py
+backend/app/governance/service.py
+backend/app/risk_engine/severity.py
+backend/app/services/access.py
+backend/app/simulation/describe.py
+backend/app/simulation/model.py
+backend/app/simulation/overlay.py
+backend/tests/contracts/test_identity_wording.py
+backend/tests/db/test_change_impact.py
+backend/tests/governance/test_decision_rules.py
+backend/tests/simulation/test_model.py
+docs/contracts/v1/derived/examples/access-explanation.json
+docs/contracts/v1/derived/examples/access-paths.json
+docs/contracts/v1/derived/examples/resource-impact.json
+frontend/app/changes/page.tsx
+frontend/app/governance/campaigns/[campaignId]/page.tsx
+frontend/components/Explanation.tsx
+frontend/components/Governance.tsx
+frontend/lib/explanation.ts
+frontend/lib/governance.ts
+frontend/tests/explanation-factories.ts
+frontend/tests/explanation-views.test.tsx
+frontend/tests/governance-views.test.tsx
+frontend/tests/simulation-factories.ts
+frontend/tests/simulations-page.test.tsx
+### c226516
+frontend/app/access/explain/page.tsx
+frontend/app/access/investigate/page.tsx
+frontend/app/changes/compare/page.tsx
+frontend/app/changes/impact/page.tsx
+frontend/app/changes/page.tsx
+frontend/app/governance/campaigns/[campaignId]/page.tsx
+frontend/app/governance/items/[itemId]/page.tsx
+frontend/app/identities/groups/page.tsx
+frontend/app/identities/users/page.tsx
+frontend/app/risks/alerts/page.tsx
+frontend/app/simulations/[simulationId]/page.tsx
+frontend/app/simulations/new/page.tsx
+frontend/cloudflare/checks/titles.mjs
+frontend/tests/titles.test.ts
+### 44d1a3c
+frontend/app/identities/principal/[key]/layout.tsx
+frontend/app/page.tsx
+frontend/app/resources/directory/page.tsx
+frontend/app/resources/server/page.tsx
+frontend/app/resources/share/page.tsx
+frontend/cloudflare/checks/recently-viewed.mjs
+frontend/components/RecentlyViewed.tsx
+frontend/components/SignOutButton.tsx
+frontend/components/overview.module.css
+frontend/lib/recent-owner.ts
+frontend/lib/recent.ts
+frontend/tests/overview-page.test.tsx
+frontend/tests/recent-routes.test.tsx
+frontend/tests/recent.test.ts
+frontend/tests/recently-viewed.test.tsx
+
+## Files touched by more than one lane
+frontend/app/changes/page.tsx
+frontend/app/governance/campaigns/[campaignId]/page.tsx
+
+## Conflicts
+Textual conflicts: none in any merge (git auto-merged both shared files).
+Shared-file check (diff 10c73d1 → 66f9548 keeps both sides):
+- frontend/app/changes/page.tsx: DEEP-TITLES generateMetadata (History title) + COPY-04 scope label 'identity: …' (query parameter stays principal=).
+- frontend/app/governance/campaigns/[campaignId]/page.tsx: DEEP-TITLES metadata 'Review campaign — ADG' + COPY-04 itemNames() for reviewer scopes and the items heading.
+Semantic conflicts found by gates: none in product code. Two stale expectations in the committed Wave B gate (wave-b-check.mjs) against titles DEEP-TITLES-06 changed on purpose; handled in a Wave C copy of that gate (wave-b-check.wave-c.diff.txt). No product file was edited during integration.
+
+## Tree identities
+HEAD:backend  afbc6bd053af1baf0c639ad95db01f26dbe3fe57  == 9cec0b0:backend afbc6bd053af1baf0c639ad95db01f26dbe3fe57
+HEAD:database 1e5bd9a6542084265aaa6ae2394d3ce355c618a1  == 10c73d1:database 1e5bd9a6542084265aaa6ae2394d3ce355c618a1
+HEAD:frontend/package-lock.json cba9359ca9d2b3cbf0772dc1f1be5b9dd2c1613f == 10c73d1 cba9359ca9d2b3cbf0772dc1f1be5b9dd2c1613f

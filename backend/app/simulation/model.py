@@ -191,7 +191,7 @@ class SimulationScope:
         needs_resource = self.kind in (ScopeKind.PAIR, ScopeKind.RESOURCE)
         if needs_subject and not self.subject_key:
             raise DomainValidationError(
-                f"A {self.kind.value} simulation is about one principal and must name it.",
+                f"A {self.kind.value} simulation is about one identity and must name it.",
                 field="subject_key",
             )
         if needs_resource and not self.resource_key:
@@ -464,10 +464,10 @@ class SimulationCaveat(StrEnum):
 
 CAVEAT_DESCRIPTIONS: Final[dict[SimulationCaveat, str]] = {
     SimulationCaveat.BASELINE_UNCERTAIN: (
-        "What this principal holds today rests on facts ADG has not collected."
+        "What this identity holds today rests on facts ADG has not collected."
     ),
     SimulationCaveat.SIMULATED_UNCERTAIN: (
-        "What this principal would hold rests on facts ADG has not collected."
+        "What this identity would hold rests on facts ADG has not collected."
     ),
     SimulationCaveat.LOSS_MAY_NOT_HOLD: (
         "Rights are reported as removed, but the simulated answer is a lower bound: an "
@@ -478,7 +478,7 @@ CAVEAT_DESCRIPTIONS: Final[dict[SimulationCaveat, str]] = {
         "unseen restriction could withhold them."
     ),
     SimulationCaveat.ALTERNATE_PATH_RETAINS_ACCESS: (
-        "The proposal removes one route to this resource and the principal still has another."
+        "The proposal removes one route to this resource and the identity still has another."
     ),
 }
 
@@ -619,15 +619,15 @@ class SimulationTruncation(StrEnum):
 
 
 TRUNCATION_DESCRIPTIONS: Final[dict[SimulationTruncation, str]] = {
-    SimulationTruncation.PRINCIPAL_BUDGET: "More principals are affected than were evaluated.",
+    SimulationTruncation.PRINCIPAL_BUDGET: "More identities are affected than were evaluated.",
     SimulationTruncation.RESOURCE_BUDGET: "More resources are affected than were evaluated.",
-    SimulationTruncation.PAIR_BUDGET: "The principal/resource budget was exhausted.",
+    SimulationTruncation.PAIR_BUDGET: "The identity/resource budget was exhausted.",
     SimulationTruncation.TIME_BUDGET: "The time budget was exhausted before every pair ran.",
     SimulationTruncation.EXPLANATION_BUDGET: (
         "Alternate-path analysis was not run for every delta that claims a loss."
     ),
     SimulationTruncation.TRUSTEE_EXPANSION_INCOMPLETE: (
-        "A trustee's membership could not be enumerated, so affected principals are missing."
+        "A trustee's membership could not be enumerated, so affected identities are missing."
     ),
     SimulationTruncation.DESCENDANTS_NOT_EVALUATED: (
         "Directories below a changed one inherit from it and were not evaluated."

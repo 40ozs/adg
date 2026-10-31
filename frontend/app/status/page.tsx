@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
+
 import { fetchBackendStatus } from "@/lib/api/health";
 import { resolveApiUrl, resolveServerApiUrl } from "@/lib/config";
 import { SortableTable } from "@/components/SortableTable";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("System status") };
 
 // Always render on request: a cached health page would be worse than no health page.
 export const dynamic = "force-dynamic";

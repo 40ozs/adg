@@ -47,7 +47,7 @@ export function ExplanationExplorer({
       <div className="card">
         <h2>How the rights arrive</h2>
         <p className="muted">
-          Each route runs from the principal, through the groups that carry it, to the entry
+          Each access path runs from the identity, through the groups that carry it, to the entry
           that named one of them, and on to the object. Select a route to open it.
         </p>
 
@@ -68,7 +68,7 @@ export function ExplanationExplorer({
         <h2>Routes</h2>
         {explanation.paths.length === 0 ? (
           <p className="muted">
-            No entry on either ACL reached this principal, so there is no route to show.
+            No entry on either ACL reached this identity, so there is no route to show.
           </p>
         ) : (
           <>

@@ -1,0 +1,146 @@
+# ADG-UX-WAVE-B-INTEGRATION-01 frontend gates @ 88e5d63 2026-10-30T21:25:33Z node v22.23.3 arm64
+
+## npm run lint
+exit=0
+
+## npm run typecheck
+exit=0
+
+## npm run cf:typecheck
+exit=0
+
+## npm run test
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+ RUN  v2.1.9 /Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-B-01/frontend
+
+ ✓ tests/views.test.tsx (32 tests) 405ms
+ ✓ tests/governance-views.test.tsx (23 tests) 448ms
+ ✓ tests/risks-page.test.tsx (23 tests) 1236ms
+   ✓ sorting the findings table > orders severity and confidence by rank, not alphabetically 311ms
+ ✓ tests/pages.test.tsx (27 tests) 1316ms
+stderr | tests/investigation-page.test.tsx > 1. the question > asks the API for exactly the pair in the URL, once
+Received `false` for a non-boolean attribute `prefetch`.
+
+If you want to write it to the DOM, pass a string instead: prefetch="false" or prefetch={value.toString()}.
+
+If you used to conditionally omit it with prefetch={condition && value}, pass prefetch={condition ? value : undefined} instead.
+
+ ✓ tests/overview-page.test.tsx (37 tests) 2045ms
+ ✓ tests/explanation-views.test.tsx (49 tests) 1907ms
+ ✓ tests/collectors-page.test.tsx (17 tests) 870ms
+ ✓ tests/investigation-page.test.tsx (30 tests) 3756ms
+ ✓ tests/demo-guide.test.tsx (18 tests) 665ms
+ ✓ tests/directory.test.tsx (18 tests) 1560ms
+ ✓ tests/simulation-views.test.tsx (20 tests) 625ms
+ ✓ tests/compare-page.test.tsx (18 tests) 1087ms
+ ✓ tests/components.test.tsx (24 tests) 1036ms
+ ✓ tests/alerts-page.test.tsx (14 tests) 692ms
+ ✓ tests/changes-views.test.tsx (18 tests) 396ms
+ ✓ tests/system-mapping.test.tsx (23 tests) 351ms
+ ✓ tests/simulations-page.test.tsx (7 tests) 385ms
+ ✓ tests/demo-indicator.test.tsx (8 tests) 354ms
+ ✓ tests/contracts.test.ts (471 tests) 135ms
+ ✓ tests/explanation.test.ts (82 tests) 41ms
+ ✓ tests/explanation-page.test.tsx (15 tests) 1799ms
+   ✓ the explanation screen against a captured response > leads with the verdict and the rights 344ms
+ ✓ tests/governance.test.ts (36 tests) 76ms
+ ✓ tests/operations.test.ts (30 tests) 19ms
+ ✓ tests/sortable-table.test.tsx (6 tests) 930ms
+   ✓ a sortable table > starts in the server's order with no column marked sorted 332ms
+ ✓ tests/explanation-contract.test.ts (97 tests) 53ms
+ ✓ tests/investigation.test.ts (20 tests) 39ms
+ ✓ tests/simulation.test.ts (23 tests) 54ms
+ ✓ tests/changes.test.ts (29 tests) 18ms
+ ✓ tests/identity.test.ts (27 tests) 30ms
+ ✓ tests/cloudflare/routing.test.ts (39 tests) 35ms
+ ✓ tests/coverage.test.ts (29 tests) 102ms
+ ✓ tests/render/gate.test.ts (38 tests) 1009ms
+   ✓ startup > does not start, start a process or open a port without the key 664ms
+ ✓ tests/auth.test.ts (29 tests) 70ms
+ ✓ tests/risks.test.ts (17 tests) 33ms
+ ✓ tests/alerts.test.ts (16 tests) 10ms
+ ✓ tests/state.test.ts (15 tests) 20ms
+ ✓ tests/nav.test.ts (18 tests) 21ms
+ ✓ tests/proxy.test.ts (14 tests) 7ms
+ ✓ tests/access.test.ts (17 tests) 12ms
+ ✓ tests/acl.test.ts (23 tests) 28ms
+ ✓ tests/resources.test.ts (17 tests) 12ms
+ ✓ tests/paging.test.ts (16 tests) 25ms
+ ✓ tests/cloudflare/environment.test.ts (12 tests) 9ms
+ ✓ tests/config.test.ts (8 tests) 6ms
+ ✓ tests/sort.test.ts (8 tests) 6ms
+ ✓ tests/titles.test.ts (36 tests) 12ms
+
+ Test Files  46 passed (46)
+      Tests  1594 passed (1594)
+   Start at  14:25:47
+   Duration  15.53s (transform 5.71s, setup 22.26s, collect 10.85s, tests 23.74s, environment 24.48s, prepare 6.04s)
+
+exit=0
+
+## npm run build
+▲ Next.js 16.4.1 (webpack)
+✓ Running next.config.mjs took 20ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.4s
+  Running TypeScript ...
+  Finished TypeScript in 8.5s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 122ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /access
+├ ƒ /access/explain
+├ ƒ /access/investigate
+├ ƒ /api/adg/[...path]
+├ ƒ /api/auth/dev-login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/oidc/callback
+├ ƒ /api/auth/oidc/start
+├ ƒ /api/simulations
+├ ƒ /api/simulations/[simulationId]
+├ ƒ /api/simulations/[simulationId]/evaluations
+├ ƒ /api/simulations/preview
+├ ƒ /api/watches
+├ ƒ /api/watches/[watchId]
+├ ƒ /changes
+├ ƒ /changes/compare
+├ ƒ /changes/impact
+├ ƒ /collectors
+├ ƒ /demo
+├ ƒ /governance
+├ ƒ /governance/campaigns/[campaignId]
+├ ƒ /governance/items/[itemId]
+├ ƒ /identities
+├ ƒ /identities/groups
+├ ƒ /identities/principal
+├ ƒ /identities/principal/[key]/[[...view]]
+├ ƒ /identities/users
+├ ƒ /login
+├ ƒ /resources
+├ ƒ /resources/directory
+├ ƒ /resources/server
+├ ƒ /resources/share
+├ ƒ /risks
+├ ƒ /risks/alerts
+├ ƒ /search
+├ ƒ /settings
+├ ƒ /simulations
+├ ƒ /simulations/[simulationId]
+├ ƒ /simulations/new
+└ ƒ /status
+
+
+ƒ  (Dynamic)  server-rendered on demand
+
+exit=0

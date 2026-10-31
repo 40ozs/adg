@@ -1,0 +1,4 @@
+        assert len(listed) == 7
+>       assert len(seven.statements) == len(one.statements)
+E       AssertionError: assert 9 == 4
+1 failed, 41 deselected in 1.37s

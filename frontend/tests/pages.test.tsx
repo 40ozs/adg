@@ -17,7 +17,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApiResult } from "@/lib/api/client";
-import type { CollectionStatus } from "@/lib/contracts";
+import type { CollectionStatus, PrincipalSummary } from "@/lib/contracts";
 import {
   boundary,
   ntfsAce,
@@ -864,5 +864,69 @@ describe("a principal's identity information", () => {
 
     expect(adg.fetchPrincipalDetail).toHaveBeenCalledWith("token", "S-1-5-32-544", { host: "FS01" });
     expect(redirect).toHaveBeenCalledWith("/identities/principal/fs01%7CS-1-5-32-544");
+  });
+});
+
+/* ---------------------------------------------- identity terminology (UX-ENTITY-02) */
+
+/** Generic "principal" left in rendered copy; the Windows terms of art are allowed. */
+const genericPrincipal = (text: string): RegExpMatchArray | null =>
+  text.replace(/foreign security principal|user principal name/gi, "").match(/\bprincipals?\b/i);
+
+describe("identity terminology on an identity's page", () => {
+  const LIN = principalDetail({
+    key: "S-1-5-21-1-2-3-1300",
+    sid: "S-1-5-21-1-2-3-1300",
+    display_name: "Lin Park",
+    is_group: false,
+    kind: "user",
+  });
+  const TEAM = principalDetail({
+    key: "S-1-5-21-1-2-3-1400",
+    sid: "S-1-5-21-1-2-3-1400",
+    display_name: "Payroll-Team",
+    is_group: true,
+    kind: "group",
+  });
+  const edge = (other: PrincipalSummary, foreign = false) => ({
+    principal: other,
+    edge_kind: "member",
+    edge_key: `e-${other.key}`,
+    host_key: null,
+    is_foreign_security_principal: foreign,
+    first_observed_at: "2026-09-01T10:00:00Z",
+    last_observed_at: "2026-09-12T10:00:00Z",
+    last_observed_run_id: provenance.last_observed_run_id,
+  });
+
+  it("names a user's groups as a Group column under identity copy", async () => {
+    vi.mocked(adg.fetchPrincipalDetail).mockResolvedValue(ok(LIN));
+    vi.mocked(adg.fetchDirectGroups).mockResolvedValue(
+      ok({ principal: LIN, items: [edge(principal({ key: TEAM.key, display_name: "Payroll-Team" }))], page: page() }),
+    );
+
+    const { container } = render(await principalPage(LIN.key, "groups"));
+
+    expect(screen.getByRole("heading", { name: "Groups this identity is directly inside" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /^Group/ })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Principal/ })).not.toBeInTheDocument();
+    expect(genericPrincipal(container.textContent ?? "")).toBeNull();
+  });
+
+  it("names a group's members as a Member column, keeping 'foreign security principal' exact", async () => {
+    vi.mocked(adg.fetchPrincipalDetail).mockResolvedValue(ok(TEAM));
+    vi.mocked(adg.fetchDirectMembers).mockResolvedValue(
+      ok({ group: TEAM, items: [edge(principal({ key: LIN.key, display_name: "Lin Park" }), true)], page: page() }),
+    );
+
+    const { container } = render(await principalPage(TEAM.key, "members"));
+
+    expect(screen.getByRole("columnheader", { name: /^Member/ })).toBeInTheDocument();
+    expect(screen.getByText(/through a foreign security principal/)).toBeInTheDocument();
+    expect(genericPrincipal(container.textContent ?? "")).toBeNull();
+    const labelled = [...container.querySelectorAll("[aria-label], [title]")].map(
+      (node) => `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`,
+    );
+    expect(labelled.filter((label) => genericPrincipal(label))).toEqual([]);
   });
 });

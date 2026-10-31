@@ -1,0 +1,66 @@
+diff --git a/docs/contracts/v1/openapi.json b/docs/contracts/v1/openapi.json
+index 056e9ce..088cac8 100644
+--- a/docs/contracts/v1/openapi.json
++++ b/docs/contracts/v1/openapi.json
+@@ -13967,7 +13967,7 @@
+           },
+           "declared_scopes": {
+             "items": {
+-              "$ref": "#/components/schemas/ScopeView"
++              "$ref": "#/components/schemas/ScanScopeView"
+             },
+             "title": "Declared Scopes",
+             "type": "array"
+@@ -14054,7 +14054,7 @@
+           },
+           "reconciled_scopes": {
+             "items": {
+-              "$ref": "#/components/schemas/ScopeView"
++              "$ref": "#/components/schemas/ScanScopeView"
+             },
+             "title": "Reconciled Scopes",
+             "type": "array"
+@@ -14122,6 +14122,24 @@
+         "title": "ScanRunView",
+         "type": "object"
+       },
++      "ScanScopeView": {
++        "properties": {
++          "key": {
++            "title": "Key",
++            "type": "string"
++          },
++          "kind": {
++            "title": "Kind",
++            "type": "string"
++          }
++        },
++        "required": [
++          "kind",
++          "key"
++        ],
++        "title": "ScanScopeView",
++        "type": "object"
++      },
+       "ScanStatus": {
+         "description": "Lifecycle of a scan run.",
+         "enum": [
+@@ -14451,6 +14469,18 @@
+       },
+       "ScopeView": {
+         "properties": {
++          "display_name": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ],
++            "description": "For a 'principal' scope, the identity's current name (display name, else account name, else last known name). Presentation only: 'kind' and 'key' remain the scope. Null for every other kind, and for an identity ADG does not currently describe.",
++            "title": "Display Name"
++          },
+           "key": {
+             "title": "Key",
+             "type": "string"

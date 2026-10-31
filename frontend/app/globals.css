@@ -139,6 +139,20 @@ a:hover {
   gap: 0.15rem;
 }
 
+.shell-nav .nav-group + .nav-group {
+  margin-top: 0.85rem;
+}
+
+.nav-group-label {
+  display: block;
+  padding: 0 0.7rem 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .shell-nav a {
   display: block;
   padding: 0.45rem 0.7rem;
@@ -512,7 +526,26 @@ dl.facts dd {
     border-bottom: 1px solid var(--border);
   }
 
-  .shell-nav ul {
+  /* Each group becomes one wrapping row, its name first: still grouped, never scrolled. */
+  .shell-nav .nav-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.5rem;
+  }
+
+  .shell-nav .nav-group + .nav-group {
+    margin-top: 0.35rem;
+  }
+
+  .nav-group-label {
+    flex: 0 0 6.5rem;
+    padding: 0;
+  }
+
+  .shell-nav .nav-group ul {
+    flex: 1 1 0;
+    min-width: 0;
     flex-direction: row;
     flex-wrap: wrap;
   }

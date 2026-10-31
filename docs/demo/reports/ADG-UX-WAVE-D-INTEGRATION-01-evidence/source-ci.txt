@@ -1,0 +1,46 @@
+# Source admission, 2026-10-31T17:08:30Z (git fetch --all --prune, then gh run view)
+
+Baseline origin/integration/ADG-UX-WAVE-C-01 = 559dbaf913a02e0df4ddf18be89ef81f03e48596
+Newer integration/ADG-UX-* refs on origin: none (Wave A fcb7928, Wave B 10c73d1, Wave C 559dbaf only)
+Remote refs containing 559dbaf: origin/docs/ADG-HOSTED-STREAMING-10 origin/docs/ADG-HOSTED-STREAMING-11 origin/feature/ADG-UX-NAV-07-review-item-client-navigation origin/feature/ADG-UX-REVIEW-NAMES-08-scope-display-name origin/integration/ADG-UX-WAVE-C-01 origin/test/ADG-UX-TEST-STABILITY-09-deterministic-titles 
+
+## feature/ADG-UX-NAV-07-review-item-client-navigation
+origin head: 70d08e7bfd418305cf53a8cc58968732c25dfbeb
+merge-base with 559dbaf: 559dbaf913a02e0df4ddf18be89ef81f03e48596  ahead: 3  behind: 0
+run 41173158797 on 70d08e7bfd418305cf53a8cc58968732c25dfbeb (push): completed/success
+  Frontend (lint, types, tests, build): success
+  Collector (Pester): success
+  Backend (lint, types, tests): success
+  Docker Compose configuration: success
+  Fork PR Linux gates (GitHub-hosted): skipped
+
+## feature/ADG-UX-REVIEW-NAMES-08-scope-display-name
+origin head: 68770398ea4d3de5e17045fe829a3310f99a3c95
+merge-base with 559dbaf: 559dbaf913a02e0df4ddf18be89ef81f03e48596  ahead: 3  behind: 0
+run 41177759881 on 68770398ea4d3de5e17045fe829a3310f99a3c95 (push): completed/success
+  Collector (Pester): success
+  Docker Compose configuration: success
+  Frontend (lint, types, tests, build): success
+  Backend (lint, types, tests): success
+  Fork PR Linux gates (GitHub-hosted): skipped
+
+## test/ADG-UX-TEST-STABILITY-09-deterministic-titles
+origin head: 9c67d2c1456ceaec933b9250713236adc5293a72
+merge-base with 559dbaf: 559dbaf913a02e0df4ddf18be89ef81f03e48596  ahead: 2  behind: 0
+run 41190074573 on 9c67d2c1456ceaec933b9250713236adc5293a72 (push): completed/success
+  Collector (Pester): success
+  Docker Compose configuration: success
+  Backend (lint, types, tests): success
+  Frontend (lint, types, tests, build): success
+  Fork PR Linux gates (GitHub-hosted): skipped
+
+## integration/ADG-UX-WAVE-C-01
+origin head: 559dbaf913a02e0df4ddf18be89ef81f03e48596
+merge-base with 559dbaf: 559dbaf913a02e0df4ddf18be89ef81f03e48596  ahead: 0  behind: 0
+run 41167906074 on 559dbaf913a02e0df4ddf18be89ef81f03e48596 (push): completed/success
+  Collector (Pester): success
+  Docker Compose configuration: success
+  Backend (lint, types, tests): success
+  Frontend (lint, types, tests, build): success
+  Fork PR Linux gates (GitHub-hosted): skipped
+

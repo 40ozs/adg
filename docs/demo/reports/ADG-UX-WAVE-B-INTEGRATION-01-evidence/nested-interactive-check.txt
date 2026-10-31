@@ -1,0 +1,8 @@
+/: nested interactive 0, scripted non-interactive 0, h1 1
+/risks: nested interactive 0, scripted non-interactive 0, h1 1
+/identities/principal/<sid>: nested interactive 0, scripted non-interactive 0, h1 1
+/identities/principal/<sid>/groups: nested interactive 0, scripted non-interactive 0, h1 1
+/resources: nested interactive 0, scripted non-interactive 0, h1 1
+/access/investigate: nested interactive 0, scripted non-interactive 0, h1 1
+/governance: nested interactive 0, scripted non-interactive 0, h1 1
+PASS no nested links/buttons, one h1 on every page

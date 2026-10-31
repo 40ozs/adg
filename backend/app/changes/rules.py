@@ -592,7 +592,7 @@ RULES: Final[tuple[Rule, ...]] = (
         ChangeSeverity.MEDIUM,
         ChangeDirection.BROADENED,
         lambda f: (
-            "A principal that had been deleted in the directory is present again, carrying "
+            "An identity that had been deleted in the directory is present again, carrying "
             "the same SID and therefore every grant that names it."
             if f.became("is_deleted", False)
             else None
@@ -604,7 +604,7 @@ RULES: Final[tuple[Rule, ...]] = (
         ChangeSeverity.MEDIUM,
         ChangeDirection.NARROWED,
         lambda f: (
-            "The principal was deleted in the directory. Entries naming its SID remain on "
+            "The identity was deleted in the directory. Entries naming its SID remain on "
             "every ACL that carried them and now name nobody."
             if f.became("is_deleted", True)
             else None
@@ -629,7 +629,7 @@ RULES: Final[tuple[Rule, ...]] = (
         ChangeSeverity.LOW,
         ChangeDirection.NARROWED,
         lambda f: (
-            "A scan that reconciled this principal's scope did not find it. Entries naming "
+            "A scan that reconciled this identity's scope did not find it. Entries naming "
             "its SID are still stored and now name nobody."
             if _removed(f)
             else None
@@ -641,7 +641,7 @@ RULES: Final[tuple[Rule, ...]] = (
         ChangeSeverity.LOW,
         ChangeDirection.NEUTRAL,
         lambda f: (
-            "A principal appeared. Existing grants nothing by itself; what it can reach is "
+            "An identity appeared. Existing grants nothing by itself; what it can reach is "
             "whatever its memberships give it."
             if _added(f)
             else None
@@ -835,7 +835,7 @@ RULES: Final[tuple[Rule, ...]] = (
         ChangeDirection.UNDETERMINED,
         lambda f: (
             "The machine's own SID namespace changed, so every local account and local "
-            "group SID recorded against it names a different principal than it did."
+            "group SID recorded against it names a different identity than it did."
             if f.moved("computer_sid") is not None
             else None
         ),

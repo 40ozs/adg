@@ -10,6 +10,7 @@ closing findings it never examined.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -82,6 +83,30 @@ class TestCatalog:
         assert remediation.summary.strip()
         assert remediation.steps
         assert all(step.strip() for step in remediation.steps)
+
+    @pytest.mark.parametrize("rule_id", list(RuleId), ids=lambda item: item.value)
+    def test_prose_says_identity_not_generic_principal(self, rule_id):
+        # Presentation text only (ADG-UX-ENTITY-02): ids, versions and predicates keep "principal".
+        definition = CATALOG[rule_id]
+        remediation = definition.remediation
+        prose = " ".join(
+            (
+                definition.title,
+                definition.detects,
+                definition.matters_because,
+                remediation.summary,
+                *remediation.steps,
+                remediation.caution or "",
+            )
+        )
+        prose = re.sub(r"foreign security principal", "", prose, flags=re.IGNORECASE)
+        assert not re.search(r"\bprincipals?\b", prose, re.IGNORECASE)
+
+    def test_redundant_paths_title_names_an_identity(self):
+        assert CATALOG[RuleId.REDUNDANT_ACCESS_PATHS].title == (
+            "One identity reaches a resource by several independent routes"
+        )
+        assert CATALOG[RuleId.REDUNDANT_ACCESS_PATHS].version == "1.0"
 
     @pytest.mark.parametrize("rule_id", list(RuleId), ids=lambda item: item.value)
     def test_every_rule_declares_what_it_reads(self, rule_id):

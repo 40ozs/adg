@@ -38,6 +38,7 @@ import {
   queueHeadline,
   reachVerdict,
   reviewersByAttention,
+  scopeLabel,
   targetLabel,
   type Tone,
 } from "@/lib/governance";
@@ -89,8 +90,8 @@ export function CampaignTable({ campaigns }: { campaigns: readonly CampaignView[
           <>
             <Link href={`/governance/campaigns/${campaign.campaign_id}`}>{campaign.name}</Link>
             <div className="muted">
-              {campaign.focus === "principal" ? "By principal" : "By resource"} ·{" "}
-              {campaign.scopes.map((scope) => `${scope.kind}:${scope.key}`).join(", ")}
+              {campaign.focus === "principal" ? "By identity" : "By resource"} ·{" "}
+              {campaign.scopes.map((scope) => scopeLabel(scope)).join(", ")}
             </div>
           </>,
           campaign.status,
@@ -166,8 +167,11 @@ export function CampaignProgress({
 /** Who is behind, and by how much. Overdue first; every number is the backend's. */
 export function ReviewerProgressTable({
   reviewers,
+  names,
 }: {
   reviewers: readonly ReviewerProgressView[];
+  /** Identity names the page already holds, for naming identity scopes. */
+  names?: ReadonlyMap<string, string>;
 }): JSX.Element {
   const ordered = reviewersByAttention(reviewers);
   if (ordered.length === 0) {
@@ -195,7 +199,7 @@ export function ReviewerProgressTable({
         const scope =
           reviewer.scope === null
             ? "the whole campaign"
-            : `${reviewer.scope.kind}:${reviewer.scope.key}`;
+            : scopeLabel(reviewer.scope, names);
         return {
           key: reviewer.assignment_id,
           sort: [
@@ -504,7 +508,7 @@ export function ReachPanel({ context }: { context: ItemContextResponse }): JSX.E
       {reach.available ? (
         <p className="muted">
           {reach.direct_paths} direct {reach.direct_paths === 1 ? "route" : "routes"} naming
-          this principal, {reach.group_paths} through a group or well-known trustee.
+          this identity, {reach.group_paths} through a group or well-known trustee.
         </p>
       ) : null}
       {reach.routes.length > 0 ? (
@@ -590,11 +594,11 @@ export function FindingsPanel({
 }): JSX.Element {
   return (
     <section className="card" aria-labelledby="findings">
-      <h2 id="findings">Risk findings</h2>
+      <h2 id="findings">Findings</h2>
       {findings.length === 0 ? (
         <p className="muted">
-          No open finding names this target or this principal. That is what the risk engine
-          currently holds, not a statement that nothing is wrong.
+          No open finding names this target or this identity. That is what ADG&apos;s rules
+          currently report, not a statement that nothing is wrong.
         </p>
       ) : (
         <ul>
@@ -604,10 +608,10 @@ export function FindingsPanel({
               confidence)
               <div className="muted">
                 {finding.relation === "access"
-                  ? "About this principal on this target."
+                  ? "About this identity on this target."
                   : finding.relation === "target"
                     ? "About this target, whoever is named on it."
-                    : "About this principal, elsewhere in the estate."}{" "}
+                    : "About this identity, elsewhere in the estate."}{" "}
                 Open since {instant(finding.first_detected_at)}.
               </div>
             </li>

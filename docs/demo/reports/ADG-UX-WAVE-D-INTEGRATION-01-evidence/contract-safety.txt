@@ -1,0 +1,12 @@
+PASS  every governance scope has exactly kind, key, display_name — 7 scopes in 4 campaigns
+PASS  kinds are the existing scope tokens — directory_tree, principal, share
+PASS  identity keys are still SIDs — 4 identity scopes
+PASS  non-identity scopes carry display_name null
+PASS  display_name for …-1243 is a presentation label, not the UPN — display_name 'Brianna Reddy', UPN set, search hit yes
+PASS  display_name for …-2471 is a presentation label, not the UPN — display_name 'sec-share-design-read-only', UPN none, search hit yes
+PASS  auditor reads the same names
+PASS  governance reads the same names
+PASS  viewer is still refused — HTTP 403
+PASS  scan-run scopes (ScanScopeView) are still exactly kind, key — 50 runs, key sets [('key', 'kind')]
+
+OK

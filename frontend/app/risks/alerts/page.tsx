@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -20,6 +21,9 @@ import { PagePosition, Pager } from "@/components/Pager";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { SortableTable } from "@/components/SortableTable";
 import { WatchManager } from "@/components/Watches";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Alerts") };
 
 const PATH = "/risks/alerts";
 
@@ -90,7 +94,7 @@ export default async function AlertsPage({
     <>
       <h1>Alerts</h1>
       <p className="muted">
-        <Link href="/risks">Back to risks</Link>
+        <Link href="/risks">Back to findings</Link>
       </p>
 
       {queueState !== null && (

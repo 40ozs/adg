@@ -1,0 +1,18 @@
+== backend gates (this worktree, Python 3.13) ==
+ruff exit=0 1s load=5.03 7.47 11.43
+format exit=0 0s load=5.03 7.47 11.43
+mypy exit=0 10s load=5.09 7.40 11.36
+unit exit=0 165s load=6.38 9.66 11.84
+db exit=0 995s load=14.52 16.96 14.74
+--- ruff
+All checks passed!
+--- format
+416 files already formatted
+--- mypy
+Success: no issues found in 415 source files
+--- unit
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6164 passed, 12 skipped, 1306 deselected, 7 warnings in 161.09s (0:02:41)
+--- db
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1305 passed, 6176 deselected, 1 xfailed, 68 warnings in 989.28s (0:16:29)

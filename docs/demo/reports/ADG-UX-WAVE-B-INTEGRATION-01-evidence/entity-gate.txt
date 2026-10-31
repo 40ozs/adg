@@ -1,0 +1,22 @@
+# ADG-UX-ENTITY-02-evidence/entity-check.mjs @ 88e5d63 2026-10-30T21:32:30Z web :3021 -> API :8020, load: 139.81 48.28 28.44
+PASS  User: direct groups: header names the object, identity copy, links work — h1 "Brianna Reddy user"; 12/12 links checked
+PASS  User: effective groups: header names the object, identity copy, links work — h1 "Brianna Reddy user"; 30/43 links checked
+PASS  User: reachable shares: header names the object, identity copy, links work — h1 "Brianna Reddy user"; 30/94 links checked
+PASS  User: reachable directories: header names the object, identity copy, links work — h1 "Brianna Reddy user"; 30/207 links checked
+PASS  User: named on share ACLs: header names the object, identity copy, links work — h1 "Brianna Reddy user"; 8/8 links checked
+PASS  Group: direct members: header names the object, identity copy, links work — h1 "sec-share-design-read-only domain group"; 24/24 links checked
+PASS  Group: effective members: header names the object, identity copy, links work — h1 "sec-share-design-read-only domain group"; 20/20 links checked
+PASS  Group: parent groups: header names the object, identity copy, links work — h1 "sec-share-design-read-only domain group"; 8/8 links checked
+PASS  Server, share and directory: header names the object with its kind, no generic principal — server "GP-ACQ-FS01 server"; share "\\gp-acq-fs01\Acquisitions share"; directory "\\GP-FIN-FS01\Finance\Reports\Revenue directory"
+PASS  Findings: redundant-routes rule title says identity, filter key unchanged — rule filter ?rule=redundant_access_paths still selects the rule
+PASS  Access path: investigate and explain for the scenario person use Identity — /access/investigate, /access/explain
+PASS  375px: identity and findings pages do not scroll sideways
+PASS  320px: identity and findings pages do not scroll sideways
+PASS  no page errors
+
+14/14 passed
+
+Deferred backend engine prose seen (classified in report §5, not failed):
+  - /access/investigate: This principal holds rights on this object.
+  - /access/explain: This principal holds rights on this object.
+exit=0

@@ -180,7 +180,7 @@ class TestWhatOneBatchMayCover:
             )
 
         assert "not one question" in str(raised.value)
-        assert "one principal over many targets" in str(raised.value)
+        assert "one identity over many targets" in str(raised.value)
 
     def test_share_and_file_system_entries_are_not_one_question(self) -> None:
         """They are removed in different places, often by different people. Certifying both

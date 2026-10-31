@@ -505,8 +505,8 @@ async def membership_paths(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"{member_key} is both the principal and the group. A principal is not a "
-                "member of itself; name two distinct principals."
+                f"{member_key} is both the member and the group. An identity is not a "
+                "member of itself; name two distinct identities."
             ),
         )
 
@@ -554,7 +554,7 @@ async def resolve_principal(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "message": (
-                    f"{identifier} names {len(resolution.candidates)} principals. A BUILTIN "
+                    f"{identifier} names {len(resolution.candidates)} identities. A BUILTIN "
                     "SID is identical on every Windows computer, so it identifies a group "
                     "only together with its host. Re-request with ?host=, or use one of the "
                     "storage keys below."
@@ -588,7 +588,7 @@ async def resolve_principal(
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=(
-            f"Nothing is stored about {identifier!r}: no principal observation and no "
+            f"Nothing is stored about {identifier!r}: no run has described it and no "
             "membership edge names it. It may simply not have been collected yet."
         ),
     )

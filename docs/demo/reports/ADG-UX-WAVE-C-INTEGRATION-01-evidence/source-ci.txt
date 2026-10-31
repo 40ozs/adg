@@ -1,0 +1,30 @@
+# Source CI admission — repository CI workflow (Backend, Frontend, Collector (Pester), Docker Compose; Fork PR gates skip on push)
+# Captured 2026-10-31T03:31:34Z
+
+41154343454  e8fd2dd4a93853ac1cc5b85b03543e36373ac462  feature/ADG-UX-BACKEND-COPY-04-identity-wording  completed/failure
+    Docker Compose configuration=success; Collector (Pester)=success; Frontend (lint, types, tests, build)=success; Backend (lint, types, tests)=failure; Fork PR Linux gates (GitHub-hosted)=skipped
+41158065459  6fbb7a17a2008aa6672e06a895637d7bd9f86267  feature/ADG-UX-BACKEND-COPY-04-identity-wording  completed/failure
+    Collector (Pester)=success; Backend (lint, types, tests)=failure; Frontend (lint, types, tests, build)=success; Docker Compose configuration=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41158333420  c04a3e865a01cb1a075d3111ecdd41869c5780ff  feature/ADG-UX-BACKEND-COPY-04-identity-wording  completed/failure
+    Frontend (lint, types, tests, build)=success; Backend (lint, types, tests)=failure; Docker Compose configuration=success; Collector (Pester)=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41164470341  9cec0b087b6d43b812b17d851fe7be2c8a24d787  feature/ADG-UX-BACKEND-COPY-04-identity-wording  completed/success
+    Docker Compose configuration=success; Backend (lint, types, tests)=success; Frontend (lint, types, tests, build)=success; Collector (Pester)=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41151516361  c226516335d81cfd078578ffdc19d15736fa45ca  feature/ADG-UX-DEEP-TITLES-06-contextual-titles  completed/success
+    Frontend (lint, types, tests, build)=success; Backend (lint, types, tests)=success; Collector (Pester)=success; Docker Compose configuration=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41156792963  7393d03c117c49748bb4997014b720eaf531556b  feature/ADG-UX-RECENT-05B-recently-viewed  completed/success
+    Collector (Pester)=success; Backend (lint, types, tests)=success; Docker Compose configuration=success; Frontend (lint, types, tests, build)=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41157026959  9d6a68db93a8abbcd516721c0f7b5fc0d145acf0  feature/ADG-UX-RECENT-05B-recently-viewed  completed/success
+    Collector (Pester)=success; Docker Compose configuration=success; Frontend (lint, types, tests, build)=success; Backend (lint, types, tests)=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41160309703  44d1a3c0ca8460b2423688b82c858573820ae52e  feature/ADG-UX-RECENT-05B-recently-viewed  completed/success
+    Collector (Pester)=success; Backend (lint, types, tests)=success; Docker Compose configuration=success; Frontend (lint, types, tests, build)=success; Fork PR Linux gates (GitHub-hosted)=skipped
+41143770553  10c73d1fcb5b12b31fa54e57b95da3483c079fba  integration/ADG-UX-WAVE-B-01  completed/success
+    Backend (lint, types, tests)=success; Collector (Pester)=success; Fork PR Linux gates (GitHub-hosted)=skipped; Frontend (lint, types, tests, build)=success; Docker Compose configuration=success
+
+Failure detail, 41158333420 (c04a3e8), Database tests:
+FAILED tests/db/test_change_impact.py::TestWhatItRefusesToGuess::test_a_directory_change_asks_for_a_principal - AssertionError: assert 'principal' in 'This change is about \\\\fs01\\finance, and effective access is alway
+1 failed, 1297 passed, 6172 deselected, 1 xfailed, 67 warnings in 2862.12s (0:47:42)
+
+Failure detail, 41154343454 (e8fd2dd) and 41158065459 (6fbb7a1): Backend 'Type check' step (mypy), fixed by 6ec9c2b (COPY-04 report §4).
+
+Integration head 52024ea (run 41165819488): success — Backend (unit 6048 passed/124 skipped; DB 1298 passed, 1 xfailed), Frontend (vitest 1691/49 files), Pester, Compose.
+Corrected COPY-04 head 9cec0b0 (run 41164470341): unit 6048 passed/124 skipped; DB 1298 passed, 1 xfailed.

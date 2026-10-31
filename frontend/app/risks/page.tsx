@@ -22,7 +22,7 @@ import { SignedOutNotice } from "@/components/SignedOutNotice";
 const PATH = "/risks";
 
 /**
- * Risks: what the rules found, and everything needed to read it honestly.
+ * Findings (route `/risks`): what the rules found, and everything needed to read it honestly.
  *
  * The page is filtered by default — open findings, most consequential first — because an
  * unfiltered report over a real estate is mostly history, and a reader who has to skim past
@@ -105,10 +105,11 @@ export default async function RisksPage({
 
   return (
     <>
-      <h1>Risks</h1>
+      <h1>Findings</h1>
       <p className="muted">
-        Each finding is a named rule that matched a shape in the collected facts, with the
-        records it matched on. Nothing here is a score, and severities are never added up.
+        Findings show conditions ADG detected in the collected access data, along with the
+        evidence behind each result. Each one is a named rule that matched; nothing here is a
+        score, and severities are never added up.
       </p>
 
       {/* How the counts may be read (ADG-DEMO-03): evaluation *and* collection. A server

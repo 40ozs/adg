@@ -30,6 +30,7 @@ import type {
   QueueEntryView,
   ReachView,
   ReviewerProgressView,
+  ScopeView,
 } from "@/lib/contracts";
 
 /* ------------------------------------------------------------------------- decisions */
@@ -72,7 +73,7 @@ export const DECISION_OPTIONS: readonly DecisionOption[] = [
   {
     value: "modify",
     label: "Propose narrower rights",
-    meaning: "The principal should keep access at different rights. Say which in the comment.",
+    meaning: "The identity should keep access at different rights. Say which in the comment.",
     alwaysNeedsComment: true,
   },
   {
@@ -217,7 +218,7 @@ export function reachVerdict(reach: ReachView): ReachVerdict {
     tone: "ok",
     headline: "Removing this entry would end their access",
     detail:
-      "ADG found no other route from this principal to this target. A revoke proposal here " +
+      "ADG found no other route from this identity to this target. A revoke proposal here " +
       "describes a change that would actually take the access away.",
   };
 }
@@ -273,9 +274,9 @@ export function bulkEligibility(items: readonly ItemView[]): BulkEligibility {
     return {
       eligible: false,
       reason:
-        `This covers ${principals.size} principals across ${targets.size} targets, which is ` +
-        "not one question. Select one principal across many targets, or one target across " +
-        "many principals.",
+        `This covers ${principals.size} identities across ${targets.size} targets, which is ` +
+        "not one question. Select one identity across many targets, or one target across " +
+        "many identities.",
     };
   }
   return { eligible: true, reason: "" };
@@ -300,7 +301,7 @@ export function bulkSubject(items: readonly ItemView[]): string {
   if (principals.size === 1) {
     return `${principalLabel(first)} on ${countNoun(targets.size, "target", "targets")}`;
   }
-  return `${countNoun(principals.size, "principal", "principals")} on ${targetLabel(first)}`;
+  return `${countNoun(principals.size, "identity", "identities")} on ${targetLabel(first)}`;
 }
 
 export function principalLabel(item: ItemView): string {
@@ -309,6 +310,40 @@ export function principalLabel(item: ItemView): string {
 
 export function targetLabel(item: ItemView): string {
   return item.target_path ?? item.target_key;
+}
+
+const SCOPE_KINDS: Record<string, string> = {
+  server: "Server",
+  share: "Share",
+  directory_tree: "Directory tree",
+  principal: "Identity",
+};
+
+/**
+ * A campaign or reviewer scope in words. The `kind:key` token on the wire is unchanged.
+ *
+ * An identity is named by the scope's own `display_name`, else from names the page already
+ * holds, never by one lookup per row. Without one its key is shown and the label says the
+ * name was not loaded, rather than passing a SID off as a name.
+ */
+export function scopeLabel(scope: ScopeView, names?: ReadonlyMap<string, string>): string {
+  const kind = SCOPE_KINDS[scope.kind] ?? scope.kind.replace(/_/g, " ");
+  if (scope.kind !== "principal") {
+    return `${kind}: ${scope.key}`;
+  }
+  const name = scope.display_name ?? names?.get(scope.key);
+  return name === undefined ? `${kind}: ${scope.key} (name not loaded)` : `${kind}: ${name}`;
+}
+
+/** The baseline names of the identities a page of items covers, by principal key. */
+export function itemNames(items: readonly ItemView[]): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const item of items) {
+    if (item.principal_display_name !== null) {
+      names.set(item.principal_key, item.principal_display_name);
+    }
+  }
+  return names;
 }
 
 /* -------------------------------------------------------------------------- progress */

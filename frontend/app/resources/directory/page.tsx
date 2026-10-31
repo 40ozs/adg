@@ -15,6 +15,8 @@ import {
   fetchResourcePrincipals,
 } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
+import { directoryLabel } from "@/lib/recent";
+import { recentOwner } from "@/lib/recent-owner";
 import type { CollectionStatus, NtfsResourceDetailView } from "@/lib/contracts";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation, type Trail } from "@/lib/paging";
 import { directoryHref, resourceBreadcrumb, shareHref } from "@/lib/resources";
@@ -30,6 +32,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { EffectiveLayer, FactSection, RawLayer } from "@/components/Layer";
 import { PagePosition, Pager } from "@/components/Pager";
 import { NtfsAceTable } from "@/components/RawAcl";
+import { ForgetRecentView, RecordRecentView } from "@/components/RecentlyViewed";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { Breadcrumbs, Tabs, type TabDefinition } from "@/components/Tabs";
 
@@ -72,6 +75,9 @@ export default async function DirectoryPage({
   if (!detail.ok) {
     return (
       <>
+        {detail.failure.kind === "not_found" && (
+          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="directory" entityKey={key} />
+        )}
         <h1>Directory</h1>
         <p className="muted">
           <code>{key}</code>
@@ -94,6 +100,12 @@ export default async function DirectoryPage({
 
   return (
     <>
+      <RecordRecentView
+        owner={recentOwner(viewer.principal.subject)}
+        kind="directory"
+        entityKey={resource.key}
+        label={directoryLabel(resource.path)}
+      />
       <Breadcrumbs crumbs={resourceBreadcrumb(resource.path)} />
 
       <h1>
@@ -308,7 +320,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
   const state = classify(result, {
     isEmpty: (data) => data.items.length === 0,
     coverage,
-    subject: "principals with access",
+    subject: "identities with access",
   });
 
   return (
@@ -334,7 +346,7 @@ async function effectivePanel(options: PanelOptions): Promise<JSX.Element> {
               nextCursor: state.data.page.next_cursor,
             })}
             page={state.data.page}
-            subject="principals"
+            subject="identities"
           />
         </>
       )}
@@ -357,7 +369,7 @@ function tabsFor(resource: NtfsResourceDetailView): TabDefinition[] {
       id: "effective",
       label: "Effective access",
       href: at("effective"),
-      hint: "The engine's answer for every principal it can enumerate.",
+      hint: "The engine's answer for every identity it can enumerate.",
     },
   ];
 }

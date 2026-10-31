@@ -1,0 +1,7 @@
+Earlier runs of the same gate on this stack, before harness fixes (kept for honesty):
+run1 7/25: overview() waited for two <p> in the section; a populated section has one <p> + the list (harness bug).
+run2 stopped at §38: the gate's own fetch wrapper threw on URL objects, so Next fell back to full-document navigation (§46 'full document reload'); and a hung-logout mock aborted an already-handled route (harness bugs).
+run3 23/25: §45 counted a Next viewport prefetch of /changes?days=7 as a Clear request (web-tier API count was 0); §21 multi-key heuristic matched the server key inside the share key plus the directory key in a prefetch's Referer. Both checks narrowed and made to print what they saw.
+run4 25/25 = recently-viewed-gate.run4.txt / .run4.json (gate file then differed only by one unused variable, removed for lint).
+run5 25/25 = recently-viewed-gate.txt / .json, against the committed gate file.
+Runs 1-3 were not saved as separate logs; their outcomes are summarized above. The product code was not changed between run 1 and run 5.
