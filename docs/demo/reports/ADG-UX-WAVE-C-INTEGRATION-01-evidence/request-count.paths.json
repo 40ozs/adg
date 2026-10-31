@@ -1,0 +1,21 @@
+[
+  "/",
+  "/risks",
+  "/risks/alerts",
+  "/access/investigate?principal=S-1-5-21-3949361974-1583827165-633756269-2103&resource=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014",
+  "/access/explain?principal=S-1-5-21-3949361974-1583827165-633756269-2103&resource=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014",
+  "/changes?days=90",
+  "/changes?kind=ntfs_ace&key=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014%7CS-1-5-21-3949361974-1583827165-633756269-2103%7Callow%7C0x001301bf%7C0x13",
+  "/changes/compare",
+  "/changes/impact?kind=ntfs_ace&key=%5C%5Cgp-sec-fs01%5Cincidents%5Cir-2026-014%7CS-1-5-21-3949361974-1583827165-633756269-2103%7Callow%7C0x001301bf%7C0x13&at=2026-09-30T21%3A26%3A51-07%3A00",
+  "/identities/users",
+  "/identities/groups",
+  "/governance/campaigns/8ea00a17-bc4f-48e8-a1f7-f2d91a503127",
+  "/governance/items/15b1c466-7e6f-47e0-97e5-ebf2b469f965",
+  "/simulations/new",
+  "/simulations/a055b307-bc46-4715-b6d8-4d4c04f80847",
+  "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-2103",
+  "/resources/server?key=gp-fin-fs01",
+  "/resources/share?key=gp-fin-fs01%7Cfinance",
+  "/resources/directory?key=%5C%5Cgp-fin-fs01%5Cfinance%5Creports%5Crevenue"
+]

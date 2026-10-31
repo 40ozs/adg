@@ -1,0 +1,16 @@
+2a3,6
+>  * Wave C copy of ADG-UX-WAVE-B-INTEGRATION-01's wave-b-check.mjs. Two changes, both titles that
+>  * DEEP-TITLES-06 changed on purpose: check 4 expects "Users — ADG" on /identities/users, and
+>  * check 6 allows its URL-only generateMetadata in app/changes/page.tsx. Everything else is verbatim.
+>  *
+244c248,249
+<   for (const [path, want] of [["/identities/users", "Identities"], ["/identities", "Identities"], ["/risks", "Findings"], ["/", "Overview"]]) {
+---
+>   // Wave C: DEEP-TITLES-06 titles /identities/users "Users — ADG" (was the section title).
+>   for (const [path, want] of [["/identities/users", "Users"], ["/identities", "Identities"], ["/risks", "Findings"], ["/", "Overview"]]) {
+286c291,293
+<   const dynamic = files.filter((f) => /generateMetadata/.test(readFileSync(join(APP_DIR, f), "utf8")));
+---
+>   // Wave C: DEEP-TITLES-06 added one sanctioned URL-only generateMetadata (no read; its
+>   // tests/titles.test.ts allow-list and request-count.mjs prove it). Any other file still fails.
+>   const dynamic = files.filter((f) => f !== "changes/page.tsx" && /generateMetadata/.test(readFileSync(join(APP_DIR, f), "utf8")));
