@@ -710,6 +710,32 @@ class TestScopeDisplayNames:
         async with client_as(Role.VIEWER) as viewer:
             assert (await viewer.get(f"{BASE}/campaigns")).status_code == 403
 
+    async def test_a_renamed_identity_reads_current_in_its_scope_and_baseline_on_its_items(
+        self, client: AsyncClient, estate: None, manager: AsyncClient
+    ) -> None:
+        """Deliberate (REVIEW-NAMES-08 §6): the scope points at the identity as it is now; an
+        item is frozen evidence of the baseline instant."""
+        created = await manager.post(f"{BASE}/campaigns", json=identity_campaign(ALICE))
+        campaign_id = created.json()["campaign_id"]
+        generated = await manager.post(f"{BASE}/campaigns/{campaign_id}/generation")
+        assert generated.status_code == 200, generated.text
+        await replay(
+            client,
+            h.ad_scan(
+                observations=[
+                    h.principal(ALICE, at=h.WEDNESDAY, display_name="CONTOSO\\alice.renamed")
+                ],
+                started_at=h.WEDNESDAY,
+            ),
+        )
+
+        detail = await manager.get(f"{BASE}/campaigns/{campaign_id}")
+        items = (await manager.get(f"{BASE}/campaigns/{campaign_id}/items")).json()["items"]
+
+        assert detail.json()["scopes"][0]["display_name"] == "CONTOSO\\alice.renamed"
+        assert items, "the campaign must have generated an item for the identity"
+        assert {item["principal_display_name"] for item in items} == {"CONTOSO\\alice"}
+
     async def test_the_list_names_every_row_with_one_lookup(
         self, estate: None, manager: AsyncClient, database: Database
     ) -> None:
