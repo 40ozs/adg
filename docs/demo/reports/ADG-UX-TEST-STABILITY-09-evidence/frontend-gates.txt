@@ -1,0 +1,12 @@
+# Frontend gates, worktree adg-UX-TEST-STABILITY-09 (Node 22.23.3 arm64)
+lint exit=0 137s load=2.42 2.99 3.64
+typecheck exit=0 51s load=2.67 2.96 3.59
+cf:typecheck exit=0 6s load=2.46 2.91 3.57
+titles-unit exit=0 65s
+test exit=0 64s load=5.43 3.43 3.65
+build exit=0 214s (ADG_NEXT_OUTPUT=standalone next build --webpack)
+titles-unit:  Test Files  1 passed (1)
+titles-unit:       Tests  38 passed (38)
+test:  Test Files  49 passed (49)
+test:       Tests  1691 passed (1691)
+node --check simulate-clock.mjs: ok

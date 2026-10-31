@@ -246,7 +246,7 @@ function NewWatchForm({
       <p className="muted">{kinds.find((entry) => entry.kind === kind)?.covers}</p>
       <p>
         <label htmlFor="watch-key">
-          Its key — a UNC path for a directory, a share key, or a group&apos;s principal key
+          Its key — a UNC path for a directory, a share key, or a group&apos;s storage key
         </label>
         <br />
         <input

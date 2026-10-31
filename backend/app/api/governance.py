@@ -26,12 +26,13 @@ rather than a discrepancy to reconcile.
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Annotated, Any, Final
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import AwareDatetime, BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.access import RightsView, render_rights
 from app.api.deps import PRINTABLE_IDENTIFIER, Session
@@ -93,6 +94,7 @@ from app.governance.service import (
     QueueEntry,
     ReviewerProgress,
 )
+from app.repositories import MembershipRepository
 
 router = APIRouter(prefix="/api/v1/governance", tags=["governance"])
 
@@ -287,6 +289,15 @@ class AssignOwnerRequest(BaseModel):
 class ScopeView(BaseModel):
     kind: str
     key: str
+    display_name: str | None = Field(
+        default=None,
+        description=(
+            "For a 'principal' scope, the identity's current name (display name, else account "
+            "name, else last known name). Presentation only: 'kind' and 'key' remain the "
+            "scope. Null for every other kind, and for an identity ADG does not currently "
+            "describe."
+        ),
+    )
 
 
 class CampaignView(BaseModel):
@@ -978,7 +989,7 @@ async def create_campaign(
         ),
         comment_requirement=body.comment_requirement,
     )
-    return _campaign_view(campaign)
+    return _campaign_view(campaign, await _scope_names(session, campaign.scopes))
 
 
 @router.get(
@@ -1007,8 +1018,10 @@ async def list_campaigns(
         limit=page_size,
         offset=offset,
     )
+    # One lookup for the whole page, never one per row.
+    names = await _scope_names(session, (scope for item in campaigns for scope in item.scopes))
     return CampaignListResponse(
-        items=[_campaign_view(campaign) for campaign in campaigns],
+        items=[_campaign_view(campaign, names) for campaign in campaigns],
         page=PageInfo(
             limit=page_size,
             has_more=has_more,
@@ -1025,7 +1038,8 @@ async def list_campaigns(
     responses={404: {"description": "No such campaign."}},
 )
 async def get_campaign(campaign_id: CampaignIdPath, session: Session) -> CampaignView:
-    return _campaign_view(await GovernanceService(session).get_campaign(campaign_id))
+    campaign = await GovernanceService(session).get_campaign(campaign_id)
+    return _campaign_view(campaign, await _scope_names(session, campaign.scopes))
 
 
 @router.post(
@@ -1048,7 +1062,9 @@ async def generate_campaign(
 ) -> GenerationResponse:
     outcome = await GovernanceService(session).generate(_actor(principal), campaign_id)
     return GenerationResponse(
-        campaign=_campaign_view(outcome.campaign),
+        campaign=_campaign_view(
+            outcome.campaign, await _scope_names(session, outcome.campaign.scopes)
+        ),
         item_count=outcome.item_count,
         excluded_counts=dict(outcome.excluded),
         snapshot_digest=outcome.digest,
@@ -1069,7 +1085,8 @@ async def generate_campaign(
 async def activate_campaign(
     campaign_id: CampaignIdPath, session: Session, principal: CurrentPrincipal
 ) -> CampaignView:
-    return _campaign_view(await GovernanceService(session).activate(_actor(principal), campaign_id))
+    campaign = await GovernanceService(session).activate(_actor(principal), campaign_id)
+    return _campaign_view(campaign, await _scope_names(session, campaign.scopes))
 
 
 @router.post(
@@ -1091,7 +1108,8 @@ async def close_campaign(
     be closed by somebody rubber-stamping the remainder; "closed with 12 undecided" recorded
     honestly is worth more than either.
     """
-    return _campaign_view(await GovernanceService(session).close(_actor(principal), campaign_id))
+    campaign = await GovernanceService(session).close(_actor(principal), campaign_id)
+    return _campaign_view(campaign, await _scope_names(session, campaign.scopes))
 
 
 @router.post(
@@ -1123,7 +1141,8 @@ async def assign_reviewer(
         due_at=body.due_at,
     )
     return AssignmentCreatedResponse(
-        assignment=_assignment_view(assignment), items_attached=attached
+        assignment=_assignment_view(assignment, await _scope_names(session, [assignment.scope])),
+        items_attached=attached,
     )
 
 
@@ -1144,7 +1163,8 @@ async def list_assignments(
     assignments = await GovernanceService(session).list_assignments(
         campaign_id, include_revoked=include_revoked
     )
-    return AssignmentListResponse(items=[_assignment_view(item) for item in assignments])
+    names = await _scope_names(session, (item.scope for item in assignments))
+    return AssignmentListResponse(items=[_assignment_view(item, names) for item in assignments])
 
 
 @router.get(
@@ -1277,7 +1297,9 @@ async def campaign_drift(
     responses={404: {"description": "No such campaign."}},
 )
 async def campaign_status(campaign_id: CampaignIdPath, session: Session) -> CampaignStatusResponse:
-    return _status_view(await GovernanceService(session).campaign_status(campaign_id))
+    report = await GovernanceService(session).campaign_status(campaign_id)
+    scopes = [*report.campaign.scopes, *(item.scope for item in report.reviewers)]
+    return _status_view(report, await _scope_names(session, scopes))
 
 
 @router.get(
@@ -1614,11 +1636,39 @@ async def revoke_owner(
 # -------------------------------------------------------------------------------- views
 
 
-def _scope_view(scope: CampaignScope | None) -> ScopeView | None:
-    return None if scope is None else ScopeView(kind=scope.kind.value, key=scope.key)
+async def _scope_names(
+    session: AsyncSession, scopes: Iterable[CampaignScope | None]
+) -> dict[str, str]:
+    """Current names for the identity scopes a response renders, in one query.
+
+    Read under the route's own capability: every role holding governance:read also holds
+    identities:read, so a name here discloses nothing the caller could not already read.
+    No identity scope, no query.
+    """
+    keys = sorted(
+        {
+            scope.key
+            for scope in scopes
+            if scope is not None and scope.kind is ReviewScopeKind.PRINCIPAL
+        }
+    )
+    if not keys:
+        return {}
+    records = await MembershipRepository(session).principals_by_keys(keys)
+    names: dict[str, str] = {}
+    for key, record in records.items():
+        name = record.display_name or record.sam_account_name or record.last_known_name
+        if name:
+            names[key] = name
+    return names
 
 
-def _campaign_view(campaign: ReviewCampaign) -> CampaignView:
+def _scope_view(scope: CampaignScope, names: Mapping[str, str]) -> ScopeView:
+    display_name = names.get(scope.key) if scope.kind is ReviewScopeKind.PRINCIPAL else None
+    return ScopeView(kind=scope.kind.value, key=scope.key, display_name=display_name)
+
+
+def _campaign_view(campaign: ReviewCampaign, names: Mapping[str, str]) -> CampaignView:
     return CampaignView(
         campaign_id=campaign.campaign_id,
         name=campaign.name,
@@ -1627,7 +1677,7 @@ def _campaign_view(campaign: ReviewCampaign) -> CampaignView:
         status=campaign.status.value,
         baseline_at=campaign.baseline_at,
         due_at=campaign.due_at,
-        scopes=[ScopeView(kind=scope.kind.value, key=scope.key) for scope in campaign.scopes],
+        scopes=[_scope_view(scope, names) for scope in campaign.scopes],
         options=GenerationOptionsBody(
             include_inherited=campaign.options.include_inherited,
             include_builtin=campaign.options.include_builtin,
@@ -1646,14 +1696,14 @@ def _campaign_view(campaign: ReviewCampaign) -> CampaignView:
     )
 
 
-def _assignment_view(assignment: ReviewAssignment) -> AssignmentView:
+def _assignment_view(assignment: ReviewAssignment, names: Mapping[str, str]) -> AssignmentView:
     return AssignmentView(
         assignment_id=assignment.assignment_id,
         campaign_id=assignment.campaign_id,
         reviewer_subject=assignment.reviewer_subject,
         reviewer_display_name=assignment.reviewer_display_name,
         reviewer_email=assignment.reviewer_email,
-        scope=_scope_view(assignment.scope),
+        scope=None if assignment.scope is None else _scope_view(assignment.scope, names),
         due_at=assignment.due_at,
         assigned_by_subject=assignment.assigned_by_subject,
         assigned_at=assignment.assigned_at,
@@ -1760,12 +1810,12 @@ def _owner_view(owner: ResourceOwner) -> OwnerView:
     )
 
 
-def _progress_view(progress: ReviewerProgress) -> ReviewerProgressView:
+def _progress_view(progress: ReviewerProgress, names: Mapping[str, str]) -> ReviewerProgressView:
     return ReviewerProgressView(
         assignment_id=progress.assignment_id,
         reviewer_subject=progress.reviewer_subject,
         reviewer_display_name=progress.reviewer_display_name,
-        scope=_scope_view(progress.scope),
+        scope=None if progress.scope is None else _scope_view(progress.scope, names),
         due_at=progress.due_at,
         assigned=progress.assigned,
         decided=progress.decided,
@@ -1776,9 +1826,9 @@ def _progress_view(progress: ReviewerProgress) -> ReviewerProgressView:
     )
 
 
-def _status_view(report: CampaignStatusReport) -> CampaignStatusResponse:
+def _status_view(report: CampaignStatusReport, names: Mapping[str, str]) -> CampaignStatusResponse:
     return CampaignStatusResponse(
-        campaign=_campaign_view(report.campaign),
+        campaign=_campaign_view(report.campaign, names),
         total_items=report.counts.total,
         pending_items=report.counts.pending,
         decided_items=report.counts.decided,
@@ -1786,7 +1836,7 @@ def _status_view(report: CampaignStatusReport) -> CampaignStatusResponse:
         completion=report.counts.completion,
         decisions_by_kind=dict(report.counts.by_decision),
         overdue=report.overdue,
-        reviewers=[_progress_view(item) for item in report.reviewers],
+        reviewers=[_progress_view(item, names) for item in report.reviewers],
         overdue_reviewers=sum(1 for item in report.reviewers if item.overdue),
         late_decisions=sum(item.late_decisions for item in report.reviewers),
         audit_head=report.audit_head,

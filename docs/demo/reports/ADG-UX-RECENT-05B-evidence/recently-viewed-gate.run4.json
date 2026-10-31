@@ -1,0 +1,131 @@
+{
+  "web": "http://127.0.0.1:3050",
+  "results": [
+    {
+      "name": "§34 basic recording: empty, then identity, server, share and directory, newest first",
+      "ok": true,
+      "detail": "Directory Revenue | Share Finance | Server GP-FIN-FS01 | Identity Chen Dunn"
+    },
+    {
+      "name": "§34/§28 each entry links to its canonical route",
+      "ok": true,
+      "detail": "4 links followed"
+    },
+    {
+      "name": "§35 refresh and same-tab navigation keep the list",
+      "ok": true,
+      "detail": "4 rows kept"
+    },
+    {
+      "name": "§43/§29 storage holds only v, owner digest and kind/key/label/at — no UPN, email, GUID, finding title or UNC label",
+      "ok": true,
+      "detail": "477 bytes, 4 entries; identity label = display name (05A-allowed)"
+    },
+    {
+      "name": "§36 a new independent tab has its own empty list, and recording there leaves tab A alone",
+      "ok": true,
+      "detail": "newPage: empty; window.open noopener: empty; window.open with opener: starts with a COPY of A's list (browser semantics), then diverges"
+    },
+    {
+      "name": "§41 not-found, forbidden (fixture), API error (fixture) and malformed routes record nothing",
+      "ok": true,
+      "detail": "statuses 200,200,200,200,500,200; list unchanged (4)"
+    },
+    {
+      "name": "§41 a prefetched but never visited route records nothing",
+      "ok": true,
+      "detail": "5 server links hovered and in view; 727 RSC/prefetch requests so far; list unchanged"
+    },
+    {
+      "name": "§7/§59 findings, reviews, what-if, investigate, compare, search and list pages are not tracked",
+      "ok": true,
+      "detail": "9 pages"
+    },
+    {
+      "name": "§41/§20 following an entry whose object is gone shows not-found and removes it",
+      "ok": true,
+      "detail": "detail page said: \"Server gp-gone-fs99 Not found No server 'gp-gone-fs99'. Absence here means no run has desc…\""
+    },
+    {
+      "name": "§46/§28 a Recent link navigates client-side, Back returns, titles and grouped nav hold, revisit moves to top",
+      "ok": true,
+      "detail": "Directory Revenue → top; 4 rows, no duplicates; title Directory — ADG"
+    },
+    {
+      "name": "§40 eleven unique views keep ten, evicting the oldest; a repeat moves to top with a new time",
+      "ok": true,
+      "detail": "evicted gp-acq-fs01; repeat gp-cs-fs01 at +679 ms"
+    },
+    {
+      "name": "§40 an entry older than eight hours is removed from storage before display",
+      "ok": true,
+      "detail": "9 rows after expiry"
+    },
+    {
+      "name": "§42 permission loss (fixture: /auth/me without resources:read) removes resource entries with no per-entry request",
+      "ok": true,
+      "detail": "API paths during that render: /auth/config, /runtime, /auth/me, /api/v1/collection/status, /api/v1/risks/summary, /api/v1/risks/rules, /api/v1/changes/summary, /api/v1/changes, /api/v1/governance/queue"
+    },
+    {
+      "name": "§51/§44 the list adds no API read or write, and no request ever carries it",
+      "ok": true,
+      "detail": "9 API requests either way (GET /api/v1/changes, GET /api/v1/changes/summary, GET /api/v1/collection/status, GET /api/v1/governance/queue, GET /api/v1/risks/rules, GET /api/v1/risks/summary, GET /auth/config, GET /auth/me, GET /runtime)"
+    },
+    {
+      "name": "§45 Clear empties the list and storage at once, sends nothing, and keeps focus in the section",
+      "ok": true,
+      "detail": "focus on the section heading; scrollY 1236 → 1236; browser requests after Clear: /changes?days=7"
+    },
+    {
+      "name": "§38 sign-out clears storage before the logout request; a hanging and a failing logout leave nothing",
+      "ok": true,
+      "detail": "hang: cleared before request; fail: cleared before request; real: cleared before request"
+    },
+    {
+      "name": "§37 account switch (admin → planner in the same tab, no sign-out): admin's entries never render for planner",
+      "ok": true,
+      "detail": "mutation log saw 0 rows for planner; storage after switch: deleted"
+    },
+    {
+      "name": "§39 same-account reauthentication after session expiry keeps the list",
+      "ok": true,
+      "detail": "2 rows survived"
+    },
+    {
+      "name": "§48 accessibility: region, heading, named links with kind text, one Clear button, no nested controls, keyboard",
+      "ok": true,
+      "detail": "3 links; Enter on the first opened /resources/server?key=gp-corp-fs01"
+    },
+    {
+      "name": "§47 responsive 1440px: no horizontal overflow, compact rows, usable Clear, long label wraps",
+      "ok": true,
+      "detail": "overflow 0px; short rows ≤ 28.796875px; Clear 69×41"
+    },
+    {
+      "name": "§47 responsive 768px: no horizontal overflow, compact rows, usable Clear, long label wraps",
+      "ok": true,
+      "detail": "overflow 0px; short rows ≤ 28.796875px; Clear 69×41"
+    },
+    {
+      "name": "§47 responsive 375px: no horizontal overflow, compact rows, usable Clear, long label wraps",
+      "ok": true,
+      "detail": "overflow 0px; short rows ≤ 28.796875px; Clear 69×41"
+    },
+    {
+      "name": "§47 responsive 320px: no horizontal overflow, compact rows, usable Clear, long label wraps",
+      "ok": true,
+      "detail": "overflow 0px; short rows ≤ 28.796875px; Clear 69×41"
+    },
+    {
+      "name": "§21/§44 over the whole run, no request (browser or web tier) carried the list",
+      "ok": true,
+      "detail": "3320 browser + 771 web-tier requests scanned"
+    },
+    {
+      "name": "no page errors and no hydration errors",
+      "ok": true,
+      "detail": "0 other console errors (expected 4xx pages: )"
+    }
+  ],
+  "consoleErrors": []
+}

@@ -1,0 +1,14 @@
+load before: 2.61 3.79 4.08
+PASS  Overview with a 4 s review-queue read: titled while streaming, Reviews alone waits, focus kept, Data health once — title "Overview — ADG" from first paint; h1 29 ms; Needs attention 848, Recent changes 548, Reviews 4028, Data health 848 ms; queue read ends 4026 ms; focus kept on /risks?severity=critical
+PASS  primary nav to Findings: "Findings — ADG", identity rule title, no reload — title "Findings — ADG", rule title says identity
+PASS  nav to Identities, then a user: "Identity — ADG", Identity copy, no SID in the title, no reload — h1 "Nina Coleman user", title "Identity — ADG", 4 API reads for the render
+FAIL  Back to the Overview and Forward again: every title restored, no reload — Back to /identities/users: "Users — ADG"
+PASS  Server, Share and Directory detail titles are generic and carry no identifier — "Server — ADG", "Share — ADG", "Directory — ADG", "Identity — ADG"
+FAIL  every route title is static metadata: no generateMetadata, so no read exists for a title — generateMetadata in changes/page.tsx
+PASS  1440/1024/768/375/320: streaming Overview placeholder, Findings, a user and a server fit without sideways scroll — no overflow at 1440/1024/768/375/320 px
+PASS  no page error and no hydration error across the walk — 0 page errors, 1 console errors, none about hydration; 28 document loads (/, /resources, /resources/server, /resources/share, /resources/server, /resources/share, /resources/directory, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server)
+
+6/8 passed
+console errors:
+  http://127.0.0.1:3090/: Failed to load resource: the server responded with a status of 404 (Not Found)
+exit 1 (55 s, load after: 2.20 3.46 3.93)

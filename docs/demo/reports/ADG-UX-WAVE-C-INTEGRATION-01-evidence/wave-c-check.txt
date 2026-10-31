@@ -1,0 +1,13 @@
+load before: 4.83 13.24 20.00
+PASS  Overview, 4 s review-queue read: streams, Recently viewed in the first HTML outside every busy slot, placed before "Where to start" — h1 35 ms; Needs attention 351, Recent changes 351, Reviews 4031, Data health 351, Recently viewed 35 ms; queue read ends 4028 ms; order Data health > Needs attention > Recent changes > Reviews > Recently viewed > Where to start > What ADG will not do
+PASS  client nav to a user: "Identity — ADG", identity copy, recorded in this tab with a non-UPN label, no reload — title "Identity — ADG", recorded "Nina Coleman" (heading "Nina Coleman")
+PASS  client nav to Changes, then "Compare two points in time": the deep title arrives on the client move, nav marks Changes, no reload — title "Compare two points in time — ADG", nav current "Changes"
+PASS  Back and Forward across identity, Changes and compare: titles and nav state restored, no reload — ← Changes [Changes] ← Identity [Identities] → Changes [Changes] → Compare two points in time [Changes]
+PASS  client nav back to the Overview: the identity is listed first, linking to its page, no reload — 1 row: Identity Nina Coleman
+PASS  server detail records; access explanation: deep title, backend verdict says identity, removal rows named, not recorded — verdict "This identity holds rights on this object."; 19 removal rows, first "Brianna Reddy is a member of Sales-Opsmembership"; storage unchanged
+PASS  Overview reads: the same web-tier API calls with an empty and a populated list; no history path; no request carries the list — 9 API calls either way; 0 history paths; 185 browser + 55 web-tier requests scanned, 0 carry the list
+PASS  1440/1024/768/375/320: Overview with the list, identity, server and explanation do not scroll sideways — 1440 ok, 1024 ok, 768 ok, 375 ok, 320 ok
+PASS  no page error, no hydration error — 0 page errors, 1 console errors (0 hydration)
+
+9/9 checks passed
+exit 0 (26 s, load after: 4.03 12.25 19.40)

@@ -1,0 +1,168 @@
+# node v22.23.3 arm64, npm ci (lockfile cba9359ca9d2, identical to Wave D)
+## npm run lint @ 1c53444, 2026-10-31T19:12:40Z, load 17.16 8.90 6.78
+
+> adg-frontend@0.1.0 lint
+> eslint .
+
+## exit=0
+## npm run typecheck @ 1c53444, 2026-10-31T19:13:20Z, load 12.69 8.76 6.82
+
+> adg-frontend@0.1.0 typecheck
+> tsc --noEmit
+
+## exit=0
+## npm run cf:typecheck @ 1c53444, 2026-10-31T19:13:30Z, load 11.57 8.66 6.80
+
+> adg-frontend@0.1.0 cf:typecheck
+> tsc -p cloudflare/tsconfig.json
+
+## exit=0
+## npm run test @ 1c53444, 2026-10-31T19:13:33Z, load 11.57 8.66 6.80
+
+> adg-frontend@0.1.0 test
+> vitest run
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01/frontend
+
+ ✓ tests/views.test.tsx (32 tests) 304ms
+ ✓ tests/governance-views.test.tsx (31 tests) 310ms
+ ✓ tests/risks-page.test.tsx (23 tests) 594ms
+stderr | tests/investigation-page.test.tsx > 1. the question > asks the API for exactly the pair in the URL, once
+Received `false` for a non-boolean attribute `prefetch`.
+
+If you want to write it to the DOM, pass a string instead: prefetch="false" or prefetch={value.toString()}.
+
+If you used to conditionally omit it with prefetch={condition && value}, pass prefetch={condition ? value : undefined} instead.
+
+ ✓ tests/overview-page.test.tsx (41 tests) 859ms
+ ✓ tests/explanation-views.test.tsx (51 tests) 679ms
+ ✓ tests/investigation-page.test.tsx (30 tests) 945ms
+ ✓ tests/pages.test.tsx (27 tests) 523ms
+ ✓ tests/demo-guide.test.tsx (18 tests) 252ms
+ ✓ tests/collectors-page.test.tsx (17 tests) 311ms
+ ✓ tests/simulation-views.test.tsx (20 tests) 481ms
+ ✓ tests/alerts-page.test.tsx (14 tests) 682ms
+ ✓ tests/compare-page.test.tsx (18 tests) 799ms
+ ✓ tests/components.test.tsx (24 tests) 1003ms
+ ✓ tests/directory.test.tsx (18 tests) 1544ms
+   ✓ the groups directory > Exclude local groups > keeps the reader's sort when the filter changes the rows 352ms
+ ✓ tests/changes-views.test.tsx (18 tests) 562ms
+ ✓ tests/recently-viewed.test.tsx (14 tests) 699ms
+   ✓ RecentlyViewed > lists entries newest first, each with its kind and a link to the canonical route 322ms
+ ✓ tests/system-mapping.test.tsx (23 tests) 473ms
+   ✓ the verdict panel > shows the ambiguous mapping beside an answer that withholds a conclusion 382ms
+ ✓ tests/recent-routes.test.tsx (39 tests) 324ms
+ ✓ tests/explanation-page.test.tsx (15 tests) 1445ms
+   ✓ the explanation screen against a captured response > leads with the verdict and the rights 324ms
+ ✓ tests/simulations-page.test.tsx (7 tests) 282ms
+ ✓ tests/demo-indicator.test.tsx (8 tests) 245ms
+ ✓ tests/contracts.test.ts (471 tests) 64ms
+ ✓ tests/explanation.test.ts (82 tests) 47ms
+ ✓ tests/recent.test.ts (33 tests) 34ms
+ ✓ tests/governance.test.ts (36 tests) 93ms
+ ✓ tests/sortable-table.test.tsx (6 tests) 653ms
+ ✓ tests/operations.test.ts (30 tests) 9ms
+ ✓ tests/changes.test.ts (29 tests) 10ms
+ ✓ tests/simulation.test.ts (23 tests) 30ms
+ ✓ tests/investigation.test.ts (20 tests) 23ms
+ ✓ tests/explanation-contract.test.ts (97 tests) 55ms
+ ✓ tests/identity.test.ts (27 tests) 36ms
+ ✓ tests/render/gate.test.ts (38 tests) 1063ms
+   ✓ relaying > answers 502 when a process does not answer 450ms
+   ✓ startup > does not start, start a process or open a port without the key 404ms
+ ✓ tests/state.test.ts (15 tests) 5ms
+ ✓ tests/alerts.test.ts (16 tests) 5ms
+ ✓ tests/cloudflare/routing.test.ts (39 tests) 18ms
+ ✓ tests/risks.test.ts (17 tests) 22ms
+ ✓ tests/auth.test.ts (29 tests) 10ms
+ ✓ tests/coverage.test.ts (29 tests) 26ms
+ ✓ tests/acl.test.ts (23 tests) 6ms
+ ✓ tests/resources.test.ts (17 tests) 6ms
+ ✓ tests/paging.test.ts (16 tests) 7ms
+ ✓ tests/nav.test.ts (18 tests) 8ms
+ ✓ tests/sort.test.ts (8 tests) 5ms
+ ✓ tests/proxy.test.ts (14 tests) 8ms
+ ✓ tests/access.test.ts (17 tests) 8ms
+ ✓ tests/config.test.ts (8 tests) 4ms
+ ✓ tests/cloudflare/environment.test.ts (12 tests) 4ms
+ ✓ tests/titles.test.ts (38 tests) 8ms
+
+ Test Files  49 passed (49)
+      Tests  1696 passed (1696)
+   Start at  12:13:45
+   Duration  49.95s (transform 48.24s, setup 50.24s, collect 65.87s, tests 15.58s, environment 101.24s, prepare 4.94s)
+
+## exit=0
+## ADG_NEXT_OUTPUT=standalone npm run build @ 1c53444, 2026-10-31T19:14:36Z, load 8.56 8.23 6.77
+
+> adg-frontend@0.1.0 build
+> next build --webpack
+
+▲ Next.js 16.4.1 (webpack)
+✓ Running next.config.mjs took 114ms
+- Experiments (use with caution):
+  ⨯ preloadEntriesOnStart
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 55s
+  Running TypeScript ...
+  Finished TypeScript in 30.4s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 2.5s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /access
+├ ƒ /access/explain
+├ ƒ /access/investigate
+├ ƒ /api/adg/[...path]
+├ ƒ /api/auth/dev-login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/oidc/callback
+├ ƒ /api/auth/oidc/start
+├ ƒ /api/simulations
+├ ƒ /api/simulations/[simulationId]
+├ ƒ /api/simulations/[simulationId]/evaluations
+├ ƒ /api/simulations/preview
+├ ƒ /api/watches
+├ ƒ /api/watches/[watchId]
+├ ƒ /changes
+├ ƒ /changes/compare
+├ ƒ /changes/impact
+├ ƒ /collectors
+├ ƒ /demo
+├ ƒ /governance
+├ ƒ /governance/campaigns/[campaignId]
+├ ƒ /governance/items/[itemId]
+├ ƒ /identities
+├ ƒ /identities/groups
+├ ƒ /identities/principal
+├ ƒ /identities/principal/[key]/[[...view]]
+├ ƒ /identities/users
+├ ƒ /login
+├ ƒ /resources
+├ ƒ /resources/directory
+├ ƒ /resources/server
+├ ƒ /resources/share
+├ ƒ /risks
+├ ƒ /risks/alerts
+├ ƒ /search
+├ ƒ /settings
+├ ƒ /simulations
+├ ƒ /simulations/[simulationId]
+├ ƒ /simulations/new
+└ ƒ /status
+
+
+ƒ  (Dynamic)  server-rendered on demand
+
+## exit=0

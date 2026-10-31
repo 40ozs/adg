@@ -1,0 +1,29 @@
+load before: 19.94 22.54 24.54
+PASS  §34 basic recording: empty, then identity, server, share and directory, newest first — Directory Revenue | Share Finance | Server GP-FIN-FS01 | Identity Chen Dunn
+PASS  §34/§28 each entry links to its canonical route — 4 links followed
+PASS  §35 refresh and same-tab navigation keep the list — 4 rows kept
+PASS  §43/§29 storage holds only v, owner digest and kind/key/label/at — no UPN, email, GUID, finding title or UNC label — 477 bytes, 4 entries; identity label = display name (05A-allowed)
+PASS  §36 a new independent tab has its own empty list, and recording there leaves tab A alone — newPage: empty; window.open noopener: empty; window.open with opener: starts with a COPY of A's list (browser semantics), then diverges
+PASS  §41 not-found, forbidden (fixture), API error (fixture) and malformed routes record nothing — statuses 200,200,200,200,500,200; list unchanged (4)
+PASS  §41 a prefetched but never visited route records nothing — 5 server links hovered and in view; 727 RSC/prefetch requests so far; list unchanged
+PASS  §7/§59 findings, reviews, what-if, investigate, compare, search and list pages are not tracked — 9 pages
+PASS  §41/§20 following an entry whose object is gone shows not-found and removes it — detail page said: "Server gp-gone-fs99 Not found No server 'gp-gone-fs99'. Absence here means no run has desc…"
+PASS  §46/§28 a Recent link navigates client-side, Back returns, titles and grouped nav hold, revisit moves to top — Directory Revenue → top; 4 rows, no duplicates; title Directory — ADG
+PASS  §40 eleven unique views keep ten, evicting the oldest; a repeat moves to top with a new time — evicted gp-acq-fs01; repeat gp-cs-fs01 at +630 ms
+PASS  §40 an entry older than eight hours is removed from storage before display — 9 rows after expiry
+PASS  §42 permission loss (fixture: /auth/me without resources:read) removes resource entries with no per-entry request — API paths during that render: /auth/config, /runtime, /auth/me, /api/v1/collection/status, /api/v1/risks/summary, /api/v1/risks/rules, /api/v1/changes/summary, /api/v1/changes, /api/v1/governance/queue
+PASS  §51/§44 the list adds no API read or write, and no request ever carries it — 9 API requests either way (GET /api/v1/changes, GET /api/v1/changes/summary, GET /api/v1/collection/status, GET /api/v1/governance/queue, GET /api/v1/risks/rules, GET /api/v1/risks/summary, GET /auth/config, GET /auth/me, GET /runtime)
+PASS  §45 Clear empties the list and storage at once, sends nothing, and keeps focus in the section — focus on the section heading; scrollY 1236 → 1236; browser requests after Clear: /changes?days=7
+PASS  §38 sign-out clears storage before the logout request; a hanging and a failing logout leave nothing — hang: cleared before request; fail: cleared before request; real: cleared before request
+PASS  §37 account switch (admin → planner in the same tab, no sign-out): admin's entries never render for planner — mutation log saw 0 rows for planner; storage after switch: deleted
+PASS  §39 same-account reauthentication after session expiry keeps the list — 2 rows survived
+PASS  §48 accessibility: region, heading, named links with kind text, one Clear button, no nested controls, keyboard — 3 links; Enter on the first opened /resources/server?key=gp-corp-fs01
+PASS  §47 responsive 1440px: no horizontal overflow, compact rows, usable Clear, long label wraps — overflow 0px; short rows ≤ 28.796875px; Clear 69×41
+PASS  §47 responsive 768px: no horizontal overflow, compact rows, usable Clear, long label wraps — overflow 0px; short rows ≤ 28.796875px; Clear 69×41
+PASS  §47 responsive 375px: no horizontal overflow, compact rows, usable Clear, long label wraps — overflow 0px; short rows ≤ 28.796875px; Clear 69×41
+PASS  §47 responsive 320px: no horizontal overflow, compact rows, usable Clear, long label wraps — overflow 0px; short rows ≤ 28.796875px; Clear 69×41
+PASS  §21/§44 over the whole run, no request (browser or web tier) carried the list — 3287 browser + 771 web-tier requests scanned
+PASS  no page errors and no hydration errors — 0 other console errors (expected 4xx pages: )
+
+25/25 checks passed
+exit 0 (58 s, load after: 11.76 19.75 23.37)

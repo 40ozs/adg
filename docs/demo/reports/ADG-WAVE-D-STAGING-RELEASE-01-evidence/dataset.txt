@@ -1,0 +1,21 @@
+# Hosted adg_demo dataset integrity (bootstrap=false, no reset)
+
+before deploy (read-only, this Mac, ~18:20Z):
+  verify ok True, dataset genesee-press-v1, probes 23
+  Demo Mode fingerprint 4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08
+  Genesee Press fingerprint b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0 (match True)
+after deploy (workflow hosted checks, 18:34Z):
+  verify ok True, dataset genesee-press-v1, probes 23
+  Demo Mode fingerprint 4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08
+  Genesee Press fingerprint b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0 (match True)
+after all hosted testing (read-only, this Mac):
+  verify ok True, dataset genesee-press-v1, probes 23
+  Demo Mode fingerprint 4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08
+  Genesee Press fingerprint b4b93b65a77d895cbd0495d34865937bdab39596494bd3ca035ce8f8e59445d0 (match True)
+
+all three Demo Mode fingerprints equal: True
+all three per-source digest sets equal ( 12 sources): True
+all three count sets equal: True
+all three Genesee Press fingerprints equal: True
+
+counts: {"current_principal": 2139, "current_membership_edge": 6224, "current_server": 33, "current_smb_share": 124, "current_smb_ace": 606, "current_ntfs_resource": 826, "current_ntfs_ace": 4117, "object_versions": 14316, "scan_runs": 300, "tombstones_open": 70}

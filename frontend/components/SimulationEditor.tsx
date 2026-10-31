@@ -153,14 +153,14 @@ export function SimulationEditor({
             <option value="affected">
               Everything this change could affect (derived from the proposal)
             </option>
-            <option value="pair">One principal against one directory</option>
+            <option value="pair">One identity against one directory</option>
             <option value="resource">Everyone ADG can enumerate for one directory</option>
-            <option value="subject">Everything one principal can reach</option>
+            <option value="subject">Everything one identity can reach</option>
           </select>
 
           {(scope === "pair" || scope === "subject") && (
             <>
-              <label htmlFor="simulation-subject">Principal</label>
+              <label htmlFor="simulation-subject">Identity</label>
               <input
                 id="simulation-subject"
                 value={subjectKey}
@@ -286,7 +286,7 @@ function VocabularyPanel({
       </dl>
       <p className="muted">
         At most {vocabulary.max_changes} changes in one proposal; at most{" "}
-        {vocabulary.bounds_ceilings.max_principals} principals and{" "}
+        {vocabulary.bounds_ceilings.max_principals} identities and{" "}
         {vocabulary.bounds_ceilings.max_pairs} pairs evaluated.
       </p>
     </details>

@@ -1,0 +1,98 @@
+{
+  "results": [
+    {
+      "name": "Overview with a 4 s review-queue read: titled while streaming, Reviews alone waits, focus kept, Data health once",
+      "ok": true,
+      "detail": "title \"Overview — ADG\" from first paint; h1 54 ms; Needs attention 792, Recent changes 792, Reviews 4052, Data health 792 ms; queue read ends 4050 ms; focus kept on /risks?severity=critical"
+    },
+    {
+      "name": "primary nav to Findings: \"Findings — ADG\", identity rule title, no reload",
+      "ok": true,
+      "detail": "title \"Findings — ADG\", rule title says identity"
+    },
+    {
+      "name": "nav to Identities, then a user: \"Identity — ADG\", Identity copy, no SID in the title, no reload",
+      "ok": true,
+      "detail": "h1 \"Nina Coleman user\", title \"Identity — ADG\", 4 API reads for the render"
+    },
+    {
+      "name": "Back to the Overview and Forward again: every title restored, no reload",
+      "ok": true,
+      "detail": "← Users ← Identities ← Findings ← Overview → Findings"
+    },
+    {
+      "name": "Server, Share and Directory detail titles are generic and carry no identifier",
+      "ok": true,
+      "detail": "\"Server — ADG\", \"Share — ADG\", \"Directory — ADG\", \"Identity — ADG\""
+    },
+    {
+      "name": "every route title is static metadata: no generateMetadata, so no read exists for a title",
+      "ok": true,
+      "detail": "46 route files, 31 titles, all literal"
+    },
+    {
+      "name": "1440/1024/768/375/320: streaming Overview placeholder, Findings, a user and a server fit without sideways scroll",
+      "ok": true,
+      "detail": "no overflow at 1440/1024/768/375/320 px"
+    },
+    {
+      "name": "no page error and no hydration error across the walk",
+      "ok": true,
+      "detail": "0 page errors, 1 console errors, none about hydration; 28 document loads (/, /resources, /resources/server, /resources/share, /resources/server, /resources/share, /resources/directory, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server, /, /risks, /identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103, /resources/server)"
+    }
+  ],
+  "measurements": {
+    "overview": {
+      "h1": 54,
+      "sections": {
+        "Needs attention": 792,
+        "Recent changes": 792,
+        "Reviews": 4052,
+        "Data health": 792
+      },
+      "reviewQueueReadEnd": 4050,
+      "title": "Overview — ADG",
+      "focus": "/risks?severity=critical"
+    },
+    "identityReads": [
+      "/auth/me",
+      "/api/v1/collection/status",
+      "/api/v1/principals/S-1-5-21-3949361974-1583827165-633756269-1103",
+      "/api/v1/principals/S-1-5-21-3949361974-1583827165-633756269-1103/groups"
+    ]
+  },
+  "pageErrors": [],
+  "consoleErrors": [
+    "http://127.0.0.1:3110/: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "documents": [
+    "/",
+    "/resources",
+    "/resources/server",
+    "/resources/share",
+    "/resources/server",
+    "/resources/share",
+    "/resources/directory",
+    "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+    "/",
+    "/risks",
+    "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+    "/resources/server",
+    "/",
+    "/risks",
+    "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+    "/resources/server",
+    "/",
+    "/risks",
+    "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+    "/resources/server",
+    "/",
+    "/risks",
+    "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+    "/resources/server",
+    "/",
+    "/risks",
+    "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+    "/resources/server"
+  ]
+}

@@ -1,0 +1,437 @@
+## DB suite: ADG_RUN_SMOKE_TESTS=1 pytest -q -m smoke (pgserver 16.2 127.0.0.1:55527, timezone=UTC, fsync=off) @ 1c53444, 2026-10-31T19:09:22Z, load 11.84 5.56 5.55
+
+==================================== ERRORS ====================================
+________ ERROR collecting tests/contracts/test_ad_collector_offline.py _________
+tests/contracts/test_ad_collector_offline.py:27: in <module>
+    from tests.contracts.test_fixtures import validator
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+__________ ERROR collecting tests/contracts/test_ad_graph_fixtures.py __________
+tests/contracts/test_ad_graph_fixtures.py:18: in <module>
+    from tests.contracts.test_json_schemas import validator_for
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+______________ ERROR collecting tests/contracts/test_fixtures.py _______________
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+________ ERROR collecting tests/contracts/test_incremental_payloads.py _________
+tests/contracts/test_incremental_payloads.py:28: in <module>
+    from tests.contracts.test_fixtures import validator
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+____________ ERROR collecting tests/contracts/test_json_schemas.py _____________
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+___________ ERROR collecting tests/contracts/test_ntfs_collector.py ____________
+tests/contracts/test_ntfs_collector.py:60: in <module>
+    from tests.contracts.test_fixtures import validator
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+_________ ERROR collecting tests/contracts/test_powershell_example.py __________
+tests/contracts/test_powershell_example.py:25: in <module>
+    from tests.contracts.test_fixtures import validator
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+________ ERROR collecting tests/contracts/test_published_constraints.py ________
+tests/contracts/test_published_constraints.py:33: in <module>
+    from tests.contracts.test_json_schemas import SCHEMA_DIR, validator_for
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+_________ ERROR collecting tests/contracts/test_schema_model_parity.py _________
+tests/contracts/test_schema_model_parity.py:26: in <module>
+    from tests.contracts.test_json_schemas import SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+____________ ERROR collecting tests/contracts/test_smb_collector.py ____________
+tests/contracts/test_smb_collector.py:33: in <module>
+    from tests.contracts.test_fixtures import validator
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+_____________ ERROR collecting tests/db/test_genesee_press_demo.py _____________
+tests/db/test_genesee_press_demo.py:39: in <module>
+    from app.demo.genesee_press.canon import SNAPSHOT, Canon, build_canon
+app/demo/genesee_press/canon.py:104: in <module>
+    _ORGANIZATION: Final = _one("organization.jsonl")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/canon.py:98: in _one
+    rows = vendor.records(name)
+           ^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/vendor.py:135: in records
+    verify()
+app/demo/genesee_press/vendor.py:98: in verify
+    raise VendorError(
+E   app.demo.genesee_press.vendor.VendorError: The vendored projection files ['projections/adg/._directory.jsonl', 'projections/adg/._employees.jsonl', 'projections/adg/._groups.jsonl', 'projections/adg/._hosts.jsonl', 'projections/adg/._memberships.jsonl', 'projections/adg/._org_units.jsonl', 'projections/adg/._organization.jsonl', 'projections/adg/._projection.json', 'projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'] are not the manifest's ['projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'].
+___________ ERROR collecting tests/demo/test_genesee_press_canon.py ____________
+tests/demo/test_genesee_press_canon.py:21: in <module>
+    from app.demo.genesee_press import canon as canon_module
+app/demo/genesee_press/canon.py:104: in <module>
+    _ORGANIZATION: Final = _one("organization.jsonl")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/canon.py:98: in _one
+    rows = vendor.records(name)
+           ^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/vendor.py:135: in records
+    verify()
+app/demo/genesee_press/vendor.py:98: in verify
+    raise VendorError(
+E   app.demo.genesee_press.vendor.VendorError: The vendored projection files ['projections/adg/._directory.jsonl', 'projections/adg/._employees.jsonl', 'projections/adg/._groups.jsonl', 'projections/adg/._hosts.jsonl', 'projections/adg/._memberships.jsonl', 'projections/adg/._org_units.jsonl', 'projections/adg/._organization.jsonl', 'projections/adg/._projection.json', 'projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'] are not the manifest's ['projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'].
+_______ ERROR collecting tests/demo/test_genesee_press_coverage_drill.py _______
+tests/demo/test_genesee_press_coverage_drill.py:12: in <module>
+    from app.demo.genesee_press.dataset import GeneseePressDataset
+app/demo/genesee_press/dataset.py:33: in <module>
+    from app.demo.genesee_press import canon as gp
+app/demo/genesee_press/canon.py:104: in <module>
+    _ORGANIZATION: Final = _one("organization.jsonl")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/canon.py:98: in _one
+    rows = vendor.records(name)
+           ^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/vendor.py:135: in records
+    verify()
+app/demo/genesee_press/vendor.py:98: in verify
+    raise VendorError(
+E   app.demo.genesee_press.vendor.VendorError: The vendored projection files ['projections/adg/._directory.jsonl', 'projections/adg/._employees.jsonl', 'projections/adg/._groups.jsonl', 'projections/adg/._hosts.jsonl', 'projections/adg/._memberships.jsonl', 'projections/adg/._org_units.jsonl', 'projections/adg/._organization.jsonl', 'projections/adg/._projection.json', 'projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'] are not the manifest's ['projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'].
+___________ ERROR collecting tests/demo/test_genesee_press_estate.py ___________
+tests/demo/test_genesee_press_estate.py:18: in <module>
+    from app.demo.genesee_press.canon import DOMAIN_SID, SNAPSHOT, Canon, build_canon
+app/demo/genesee_press/canon.py:104: in <module>
+    _ORGANIZATION: Final = _one("organization.jsonl")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/canon.py:98: in _one
+    rows = vendor.records(name)
+           ^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/vendor.py:135: in records
+    verify()
+app/demo/genesee_press/vendor.py:98: in verify
+    raise VendorError(
+E   app.demo.genesee_press.vendor.VendorError: The vendored projection files ['projections/adg/._directory.jsonl', 'projections/adg/._employees.jsonl', 'projections/adg/._groups.jsonl', 'projections/adg/._hosts.jsonl', 'projections/adg/._memberships.jsonl', 'projections/adg/._org_units.jsonl', 'projections/adg/._organization.jsonl', 'projections/adg/._projection.json', 'projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'] are not the manifest's ['projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'].
+_______ ERROR collecting tests/demo/test_genesee_press_investigation.py ________
+tests/demo/test_genesee_press_investigation.py:14: in <module>
+    from app.demo.genesee_press.canon import DOMAIN_SID, Canon, build_canon
+app/demo/genesee_press/canon.py:104: in <module>
+    _ORGANIZATION: Final = _one("organization.jsonl")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/canon.py:98: in _one
+    rows = vendor.records(name)
+           ^^^^^^^^^^^^^^^^^^^^
+app/demo/genesee_press/vendor.py:135: in records
+    verify()
+app/demo/genesee_press/vendor.py:98: in verify
+    raise VendorError(
+E   app.demo.genesee_press.vendor.VendorError: The vendored projection files ['projections/adg/._directory.jsonl', 'projections/adg/._employees.jsonl', 'projections/adg/._groups.jsonl', 'projections/adg/._hosts.jsonl', 'projections/adg/._memberships.jsonl', 'projections/adg/._org_units.jsonl', 'projections/adg/._organization.jsonl', 'projections/adg/._projection.json', 'projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'] are not the manifest's ['projections/adg/directory.jsonl', 'projections/adg/employees.jsonl', 'projections/adg/groups.jsonl', 'projections/adg/hosts.jsonl', 'projections/adg/memberships.jsonl', 'projections/adg/org_units.jsonl', 'projections/adg/organization.jsonl', 'projections/adg/projection.json'].
+_______________ ERROR collecting tests/demo/test_transcripts.py ________________
+tests/demo/test_transcripts.py:23: in <module>
+    from tests.contracts.test_fixtures import OBSERVATION_SCHEMA, validator
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_fixtures.py:21: in <module>
+    from tests.contracts.test_json_schemas import REGISTRY, SCHEMA_DIR
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../../adg/backend/.venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/contracts/test_json_schemas.py:43: in <module>
+    REGISTRY = build_registry()
+               ^^^^^^^^^^^^^^^^
+tests/contracts/test_json_schemas.py:36: in build_registry
+    contents = json.loads(path.read_text(encoding="utf-8"))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/denzel/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0 in position 37: invalid start byte
+=============================== warnings summary ===============================
+../../../adg/backend/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Volumes/T5 EVO/mmm/adg/backend/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/contracts/test_ad_collector_offline.py - UnicodeDecodeError: 'utf...
+ERROR tests/contracts/test_ad_graph_fixtures.py - UnicodeDecodeError: 'utf-8'...
+ERROR tests/contracts/test_fixtures.py - UnicodeDecodeError: 'utf-8' codec ca...
+ERROR tests/contracts/test_incremental_payloads.py - UnicodeDecodeError: 'utf...
+ERROR tests/contracts/test_json_schemas.py - UnicodeDecodeError: 'utf-8' code...
+ERROR tests/contracts/test_ntfs_collector.py - UnicodeDecodeError: 'utf-8' co...
+ERROR tests/contracts/test_powershell_example.py - UnicodeDecodeError: 'utf-8...
+ERROR tests/contracts/test_published_constraints.py - UnicodeDecodeError: 'ut...
+ERROR tests/contracts/test_schema_model_parity.py - UnicodeDecodeError: 'utf-...
+ERROR tests/contracts/test_smb_collector.py - UnicodeDecodeError: 'utf-8' cod...
+ERROR tests/db/test_genesee_press_demo.py - app.demo.genesee_press.vendor.Ven...
+ERROR tests/demo/test_genesee_press_canon.py - app.demo.genesee_press.vendor....
+ERROR tests/demo/test_genesee_press_coverage_drill.py - app.demo.genesee_pres...
+ERROR tests/demo/test_genesee_press_estate.py - app.demo.genesee_press.vendor...
+ERROR tests/demo/test_genesee_press_investigation.py - app.demo.genesee_press...
+ERROR tests/demo/test_transcripts.py - UnicodeDecodeError: 'utf-8' codec can'...
+!!!!!!!!!!!!!!!!!!! Interrupted: 16 errors during collection !!!!!!!!!!!!!!!!!!!
+5750 deselected, 1 warning, 16 errors in 24.34s
+## exit=2

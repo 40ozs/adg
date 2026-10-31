@@ -1,0 +1,20 @@
+{
+ "status": 200,
+ "suspense_pending_boundaries": 5,
+ "streamed_segments": 5,
+ "reveal_calls": 5,
+ "pending_placeholders": 4,
+ "loading_copy": [
+  "Loading collection status",
+  "Loading findings",
+  "Loading changes",
+  "Loading your review queue"
+ ],
+ "resolved_sections": [
+  "overview-health",
+  "overview-attention",
+  "overview-changes",
+  "overview-reviews"
+ ],
+ "title": "Overview — ADG"
+}

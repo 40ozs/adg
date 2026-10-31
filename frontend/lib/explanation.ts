@@ -115,7 +115,7 @@ export function outcomeWording(verdict: VerdictView): OutcomeWording {
         tone: "ok",
         headline: verdict.reason,
         guidance:
-          "Nothing on either ACL reaches this principal. This is the absence of a control " +
+          "Nothing on either ACL reaches this identity. This is the absence of a control " +
           "rather than a control: there is no entry here to remove.",
         conclusive: verdict.conclusive,
       };
@@ -237,13 +237,13 @@ export function explanationWording(explanation: AccessExplanationResponse): Outc
 function betweenLayersGuidance(ntfs: boolean, share: boolean): string {
   if (ntfs && share) {
     return (
-      "Both ACLs grant this principal something, but nothing granted by one is granted by " +
+      "Both ACLs grant this identity something, but nothing granted by one is granted by " +
       "the other. No Deny is involved: what each layer allows is shown below."
     );
   }
   const [granting, withholding] = ntfs ? ["NTFS", "share"] : ["share", "NTFS"];
   return (
-    `The ${granting} ACL grants this principal rights, but the ${withholding} ACL gives it ` +
+    `The ${granting} ACL grants this identity rights, but the ${withholding} ACL gives it ` +
     `none, so nothing survives both. No Deny is involved: widening the ${withholding} ACL ` +
     "would make the grant real."
   );
@@ -380,7 +380,7 @@ export function describePath(
       to: first,
       label: first === null ? "the subject" : nodeLabel(first),
       removable: false,
-      note: "The principal the question is about.",
+      note: "The identity the question is about.",
     },
   ];
 
@@ -491,7 +491,7 @@ function wellKnownName(sid: string | null): string | null {
 export function nodeKindLabel(kind: NodeKind): string {
   switch (kind) {
     case "principal":
-      return "principal";
+      return "identity";
     case "group":
       return "group";
     case "assumed_trustee":
@@ -715,7 +715,7 @@ export function layoutGraph(graph: ExplanationGraphView): GraphLayout {
         index,
         label:
           index === 0
-            ? "Principal"
+            ? "Identity"
             : index === objectColumn
               ? "Object"
               : index === aceColumn
@@ -861,6 +861,23 @@ export function describeRemoval(
     alternates,
     offerAsFix: true,
   };
+}
+
+/**
+ * A removal target in words, as the diagram names the same edge.
+ *
+ * The engine ids (`principal:S-1-…`) stay the row's key and go into the text export; they are
+ * the label only for an edge the graph does not carry.
+ */
+export function removalLabel(
+  explanation: AccessExplanationResponse,
+  target: RemovalTargetView,
+): string {
+  const edge = explanation.graph.edges.find((item) => item.id === target.edge_id);
+  if (edge === undefined) {
+    return `${target.source} → ${target.target}`;
+  }
+  return edgeLabel(edge, new Map(explanation.graph.nodes.map((node) => [node.id, node])));
 }
 
 /** Single removals that end all access here. Empty is the common case, not an error. */
@@ -1084,7 +1101,7 @@ export function explanationText(explanation: AccessExplanationResponse): string 
   const lines: string[] = [];
 
   lines.push(`ADG access explanation`);
-  lines.push(`Principal: ${subject} (${explanation.subject.sid})`);
+  lines.push(`Identity: ${subject} (${explanation.subject.sid})`);
   lines.push(`Directory: ${resource}`);
   lines.push(`Access path: ${explanation.access_path}`);
   lines.push(
@@ -1119,7 +1136,7 @@ export function explanationText(explanation: AccessExplanationResponse): string 
     lines.push(
       mapping !== null && mapping.state === "ambiguous"
         ? "  none — no network session carries SYSTEM's own SID, so entries naming it were not applied"
-        : "  none — no entry on either ACL reached this principal",
+        : "  none — no entry on either ACL reached this identity",
     );
   }
   for (const path of explanation.paths) {
@@ -1147,7 +1164,7 @@ export function explanationText(explanation: AccessExplanationResponse): string 
   }
   for (const target of explanation.removal_targets) {
     const note = describeRemoval(explanation, target);
-    lines.push(`  [${target.edge_id}]`);
+    lines.push(`  ${removalLabel(explanation, target)} [${target.edge_id}]`);
     lines.push(`      ${note.headline}: ${note.detail}`);
     if (note.alternates.length > 0) {
       lines.push(`      alternate routes: ${note.alternates.map((path) => path.id).join(", ")}`);

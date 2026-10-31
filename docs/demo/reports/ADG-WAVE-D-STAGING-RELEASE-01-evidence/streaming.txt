@@ -1,0 +1,31 @@
+# Wave D small hosted streaming regression (2026-10-31 ~18:40Z, warm: /health/ready 0.23–0.25 s)
+
+Byte level: HOSTED-STREAMING-10 stream-probe.mjs (unchanged), planner, GET /, Accept-Encoding "gzip, deflate, br"
+(browser-style), 5 runs; HOSTED-STREAMING-11 analyze.mjs pass rule (MIN_GAP_MS=100). Raw: hosted-worker.negotiated.json,
+summary: hosted-worker.summary.json.
+PASS gzip, deflate, br run 1: hdr 328 shell 330 reviews 520 … attention 950 (+620) done 898 enc br chunks 9
+PASS gzip, deflate, br run 2: hdr 275 shell 276 reviews 485 … attention 870 (+594) done 869 enc br chunks 9
+PASS gzip, deflate, br run 3: hdr 319 shell 321 reviews 609 … attention 921 (+600) done 921 enc br chunks 9
+PASS gzip, deflate, br run 4: hdr 391 shell 392 reviews 577 … attention 877 (+485) done 877 enc br chunks 9
+PASS gzip, deflate, br run 5: hdr 311 shell 311 reviews 502 … attention 801 (+490) done 895 enc br chunks 6
+
+Browser: HOSTED-STREAMING-11 browser-stream.hosted.mjs (unchanged), system Chrome via Playwright 1.56.1, planner,
+3 runs at 1360x900 + 3 at 375x812 per session, two sessions (timeline JSON from session 2: browser-stream.json).
+-- session 1
+PASS  1360px run 1 — h1 1578 ms, health 3771, attention 3771, changes 2974, reviews 2374, h3 zstd
+PASS  1360px run 2 — h1 379 ms, health 1548, attention 1548, changes 979, reviews 680, h3 zstd
+PASS  1360px run 3 — h1 677 ms, health 1959, attention 1959, changes 1362, reviews 1061, h3 zstd
+PASS  1360px client navigation to Findings
+PASS  375px run 1 — h1 1467 ms, health 3441, attention 3441, changes 2744, reviews 3141, h3 zstd
+PASS  375px run 2 — h1 244 ms, health 1036, attention 1036, changes 1036, reviews 734, h3 zstd
+PASS  375px run 3 — h1 265 ms, health 1752, attention 1752, changes 1161, reviews 860, h3 zstd
+PASS  375px client navigation to Findings
+-- session 2
+PASS  1360px run 1 — h1 2202 ms, health 3929, attention 3929, changes 3099, reviews 3400, h3 zstd
+PASS  1360px run 2 — h1 389 ms, health 1305, attention 1305, changes 1005, reviews 705, h3 zstd
+PASS  1360px run 3 — h1 1164 ms, health 1777, attention 1777, changes 1477, reviews 1477, h3 zstd
+PASS  1360px client navigation to Findings
+PASS  375px run 1 — h1 1253 ms, health 3415, attention 3415, changes 2631, reviews 2301, h3 zstd
+PASS  375px run 2 — h1 307 ms, health 1397, attention 1397, changes 1098, reviews 797, h3 zstd
+PASS  375px run 3 — h1 195 ms, health 1492, attention 1492, changes 993, reviews 692, h3 zstd
+PASS  375px client navigation to Findings

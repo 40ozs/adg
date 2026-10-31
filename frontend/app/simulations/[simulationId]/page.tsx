@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -9,6 +10,9 @@ import { StateMessage } from "@/components/Banners";
 import { BaselinePanel, EvaluationHistory, SimulationNotice } from "@/components/Simulation";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { StoredResultPanel, SimulationRerun } from "@/components/SimulationDetail";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("What-if proposal") };
 
 /**
  * One stored proposal: what it says, what it was measured against, and every time it ran.

@@ -1,0 +1,18 @@
+# Operational note: internal-disk ENOSPC (2026-10-30, ~18:16 local)
+
+- While copying the run-5 gate output into this directory, the Mac's internal disk filled up
+  (ENOSPC); no command could start, not even df. Not a product defect.
+- The worktree lives on the T5 drive and was unaffected: branch, ancestry, git fsck and every
+  changed file were checked afterwards; all file mtimes predate the validations covering them.
+- When commands worked again, `/` already showed 6.1 GiB free (freed elsewhere); nothing had
+  been deleted by this lane at that point.
+- This lane then stopped only its own stack, identified by port and working directory:
+  next-server :3050 (PID 46388, cwd worktree frontend/.next/standalone), API :8050 (PID 43892,
+  cwd worktree backend), Postgres :55487 (PID 43810, data dir in this session's scratchpad,
+  stopped with pg_ctl -m fast). No Playwright browser from this lane was still running.
+- Deleted: only this session's disposable Postgres copy (~415 MB),
+  /private/tmp/claude-501/-Users-denzel-Documents-code-denzelwalkes-com/ca4c0e71-f752-4860-90d1-ac51ed197ef1/scratchpad/pgdata
+  (a copy of the Wave B lane's shut-down demo database, not authoritative). `/` then showed
+  6.5 GiB free, so cleanup stopped there. No other session, worktree, cache or lane was touched.
+- Run 5 of the browser gate survived in the scratchpad and was copied here
+  (recently-viewed-gate.txt / .json); run 4 is kept as recently-viewed-gate.run4.*.

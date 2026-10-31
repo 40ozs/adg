@@ -1,0 +1,32 @@
+# Export diff: adg-demo 4e565da (live before) vs exported tree genesee-press-2.1.0-bb370f8e4531 (= adg-demo 5c7805e)
+M	DEMO-RELEASE.md
+M	backend/app/api/governance.py
+M	backend/app/api/scan_runs.py
+M	backend/tests/auth/test_roles.py
+A	backend/tests/contracts/test_scope_display_name.py
+M	backend/tests/db/test_governance_api.py
+M	demo-release.json
+M	demo-release/files.sha256
+M	docs/contracts/v1/openapi.json
+M	frontend/app/governance/campaigns/[campaignId]/page.tsx
+M	frontend/cloudflare/checks/titles.mjs
+M	frontend/components/DecisionForm.tsx
+M	frontend/lib/contracts.ts
+M	frontend/lib/governance.ts
+M	frontend/tests/contracts.test.ts
+M	frontend/tests/governance-views.test.tsx
+
+## adg source paths changed 559dbaf..bb370f8 outside docs/demo/reports (the exporter excludes reports):
+M	backend/app/api/governance.py
+M	backend/app/api/scan_runs.py
+M	backend/tests/auth/test_roles.py
+A	backend/tests/contracts/test_scope_display_name.py
+M	backend/tests/db/test_governance_api.py
+M	docs/contracts/v1/openapi.json
+M	frontend/app/governance/campaigns/[campaignId]/page.tsx
+M	frontend/cloudflare/checks/titles.mjs
+M	frontend/components/DecisionForm.tsx
+M	frontend/lib/contracts.ts
+M	frontend/lib/governance.ts
+M	frontend/tests/contracts.test.ts
+M	frontend/tests/governance-views.test.tsx

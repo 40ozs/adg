@@ -1,0 +1,32 @@
+[
+ {
+  "name": "1. API: governance reads as planner; viewer refused; no campaign rows on the canonical dataset",
+  "ok": true,
+  "detail": "campaigns 200 (0 rows), queue 200, viewer 403"
+ },
+ {
+  "name": "2. API: scan-run scopes (ScanScopeView) are exactly {kind, key}",
+  "ok": true,
+  "detail": "50 runs, every scope {kind, key}"
+ },
+ {
+  "name": "3. 1360px: Overview → Findings → Reviews client-side, Back/Forward, Reviews empty state, unknown campaign title, no sideways scroll",
+  "ok": true,
+  "detail": "Reviews: \"Review access decisions that require human confirmation. A campaign is frozen ag\""
+ },
+ {
+  "name": "4. 375px: Overview → Findings → Reviews client-side, Back/Forward, Reviews empty state, unknown campaign title, no sideways scroll",
+  "ok": true,
+  "detail": "Reviews: \"Review access decisions that require human confirmation. A campaign is frozen ag\""
+ },
+ {
+  "name": "5. 320px: Overview → Findings → Reviews client-side, Back/Forward, Reviews empty state, unknown campaign title, no sideways scroll",
+  "ok": true,
+  "detail": "Reviews: \"Review access decisions that require human confirmation. A campaign is frozen ag\""
+ },
+ {
+  "name": "6. no page error, no hydration error",
+  "ok": true,
+  "detail": "0 page errors; console errors: Failed to load resource: the server responded with a status of 404 ()"
+ }
+]

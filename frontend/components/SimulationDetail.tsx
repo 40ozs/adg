@@ -50,8 +50,8 @@ export function StoredResultPanel({
             {summaryLine(summary)}
           </p>
           <ul>
-            <li>{summary.principals_losing.length} principals lose access or rights</li>
-            <li>{summary.principals_gaining.length} principals gain access or rights</li>
+            <li>{summary.principals_losing.length} identities lose access or rights</li>
+            <li>{summary.principals_gaining.length} identities gain access or rights</li>
             <li>{summary.resources_affected.length} directories affected</li>
             <li>{summary.alternate_paths_retained} alternate routes survive the change</li>
           </ul>
@@ -81,7 +81,7 @@ export function StoredResultPanel({
           className="access-table"
           rowHeader={null}
           columns={[
-            { label: "Principal" },
+            { label: "Identity" },
             { label: "Directory" },
             // Masks, as hex strings ("0x001301BF"), which Number() reads.
             { label: "Today", type: "number" },
@@ -122,7 +122,7 @@ export function StoredResultPanel({
       )}
 
       <p className="muted">
-        Principals are named by storage key here: a stored result holds the engine&rsquo;s own
+        Identities are named by storage key here: a stored result holds the engine&rsquo;s own
         compact document, and the display names were never part of the answer. Run the proposal
         again for the resolved, explained version.
       </p>

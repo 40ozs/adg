@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { fetchCollectionStatus, fetchServer, fetchServerShares } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
+import { recentOwner } from "@/lib/recent-owner";
 import type { CollectionStatus, ServerDetail } from "@/lib/contracts";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation } from "@/lib/paging";
 import { shareHref } from "@/lib/resources";
@@ -12,6 +13,7 @@ import { FactList, Identifier, Maybe, NotReported, Provenance, TriState } from "
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FactSection } from "@/components/Layer";
 import { PagePosition, Pager } from "@/components/Pager";
+import { ForgetRecentView, RecordRecentView } from "@/components/RecentlyViewed";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { SortableTable } from "@/components/SortableTable";
 
@@ -52,6 +54,9 @@ export default async function ServerPage({
   if (!detail.ok) {
     return (
       <>
+        {detail.failure.kind === "not_found" && (
+          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="server" entityKey={key} />
+        )}
         <h1>Server</h1>
         <p className="muted">
           <code>{key}</code>
@@ -76,6 +81,12 @@ export default async function ServerPage({
 
   return (
     <>
+      <RecordRecentView
+        owner={recentOwner(viewer.principal.subject)}
+        kind="server"
+        entityKey={server.key}
+        label={server.name}
+      />
       <nav className="breadcrumb" aria-label="Location">
         <ol>
           <li>

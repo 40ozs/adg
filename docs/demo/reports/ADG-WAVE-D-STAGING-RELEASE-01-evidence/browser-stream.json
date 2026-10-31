@@ -1,0 +1,538 @@
+[
+ {
+  "width": 1360,
+  "run": 1,
+  "encoding": "zstd",
+  "nav": {
+   "response_start": 2174,
+   "response_end": 3928,
+   "dcl": 3930,
+   "load": 3936,
+   "protocol": "h3"
+  },
+  "h1": 2202,
+  "visible": {
+   "overview-changes": 3099,
+   "overview-reviews": 3400,
+   "overview-health": 3929,
+   "overview-attention": 3929
+  },
+  "attached": {
+   "overview-changes": 3098,
+   "overview-reviews": 3102,
+   "overview-attention": 3929,
+   "overview-health": 3929
+  },
+  "timeline": [
+   {
+    "t": 2201,
+    "h1": false,
+    "shown": [],
+    "busy": []
+   },
+   {
+    "t": 2202,
+    "h1": true,
+    "shown": [],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 3099,
+    "h1": true,
+    "shown": [
+     "overview-changes"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 3400,
+    "h1": true,
+    "shown": [
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending"
+    ]
+   },
+   {
+    "t": 3929,
+    "h1": true,
+    "shown": [
+     "overview-health",
+     "overview-attention",
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": []
+   }
+  ],
+  "counts": {
+   "overview-health": 1,
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "progressive": true,
+  "errors": 0,
+  "screenshot": "hosted-1360-run1-partial.png",
+  "problems": []
+ },
+ {
+  "width": 1360,
+  "run": 2,
+  "encoding": "zstd",
+  "nav": {
+   "response_start": 381,
+   "response_end": 1167,
+   "dcl": 1167,
+   "load": 1167,
+   "protocol": "h3"
+  },
+  "h1": 389,
+  "visible": {
+   "overview-reviews": 705,
+   "overview-changes": 1005,
+   "overview-health": 1305,
+   "overview-attention": 1305
+  },
+  "attached": {
+   "overview-reviews": 467,
+   "overview-changes": 864,
+   "overview-attention": 1160,
+   "overview-health": 1161
+  },
+  "timeline": [
+   {
+    "t": 388,
+    "h1": false,
+    "shown": [],
+    "busy": []
+   },
+   {
+    "t": 389,
+    "h1": true,
+    "shown": [],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 705,
+    "h1": true,
+    "shown": [
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending"
+    ]
+   },
+   {
+    "t": 1005,
+    "h1": true,
+    "shown": [
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending"
+    ]
+   },
+   {
+    "t": 1305,
+    "h1": true,
+    "shown": [
+     "overview-health",
+     "overview-attention",
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": []
+   }
+  ],
+  "counts": {
+   "overview-health": 1,
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "progressive": true,
+  "errors": 0,
+  "screenshot": "hosted-1360-run2-partial.png",
+  "problems": []
+ },
+ {
+  "width": 1360,
+  "run": 3,
+  "encoding": "zstd",
+  "nav": {
+   "response_start": 1156,
+   "response_end": 1749,
+   "dcl": 1750,
+   "load": 1750,
+   "protocol": "h3"
+  },
+  "h1": 1164,
+  "visible": {
+   "overview-changes": 1477,
+   "overview-reviews": 1477,
+   "overview-health": 1777,
+   "overview-attention": 1777
+  },
+  "attached": {
+   "overview-reviews": 1353,
+   "overview-changes": 1353,
+   "overview-attention": 1749,
+   "overview-health": 1749
+  },
+  "timeline": [
+   {
+    "t": 1164,
+    "h1": false,
+    "shown": [],
+    "busy": []
+   },
+   {
+    "t": 1164,
+    "h1": true,
+    "shown": [],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 1477,
+    "h1": true,
+    "shown": [
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending"
+    ]
+   },
+   {
+    "t": 1777,
+    "h1": true,
+    "shown": [
+     "overview-health",
+     "overview-attention",
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": []
+   }
+  ],
+  "counts": {
+   "overview-health": 1,
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "progressive": true,
+  "errors": 0,
+  "screenshot": "hosted-1360-run3-partial.png",
+  "problems": []
+ },
+ {
+  "width": 1360,
+  "client_navigation_findings": true
+ },
+ {
+  "width": 375,
+  "run": 1,
+  "encoding": "zstd",
+  "nav": {
+   "response_start": 1247,
+   "response_end": 3415,
+   "dcl": 3416,
+   "load": 3419,
+   "protocol": "h3"
+  },
+  "h1": 1253,
+  "visible": {
+   "overview-reviews": 2301,
+   "overview-changes": 2631,
+   "overview-health": 3415,
+   "overview-attention": 3415
+  },
+  "attached": {
+   "overview-reviews": 2249,
+   "overview-changes": 2630,
+   "overview-attention": 3415,
+   "overview-health": 3415
+  },
+  "timeline": [
+   {
+    "t": 1252,
+    "h1": false,
+    "shown": [],
+    "busy": []
+   },
+   {
+    "t": 1253,
+    "h1": true,
+    "shown": [],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 2301,
+    "h1": true,
+    "shown": [
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending"
+    ]
+   },
+   {
+    "t": 2631,
+    "h1": true,
+    "shown": [
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending"
+    ]
+   },
+   {
+    "t": 3415,
+    "h1": true,
+    "shown": [
+     "overview-health",
+     "overview-attention",
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": []
+   }
+  ],
+  "counts": {
+   "overview-health": 1,
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "progressive": true,
+  "errors": 0,
+  "screenshot": "hosted-375-run1-partial.png",
+  "problems": []
+ },
+ {
+  "width": 375,
+  "run": 2,
+  "encoding": "zstd",
+  "nav": {
+   "response_start": 303,
+   "response_end": 1307,
+   "dcl": 1308,
+   "load": 1308,
+   "protocol": "h3"
+  },
+  "h1": 307,
+  "visible": {
+   "overview-reviews": 797,
+   "overview-changes": 1098,
+   "overview-health": 1397,
+   "overview-attention": 1397
+  },
+  "attached": {
+   "overview-reviews": 797,
+   "overview-changes": 799,
+   "overview-attention": 1307,
+   "overview-health": 1307
+  },
+  "timeline": [
+   {
+    "t": 307,
+    "h1": false,
+    "shown": [],
+    "busy": []
+   },
+   {
+    "t": 307,
+    "h1": true,
+    "shown": [],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 797,
+    "h1": true,
+    "shown": [
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending"
+    ]
+   },
+   {
+    "t": 1098,
+    "h1": true,
+    "shown": [
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending"
+    ]
+   },
+   {
+    "t": 1397,
+    "h1": true,
+    "shown": [
+     "overview-health",
+     "overview-attention",
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": []
+   }
+  ],
+  "counts": {
+   "overview-health": 1,
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "progressive": true,
+  "errors": 0,
+  "screenshot": "hosted-375-run2-partial.png",
+  "problems": []
+ },
+ {
+  "width": 375,
+  "run": 3,
+  "encoding": "zstd",
+  "nav": {
+   "response_start": 190,
+   "response_end": 1492,
+   "dcl": 1493,
+   "load": 1493,
+   "protocol": "h3"
+  },
+  "h1": 195,
+  "visible": {
+   "overview-reviews": 692,
+   "overview-changes": 993,
+   "overview-health": 1492,
+   "overview-attention": 1492
+  },
+  "attached": {
+   "overview-reviews": 692,
+   "overview-changes": 794,
+   "overview-attention": 1492,
+   "overview-health": 1492
+  },
+  "timeline": [
+   {
+    "t": 194,
+    "h1": false,
+    "shown": [],
+    "busy": []
+   },
+   {
+    "t": 195,
+    "h1": true,
+    "shown": [],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending",
+     "overview-reviews-pending"
+    ]
+   },
+   {
+    "t": 692,
+    "h1": true,
+    "shown": [
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending",
+     "overview-changes-pending"
+    ]
+   },
+   {
+    "t": 993,
+    "h1": true,
+    "shown": [
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": [
+     "overview-health-pending",
+     "overview-attention-pending"
+    ]
+   },
+   {
+    "t": 1492,
+    "h1": true,
+    "shown": [
+     "overview-health",
+     "overview-attention",
+     "overview-changes",
+     "overview-reviews"
+    ],
+    "busy": []
+   }
+  ],
+  "counts": {
+   "overview-health": 1,
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "progressive": true,
+  "errors": 0,
+  "screenshot": "hosted-375-run3-partial.png",
+  "problems": []
+ },
+ {
+  "width": 375,
+  "client_navigation_findings": true
+ }
+]

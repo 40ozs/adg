@@ -1,0 +1,75 @@
+## DB suite: ADG_RUN_SMOKE_TESTS=1 pytest -q -m smoke (pgserver 16.2 127.0.0.1:55527, timezone=UTC, fsync=off) @ 1c53444, 2026-10-31T19:15:02Z, load 12.06 8.98 7.08
+........................................................................ [  5%]
+.........x.............................................................. [ 11%]
+........................................................................ [ 16%]
+........................................................................ [ 22%]
+........................................................................ [ 27%]
+........................................................................ [ 33%]
+........................................................................ [ 38%]
+........................................................................ [ 44%]
+........................................................................ [ 49%]
+........................................................................ [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 66%]
+........................................................................ [ 71%]
+........................................................................ [ 77%]
+........................................................................ [ 82%]
+........................................................................ [ 88%]
+........................................................................ [ 93%]
+........................................................................ [ 99%]
+...........                                                              [100%]
+=============================== warnings summary ===============================
+../../../adg/backend/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /Volumes/T5 EVO/mmm/adg/backend/.venv/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/db/test_access_api.py: 3 warnings
+tests/db/test_access_paths_api.py: 1 warning
+tests/db/test_changes_api.py: 2 warnings
+tests/db/test_collection_status_api.py: 1 warning
+tests/db/test_explanation_api.py: 3 warnings
+tests/db/test_governance_api.py: 3 warnings
+tests/db/test_governance_review.py: 2 warnings
+tests/db/test_graph_api.py: 2 warnings
+tests/db/test_input_validation.py: 26 warnings
+tests/db/test_ntfs_resources.py: 3 warnings
+tests/db/test_remediation_api.py: 1 warning
+tests/db/test_resource_api.py: 5 warnings
+  /Volumes/T5 EVO/mmm/adg/backend/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py:59: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    response = await handler(conn, exc)  # type: ignore[arg-type]
+
+tests/db/test_alerts.py::TestTheWatchApi::test_a_trigger_the_kind_could_never_fire_is_refused[asyncio]
+tests/db/test_governance_api.py::TestOwnershipOverHttp::test_naming_both_an_adg_user_and_a_windows_principal_is_refused
+tests/db/test_governance_api.py::TestOwnershipOverHttp::test_naming_neither_is_refused
+tests/db/test_graph_api.py::TestMembershipPaths::test_a_principal_is_not_a_member_of_itself
+tests/db/test_ingestion.py::TestRunLifecycle::test_a_batch_posted_to_the_wrong_run_is_rejected
+tests/db/test_search_api.py::TestRefusals::test_a_one_character_term_is_refused_with_a_reason
+  /Volumes/T5 EVO/mmm/adg/backend/.venv/lib/python3.13/site-packages/fastapi/routing.py:372: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    return await dependant.call(**values)
+
+tests/db/test_alerts.py::TestOneBadWatchCannotSilenceTheEstate::test_an_unscopeable_key_is_refused_at_creation[asyncio]
+  /Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01/backend/app/api/alerts.py:404: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    key=_checked_key(kind, body.key),
+
+tests/db/test_alerts.py::TestTheAlertFeedApi::test_an_unknown_filter_value_is_refused_rather_than_ignored[asyncio]
+  /Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01/backend/app/api/alerts.py:523: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    triggers = _parse_set(trigger, AlertTrigger, "trigger")
+
+tests/db/test_alerts.py::TestTheRiskReportApi::test_an_unknown_severity_is_refused[asyncio]
+  /Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01/backend/app/api/risks.py:639: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    severities=_parse_set(severity, Severity, "severity"),
+
+tests/db/test_changes_api.py::TestTheFeed::test_a_cursor_from_another_endpoint_is_refused
+  /Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01/backend/app/api/changes.py:611: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    feed = await ChangeService(session).feed(filters, cursor=_cursor(cursor))
+
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body1-a removal must name the entry it removes]
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body2-protecting must say what happens to the inherited entries]
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body3-a pair scope names both ends]
+tests/db/test_simulations_api.py::TestValidationRefusesRatherThanGuesses::test_an_unusable_proposal_is_refused_with_a_reason[asyncio-body4-a group cannot be a direct member of itself]
+  /Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01/backend/app/api/simulations.py:1089: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    raise _unprocessable(error) from error
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1306 passed, 6176 deselected, 1 xfailed, 67 warnings in 1254.75s (0:20:54)
+## exit=0

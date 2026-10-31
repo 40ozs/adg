@@ -809,7 +809,7 @@ const EXPECTED: Record<string, string[]> = {
   // field the screen stops showing is a fact a reviewer stops being told.
   CampaignView: ["activated_at", "baseline_at", "campaign_id", "closed_at", "closed_by_subject", "comment_requirement", "created_at", "created_by_subject", "description", "due_at", "excluded_counts", "focus", "generated_at", "item_count", "name", "options", "scopes", "snapshot_digest", "status"],
   CampaignListResponse: ["items", "page"],
-  ScopeView: ["key", "kind"],
+  ScopeView: ["display_name", "key", "kind"],
   GenerationOptionsBody: ["include_builtin", "include_deny", "include_inherited"],
   GrantView: ["access_mask", "ace_flags", "ace_key", "ace_type", "certainty", "deny", "inherited", "inherited_from", "last_confirmed_at", "observed_from", "order_index", "permission", "source", "trustee_key", "trustee_sid", "version_id"],
   ItemView: ["assignment_id", "campaign_id", "certainty", "created_at", "current_decision_id", "decided_at", "evidence_digest", "focus", "grants", "item_id", "principal_display_name", "principal_key", "principal_sid", "status", "target_key", "target_kind", "target_path"],

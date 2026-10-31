@@ -1,0 +1,14 @@
+# Query-count proof at 7a12b8e
+## integrated tree
+2 passed in 1.69s
+
+## mutation (not committed): the list route resolves names per row
+ backend/app/api/governance.py                                    | 4 ++--
+ docs/demo/reports/ADG-UX-BACKEND-COPY-04-evidence/copy-check.mjs | 4 ++++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+        assert len(listed) == 7
+>       assert len(seven.statements) == len(one.statements)
+E       AssertionError: assert 8 == 3
+1 failed in 1.14s
+
+## reverted: 0 modified files under backend/app

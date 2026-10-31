@@ -320,7 +320,7 @@ describe("what is stored", () => {
     const table = screen.getByRole("table", { name: /What the collectors actually wrote/ });
 
     expect(within(table).getByText("108")).toBeTruthy();
-    expect(within(table).getByText("Principals")).toBeTruthy();
+    expect(within(table).getByText("Identities")).toBeTruthy();
   });
 
   it("annotates a zero rather than printing it bare", async () => {

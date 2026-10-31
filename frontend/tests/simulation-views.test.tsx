@@ -225,7 +225,7 @@ describe("the delta table", () => {
   it("says plainly when nothing was evaluated", () => {
     render(<DeltaTable report={simReport({ deltas: [] })} />);
 
-    expect(screen.getByText(/No principal\/directory pair was evaluated/)).toBeInTheDocument();
+    expect(screen.getByText(/No identity\/directory pair was evaluated/)).toBeInTheDocument();
   });
 
   it("marks a sensitive directory on the row", () => {

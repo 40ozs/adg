@@ -69,8 +69,8 @@ DIRECTION_DESCRIPTIONS: Final[dict[ImpactDirection, str]] = {
 
 
 CHANGE_KIND_DESCRIPTIONS: Final[dict[ChangeKind, str]] = {
-    ChangeKind.ADD_MEMBER: "Put a principal into a group.",
-    ChangeKind.REMOVE_MEMBER: "Take a principal out of a group.",
+    ChangeKind.ADD_MEMBER: "Add an identity to a group.",
+    ChangeKind.REMOVE_MEMBER: "Remove an identity from a group.",
     ChangeKind.ADD_NTFS_ACE: "Add an entry to a directory's NTFS permissions.",
     ChangeKind.MODIFY_NTFS_ACE: "Change an entry already on a directory's NTFS permissions.",
     ChangeKind.REMOVE_NTFS_ACE: "Remove an entry from a directory's NTFS permissions.",

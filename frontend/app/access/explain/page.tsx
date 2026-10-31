@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import { fetchCollectionStatus } from "@/lib/api/adg";
@@ -18,6 +19,9 @@ import { ExplanationExport } from "@/components/ExplanationExport";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { investigateHref } from "@/lib/investigation";
 import Link from "next/link";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Access explanation") };
 
 /**
  * Why one principal can, or cannot, reach one directory.
@@ -54,7 +58,7 @@ export default async function AccessExplanationPage({
       <>
         <h1>Access explanation</h1>
         <p className="muted">
-          An explanation is always about one principal and one directory. Name both.
+          An explanation is always about one identity and one directory. Name both.
         </p>
         <div className="card">
           <ExplainLauncher

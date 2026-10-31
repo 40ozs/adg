@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
 import { fetchChangeSummary, fetchChangeTimeline, fetchChanges } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
 import type { ChangeView } from "@/lib/contracts";
+import { documentTitle, sectionTitle } from "@/lib/nav";
 import { cursorFor, decodeTrail, hrefWith, pageNavigation } from "@/lib/paging";
 import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
@@ -22,6 +24,21 @@ const RANGES = [
 ] as const;
 
 const DEFAULT_DAYS = 7;
+
+/**
+ * One object's history is a different place from the feed, so it says so in the tab. The
+ * title comes from the query alone, the same test the page uses: no read, and the object's
+ * key never reaches browser history.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const history = single(params.kind) !== undefined && single(params.key) !== undefined;
+  return { title: history ? documentTitle("History") : sectionTitle("changes") };
+}
 
 /**
  * What changed, and whether any of it is a problem.
@@ -102,7 +119,8 @@ export default async function ChangesPage({
     <>
       <h1>Changes</h1>
       <p className="muted">
-        Every change is bounded by the observations either side of it, never dated to the
+        See what changed in the estate and whether those changes affected access. Every
+        change is bounded by the observations either side of it, never dated to the
         scan that found it.
       </p>
 
@@ -230,7 +248,8 @@ function readScope(params: Record<string, string | string[] | undefined>): Scope
       return {
         query: { [name]: value },
         link: { [name]: value },
-        label: `${name}: ${value}`,
+        // The query parameter stays `principal`; the reader sees the UX-01 word.
+        label: `${name === "principal" ? "identity" : name}: ${value}`,
       };
     }
   }

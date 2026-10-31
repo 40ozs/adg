@@ -106,7 +106,7 @@ export function coverageNotice(coverage: RiskCoverageView): CoverageNotice {
     tone: "ok",
     headline: "A full pass covered the estate",
     explanation:
-      "The last evaluation read every directory, share and principal ADG holds and hit no " +
+      "The last evaluation read every directory, share and identity ADG holds and hit no " +
       "ceiling, so these counts are totals.",
   };
 }
@@ -229,7 +229,7 @@ export function evidenceKindWording(kind: string): string {
     case "share":
       return "Share";
     case "principal":
-      return "Principal";
+      return "Identity";
     case "membership":
       return "Group membership";
     case "configuration":

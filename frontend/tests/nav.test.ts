@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { NAV_ITEMS, activeNavItem, visibleNavItems } from "@/lib/nav";
+import { NAV_GROUPS, NAV_ITEMS, activeNavItem, groupNavItems, visibleNavItems } from "@/lib/nav";
 
 const VIEWER = [
   "resources:read",
@@ -25,16 +25,59 @@ describe("the navigation", () => {
   it("offers every section named by the phase", () => {
     expect(NAV_ITEMS.map((item) => item.label)).toEqual([
       "Overview",
-      "Resources",
-      "Identities",
+      "Findings",
       "Access",
-      "Risks",
       "Changes",
-      "What-if",
+      "Identities",
+      "Resources",
       "Reviews",
+      "What-if",
       "Collectors",
       "Settings",
     ]);
+  });
+
+  it("arranges the sections under Investigate, Directory, Act and System (ADG-UX-01)", () => {
+    expect(
+      groupNavItems(NAV_ITEMS).map((group) => [group.label, group.items.map((item) => item.label)]),
+    ).toEqual([
+      ["Investigate", ["Overview", "Findings", "Access", "Changes"]],
+      ["Directory", ["Identities", "Resources"]],
+      ["Act", ["Reviews", "What-if"]],
+      ["System", ["Collectors", "Settings"]],
+    ]);
+  });
+
+  it("puts every section in a declared group", () => {
+    const groups = new Set<string>(NAV_GROUPS.map((group) => group.id));
+    expect(NAV_ITEMS.filter((item) => !groups.has(item.group))).toEqual([]);
+  });
+
+  it("drops a group the account can see nothing in", () => {
+    // A viewer holds neither simulations:read nor governance:read, so "Act" would be a
+    // heading over an empty list -- announcing a section the account cannot open.
+    expect(groupNavItems(visibleNavItems(VIEWER)).map((group) => group.id)).toEqual([
+      "investigate",
+      "directory",
+      "system",
+    ]);
+    expect(groupNavItems(visibleNavItems([])).map((group) => group.id)).toEqual(["investigate"]);
+  });
+
+  it("calls rule matches Findings, but keeps the /risks route and capability", () => {
+    // Renaming the route would break every deep link and pasted ticket URL for a word.
+    const findings = NAV_ITEMS.find((item) => item.id === "risks");
+
+    expect(findings).toMatchObject({ label: "Findings", href: "/risks", requires: "risks:read" });
+    expect(NAV_ITEMS.some((item) => item.label === "Risks")).toBe(false);
+    expect(activeNavItem("/risks")?.label).toBe("Findings");
+  });
+
+  it("describes every section in one sentence, without the retired terms", () => {
+    for (const item of NAV_ITEMS) {
+      expect(item.description, item.id).toMatch(/^[A-Z].*\.$/);
+      expect(item.description, item.id).not.toMatch(/\b(risks?|principals?|places?)\b/i);
+    }
   });
 
   it("puts What-if behind simulations:read, which a plain viewer does not hold", () => {
@@ -73,11 +116,11 @@ describe("the navigation", () => {
   it("shows a viewer everything except settings", () => {
     expect(visibleNavItems(VIEWER).map((item) => item.id)).toEqual([
       "overview",
-      "resources",
-      "identities",
-      "access",
       "risks",
+      "access",
       "changes",
+      "identities",
+      "resources",
       "collectors",
     ]);
   });

@@ -1,0 +1,12 @@
+PASS  sign in as admin — login page titled "Sign in — ADG"
+PASS  direct load: the server sends the section title (/risks → Findings) — server <title>Findings — ADG</title>, nav marks Findings
+PASS  client navigation: every primary nav link updates the title — 10 sections, no reload: Overview, Findings, Access, Changes, Identities, Resources, Reviews, What-if, Collectors, Settings
+PASS  Back restores each earlier title — Collectors ← What-if ← Reviews ← Resources
+PASS  Forward restores each later title — Reviews → What-if
+PASS  hard reload keeps the title
+PASS  a filtered list keeps its section title
+PASS  detail route: a generic title, no SID — "Identity — ADG", nav marks Identities
+PASS  an unknown page: a stable not-found title — HTTP 404, server ["Page not found — ADG"], document "Page not found — ADG"
+PASS  no hydration error on any page — 0 page errors, 2 console errors, none about hydration
+
+10/10 passed

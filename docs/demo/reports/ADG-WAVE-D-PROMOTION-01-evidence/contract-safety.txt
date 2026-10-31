@@ -1,0 +1,55 @@
+# Contract safety on promotion candidate 1c53444 (static; trees identical to Wave D)
+## ScopeView / ScanScopeView (backend)
+backend/app/api/scan_runs.py:189:class ScanScopeView(BaseModel):
+backend/app/api/scan_runs.py-190-    kind: str
+backend/app/api/scan_runs.py-191-    key: str
+backend/app/api/scan_runs.py-192-
+backend/app/api/scan_runs.py-193-
+backend/app/api/scan_runs.py-194-class CollectorErrorView(BaseModel):
+backend/app/api/scan_runs.py-195-    code: str
+backend/app/api/governance.py:289:class ScopeView(BaseModel):
+backend/app/api/governance.py-290-    kind: str
+backend/app/api/governance.py-291-    key: str
+backend/app/api/governance.py-292-    display_name: str | None = Field(
+backend/app/api/governance.py-293-        default=None,
+backend/app/api/governance.py-294-        description=(
+backend/app/api/governance.py-295-            "For a 'principal' scope, the identity's current name (display name, else account "
+## OpenAPI ScopeView
+ScopeView {'required': ['kind', 'key'], 'props': {'display_name': [{'type': 'string'}, {'type': 'null'}], 'key': 'string', 'kind': 'string'}}
+ScanScopeView {'required': ['kind', 'key'], 'props': {'key': 'string', 'kind': 'string'}}
+## frontend contract
+frontend/lib/governance.ts:308:  return item.principal_display_name ?? item.principal_sid;
+frontend/lib/governance.ts:325: * An identity is named by the scope's own `display_name`, else from names the page already
+frontend/lib/governance.ts:334:  const name = scope.display_name ?? names?.get(scope.key);
+frontend/lib/governance.ts:342:    if (item.principal_display_name !== null) {
+frontend/lib/governance.ts:343:      names.set(item.principal_key, item.principal_display_name);
+frontend/lib/contracts.ts:165:  display_name: string | null;
+frontend/lib/contracts.ts:400:  display_name: string | null;
+frontend/lib/contracts.ts:481:  display_name: string | null;
+frontend/lib/contracts.ts:1157:  display_name?: string | null;
+frontend/lib/contracts.ts:1222:  principal_display_name: string | null;
+## NAV-07 item link (campaign page)
+99:        <Link href="/governance">Access reviews</Link>
+131:            <Link href={`/governance/campaigns/${campaignId}`}>Back to all items</Link>
+143:                    <Link href={`/governance/items/${entry.item.item_id}`}>
+158:              <Link href={`/governance/campaigns/${campaignId}`}>Show every item</Link>
+160:              <Link href={`/governance/campaigns/${campaignId}?mine=1`}>
+165:            <Link href={`/governance/campaigns/${campaignId}?status=pending`}>Pending only</Link>
+167:            <Link href={`/governance/campaigns/${campaignId}?status=decided`}>Decided only</Link>
+171:                <Link href={`/governance/campaigns/${campaignId}`}>Clear filters</Link>
+## migrations
+      25
+backend/ database/ frontend/ docs/contracts/ identical to bb370f8
+## prefetch={false} (NAV-07)
+frontend/components/ComparisonLink.tsx:15: * Never prefetched. A recovery action is a real comparison, and prefetching the half-dozen a
+frontend/components/ComparisonLink.tsx:20:    <Link href={href} prefetch={false}>
+frontend/components/DemoGuide.tsx:228:        <Link className="button" href={drillHref} prefetch={false}>
+frontend/components/DecisionForm.tsx:321:              {/* No prefetch: a campaign lists up to 100 items, each its own page of reads. */}
+frontend/components/DecisionForm.tsx:322:              <Link href={`/governance/items/${item.item_id}`} prefetch={false}>
+frontend/components/Identity.tsx:58:        {/* No prefetch: a page of principals would otherwise ask for every one of them. */}
+frontend/components/Identity.tsx:62:            prefetch={false}
+frontend/components/Identity.tsx:114: * Prefetching is off: a page of chains is hundreds of links, and prefetching each one would
+frontend/components/Identity.tsx:128:            <Link href={principalHref(principal)} prefetch={false} title={principal.key}>
+frontend/components/SimulateLink.tsx:30:    <Link className="button" href={simulateHref(seed)} title={title} prefetch={false}>
+frontend/components/SimulateLink.tsx:47:    <Link href={simulateHref(seed)} title={title} prefetch={false}>
+frontend/components/RecentlyViewed.tsx:22: * ok, so a prefetch, an error or a not-found never records: none of them mounts this.

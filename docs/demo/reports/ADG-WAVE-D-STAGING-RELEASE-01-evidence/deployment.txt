@@ -1,0 +1,54 @@
+# ADG-WAVE-D-STAGING-RELEASE-01 — release and deployment record (2026-10-31)
+
+Source (authoritative ADG UX baseline; no newer integration/ADG-UX-* ref on origin)
+  40ozs/adg integration/ADG-UX-WAVE-D-01 @ bb370f8e4531a15166006a1f79f9ca2d64e11a3a (docs-only over fc7c7a2)
+  CI run 41223498140 on fc7c7a29f7254ae657e37c287ffb4f75f1ef4be5 (code + gates + report): success
+  previously deployed: adg 559dbaf (Wave C), the base of Wave D
+
+No-data-change gate (git diff 559dbaf bb370f8)
+  database/ 0, backend/vendor/ 0, backend/app/demo/ 0, backend/app/demo_mode/ 0, backend/app/models/ 0,
+  docs/demo/genesee-press.manifest.json 0, SYNTHETIC_ENTERPRISE.lock 0 changed  → bootstrap=false, no reset
+
+Rollback anchors (read-only API reads before the deploy, ~18:20Z)
+  Render adg-demo-web: live dep-dbj177142hec73boioj0 @ adg-demo 4e565da1d9cc (finished 2026-10-31T16:15:58Z)
+    repo 40ozs/adg-demo, branch main, autoDeploy no, not suspended
+  Worker adg-demo-staging: deployment c0b70f14-0cd6-4f5a-ad65-aef0efb8cff3, version 77405344-7dc6-491b-aed1-68f88c82ebc8 100 %
+    message "ADG staging 4e565da1d9cc (main)"
+  adg-demo main 4e565da "Release genesee-press-2.1.0-559dbaf913a0" (adg 559dbaf)
+  dataset (read-only verify from this Mac): Demo Mode 4667d3cf…9b270f08 ok, Genesee Press b4b93b65…e59445d0 match
+
+Release path (existing; nothing new invented)
+  1. 40ozs/synthetic-enterprise tools/cutover/specs/adg.json, branch release/ADG-WAVE-D-STAGING-01 off SE main a6e63f9:
+     spec commit e50115c — lane ADG-WAVE-D-STAGING-RELEASE-01, release_id genesee-press-2.1.0-bb370f8e4531,
+     source_branch integration/ADG-UX-WAVE-D-01, application_upstream_sha bb370f8…, and 79ec257's
+     "deploys with bootstrap: false" release note. 79ec257 (Wave C) NOT merged.
+  2. demo_release.py export --app adg --source adg --se . --generated-at 2026-10-31T18:24:16Z
+     → 906 files, files_sha256 f927b0e9…3a2bb39, 0 redactions, 25 accepted scan findings (as Wave C)
+     verify_release.py: OK, 905 files match; adg @ bb370f8e4531, synthetic-enterprise @ ce7c0c7d9fbc, adg@0.3.0, dataset 2.1.0
+     901 application files byte-checked against git show bb370f8:<path>: 0 mismatches
+  3. 40ozs/adg-demo main 4e565da → 5c7805e423fd1632b310502d07a926b9b221a421 "Release genesee-press-2.1.0-bb370f8e4531"
+     16 files (13 application = exactly the 13 non-report paths of 559dbaf..bb370f8, + the exporter's 3 generated files)
+     demo_release.py compare (committed tree): identical true (906/906); rerun from SE main 113d3b1: identical true
+     "Demo release verification" run 41229450920 on 5c7805e: success (Release integrity and provenance)
+  4. "Free staging (ADG demo)" workflow_dispatch on main, bootstrap=false (no confirm_reset): run 41229548980, success
+     dispatched 18:28:01Z; preflight ✓, code gates ✓, bootstrap SKIPPED (no database reset), deploy origin ✓
+     (18:28:31–18:31:17Z), deploy Worker ✓ (18:31:20–18:33:27Z), hosted checks ✓ (18:33:35–18:36:01Z):
+     verify ok, Demo Mode 4667d3cf…9b270f08, Genesee Press b4b93b65…e59445d0 match, smoke 23/23, browser 22/22
+  5. SE main a6e63f9 → 113d3b1 (--no-ff merge of release/ADG-WAVE-D-STAGING-01, after the hosted checks passed)
+
+Deployed (read-only API reads after the run)
+  Render live dep-dbj36k67bikc73e9rskg @ adg-demo 5c7805e423fd1632b310502d07a926b9b221a421
+    (created 18:28:33Z, finished 18:31:13Z); dep-dbj177142hec73boioj0 now deactivated
+  Worker deployment b9e13ffb-0a2a-4046-a356-8004bf5ee5b7 (18:33:23Z): version 5e87f21f-5bf3-46ab-938c-ca32f9a9d763 100 %
+    message "ADG staging 5c7805e423fd (main)"
+  Content proof (bundle-markers.py): the hosted campaign page's client chunk 8993-7c24db0542ab7976.js carries the
+    NAV-07 item link compiled with prefetch:!1 beside /governance/items/ (hosted-markers.json); the Wave C build's
+    item-href chunk does not, the Wave D build's does (local-markers.json)
+
+Rollback (no database step; the dataset was not touched)
+  Render: redeploy adg-demo 4e565da (dep-dbj177142hec73boioj0's commit)
+  Worker: wrangler rollback 77405344-7dc6-491b-aed1-68f88c82ebc8
+  adg-demo: release commit 5c7805e can be followed by a re-export of 559dbaf; never force-push main
+
+Not touched: any production Worker, Render service or DNS (production NOT deployed), the hosted dataset, adg main,
+Cloudflare settings, Render service settings, GitHub environments.

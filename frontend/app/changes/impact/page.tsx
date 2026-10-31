@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -10,6 +11,9 @@ import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
 import { ChangeCard, ImpactCaveat } from "@/components/Changes";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Why access changed") };
 
 /**
  * Why access changed — resolved either side of one edit by the ordinary engine.
@@ -106,7 +110,7 @@ export default async function ChangeImpactPage({
                   <p>
                     These disagree, and that is the answer rather than a contradiction. The
                     edit describes what the entry grants; effective access is what survives
-                    the other layer, any Deny entry, and the principal&apos;s own state.
+                    the other layer, any Deny entry, and the identity&apos;s own state.
                   </p>
                 </div>
               )}

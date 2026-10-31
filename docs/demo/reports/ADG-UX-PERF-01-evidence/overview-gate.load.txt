@@ -1,0 +1,4 @@
+Machine load (uptime) around the recorded gate run, 2026-10-30 PDT:
+before: 14:03 load averages: 21.07 26.32 30.85
+after:  14:04 load averages: 44.35 32.55 32.78
+Other Wave B lanes and unrelated jobs shared the Mac; Wave A ran at a lower load, so absolute ms are noisy. The progressive assertions are relative (section vs its own read end, on one clock).

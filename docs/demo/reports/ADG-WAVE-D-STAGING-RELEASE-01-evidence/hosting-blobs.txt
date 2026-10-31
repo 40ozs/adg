@@ -1,0 +1,21 @@
+Hosting-path files (git blob ids: adg-demo 4e565da [live] / adg-demo 5c7805e [new] / adg bb370f8 [source])
+  frontend/cloudflare/worker.ts                              e60a734e e60a734e e60a734e SAME
+  frontend/cloudflare/routing.ts                             97caefd5 97caefd5 97caefd5 SAME
+  frontend/cloudflare/environment.ts                         fd40d396 fd40d396 fd40d396 SAME
+  frontend/render/gate.ts                                    bfab7864 bfab7864 bfab7864 SAME
+  frontend/next.config.mjs                                   c1714730 c1714730 c1714730 SAME
+  frontend/wrangler.jsonc                                    5ee886de 5ee886de 5ee886de SAME
+  docker/Dockerfile.render                                   a60d4863 a60d4863 a60d4863 SAME
+  docker/Dockerfile.backend                                  65ea253d 65ea253d 65ea253d SAME
+  .github/workflows/cloudflare-staging.yml                   361a015b 361a015b 361a015b SAME
+  frontend/app/page.tsx                                      452c2fe7 452c2fe7 452c2fe7 SAME
+  frontend/app/layout.tsx                                    333ab406 333ab406 333ab406 SAME
+  frontend/components/Overview.tsx                           d205b130 d205b130 d205b130 SAME
+  frontend/components/overview.module.css                    f48525f2 f48525f2 f48525f2 SAME
+  frontend/components/RecentlyViewed.tsx                     b94bcf0c b94bcf0c b94bcf0c SAME
+  frontend/package-lock.json                                 cba9359c cba9359c cba9359c SAME
+  backend/pyproject.toml                                     750ac04d 750ac04d 750ac04d SAME
+  backend/vendor/synthetic-enterprise/SYNTHETIC_ENTERPRISE.lock b5530ed5 b5530ed5 b5530ed5 SAME
+  docs/demo/genesee-press.manifest.json                      4b1d6f61 4b1d6f61 4b1d6f61 SAME
+  database/ tree: 1e5bd9a6 / 1e5bd9a6
+  backend/vendor/ tree: 86e9f8db / 86e9f8db

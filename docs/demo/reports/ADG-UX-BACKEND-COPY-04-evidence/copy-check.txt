@@ -1,0 +1,19 @@
+PASS  API: explain keeps principal= and principal:<sid> node ids; reason says identity — reason "This identity holds rights on this object."; 19 removal targets
+PASS  API: rule redundant_access_paths keeps its id, version 1.0 and the identity title — version 1.0
+PASS  API: What-if vocabulary codes unchanged, descriptions say identity — codes add_member/remove_member/principal_budget kept
+PASS  Explain: identity wording, removal relationships named, ids kept on the row — 19 rows, first "Brianna Reddy is a member of Sales-Opsmembership"; 20/29 links ok
+PASS  Explain export: human label with the canonical edge id beside it — export carries [membership:principal:S-1-5-21-3949361974-1583827165-633756269-1243->group:S-1-5-21-3949361974-1583827165-633756269-1437]
+PASS  Investigate: identity wording, no generic principal — 12/12 links ok
+PASS  What-if vocabulary on the new-simulation page says identity — 0/0 links ok
+PASS  Reviews list: scope tokens rendered as words, explicit fallback without a name — 4/4 links ok
+PASS  Campaign page: reviewer scopes named from the items, links work — 15/15 links ok
+PASS  Campaign page filtered to one identity: heading names it — heading "Items for sec-share-design-read-only"
+PASS  Identity detail (person): no generic principal, links work — 12/12 links ok
+PASS  Group detail: no generic principal, links work — 24/24 links ok
+PASS  Findings: redundant routes: no generic principal, links work — 30/120 links ok
+PASS  Changes scoped to an identity: the scope line says identity, the query stays principal= — 7/7 links ok
+PASS  375px: explain, What-if, reviews and campaign pages do not scroll sideways
+PASS  320px: explain, What-if, reviews and campaign pages do not scroll sideways
+PASS  no page errors
+
+17/17 passed

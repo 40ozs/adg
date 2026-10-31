@@ -1,0 +1,74 @@
+# Terminology sweep, integration HEAD 66f9548
+
+## Backend: COPY-04's AST scan (principal-scan.py) over backend/app
+Wave C inventory: 111 entries (principal-inventory.wave-c.txt)
+Identical to COPY-04's principal-inventory.after.txt: every remaining occurrence keeps COPY-04 §2.2-§2.4's classification (Windows term of art, wire/internal contract, OpenAPI/schema doc, identifier syntax, CLI/debug, collector operator text).
+
+## Frontend: every line added since Wave B (10c73d1) in app/, components/, lib/ that contains 'principal'
+
+FILE frontend/app/access/explain/page.tsx
+FILE frontend/app/access/investigate/page.tsx
+FILE frontend/app/changes/compare/page.tsx
+FILE frontend/app/changes/impact/page.tsx
+FILE frontend/app/changes/page.tsx
++        // The query parameter stays `principal`; the reader sees the UX-01 word.
++        label: `${name === "principal" ? "identity" : name}: ${value}`,
+FILE frontend/app/governance/campaigns/[campaignId]/page.tsx
++          <h2 id="items">{itemsHeading({ mine, target, principal, itemStatus }, names)}</h2>
++    principal: string | undefined;
++    parts.push(`for ${names.get(filters.principal) ?? filters.principal}`);
+FILE frontend/app/governance/items/[itemId]/page.tsx
+FILE frontend/app/identities/groups/page.tsx
+FILE frontend/app/identities/principal/[key]/layout.tsx
++          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="identity" entityKey={key} />
++        owner={recentOwner(viewer.principal.subject)}
++        entityKey={principal.key}
++        label={identityLabel(principal)}
+FILE frontend/app/identities/users/page.tsx
+FILE frontend/app/page.tsx
++          owner={recentOwner(viewer.principal.subject)}
++          capabilities={viewer.principal.capabilities}
+FILE frontend/app/resources/directory/page.tsx
++          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="directory" entityKey={key} />
++        owner={recentOwner(viewer.principal.subject)}
+FILE frontend/app/resources/server/page.tsx
++          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="server" entityKey={key} />
++        owner={recentOwner(viewer.principal.subject)}
+FILE frontend/app/resources/share/page.tsx
++          <ForgetRecentView owner={recentOwner(viewer.principal.subject)} kind="share" entityKey={key} />
++        owner={recentOwner(viewer.principal.subject)}
+FILE frontend/app/risks/alerts/page.tsx
+FILE frontend/app/simulations/[simulationId]/page.tsx
+FILE frontend/app/simulations/new/page.tsx
+FILE frontend/components/Explanation.tsx
+FILE frontend/components/Governance.tsx
+FILE frontend/components/RecentlyViewed.tsx
+FILE frontend/components/SignOutButton.tsx
+FILE frontend/components/overview.module.css
+FILE frontend/lib/explanation.ts
++ * The engine ids (`principal:S-1-…`) stay the row's key and go into the text export; they are
+FILE frontend/lib/governance.ts
++  principal: "Identity",
++  if (scope.kind !== "principal") {
++/** The baseline names of the identities a page of items covers, by principal key. */
++    if (item.principal_display_name !== null) {
++      names.set(item.principal_key, item.principal_display_name);
+FILE frontend/lib/recent-owner.ts
+FILE frontend/lib/recent.ts
++import type { PrincipalSummary } from "@/lib/contracts";
++import { principalHrefForKey } from "@/lib/identity";
++      return principalHrefForKey(entry.key);
++export function identityLabel(principal: PrincipalSummary): string {
++    principal.display_name ??
++    principal.sam_account_name ??
++    principal.last_known_name ??
++    principal.sid
+
+Classification:
+- viewer.principal.subject / .capabilities, principal.key, principal.display_name etc., PrincipalSummary, principalHrefForKey, item.principal_key / principal_display_name: wire/internal contract (field and type names).
+- scope.kind !== "principal", name === "principal", filters.principal: wire contract (scope token, query parameter).
+- comments: developer text.
+- principal: "Identity": label map whose user-visible value is "Identity".
+- User-facing generic prose reintroduced: NONE.
+
+Rendered text is checked by the browser gates: copy-check.txt (identity wording, 17 checks), wave-c-check.txt (identity page and explanation, no generic 'principal' outside the BACKEND-COPY-04 §7 terms of art), wave-b-check.*.txt (identity page).

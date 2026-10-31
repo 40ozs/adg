@@ -1,0 +1,8 @@
+PASS  1. API: governance reads as planner; viewer refused; no campaign rows on the canonical dataset — campaigns 200 (0 rows), queue 200, viewer 403
+PASS  2. API: scan-run scopes (ScanScopeView) are exactly {kind, key} — 50 runs, every scope {kind, key}
+PASS  3. 1360px: Overview → Findings → Reviews client-side, Back/Forward, Reviews empty state, unknown campaign title, no sideways scroll — Reviews: "Review access decisions that require human confirmation. A campaign is frozen ag"
+PASS  4. 375px: Overview → Findings → Reviews client-side, Back/Forward, Reviews empty state, unknown campaign title, no sideways scroll — Reviews: "Review access decisions that require human confirmation. A campaign is frozen ag"
+PASS  5. 320px: Overview → Findings → Reviews client-side, Back/Forward, Reviews empty state, unknown campaign title, no sideways scroll — Reviews: "Review access decisions that require human confirmation. A campaign is frozen ag"
+PASS  6. no page error, no hydration error — 0 page errors; console errors: Failed to load resource: the server responded with a status of 404 ()
+
+6/6 checks passed

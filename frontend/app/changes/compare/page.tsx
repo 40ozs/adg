@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -12,6 +13,9 @@ import { ChangeSummaryStrip, ChangeTimeline } from "@/components/Changes";
 import { ComparisonOutcomePanel, NarrowComparisonForm } from "@/components/Comparison";
 import { ComparisonLink } from "@/components/ComparisonLink";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Compare two points in time") };
 
 const PATH = "/changes/compare";
 

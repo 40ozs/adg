@@ -1,0 +1,18 @@
+# ADG-UX-NAV-07 frontend gates — Node v22.23.3 arm64, tree = this lane's code commit
+lint exit 1 (first run: linted the parked baseline build inside frontend/; moved out, rerun below)
+typecheck exit 0
+cf:typecheck exit 0
+test exit 0
+build exit 0
+lint (rerun) exit 0
+
+## vitest
+ Test Files  49 passed (49)
+      Tests  1693 passed (1693)
+   Duration  63.79s (transform 62.66s, setup 63.06s, collect 109.35s, tests 62.19s, environment 73.14s, prepare 23.83s)
+
+## build (ADG_NEXT_OUTPUT=standalone)
+✓ Compiled successfully in 46s
+├ ƒ /governance
+├ ƒ /governance/campaigns/[campaignId]
+├ ƒ /governance/items/[itemId]

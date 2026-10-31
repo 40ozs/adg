@@ -642,7 +642,7 @@ class SimulationOverlay:
         if total > MAX_CHANGES:
             raise DomainValidationError(
                 f"An overlay holds at most {MAX_CHANGES} changes; this one holds {total}. "
-                "Every change widens the set of principals and resources that have to be "
+                "Every change widens the set of identities and resources that have to be "
                 "re-evaluated, so an unbounded overlay is an unbounded simulation.",
                 field="changes",
             )

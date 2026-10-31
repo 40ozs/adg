@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 import Link from "next/link";
 
@@ -17,6 +18,9 @@ import {
 } from "@/components/Governance";
 import { principalLabel, targetLabel } from "@/lib/governance";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Review item") };
 
 /**
  * One review item, and the evidence a decision needs.

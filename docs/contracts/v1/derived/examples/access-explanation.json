@@ -1371,7 +1371,7 @@
     "may_overstate": false,
     "may_understate": false,
     "outcome": "granted",
-    "reason": "This principal holds rights on this object."
+    "reason": "This identity holds rights on this object."
   },
   "warnings": [
     {

@@ -125,7 +125,7 @@ export const simApplication = (
 ): SimulationApplicationView => ({
   change: {
     kind: "remove_member",
-    kind_description: "Take a principal out of a group.",
+    kind_description: "Remove an identity from a group.",
     description: "Remove S-1-5-21-1-2-3-1104 from S-1-5-21-1-2-3-1202 (directory_group_member).",
     document: { kind: "remove_member" },
     group: null,
@@ -197,7 +197,7 @@ export const simVocabulary = (
   over: Partial<SimulationVocabularyResponse> = {},
 ): SimulationVocabularyResponse => ({
   notice: NOTICE,
-  change_kinds: [{ code: "remove_member", description: "Take a principal out of a group." }],
+  change_kinds: [{ code: "remove_member", description: "Remove an identity from a group." }],
   inherited_ace_dispositions: [],
   outcomes: [{ code: "applied", description: "Applied to the baseline state." }],
   directions: [],

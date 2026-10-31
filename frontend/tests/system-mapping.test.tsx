@@ -39,7 +39,7 @@ import {
 } from "./explanation-factories";
 
 /** The fixed sentences the defective build printed beside evidence that contradicted them. */
-const NOTHING_REACHES = /Nothing on either ACL reaches this principal/;
+const NOTHING_REACHES = /Nothing on either ACL reaches this identity/;
 const COLLECTION_GAP = /collection is incomplete/;
 
 describe("reading the mapping the engine reported", () => {
@@ -120,7 +120,7 @@ describe("the wording agrees with the evidence", () => {
 
     expect(wording.word).toBe("No access");
     expect(wording.guidance).not.toMatch(NOTHING_REACHES);
-    expect(wording.guidance).toContain("The NTFS ACL grants this principal rights");
+    expect(wording.guidance).toContain("The NTFS ACL grants this identity rights");
     expect(wording.guidance).toContain("share ACL gives it none");
   });
 
@@ -182,7 +182,7 @@ describe("the verdict panel", () => {
     render(<VerdictPanel explanation={noGrantBetweenLayers()} />);
 
     expect(screen.queryByText(NOTHING_REACHES)).toBeNull();
-    expect(screen.getByText(/The NTFS ACL grants this principal rights/)).toBeInTheDocument();
+    expect(screen.getByText(/The NTFS ACL grants this identity rights/)).toBeInTheDocument();
   });
 });
 

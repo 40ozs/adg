@@ -1456,9 +1456,9 @@ def _require_homogeneous(items: Sequence[ReviewItem]) -> None:
     targets = {item.target_key for item in items}
     if len(principals) > 1 and len(targets) > 1:
         raise NotHomogeneous(
-            f"These {len(items)} items cover {len(principals)} principals across "
+            f"These {len(items)} items cover {len(principals)} identities across "
             f"{len(targets)} targets, which is not one question. A batch must share an "
-            "axis: one principal over many targets, or one target over many principals. "
+            "axis: one identity over many targets, or one target over many identities. "
             "Anything else is several judgments recorded as one."
         )
 

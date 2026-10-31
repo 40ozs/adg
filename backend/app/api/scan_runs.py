@@ -186,7 +186,7 @@ class ScanRunCompletedResponse(BaseModel):
     )
 
 
-class ScopeView(BaseModel):
+class ScanScopeView(BaseModel):
     kind: str
     key: str
 
@@ -223,8 +223,8 @@ class ScanRunView(BaseModel):
     error_count: int
     notes: str | None
     downgrade_reason: str | None
-    declared_scopes: list[ScopeView]
-    reconciled_scopes: list[ScopeView]
+    declared_scopes: list[ScanScopeView]
+    reconciled_scopes: list[ScanScopeView]
     errors: list[CollectorErrorView]
     baseline: CheckpointView | None = Field(
         default=None, description="The checkpoint this delta resumed from."
@@ -458,9 +458,11 @@ async def get_scan_run(run_id: RunIdPath, session: Session) -> ScanRunView:
         error_count=snapshot.error_count,
         notes=snapshot.notes,
         downgrade_reason=snapshot.downgrade_reason,
-        declared_scopes=[ScopeView(kind=kind, key=key) for kind, key in snapshot.declared_scopes],
+        declared_scopes=[
+            ScanScopeView(kind=kind, key=key) for kind, key in snapshot.declared_scopes
+        ],
         reconciled_scopes=[
-            ScopeView(kind=kind, key=key) for kind, key in snapshot.reconciled_scopes
+            ScanScopeView(kind=kind, key=key) for kind, key in snapshot.reconciled_scopes
         ],
         errors=[CollectorErrorView(**error) for error in snapshot.errors],
         baseline=_checkpoint_view(snapshot.baseline),
