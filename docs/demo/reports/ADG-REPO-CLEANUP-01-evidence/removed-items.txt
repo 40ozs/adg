@@ -1,0 +1,75 @@
+# ADG-REPO-CLEANUP-01 deletion ledger (2026-10-31)
+# Every worktree was clean (0 tracked changes, 0 stashes, no untracked files except ignored ._*/.DS_Store);
+# removed with plain 'git worktree remove' (no --force), then 'git worktree prune'. kb = du -sk before removal.
+
+## Worktrees (local, /Volumes/T5 EVO/mmm/worktrees)
+REMOVED adg-HOSTED-STREAMING-10 branch=docs/ADG-HOSTED-STREAMING-10 head=dc3fd52ad8232284fdb5e55177ff136e55ceefc0 kb=366976 secs=16
+REMOVED adg-HOSTED-STREAMING-11 branch=docs/ADG-HOSTED-STREAMING-11 head=77b44004f5a6ba73e85ac44251893a64ab8dc32d kb=249472 secs=11
+REMOVED adg-UX-01 branch=feature/ADG-UX-01-information-architecture head=6ded5ed0cc5ccae0d2571c11d13c4c6b4d36a63c kb=4492032 secs=238
+REMOVED adg-UX-06 branch=feature/ADG-UX-06-operational-overview head=d9f7a3b156eb0af8b6f25e6028113c4b19e2a8be kb=4481536 secs=187
+REMOVED adg-UX-BACKEND-COPY-04 branch=feature/ADG-UX-BACKEND-COPY-04-identity-wording head=9cec0b087b6d43b812b17d851fe7be2c8a24d787 kb=501120 secs=23
+REMOVED adg-UX-DEEP-TITLES-06 branch=feature/ADG-UX-DEEP-TITLES-06-contextual-titles head=c226516335d81cfd078578ffdc19d15736fa45ca kb=445824 secs=15
+REMOVED adg-UX-ENTITY-02 branch=feature/ADG-UX-ENTITY-02-identity-context head=a0a54de4fd2e1a2453b6ab6ae1268b043ca2806f kb=426368 secs=21
+REMOVED adg-UX-NAV-07 branch=feature/ADG-UX-NAV-07-review-item-client-navigation head=70d08e7bfd418305cf53a8cc58968732c25dfbeb kb=685696 secs=31
+REMOVED adg-UX-PERF-01 branch=feature/ADG-UX-PERF-01-progressive-overview head=9a7a2a51860c0d31a9cdfa04a75c2b20a0655b94 kb=4861056 secs=423
+REMOVED adg-UX-RECENT-05A branch=design/ADG-UX-RECENT-05A-recently-viewed-architecture head=5a4c27ba6d21802bffc10c5b5daa64bf7f9d3309 kb=226048 secs=6
+REMOVED adg-UX-RECENT-05B branch=feature/ADG-UX-RECENT-05B-recently-viewed head=44d1a3c0ca8460b2423688b82c858573820ae52e kb=468736 secs=8
+REMOVED adg-UX-REVIEW-NAMES-08 branch=feature/ADG-UX-REVIEW-NAMES-08-scope-display-name head=68770398ea4d3de5e17045fe829a3310f99a3c95 kb=622720 secs=37
+REMOVED adg-UX-TEST-STABILITY-09 branch=test/ADG-UX-TEST-STABILITY-09-deterministic-titles head=9c67d2c1456ceaec933b9250713236adc5293a72 kb=563200 secs=26
+REMOVED adg-UX-TITLES-03 branch=feature/ADG-UX-TITLES-03-document-titles head=76e3c46e4e5b3d599ee6583fb1fcf5f81e19ada2 kb=4513920 secs=333
+REMOVED adg-UX-WAVE-B-01 branch=integration/ADG-UX-WAVE-B-01 head=10c73d1fcb5b12b31fa54e57b95da3483c079fba kb=468224 secs=22
+REMOVED adg-UX-WAVE-C-01 branch=integration/ADG-UX-WAVE-C-01 head=559dbaf913a02e0df4ddf18be89ef81f03e48596 kb=496768 secs=9
+REMOVED adg-UX-WAVE-D-01 branch=integration/ADG-UX-WAVE-D-01 head=bb370f8e4531a15166006a1f79f9ca2d64e11a3a kb=734080 secs=30
+REMOVED adg-WAVE-D-PROMOTION-01 branch=integration/ADG-WAVE-D-PROMOTION-01 head=d82d477c72620133ae6013bad8c8c451b52f56b8 kb=5424384 secs=381
+REMOVED adg-WAVE-D-STAGING-RELEASE-01 branch=docs/ADG-WAVE-D-STAGING-RELEASE-01 head=d60168fd3ebf983c040e7caf0cabfe777590f2c2 kb=384512 secs=23
+REMOVED adg-UX-WAVE-A-01 branch=integration/ADG-UX-WAVE-A-01 head=fcb792872363c131d2539bab1f629c5d5120445e kb=4879744 secs=352
+
+## Local branches
+Deleted branch integration/ADG-UX-WAVE-A-01 (was fcb7928).
+Deleted branch integration/ADG-UX-WAVE-B-01 (was 10c73d1).
+Deleted branch integration/ADG-UX-WAVE-C-01 (was 559dbaf).
+Deleted branch integration/ADG-UX-WAVE-D-01 (was bb370f8).
+Deleted branch integration/ADG-WAVE-D-PROMOTION-01 (was d82d477).
+Deleted branch feature/ADG-UX-01-information-architecture (was 6ded5ed).
+Deleted branch feature/ADG-UX-06-operational-overview (was d9f7a3b).
+Deleted branch feature/ADG-UX-BACKEND-COPY-04-identity-wording (was 9cec0b0).
+Deleted branch feature/ADG-UX-DEEP-TITLES-06-contextual-titles (was c226516).
+Deleted branch feature/ADG-UX-ENTITY-02-identity-context (was a0a54de).
+Deleted branch feature/ADG-UX-NAV-07-review-item-client-navigation (was 70d08e7).
+Deleted branch feature/ADG-UX-PERF-01-progressive-overview (was 9a7a2a5).
+Deleted branch feature/ADG-UX-RECENT-05B-recently-viewed (was 44d1a3c).
+Deleted branch feature/ADG-UX-REVIEW-NAMES-08-scope-display-name (was 6877039).
+Deleted branch feature/ADG-UX-TITLES-03-document-titles (was 76e3c46).
+Deleted branch test/ADG-UX-TEST-STABILITY-09-deterministic-titles (was 9c67d2c).
+Deleted branch docs/ADG-WAVE-D-STAGING-RELEASE-01 (was d60168f).
+(forced -D: superseded, 36/36 files byte-identical on origin/main)
+
+## Remote branches (git push --force-with-lease=<branch>:<verified sha> origin :<branch>; open PRs re-queried first:)
+#   open PR: #4 head=ci/ADG-CI-SPEEDUP-01 base=main
+deleted origin/integration/ADG-UX-WAVE-A-01 (was fcb792872363c131d2539bab1f629c5d5120445e)
+deleted origin/integration/ADG-UX-WAVE-B-01 (was 10c73d1fcb5b12b31fa54e57b95da3483c079fba)
+deleted origin/integration/ADG-UX-WAVE-C-01 (was 559dbaf913a02e0df4ddf18be89ef81f03e48596)
+deleted origin/integration/ADG-UX-WAVE-D-01 (was bb370f8e4531a15166006a1f79f9ca2d64e11a3a)
+deleted origin/integration/ADG-WAVE-D-PROMOTION-01 (was d82d477c72620133ae6013bad8c8c451b52f56b8)
+deleted origin/feature/ADG-UX-01-information-architecture (was 6ded5ed0cc5ccae0d2571c11d13c4c6b4d36a63c)
+deleted origin/feature/ADG-UX-06-operational-overview (was d9f7a3b156eb0af8b6f25e6028113c4b19e2a8be)
+deleted origin/feature/ADG-UX-BACKEND-COPY-04-identity-wording (was 9cec0b087b6d43b812b17d851fe7be2c8a24d787)
+deleted origin/feature/ADG-UX-DEEP-TITLES-06-contextual-titles (was c226516335d81cfd078578ffdc19d15736fa45ca)
+deleted origin/feature/ADG-UX-ENTITY-02-identity-context (was a0a54de4fd2e1a2453b6ab6ae1268b043ca2806f)
+deleted origin/feature/ADG-UX-NAV-07-review-item-client-navigation (was 70d08e7bfd418305cf53a8cc58968732c25dfbeb)
+deleted origin/feature/ADG-UX-PERF-01-progressive-overview (was 9a7a2a51860c0d31a9cdfa04a75c2b20a0655b94)
+deleted origin/feature/ADG-UX-RECENT-05B-recently-viewed (was 44d1a3c0ca8460b2423688b82c858573820ae52e)
+deleted origin/feature/ADG-UX-REVIEW-NAMES-08-scope-display-name (was 68770398ea4d3de5e17045fe829a3310f99a3c95)
+deleted origin/feature/ADG-UX-TITLES-03-document-titles (was 76e3c46e4e5b3d599ee6583fb1fcf5f81e19ada2)
+deleted origin/test/ADG-UX-TEST-STABILITY-09-deterministic-titles (was 9c67d2c1456ceaec933b9250713236adc5293a72)
+deleted origin/docs/ADG-WAVE-D-STAGING-RELEASE-01 (was d60168fd3ebf983c040e7caf0cabfe777590f2c2)
+
+## Processes stopped (cwd inside a cleanup-approved worktree; leftovers of ADG-WAVE-D-PROMOTION-01 ~/Code/scratch-adg-wave-d-promo/stack.sh)
+72539 bash stack.sh (cwd adg-WAVE-D-PROMOTION-01/frontend/.next/standalone)
+72541 bash stack.sh (cwd adg-UX-WAVE-C-01/frontend/.next/standalone)
+72542 next-server :3110 (adg-WAVE-D-PROMOTION-01)
+72543 next-server :3112 (adg-UX-WAVE-C-01, Wave C baseline)
+76348 next-server :3111 (adg-WAVE-D-PROMOTION-01)
+
+## Scratch
+deleted ~/Code/scratch-adg-wave-d kb=1228908 (pgdata 1.2 GB stopped pgserver cluster, no postmaster.pid; logs/; gate.sh, start-web.sh, c04.mjs)

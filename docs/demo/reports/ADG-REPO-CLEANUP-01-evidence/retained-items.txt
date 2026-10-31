@@ -1,0 +1,37 @@
+# ADG-REPO-CLEANUP-01 preservation ledger (2026-10-31)
+
+## Worktrees
+/Volumes/T5 EVO/mmm/adg  main @ c4d6a67 (= origin/main)  canonical checkout; the only ADG worktree left
+  (PR #4 had no local worktree or local branch before or after cleanup.)
+
+## Local branches
+main                                                    c4d6a67  canonical
+deploy/ADG-HOSTED-NEXT16-01                             1c36984  deploy branch (ancestor of main; deploy refs out of scope)
+deploy/ADG-FREE-STAGING-01                              3e26e4a  deploy branch, 26 commits not on main
+release/ADG-UI-EDGE-DIRECTORY-02                        511ab22  old UI line (= origin/claude/adoring-cannon-7gh2pf), 38 commits not on main
+fix/ADG-UI-UPDATE-01                                    a5cdf88  local only, 11 commits not on main (old UI line)
+docs/ADG-HOSTED-STREAMING-10                            dc3fd52  1 commit / 16 docs files NOT on main
+docs/ADG-HOSTED-STREAMING-11                            77b4400  3 commits / 38 docs files NOT on main
+design/ADG-UX-RECENT-05A-recently-viewed-architecture   5a4c27b  1 commit / 1 docs file NOT on main
+(The last three lost their worktrees only; local == remote, so nothing was lost.)
+
+## Remote branches (41 left, see after-worktrees.txt)
+ci/ADG-CI-SPEEDUP-01  OPEN PR #4, head 3aae395 - PROTECTED
+docs/ADG-HOSTED-STREAMING-10, docs/ADG-HOSTED-STREAMING-11, design/ADG-UX-RECENT-05A-...  unique docs not on main
+deploy/*, feature/CLOUDFLARE-DEMO-CACHE-01, feature/ADG-GRAPH-*, fix/*, integration/ADG-UI-EDGE-01,
+integration/ADG-NEXT16-UI-02, claude/* with commits not on main      category A: unmerged, provenance outside this lane
+19 ancestor-of-main remotes outside Wave A-D (claude/*, SYNTH-*, merge/SYNTH-OWNER-MERGE-01,
+integration/ADG-HOSTED-GOVERNANCE-01, ...)                          category B, deletion deferred to a later lane
+Tags: none exist; none touched.
+
+## Ignored files preserved into the canonical checkout (same ignored path; not committed, *.log is gitignored)
+docs/demo/reports/ADG-UX-06-evidence/overview-gate.log                                  (43/43 run; report cites overview-gate.json)
+docs/demo/reports/ADG-WAVE-D-STAGING-RELEASE-01-evidence/hosted-checks/smoke.log        (23/23; report states it)
+docs/demo/reports/ADG-WAVE-D-STAGING-RELEASE-01-evidence/hosted-checks/browser.log      (22/22; the report links this path)
+Already present there from earlier lanes: ADG-UI-RECONCILE-01-evidence/**/*.log, .env, frontend/.dev.vars (no secrets: .env = .env.example, .dev.vars = local rehearsal key).
+
+## Other ADG-owned local state kept (outside this brief's deletion scope, small)
+~/Code/scratch-adg-wave-d-promo     ~1 MB   promotion harness (stack.sh, *-gates.sh) referenced for gate wiring
+~/Code/scratch-adg-wave-d-release   ~22 MB  staging-release harness (bundle-markers.py, export tree)
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-01-gates + adg-UX-01.npm-ci.log  ~3 MB  UX-01 gate logs (not a git worktree)
+/Volumes/T5 EVO/mmm/adg-run-logs    earlier lanes' run logs

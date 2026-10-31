@@ -1,0 +1,48 @@
+# disk, before cleanup, 2026-10-31T22:04:12Z
+Filesystem     1024-blocks       Used  Available Capacity iused     ifree %iused  Mounted on
+/dev/disk6s2    7813770368 2235076480 5578693888    29%       1         0  100%   /Volumes/T5 EVO
+/dev/disk3s1s1   239362496   12342156   27334120    32%  458732 273341200    0%   /
+
+## du -sk (KB)
+366976	/Volumes/T5 EVO/mmm/worktrees/adg-HOSTED-STREAMING-10
+249472	/Volumes/T5 EVO/mmm/worktrees/adg-HOSTED-STREAMING-11
+4492032	/Volumes/T5 EVO/mmm/worktrees/adg-UX-01
+2688	/Volumes/T5 EVO/mmm/worktrees/adg-UX-01-gates
+128	/Volumes/T5 EVO/mmm/worktrees/adg-UX-01.npm-ci.log
+4481536	/Volumes/T5 EVO/mmm/worktrees/adg-UX-06
+501120	/Volumes/T5 EVO/mmm/worktrees/adg-UX-BACKEND-COPY-04
+445824	/Volumes/T5 EVO/mmm/worktrees/adg-UX-DEEP-TITLES-06
+426368	/Volumes/T5 EVO/mmm/worktrees/adg-UX-ENTITY-02
+685696	/Volumes/T5 EVO/mmm/worktrees/adg-UX-NAV-07
+4861056	/Volumes/T5 EVO/mmm/worktrees/adg-UX-PERF-01
+226048	/Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05A
+468736	/Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05B
+622720	/Volumes/T5 EVO/mmm/worktrees/adg-UX-REVIEW-NAMES-08
+563200	/Volumes/T5 EVO/mmm/worktrees/adg-UX-TEST-STABILITY-09
+4513920	/Volumes/T5 EVO/mmm/worktrees/adg-UX-TITLES-03
+4879744	/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-A-01
+468224	/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-B-01
+496768	/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-C-01
+734080	/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-D-01
+5424384	/Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01
+384512	/Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-STAGING-RELEASE-01
+5940480	/Volumes/T5 EVO/mmm/adg
+1228908	~/Code/scratch-adg-wave-d
+904	~/Code/scratch-adg-wave-d-promo
+22032	~/Code/scratch-adg-wave-d-release
+
+# disk, after cleanup, 2026-10-31T22:51:47Z
+Filesystem     1024-blocks       Used  Available Capacity iused     ifree %iused  Mounted on
+/dev/disk6s2    7813770368 2201790208 5611980160    29%       1         0  100%   /Volumes/T5 EVO
+/dev/disk3s1s1   239362496   12342156   26069060    33%  458732 260690600    0%   /
+
+## du -sk (KB)
+5867648	/Volumes/T5 EVO/mmm/adg
+904	~/Code/scratch-adg-wave-d-promo
+22032	~/Code/scratch-adg-wave-d-release
+2688	/Volumes/T5 EVO/mmm/worktrees/adg-UX-01-gates
+
+## Reclaimed
+T5 EVO free: 5578693888 -> 5611980160 KB = +33286272 KB (31.74 GiB); removed worktrees' du total 35292416 KB (33.66 GiB, exFAT allocation)
+Internal disk: deleting ~/Code/scratch-adg-wave-d freed 1246664 KB (1.19 GiB) at the time of deletion (27336732 -> 28583396 KB);
+  internal free later fell to 26069060 KB because other lanes on this Mac write there concurrently (not ADG).
