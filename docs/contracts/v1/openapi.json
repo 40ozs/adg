@@ -13967,7 +13967,7 @@
           },
           "declared_scopes": {
             "items": {
-              "$ref": "#/components/schemas/ScopeView"
+              "$ref": "#/components/schemas/ScanScopeView"
             },
             "title": "Declared Scopes",
             "type": "array"
@@ -14054,7 +14054,7 @@
           },
           "reconciled_scopes": {
             "items": {
-              "$ref": "#/components/schemas/ScopeView"
+              "$ref": "#/components/schemas/ScanScopeView"
             },
             "title": "Reconciled Scopes",
             "type": "array"
@@ -14120,6 +14120,24 @@
           "errors"
         ],
         "title": "ScanRunView",
+        "type": "object"
+      },
+      "ScanScopeView": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key"
+        ],
+        "title": "ScanScopeView",
         "type": "object"
       },
       "ScanStatus": {
@@ -14451,6 +14469,18 @@
       },
       "ScopeView": {
         "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a 'principal' scope, the identity's current name (display name, else account name, else last known name). Presentation only: 'kind' and 'key' remain the scope. Null for every other kind, and for an identity ADG does not currently describe.",
+            "title": "Display Name"
+          },
           "key": {
             "title": "Key",
             "type": "string"

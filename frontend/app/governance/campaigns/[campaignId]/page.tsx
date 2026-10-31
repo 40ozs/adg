@@ -90,7 +90,7 @@ export default async function CampaignPage({
     subject: mine ? "items assigned to you in this campaign" : "items in this campaign",
   });
   const driftState = classify(drift, { isEmpty: () => false, subject: "drift" });
-  // Names the items already carry; scopes and the heading are labelled from these, never fetched.
+  // Names the items already carry: the heading's, and a scope's when the API sent no name.
   const names = itemNames(itemsState.kind === "ready" ? itemsState.data.items : []);
 
   return (

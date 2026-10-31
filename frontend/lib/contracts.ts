@@ -1153,6 +1153,8 @@ export type FindingRelation = "access" | "target" | "principal";
 export interface ScopeView {
   kind: string;
   key: string;
+  /** An identity scope's current name; presentation only. Absent from older servers. */
+  display_name?: string | null;
 }
 
 export interface GenerationOptionsView {

@@ -363,6 +363,60 @@ describe("scopes in words", () => {
     expect(screen.getByText(`Identity: ${SID} (name not loaded)`)).toBeTruthy();
   });
 
+  it("prefers the name the API sent over the page's own names", () => {
+    render(
+      <ReviewerProgressTable
+        reviewers={[reviewer({ scope: { kind: "principal", key: SID, display_name: "Jane Doe" } })]}
+        names={new Map([[SID, "Jane Smith"]])}
+      />,
+    );
+
+    expect(screen.getByText("Identity: Jane Doe")).toBeTruthy();
+  });
+
+  it("names an identity scope in a campaign row from the API, on one compact line", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    render(
+      <CampaignTable
+        campaigns={[
+          campaign({
+            focus: "principal",
+            scopes: [{ kind: "principal", key: SID, display_name: "sec-share-design-read-only" }],
+          }),
+        ]}
+      />,
+    );
+
+    const row = screen.getByRole("row", { name: /Finance recertification/ });
+    const line = within(row).getByText(/Identity: sec-share-design-read-only/);
+    expect(line.textContent).toBe("By identity · Identity: sec-share-design-read-only");
+    expect(row.textContent).not.toContain(SID);
+    expect(row.textContent).not.toContain("name not loaded");
+    expect(row.querySelectorAll(".muted")).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("keeps the explicit fallback when the API has no name", () => {
+    render(
+      <CampaignTable
+        campaigns={[
+          campaign({
+            focus: "principal",
+            scopes: [
+              { kind: "principal", key: SID, display_name: null },
+              { kind: "principal", key: "S-1-5-21-1-2-3-1002", display_name: "Jane Doe" },
+            ],
+          }),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText(`By identity · Identity: ${SID} (name not loaded), Identity: Jane Doe`),
+    ).toBeTruthy();
+  });
+
   it("labels every scope kind in a campaign row", () => {
     render(
       <CampaignTable

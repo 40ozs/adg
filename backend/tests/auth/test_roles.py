@@ -211,6 +211,14 @@ class TestWhatEachRoleGrants:
         # It does read them: an administrator investigating a complaint has to be able to.
         assert Capability.GOVERNANCE_READ in admin
 
+    def test_every_governance_reader_may_also_read_identities(self) -> None:
+        """Governance responses name identity scopes from the current directory. That
+        discloses nothing only while every role reading governance can read identities too."""
+        for role in ACTIVE_ROLES:
+            granted = capabilities_for(frozenset({role}))
+            if Capability.GOVERNANCE_READ in granted:
+                assert Capability.IDENTITIES_READ in granted, role
+
     def test_roles_combine_by_union(self) -> None:
         combined = capabilities_for(frozenset({Role.VIEWER, Role.ADMIN}))
 
