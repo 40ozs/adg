@@ -1,0 +1,14 @@
+PASS  1360px run 1 — h1 1664 ms, health 3863, attention 3863, changes 3863, reviews 3562, h3 zstd
+PASS  1360px run 2 — h1 658 ms, health 1947, attention 1947, changes 1447, reviews 1146, h3 zstd
+PASS  1360px run 3 — h1 1241 ms, health 2228, attention 2228, changes 1927, reviews 1626, h3 zstd
+PASS  1360px run 4 — h1 1002 ms, health 1698, attention 1698, changes 1311, reviews 1311, h3 zstd
+PASS  1360px run 5 — h1 722 ms, health 1718, attention 1718, changes 1334, reviews 1033, h3 zstd
+PASS  1360px client navigation to Findings
+PASS  375px run 1 — h1 1048 ms, health 3141, attention 3141, changes 2840, reviews 1940, h3 zstd
+PASS  375px run 2 — h1 281 ms, health 2301, attention 2301, changes 979, reviews 678, h3 zstd
+PASS  375px run 3 — h1 395 ms, health 1562, attention 1562, changes 1011, reviews 711, h3 zstd
+PASS  375px run 4 — h1 355 ms, health 1550, attention 1550, changes 959, reviews 659, h3 zstd
+PASS  375px run 5 — h1 256 ms, health 1455, attention 1455, changes 1057, reviews 756, h3 zstd
+PASS  375px client navigation to Findings
+
+all passed

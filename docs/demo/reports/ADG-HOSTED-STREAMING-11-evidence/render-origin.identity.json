@@ -1,0 +1,465 @@
+{
+ "page": "render-origin /",
+ "signed_in_as": "planner",
+ "encoding": "identity",
+ "at": "2026-10-31T16:22:14.419Z",
+ "runs": [
+  {
+   "headers_ms": 197,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     197,
+     776
+    ],
+    [
+     198,
+     1369
+    ],
+    [
+     199,
+     1369
+    ],
+    [
+     199,
+     1369
+    ],
+    [
+     199,
+     1369
+    ],
+    [
+     200,
+     1369
+    ],
+    [
+     200,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     201,
+     1369
+    ],
+    [
+     202,
+     1369
+    ],
+    [
+     202,
+     1369
+    ],
+    [
+     202,
+     84
+    ],
+    [
+     426,
+     1364
+    ],
+    [
+     426,
+     252
+    ],
+    [
+     495,
+     1364
+    ],
+    [
+     495,
+     278
+    ],
+    [
+     1816,
+     1363
+    ],
+    [
+     1816,
+     1369
+    ],
+    [
+     1816,
+     1369
+    ],
+    [
+     1816,
+     1369
+    ],
+    [
+     1817,
+     1369
+    ],
+    [
+     1817,
+     726
+    ]
+   ],
+   "markers": {
+    "title": 197,
+    "h1": 199,
+    "placeholder": 199,
+    "reviews": 426,
+    "changes": 495,
+    "attention": 1816,
+    "health": 1817,
+    "html_end": 1817
+   },
+   "complete_ms": 1817,
+   "wire_bytes": 33587,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 197
+  },
+  {
+   "headers_ms": 177,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     177,
+     776
+    ],
+    [
+     178,
+     1369
+    ],
+    [
+     178,
+     1369
+    ],
+    [
+     178,
+     1369
+    ],
+    [
+     178,
+     1369
+    ],
+    [
+     178,
+     1369
+    ],
+    [
+     178,
+     1369
+    ],
+    [
+     182,
+     1369
+    ],
+    [
+     183,
+     1369
+    ],
+    [
+     183,
+     4229
+    ],
+    [
+     183,
+     4229
+    ],
+    [
+     183,
+     2578
+    ],
+    [
+     380,
+     1616
+    ],
+    [
+     481,
+     1642
+    ],
+    [
+     691,
+     4223
+    ],
+    [
+     692,
+     359
+    ],
+    [
+     692,
+     2983
+    ]
+   ],
+   "markers": {
+    "title": 177,
+    "h1": 178,
+    "placeholder": 178,
+    "reviews": 380,
+    "changes": 481,
+    "attention": 692,
+    "health": 692,
+    "html_end": 692
+   },
+   "complete_ms": 692,
+   "wire_bytes": 33587,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 177
+  },
+  {
+   "headers_ms": 292,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     294,
+     3636
+    ],
+    [
+     294,
+     4229
+    ],
+    [
+     294,
+     1085
+    ],
+    [
+     294,
+     4223
+    ],
+    [
+     294,
+     4229
+    ],
+    [
+     294,
+     4229
+    ],
+    [
+     295,
+     1133
+    ],
+    [
+     586,
+     475
+    ],
+    [
+     586,
+     1141
+    ],
+    [
+     684,
+     972
+    ],
+    [
+     684,
+     670
+    ],
+    [
+     889,
+     4223
+    ],
+    [
+     889,
+     359
+    ],
+    [
+     891,
+     2983
+    ]
+   ],
+   "markers": {
+    "title": 294,
+    "h1": 294,
+    "placeholder": 294,
+    "reviews": 586,
+    "changes": 684,
+    "attention": 891,
+    "health": 891,
+    "html_end": 891
+   },
+   "complete_ms": 891,
+   "wire_bytes": 33587,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 294
+  },
+  {
+   "headers_ms": 298,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     298,
+     3636
+    ],
+    [
+     298,
+     4229
+    ],
+    [
+     298,
+     4229
+    ],
+    [
+     299,
+     4229
+    ],
+    [
+     299,
+     4229
+    ],
+    [
+     299,
+     2212
+    ],
+    [
+     595,
+     2588
+    ],
+    [
+     602,
+     670
+    ],
+    [
+     892,
+     4223
+    ],
+    [
+     894,
+     359
+    ],
+    [
+     894,
+     2983
+    ]
+   ],
+   "markers": {
+    "title": 298,
+    "h1": 298,
+    "placeholder": 298,
+    "reviews": 595,
+    "changes": 602,
+    "attention": 894,
+    "health": 894,
+    "html_end": 894
+   },
+   "complete_ms": 894,
+   "wire_bytes": 33587,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 298
+  },
+  {
+   "headers_ms": 201,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     201,
+     3636
+    ],
+    [
+     203,
+     4229
+    ],
+    [
+     203,
+     4229
+    ],
+    [
+     203,
+     4229
+    ],
+    [
+     203,
+     6441
+    ],
+    [
+     498,
+     1616
+    ],
+    [
+     605,
+     1642
+    ],
+    [
+     831,
+     7565
+    ]
+   ],
+   "markers": {
+    "title": 201,
+    "h1": 203,
+    "placeholder": 203,
+    "reviews": 498,
+    "changes": 605,
+    "attention": 831,
+    "health": 831,
+    "html_end": 831
+   },
+   "complete_ms": 831,
+   "wire_bytes": 33587,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 201
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+# ADG-HOSTED-STREAMING-11 — release and deployment record (2026-10-31)
+
+Source (newest verified ADG UX integration; no Wave D integration branch exists on origin)
+  40ozs/adg integration/ADG-UX-WAVE-C-01 @ 559dbaf913a02e0df4ddf18be89ef81f03e48596
+  CI run 41167906074 on 559dbaf: success   (code/report head 52024ea: CI 41165819488 success)
+  deployed before this lane: adg aebf16f (ancestor of 559dbaf, 46 commits behind)
+
+Rollback anchors (read-only API reads before the deploy, ~16:05Z)
+  Render adg-demo-web (srv-db6jbmlg1s2s739i4fsg): live dep-dbhf9u8u01pc73b649sg @ adg-demo 3d91fada1991 (finished 2026-10-29T07:28:18Z)
+    repo 40ozs/adg-demo, branch main, autoDeploy no, not suspended, origin adg-demo-web.onrender.com
+  Worker adg-demo-staging: deployment 9aa3ea72… version ff44276e-37c3-4ffc-86c4-3e8858fa7700 100 %
+    message "ADG staging 3d91fada1991 (main)"
+  adg-demo main 3d91fad "Release genesee-press-2.1.0-aebf16fcf594" (adg aebf16f)
+  public host https://adg-demo-staging.<subdomain>.workers.dev (workers.dev on)
+
+Release path (existing; nothing new invented)
+  1. 40ozs/synthetic-enterprise tools/cutover/specs/adg.json pins application_upstream_sha.
+     Bumped on branch release/ADG-HOSTED-STREAMING-11 @ 79ec257 (off SE main a6e63f9):
+     lane, release_id genesee-press-2.1.0-559dbaf913a0, source_branch, sha, and the release-note
+     line "deploys with bootstrap: false" (same lock, no migration since aebf16f).
+  2. demo_release.py export --app adg --source adg --se . --generated-at 2026-10-31T16:09:41Z
+     → 905 files, files_sha256 1e5aa24d…db6fa6, 0 redactions, 25 accepted scan findings
+       (source 1431 files → 900 released + 5 generated; spec sha256 ac3ecbf0…)
+     verify_release.py: OK, 904 files match; adg @ 559dbaf913a0, synthetic-enterprise @ ce7c0c7d9fbc
+     267 app/render/cloudflare/backend-app files byte-checked against git show 559dbaf:<path>: 0 mismatches
+  3. 40ozs/adg-demo main 3d91fad → 4e565da1d9cc2caa7b65105cecf9b82309ee1fff "Release genesee-press-2.1.0-559dbaf913a0"
+     129 files changed (28 added, 101 modified, 0 removed); no release-only file beyond the exporter's own five.
+     demo_release.py compare (re-export at the recorded generated_at vs committed tree): identical true
+     "Demo release verification" run 41218491659 on 4e565da: success
+  4. "Free staging (ADG demo)" workflow_dispatch on main, bootstrap=false: run 41218573339, success
+     preflight ✓, code gates ✓, bootstrap skipped (no database reset), deploy origin ✓, deploy Worker ✓,
+     hosted checks ✓ (verify ok, Demo Mode fingerprint 4667d3cf…9b270f08, Genesee Press fingerprint
+     b4b93b65…e59445d0 match, HTTP smoke 23/23, browser gate 22/22)
+
+Deployed (read-only API reads after the run, ~16:21Z)
+  Render live dep-dbj177142hec73boioj0 @ adg-demo 4e565da1d9cc (created 16:13:16Z, finished 16:15:58Z)
+  Worker deployment c0b70f14-0cd6-4f5a-ad65-aef0efb8cff3 (16:18:10Z): version 77405344-7dc6-491b-aed1-68f88c82ebc8 100 %
+    message "ADG staging 4e565da1d9cc (main)"
+
+Hosting-path files (git blob ids: adg-demo 3d91fad / adg-demo 4e565da / adg 559dbaf)
+  frontend/cloudflare/worker.ts                e60a734e e60a734e e60a734e SAME
+  frontend/cloudflare/routing.ts               97caefd5 97caefd5 97caefd5 SAME
+  frontend/cloudflare/environment.ts           fd40d396 fd40d396 fd40d396 SAME
+  frontend/render/gate.ts                      bfab7864 bfab7864 bfab7864 SAME
+  frontend/next.config.mjs                     c1714730 c1714730 c1714730 SAME
+  frontend/wrangler.jsonc                      5ee886de 5ee886de 5ee886de SAME
+  docker/Dockerfile.render                     a60d4863 a60d4863 a60d4863 SAME
+  .github/workflows/cloudflare-staging.yml     361a015b 361a015b 361a015b SAME
+  frontend/package-lock.json, backend/pyproject.toml: SAME; no backend migration, no vendored-projection change
+
+Public build check (hosted-structure.json): the signed-in hosted Overview carries 5 pending Suspense
+boundaries, 5 streamed segments, 5 $RC reveals, 4 aria-busy placeholders with the Wave C loading copy,
+and all four resolved section ids. The pre-Wave-C build had none of these.

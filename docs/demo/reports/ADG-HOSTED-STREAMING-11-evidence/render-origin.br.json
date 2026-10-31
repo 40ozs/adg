@@ -1,0 +1,334 @@
+{
+ "page": "render-origin /",
+ "signed_in_as": "planner",
+ "encoding": "br",
+ "at": "2026-10-31T16:22:23.793Z",
+ "runs": [
+  {
+   "headers_ms": 359,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     360,
+     755
+    ],
+    [
+     360,
+     1369
+    ],
+    [
+     360,
+     545
+    ],
+    [
+     360,
+     1364
+    ],
+    [
+     360,
+     913
+    ],
+    [
+     465,
+     131
+    ],
+    [
+     557,
+     497
+    ],
+    [
+     561,
+     368
+    ],
+    [
+     766,
+     1364
+    ],
+    [
+     766,
+     93
+    ]
+   ],
+   "markers": {
+    "title": 360,
+    "h1": 360,
+    "placeholder": 360,
+    "reviews": 557,
+    "changes": 561,
+    "attention": 767,
+    "health": 767,
+    "html_end": 767
+   },
+   "complete_ms": 766,
+   "wire_bytes": 7399,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 360
+  },
+  {
+   "headers_ms": 198,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     199,
+     754
+    ],
+    [
+     199,
+     1369
+    ],
+    [
+     199,
+     1369
+    ],
+    [
+     199,
+     1369
+    ],
+    [
+     199,
+     87
+    ],
+    [
+     491,
+     602
+    ],
+    [
+     501,
+     368
+    ],
+    [
+     728,
+     1364
+    ],
+    [
+     728,
+     129
+    ]
+   ],
+   "markers": {
+    "title": 199,
+    "h1": 199,
+    "placeholder": 199,
+    "reviews": 491,
+    "changes": 502,
+    "attention": 728,
+    "health": 728,
+    "html_end": 728
+   },
+   "complete_ms": 728,
+   "wire_bytes": 7411,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 199
+  },
+  {
+   "headers_ms": 271,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     271,
+     754
+    ],
+    [
+     271,
+     1369
+    ],
+    [
+     271,
+     1369
+    ],
+    [
+     272,
+     1369
+    ],
+    [
+     272,
+     87
+    ],
+    [
+     463,
+     602
+    ],
+    [
+     467,
+     273
+    ],
+    [
+     467,
+     110
+    ],
+    [
+     763,
+     1364
+    ],
+    [
+     763,
+     93
+    ]
+   ],
+   "markers": {
+    "title": 272,
+    "h1": 272,
+    "placeholder": 272,
+    "reviews": 463,
+    "changes": 467,
+    "attention": 764,
+    "health": 764,
+    "html_end": 764
+   },
+   "complete_ms": 764,
+   "wire_bytes": 7390,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 271
+  },
+  {
+   "headers_ms": 504,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     504,
+     754
+    ],
+    [
+     504,
+     1369
+    ],
+    [
+     504,
+     1369
+    ],
+    [
+     504,
+     1369
+    ],
+    [
+     504,
+     85
+    ],
+    [
+     799,
+     131
+    ],
+    [
+     802,
+     497
+    ],
+    [
+     808,
+     383
+    ],
+    [
+     1104,
+     1457
+    ]
+   ],
+   "markers": {
+    "title": 504,
+    "h1": 504,
+    "placeholder": 504,
+    "reviews": 802,
+    "changes": 808,
+    "attention": 1105,
+    "health": 1105,
+    "html_end": 1105
+   },
+   "complete_ms": 1105,
+   "wire_bytes": 7414,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 504
+  },
+  {
+   "headers_ms": 202,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     202,
+     3614
+    ],
+    [
+     202,
+     1334
+    ],
+    [
+     600,
+     131
+    ],
+    [
+     600,
+     865
+    ],
+    [
+     897,
+     1026
+    ],
+    [
+     900,
+     467
+    ]
+   ],
+   "markers": {
+    "title": 202,
+    "h1": 202,
+    "placeholder": 202,
+    "changes": 600,
+    "reviews": 600,
+    "attention": 900,
+    "health": 900,
+    "html_end": 900
+   },
+   "complete_ms": 900,
+   "wire_bytes": 7437,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 202
+  }
+ ]
+}

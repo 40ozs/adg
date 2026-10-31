@@ -1,0 +1,380 @@
+{
+ "page": "hosted-worker /",
+ "signed_in_as": "planner",
+ "encoding": "br",
+ "at": "2026-10-31T16:21:53.219Z",
+ "runs": [
+  {
+   "headers_ms": 320,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     322,
+     401
+    ],
+    [
+     322,
+     1369
+    ],
+    [
+     322,
+     1369
+    ],
+    [
+     322,
+     1369
+    ],
+    [
+     322,
+     440
+    ],
+    [
+     1114,
+     602
+    ],
+    [
+     1118,
+     273
+    ],
+    [
+     1214,
+     110
+    ],
+    [
+     1415,
+     1026
+    ],
+    [
+     1415,
+     467
+    ]
+   ],
+   "markers": {
+    "title": 324,
+    "h1": 324,
+    "placeholder": 324,
+    "reviews": 1114,
+    "changes": 1215,
+    "attention": 1417,
+    "health": 1417,
+    "html_end": 1418
+   },
+   "complete_ms": 1416,
+   "wire_bytes": 7426,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 322
+  },
+  {
+   "headers_ms": 405,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     405,
+     401
+    ],
+    [
+     405,
+     1369
+    ],
+    [
+     405,
+     1369
+    ],
+    [
+     407,
+     1369
+    ],
+    [
+     407,
+     440
+    ],
+    [
+     605,
+     602
+    ],
+    [
+     706,
+     368
+    ],
+    [
+     925,
+     1364
+    ],
+    [
+     925,
+     93
+    ]
+   ],
+   "markers": {
+    "title": 405,
+    "h1": 406,
+    "placeholder": 406,
+    "reviews": 605,
+    "changes": 706,
+    "attention": 925,
+    "health": 925,
+    "html_end": 925
+   },
+   "complete_ms": 925,
+   "wire_bytes": 7375,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 405
+  },
+  {
+   "headers_ms": 274,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     274,
+     403
+    ],
+    [
+     274,
+     1369
+    ],
+    [
+     274,
+     1369
+    ],
+    [
+     275,
+     1369
+    ],
+    [
+     275,
+     438
+    ],
+    [
+     471,
+     602
+    ],
+    [
+     477,
+     383
+    ],
+    [
+     769,
+     1364
+    ],
+    [
+     769,
+     93
+    ]
+   ],
+   "markers": {
+    "title": 274,
+    "h1": 274,
+    "placeholder": 274,
+    "reviews": 471,
+    "changes": 477,
+    "attention": 769,
+    "health": 769,
+    "html_end": 770
+   },
+   "complete_ms": 769,
+   "wire_bytes": 7390,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 274
+  },
+  {
+   "headers_ms": 344,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     345,
+     397
+    ],
+    [
+     345,
+     1369
+    ],
+    [
+     345,
+     1369
+    ],
+    [
+     345,
+     1369
+    ],
+    [
+     345,
+     444
+    ],
+    [
+     705,
+     602
+    ],
+    [
+     714,
+     368
+    ],
+    [
+     1004,
+     1457
+    ]
+   ],
+   "markers": {
+    "title": 345,
+    "h1": 345,
+    "placeholder": 345,
+    "reviews": 705,
+    "changes": 714,
+    "attention": 1004,
+    "health": 1004,
+    "html_end": 1004
+   },
+   "complete_ms": 1004,
+   "wire_bytes": 7375,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 345
+  },
+  {
+   "headers_ms": 403,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     403,
+     3261
+    ],
+    [
+     405,
+     1687
+    ],
+    [
+     796,
+     131
+    ],
+    [
+     797,
+     497
+    ],
+    [
+     999,
+     368
+    ],
+    [
+     1199,
+     1457
+    ]
+   ],
+   "markers": {
+    "title": 403,
+    "h1": 403,
+    "placeholder": 403,
+    "reviews": 797,
+    "changes": 999,
+    "attention": 1200,
+    "health": 1200,
+    "html_end": 1200
+   },
+   "complete_ms": 1200,
+   "wire_bytes": 7401,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 403
+  },
+  {
+   "headers_ms": 208,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     209,
+     3257
+    ],
+    [
+     209,
+     1691
+    ],
+    [
+     397,
+     602
+    ],
+    [
+     402,
+     273
+    ],
+    [
+     494,
+     110
+    ],
+    [
+     628,
+     1457
+    ]
+   ],
+   "markers": {
+    "title": 209,
+    "h1": 209,
+    "placeholder": 209,
+    "reviews": 398,
+    "changes": 494,
+    "attention": 628,
+    "health": 628,
+    "html_end": 628
+   },
+   "complete_ms": 628,
+   "wire_bytes": 7390,
+   "decoded_bytes": 33587,
+   "first_byte_ms": 209
+  }
+ ]
+}
