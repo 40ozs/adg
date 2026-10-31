@@ -7,7 +7,7 @@ Source (newest verified ADG UX integration; no Wave D integration branch exists 
 
 Rollback anchors (read-only API reads before the deploy, ~16:05Z)
   Render adg-demo-web (srv-db6jbmlg1s2s739i4fsg): live dep-dbhf9u8u01pc73b649sg @ adg-demo 3d91fada1991 (finished 2026-10-29T07:28:18Z)
-    repo 40ozs/adg-demo, branch main, autoDeploy no, not suspended, origin adg-demo-web.onrender.com
+    repo 40ozs/adg-demo, branch main, autoDeploy no, not suspended
   Worker adg-demo-staging: deployment 9aa3ea72… version ff44276e-37c3-4ffc-86c4-3e8858fa7700 100 %
     message "ADG staging 3d91fada1991 (main)"
   adg-demo main 3d91fad "Release genesee-press-2.1.0-aebf16fcf594" (adg aebf16f)
