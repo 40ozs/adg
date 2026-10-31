@@ -1,0 +1,46 @@
+[
+ {
+  "width": 1360,
+  "ms": {
+   "commit": 43,
+   "h1": 74,
+   "overview-attention": 840,
+   "overview-health": 840,
+   "overview-changes": 840,
+   "settled": 4046,
+   "overview-reviews": 4367,
+   "load": 4368
+  },
+  "counts": {
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-health": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "errors": 1,
+  "problems": []
+ },
+ {
+  "width": 375,
+  "ms": {
+   "commit": 36,
+   "h1": 67,
+   "overview-attention": 836,
+   "overview-health": 836,
+   "overview-changes": 837,
+   "settled": 4043,
+   "overview-reviews": 4356,
+   "load": 4356
+  },
+  "counts": {
+   "overview-attention": 1,
+   "overview-changes": 1,
+   "overview-health": 1,
+   "overview-reviews": 1
+  },
+  "sideways_px": 0,
+  "errors": 0,
+  "problems": []
+ }
+]

@@ -1,0 +1,143 @@
+{
+ "page": "hosted /",
+ "signed_in_as": "planner",
+ "encoding": "br",
+ "at": "2026-10-31T09:41:52.783Z",
+ "runs": [
+  {
+   "headers_ms": 319,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     320,
+     408
+    ],
+    [
+     320,
+     1369
+    ],
+    [
+     320,
+     592
+    ],
+    [
+     388,
+     1364
+    ],
+    [
+     388,
+     1085
+    ]
+   ],
+   "markers": {
+    "title": 321,
+    "h1": 322,
+    "html_end": 389
+   },
+   "complete_ms": 389,
+   "wire_bytes": 4818,
+   "decoded_bytes": 20710,
+   "first_byte_ms": 320
+  },
+  {
+   "headers_ms": 209,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     209,
+     395
+    ],
+    [
+     210,
+     1369
+    ],
+    [
+     210,
+     1369
+    ],
+    [
+     210,
+     1369
+    ],
+    [
+     210,
+     316
+    ]
+   ],
+   "markers": {
+    "title": 210,
+    "h1": 210,
+    "html_end": 211
+   },
+   "complete_ms": 210,
+   "wire_bytes": 4818,
+   "decoded_bytes": 20710,
+   "first_byte_ms": 209
+  },
+  {
+   "headers_ms": 387,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "content-encoding": "br",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "cf-cache-status": "DYNAMIC",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+    "server": "cloudflare"
+   },
+   "chunks": [
+    [
+     387,
+     408
+    ],
+    [
+     387,
+     1369
+    ],
+    [
+     387,
+     592
+    ],
+    [
+     388,
+     1364
+    ],
+    [
+     388,
+     1085
+    ]
+   ],
+   "markers": {
+    "title": 387,
+    "h1": 388,
+    "html_end": 388
+   },
+   "complete_ms": 388,
+   "wire_bytes": 4818,
+   "decoded_bytes": 20710,
+   "first_byte_ms": 387
+  }
+ ]
+}

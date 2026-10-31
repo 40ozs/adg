@@ -1,0 +1,31 @@
+# ADG-HOSTED-STREAMING-10 — what is deployed (read-only API reads, 2026-10-31 ~09:40Z)
+
+Render web service adg-demo-web (srv-db6jbmlg1s2s739i4fsg)
+  repo 40ozs/adg-demo, branch main, autoDeploy no, not suspended
+  live deploy  dep-dbhf9u8u01pc73b649sg  commit 3d91fada1991  finished 2026-10-29T07:28:18Z
+  previous     dep-dbhf2708v5cc738aiuv0  e27aa79ebe7c (deactivated)
+
+Cloudflare Worker adg-demo-staging (workers.dev enabled, previews off)
+  current deployment 2026-10-29T07:30:33Z: version ff44276e… 100 %
+    message "ADG staging 3d91fada1991 (main)"
+  previous: 495fb202… "ADG staging e27aa79ebe7c (main)"
+
+40ozs/adg-demo main = 3d91fada1991 "Release genesee-press-2.1.0-aebf16fcf594" (2026-10-29T07:24Z)
+  demo-release.json: application_repository 40ozs/adg,
+    application_upstream_sha aebf16fcf5943e641638524f95ec2685bb0acf1c
+    (source branch integration/SYNTH-HOSTED-CUTOVER-MAC-01), dataset synthetic-enterprise-world@2.1.0
+
+Relation to the code under validation
+  git merge-base --is-ancestor aebf16f 559dbaf  → true (deployed is 46 commits behind Wave C)
+  frontend/app/page.tsx @ adg-demo 3d91fad: one read (fetchCollectionStatus), no <Suspense>, no use()
+  frontend/app/**/loading.tsx @ aebf16f: none; <Suspense> in app/ or components/ @ aebf16f: none
+  → no hosted route streams progressively; the Wave C progressive Overview is NOT deployed.
+
+Transport files: deployed adg-demo 3d91fad = adg aebf16f = Wave C 559dbaf (git blob ids, all three equal)
+  frontend/cloudflare/worker.ts       e60a734e  SAME
+  frontend/cloudflare/routing.ts      97caefd5  SAME
+  frontend/cloudflare/environment.ts  fd40d396  SAME
+  frontend/render/gate.ts             bfab7864  SAME
+  frontend/next.config.mjs            c1714730  SAME
+  frontend/wrangler.jsonc             5ee886de  SAME
+  docker/Dockerfile.render            a60d4863  SAME

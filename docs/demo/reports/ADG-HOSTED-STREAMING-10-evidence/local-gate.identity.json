@@ -1,0 +1,201 @@
+{
+ "page": "local-gate /",
+ "signed_in_as": "admin",
+ "encoding": "identity",
+ "at": "2026-10-31T09:43:29.799Z",
+ "runs": [
+  {
+   "headers_ms": 8,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+   },
+   "chunks": [
+    [
+     8,
+     9179
+    ],
+    [
+     8,
+     14134
+    ],
+    [
+     16,
+     972
+    ],
+    [
+     16,
+     1499
+    ],
+    [
+     38,
+     4582
+    ],
+    [
+     38,
+     2969
+    ],
+    [
+     4018,
+     475
+    ],
+    [
+     4018,
+     312
+    ],
+    [
+     4018,
+     14
+    ]
+   ],
+   "markers": {
+    "title": 8,
+    "h1": 8,
+    "placeholder": 8,
+    "changes": 16,
+    "attention": 38,
+    "health": 38,
+    "reviews": 4018,
+    "html_end": 4018
+   },
+   "complete_ms": 4019,
+   "wire_bytes": 34136,
+   "decoded_bytes": 34136,
+   "first_byte_ms": 8
+  },
+  {
+   "headers_ms": 15,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+   },
+   "chunks": [
+    [
+     16,
+     9179
+    ],
+    [
+     16,
+     7139
+    ],
+    [
+     16,
+     6995
+    ],
+    [
+     25,
+     972
+    ],
+    [
+     25,
+     1499
+    ],
+    [
+     47,
+     4582
+    ],
+    [
+     48,
+     2969
+    ],
+    [
+     4020,
+     475
+    ],
+    [
+     4020,
+     312
+    ],
+    [
+     4020,
+     14
+    ]
+   ],
+   "markers": {
+    "title": 16,
+    "h1": 16,
+    "placeholder": 16,
+    "changes": 25,
+    "attention": 48,
+    "health": 48,
+    "reviews": 4020,
+    "html_end": 4020
+   },
+   "complete_ms": 4020,
+   "wire_bytes": 34136,
+   "decoded_bytes": 34136,
+   "first_byte_ms": 16
+  },
+  {
+   "headers_ms": 10,
+   "status": 200,
+   "alpn": null,
+   "headers": {
+    "content-type": "text/html; charset=utf-8",
+    "transfer-encoding": "chunked",
+    "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+   },
+   "chunks": [
+    [
+     10,
+     9179
+    ],
+    [
+     10,
+     14134
+    ],
+    [
+     18,
+     972
+    ],
+    [
+     18,
+     1499
+    ],
+    [
+     37,
+     4582
+    ],
+    [
+     37,
+     2969
+    ],
+    [
+     4026,
+     475
+    ],
+    [
+     4028,
+     312
+    ],
+    [
+     4028,
+     14
+    ]
+   ],
+   "markers": {
+    "title": 10,
+    "h1": 10,
+    "placeholder": 10,
+    "changes": 18,
+    "attention": 37,
+    "health": 37,
+    "reviews": 4028,
+    "html_end": 4028
+   },
+   "complete_ms": 4028,
+   "wire_bytes": 34136,
+   "decoded_bytes": 34136,
+   "first_byte_ms": 10
+  }
+ ]
+}
