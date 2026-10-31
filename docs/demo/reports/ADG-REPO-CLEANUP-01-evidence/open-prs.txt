@@ -1,0 +1,4 @@
+# open PRs, 40ozs/adg, 2026-10-31T22:04:12Z
+#4 ci/ADG-CI-SPEEDUP-01 3aae3952c4ef5ec8403c6bec0663911f04a30b5f draft=false ci: test Postgres on a RAM disk; skip suites a branch cannot affect
+
+PR #4 checks at 3aae395: all SUCCESS (fork-PR job SKIPPED by design)

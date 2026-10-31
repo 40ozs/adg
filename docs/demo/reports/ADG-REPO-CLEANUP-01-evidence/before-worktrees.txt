@@ -1,0 +1,113 @@
+# ADG-REPO-CLEANUP-01 before-state, 2026-10-31T22:04:07Z
+origin/main c4d6a679b34465176af128f589aa13b8845d270a
+
+## git worktree list
+/Volumes/T5 EVO/mmm/adg                                      c4d6a67 [main]
+/Volumes/T5 EVO/mmm/worktrees/adg-HOSTED-STREAMING-10        dc3fd52 [docs/ADG-HOSTED-STREAMING-10]
+/Volumes/T5 EVO/mmm/worktrees/adg-HOSTED-STREAMING-11        77b4400 [docs/ADG-HOSTED-STREAMING-11]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-01                      6ded5ed [feature/ADG-UX-01-information-architecture]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-06                      d9f7a3b [feature/ADG-UX-06-operational-overview]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-BACKEND-COPY-04         9cec0b0 [feature/ADG-UX-BACKEND-COPY-04-identity-wording]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-DEEP-TITLES-06          c226516 [feature/ADG-UX-DEEP-TITLES-06-contextual-titles]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-ENTITY-02               a0a54de [feature/ADG-UX-ENTITY-02-identity-context]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-NAV-07                  70d08e7 [feature/ADG-UX-NAV-07-review-item-client-navigation]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-PERF-01                 9a7a2a5 [feature/ADG-UX-PERF-01-progressive-overview]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05A              5a4c27b [design/ADG-UX-RECENT-05A-recently-viewed-architecture]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05B              44d1a3c [feature/ADG-UX-RECENT-05B-recently-viewed]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-REVIEW-NAMES-08         6877039 [feature/ADG-UX-REVIEW-NAMES-08-scope-display-name]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-TEST-STABILITY-09       9c67d2c [test/ADG-UX-TEST-STABILITY-09-deterministic-titles]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-TITLES-03               76e3c46 [feature/ADG-UX-TITLES-03-document-titles]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-A-01               fcb7928 [integration/ADG-UX-WAVE-A-01]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-B-01               10c73d1 [integration/ADG-UX-WAVE-B-01]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-C-01               559dbaf [integration/ADG-UX-WAVE-C-01]
+/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-D-01               bb370f8 [integration/ADG-UX-WAVE-D-01]
+/Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01        d82d477 [integration/ADG-WAVE-D-PROMOTION-01]
+/Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-STAGING-RELEASE-01  d60168f [docs/ADG-WAVE-D-STAGING-RELEASE-01]
+
+## git branch -vv
+  deploy/ADG-FREE-STAGING-01                            3e26e4a [origin/deploy/ADG-FREE-STAGING-01] docs: ADG-NEXT16-UI-INTEGRATION-02 handoff (combined staging, READY_FOR_ADG_COMBINED_STAGING_REVIEW)
+  deploy/ADG-HOSTED-NEXT16-01                           1c36984 [origin/deploy/ADG-HOSTED-NEXT16-01] smoke: load the representative principal at its canonical path
++ design/ADG-UX-RECENT-05A-recently-viewed-architecture 5a4c27b (/Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05A) [origin/design/ADG-UX-RECENT-05A-recently-viewed-architecture] docs(adg-ux): ADG-UX-RECENT-05A Recently Viewed architecture decision
++ docs/ADG-HOSTED-STREAMING-10                          dc3fd52 (/Volumes/T5 EVO/mmm/worktrees/adg-HOSTED-STREAMING-10) [origin/docs/ADG-HOSTED-STREAMING-10] docs(adg): ADG-HOSTED-STREAMING-10 hosted streaming validation (blocked)
++ docs/ADG-HOSTED-STREAMING-11                          77b4400 (/Volumes/T5 EVO/mmm/worktrees/adg-HOSTED-STREAMING-11) [origin/docs/ADG-HOSTED-STREAMING-11] docs(adg): HOSTED-STREAMING-11 evidence omits the Render origin hostname
++ docs/ADG-WAVE-D-STAGING-RELEASE-01                    d60168f (/Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-STAGING-RELEASE-01) [origin/docs/ADG-WAVE-D-STAGING-RELEASE-01] docs(adg): record CI on the deployed Wave D head (41228396705 success)
++ feature/ADG-UX-01-information-architecture            6ded5ed (/Volumes/T5 EVO/mmm/worktrees/adg-UX-01) [origin/feature/ADG-UX-01-information-architecture] docs(reports): ADG-UX-01 note UX-06 overlap check
++ feature/ADG-UX-06-operational-overview                d9f7a3b (/Volumes/T5 EVO/mmm/worktrees/adg-UX-06) [origin/feature/ADG-UX-06-operational-overview] ADG-UX-06B: browser validation report and evidence (READY_FOR_ADG_UX_OVERVIEW_INTEGRATION_WITH_LIMITATIONS)
++ feature/ADG-UX-BACKEND-COPY-04-identity-wording       9cec0b0 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-BACKEND-COPY-04) [origin/feature/ADG-UX-BACKEND-COPY-04-identity-wording] test(adg-ux): expect identity wording in the change-impact DB test
++ feature/ADG-UX-DEEP-TITLES-06-contextual-titles       c226516 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-DEEP-TITLES-06) [origin/feature/ADG-UX-DEEP-TITLES-06-contextual-titles] docs(adg-ux): DEEP-TITLES-06 report and evidence
++ feature/ADG-UX-ENTITY-02-identity-context             a0a54de (/Volumes/T5 EVO/mmm/worktrees/adg-UX-ENTITY-02) [origin/feature/ADG-UX-ENTITY-02-identity-context] docs(adg-ux): record ADG-UX-ENTITY-02 identity terminology evidence
++ feature/ADG-UX-NAV-07-review-item-client-navigation   70d08e7 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-NAV-07) [origin/feature/ADG-UX-NAV-07-review-item-client-navigation] docs(adg-ux): record ADG-UX-NAV-07 CI results
++ feature/ADG-UX-PERF-01-progressive-overview           9a7a2a5 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-PERF-01) [origin/feature/ADG-UX-PERF-01-progressive-overview] docs(adg): ADG-UX-PERF-01 report and evidence
++ feature/ADG-UX-RECENT-05B-recently-viewed             44d1a3c (/Volumes/T5 EVO/mmm/worktrees/adg-UX-RECENT-05B) [origin/feature/ADG-UX-RECENT-05B-recently-viewed] docs(adg-ux): record Recently Viewed CI results
++ feature/ADG-UX-REVIEW-NAMES-08-scope-display-name     6877039 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-REVIEW-NAMES-08) [origin/feature/ADG-UX-REVIEW-NAMES-08-scope-display-name] docs(adg-ux): record REVIEW-NAMES-08 CI result
++ feature/ADG-UX-TITLES-03-document-titles              76e3c46 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-TITLES-03) [origin/feature/ADG-UX-TITLES-03-document-titles] docs(reports): ADG-UX-TITLES-03 document titles evidence
+  fix/ADG-UI-UPDATE-01                                  a5cdf88 [origin/deploy/ADG-FREE-STAGING-01: behind 15] UI: every list table sortable through SortableTable
++ integration/ADG-UX-WAVE-A-01                          fcb7928 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-A-01) [origin/integration/ADG-UX-WAVE-A-01] docs(adg): record Wave B UX baseline
++ integration/ADG-UX-WAVE-B-01                          10c73d1 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-B-01) [origin/integration/ADG-UX-WAVE-B-01] docs(adg-ux): record Wave B CI results and next UX baseline
++ integration/ADG-UX-WAVE-C-01                          559dbaf (/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-C-01) [origin/integration/ADG-UX-WAVE-C-01] docs(adg-ux): record Wave C CI results and next UX baseline
++ integration/ADG-UX-WAVE-D-01                          bb370f8 (/Volumes/T5 EVO/mmm/worktrees/adg-UX-WAVE-D-01) [origin/integration/ADG-UX-WAVE-D-01] docs(adg-ux): record Wave D CI result and next UX baseline
++ integration/ADG-WAVE-D-PROMOTION-01                   d82d477 (/Volumes/T5 EVO/mmm/worktrees/adg-WAVE-D-PROMOTION-01) [origin/integration/ADG-WAVE-D-PROMOTION-01] docs(adg): ADG-WAVE-D-PROMOTION-01 promotion report and evidence
+* main                                                  c4d6a67 [origin/main] docs(adg): record the Wave D main merge e81272d and its CI (41239013815 success)
+  release/ADG-UI-EDGE-DIRECTORY-02                      511ab22 [origin/claude/adoring-cannon-7gh2pf] docs: record the owner's decision to hold main until the Next.js security release
++ test/ADG-UX-TEST-STABILITY-09-deterministic-titles    9c67d2c (/Volumes/T5 EVO/mmm/worktrees/adg-UX-TEST-STABILITY-09) [origin/test/ADG-UX-TEST-STABILITY-09-deterministic-titles] docs(adg-ux): ADG-UX-TEST-STABILITY-09 report and evidence
+
+## git branch -r
+  origin/HEAD -> origin/main
+  origin/ci/ADG-CI-SPEEDUP-01
+  origin/claude/adg-demo-null-meridian-integration-5biwm0
+  origin/claude/adg-system-explanation-correctness-4iaijw
+  origin/claude/adoring-cannon-7gh2pf
+  origin/claude/adoring-lamport-1e22j9
+  origin/claude/amazing-bell-q42027
+  origin/claude/beautiful-knuth-3zruji
+  origin/claude/bold-johnson-j0pjow
+  origin/claude/compassionate-hamilton-3sh5db
+  origin/claude/dazzling-keller-x3tvdx
+  origin/claude/gallant-turing-aj7rf1
+  origin/claude/inspiring-volta-6uzdsy
+  origin/claude/intelligent-fermi-nxp2jw
+  origin/claude/kind-goodall-9mlk79
+  origin/claude/next16-merge-main-3y5zvb
+  origin/claude/serene-mayer-itiwyi
+  origin/claude/tender-curie-vw3iss
+  origin/claude/vibrant-gates-rhovf1
+  origin/claude/wizardly-gates-6yjdxp
+  origin/deploy/ADG-FREE-EDGE-SSR-03
+  origin/deploy/ADG-FREE-STAGING-01
+  origin/deploy/ADG-HOSTED-NEXT16-01
+  origin/design/ADG-UX-RECENT-05A-recently-viewed-architecture
+  origin/docs/ADG-HOSTED-STREAMING-10
+  origin/docs/ADG-HOSTED-STREAMING-11
+  origin/docs/ADG-WAVE-D-STAGING-RELEASE-01
+  origin/feature/ADG-GRAPH-01A-domain-model
+  origin/feature/ADG-GRAPH-01B-relationship-derivation
+  origin/feature/ADG-GRAPH-01C-path-engine
+  origin/feature/ADG-GRAPH-01C-path-engine-claude
+  origin/feature/ADG-UX-01-information-architecture
+  origin/feature/ADG-UX-06-operational-overview
+  origin/feature/ADG-UX-BACKEND-COPY-04-identity-wording
+  origin/feature/ADG-UX-DEEP-TITLES-06-contextual-titles
+  origin/feature/ADG-UX-ENTITY-02-identity-context
+  origin/feature/ADG-UX-NAV-07-review-item-client-navigation
+  origin/feature/ADG-UX-PERF-01-progressive-overview
+  origin/feature/ADG-UX-RECENT-05B-recently-viewed
+  origin/feature/ADG-UX-REVIEW-NAMES-08-scope-display-name
+  origin/feature/ADG-UX-TITLES-03-document-titles
+  origin/feature/CLOUDFLARE-DEMO-CACHE-01
+  origin/feature/SYNTH-ADG-01
+  origin/fix/ADG-NEXT16-REACT418-01
+  origin/fix/ADG-UI-COMPACT-IDENTITY-01
+  origin/integration/ADG-HOSTED-GOVERNANCE-01
+  origin/integration/ADG-NEXT16-UI-02
+  origin/integration/ADG-UI-EDGE-01
+  origin/integration/ADG-UX-WAVE-A-01
+  origin/integration/ADG-UX-WAVE-B-01
+  origin/integration/ADG-UX-WAVE-C-01
+  origin/integration/ADG-UX-WAVE-D-01
+  origin/integration/ADG-WAVE-D-PROMOTION-01
+  origin/integration/SYNTH-CROSSAPP-01
+  origin/integration/SYNTH-CUTOVER-02
+  origin/integration/SYNTH-HOSTED-CUTOVER-MAC-01
+  origin/main
+  origin/merge/SYNTH-OWNER-MERGE-01
+  origin/test/ADG-UX-TEST-STABILITY-09-deterministic-titles
