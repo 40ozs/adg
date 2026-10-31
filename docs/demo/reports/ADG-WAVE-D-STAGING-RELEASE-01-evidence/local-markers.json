@@ -1,0 +1,14 @@
+[
+ {
+  "build": "adg-UX-WAVE-C-01/frontend/.next/static",
+  "chunk": "8218-19b78dac554b328c.js",
+  "item_href_with_prefetch_off": false,
+  "item_href": true
+ },
+ {
+  "build": "adg-UX-WAVE-D-01/frontend/.next/static",
+  "chunk": "1187-bfccd0c430eb842c.js",
+  "item_href_with_prefetch_off": true,
+  "item_href": true
+ }
+]

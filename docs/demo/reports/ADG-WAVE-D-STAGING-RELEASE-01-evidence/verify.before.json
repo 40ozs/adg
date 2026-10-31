@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "dataset": "genesee-press-v1",
+  "generations": [
+    {
+      "name": "g1",
+      "applied": true
+    },
+    {
+      "name": "g2",
+      "applied": true
+    },
+    {
+      "name": "g3",
+      "applied": true
+    }
+  ],
+  "probes": 23,
+  "counts": {
+    "current_principal": 2139,
+    "current_membership_edge": 6224,
+    "current_server": 33,
+    "current_smb_share": 124,
+    "current_smb_ace": 606,
+    "current_ntfs_resource": 826,
+    "current_ntfs_ace": 4117,
+    "object_versions": 14316,
+    "scan_runs": 300,
+    "tombstones_open": 70
+  },
+  "fingerprint": "4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08",
+  "digests": {
+    "current:principal": "e64e3c0c0d67fca4cda9ecd0ab74693703bdb929f467a2ffabf03448e4f146ef",
+    "current:membership_edge": "e131cf25be713b94b55add1da3c65d27f3b25910889cd6d03aa1fde3f82a5c9b",
+    "current:server": "6f25c961171a6ac8673339374d098c20af4841f428efa8713a400a1af75e8d95",
+    "current:smb_share": "5610e64c974b628fbd8ed31459539243481cdd78ff5c4c773cecb89fa5b9ed42",
+    "current:smb_ace": "260c072bd557b6ea0322b667c810513328662b84df38dcb9cb6f7de2a7be5283",
+    "current:ntfs_resource": "80319103e2221c88aca0edc6a9e2c9913b7c5c3c1a0a6bb90f8580c646cedbfc",
+    "current:ntfs_ace": "1fd2285302b0aea3384fb6fa7e6bdc63c964db33a0011434f998458a3ada1449",
+    "object_versions": "c6a5e919576930f059250b7e5001d681a4b20e4b9c0ab6317bee81ba28e31114",
+    "scan_runs": "dbebfc71583b0f4790825fae091bae1d36ae2e74bbaf14fa1d94e21b8e38c15a",
+    "scan_run_scopes": "07b53a0a69a7bef3a313f6f3999696bef8e62d91bb223439bece9063c43cd799",
+    "scan_run_errors": "208cc444377becb481c88e932d8d8d7b455b5eb708f7fd00dccaa5bcdb20afa9",
+    "risk_findings": "805ca46de30749c6df052afa760dd3e69c665e8cb4590c0b8fdc43761ef80aa5"
+  }
+}

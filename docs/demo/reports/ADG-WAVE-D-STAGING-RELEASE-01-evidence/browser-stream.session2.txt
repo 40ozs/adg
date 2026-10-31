@@ -1,0 +1,10 @@
+PASS  1360px run 1 — h1 2202 ms, health 3929, attention 3929, changes 3099, reviews 3400, h3 zstd
+PASS  1360px run 2 — h1 389 ms, health 1305, attention 1305, changes 1005, reviews 705, h3 zstd
+PASS  1360px run 3 — h1 1164 ms, health 1777, attention 1777, changes 1477, reviews 1477, h3 zstd
+PASS  1360px client navigation to Findings
+PASS  375px run 1 — h1 1253 ms, health 3415, attention 3415, changes 2631, reviews 2301, h3 zstd
+PASS  375px run 2 — h1 307 ms, health 1397, attention 1397, changes 1098, reviews 797, h3 zstd
+PASS  375px run 3 — h1 195 ms, health 1492, attention 1492, changes 993, reviews 692, h3 zstd
+PASS  375px client navigation to Findings
+
+all passed
