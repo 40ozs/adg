@@ -1,0 +1,20 @@
+# review-item-nav: node docs/demo/reports/ADG-UX-NAV-07-evidence/review-item-nav.mjs @ 1c53444, 2026-10-31T19:47:12Z, load 3.81 6.68 9.23
+PASS  [desktop] Reviews → campaign by click: "Review campaign — ADG", no document load — /governance/campaigns/be1a58ea-c9fd-4597-9251-e9f3f16c5a01; 6 rows, 4 item links
+PASS  [desktop] direct loads: one server <title> each; the item page's API reads recorded — Review campaign: "Review campaign — ADG", Review item: "Review item — ADG"; item direct load = 5 API reads
+PASS  [desktop] campaign → item by click: client-side, "Review item — ADG", href kept, no extra API read, no prefetch — 0 document loads; 3 API reads (direct load 5), 0 extra, 0 repeated; 0 item prefetches
+PASS  [desktop] after the move: focus on a live node, heading in view, no sideways scroll — focus BODY, heading at 153 px, scrollWidth fits
+PASS  [desktop] Back: campaign URL and title, item table unchanged, no sideways scroll — 6 rows, 4 distinct items, 0 selected
+PASS  [desktop] Forward: item URL and title, no document load
+PASS  [desktop] Back, then the item link by keyboard (focus + Enter): client-side
+PASS  [desktop] no page error, no hydration error — 0 page errors, 1 console errors (0 hydration)
+PASS  [375] Reviews → campaign by click: "Review campaign — ADG", no document load — /governance/campaigns/be1a58ea-c9fd-4597-9251-e9f3f16c5a01; 6 rows, 4 item links
+PASS  [375] direct loads: one server <title> each; the item page's API reads recorded — Review campaign: "Review campaign — ADG", Review item: "Review item — ADG"; item direct load = 5 API reads
+PASS  [375] campaign → item by click: client-side, "Review item — ADG", href kept, no extra API read, no prefetch — 0 document loads; 3 API reads (direct load 5), 0 extra, 0 repeated; 0 item prefetches
+PASS  [375] after the move: focus on a live node, heading in view, no sideways scroll — focus BODY, heading at 714 px, scrollWidth fits
+PASS  [375] Back: campaign URL and title, item table unchanged, no sideways scroll — 6 rows, 4 distinct items, 0 selected
+PASS  [375] Forward: item URL and title, no document load
+PASS  [375] Back, then the item link by keyboard (focus + Enter): client-side
+PASS  [375] no page error, no hydration error — 0 page errors, 0 console errors (0 hydration)
+
+16/16 checks passed
+# exit=0, load after 3.46 6.37 9.04

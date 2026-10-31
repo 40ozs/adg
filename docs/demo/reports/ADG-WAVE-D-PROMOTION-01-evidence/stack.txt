@@ -1,0 +1,5 @@
+demo reset 92 s: fingerprint: 4667d3cfb4b574ffda3ac7ea8453912568b7517cd53548fb338b497e9b270f08
+api ready
+fixtures: be1a58ea-c9fd-4597-9251-e9f3f16c5a01 stored proposal 0f6d63e7-b0b7-4fea-9a1e-12f8754e5f9e S-1-5-21-3949361974-1583827165-633756269-999999
+web 3110 (promotion build zSvaZJ5GBhUFHS3Rpo-E_) + 3112 (Wave C 559dbaf baseline) up
+web 3111 (promotion build, direct to API :8110, for copy-check) up

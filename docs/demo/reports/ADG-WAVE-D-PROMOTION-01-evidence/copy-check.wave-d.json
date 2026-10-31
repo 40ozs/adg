@@ -1,0 +1,91 @@
+{
+  "results": [
+    {
+      "name": "API: explain keeps principal= and principal:<sid> node ids; reason says identity",
+      "ok": true,
+      "detail": "reason \"This identity holds rights on this object.\"; 19 removal targets"
+    },
+    {
+      "name": "API: rule redundant_access_paths keeps its id, version 1.0 and the identity title",
+      "ok": true,
+      "detail": "version 1.0"
+    },
+    {
+      "name": "API: What-if vocabulary codes unchanged, descriptions say identity",
+      "ok": true,
+      "detail": "codes add_member/remove_member/principal_budget kept"
+    },
+    {
+      "name": "Explain: identity wording, removal relationships named, ids kept on the row",
+      "ok": true,
+      "detail": "19 rows, first \"Brianna Reddy is a member of Sales-Opsmembership\"; 20/29 links ok"
+    },
+    {
+      "name": "Explain export: human label with the canonical edge id beside it",
+      "ok": true,
+      "detail": "export carries [membership:principal:S-1-5-21-3949361974-1583827165-633756269-1243->group:S-1-5-21-3949361974-1583827165-633756269-1437]"
+    },
+    {
+      "name": "Investigate: identity wording, no generic principal",
+      "ok": true,
+      "detail": "12/12 links ok"
+    },
+    {
+      "name": "What-if vocabulary on the new-simulation page says identity",
+      "ok": true,
+      "detail": "0/0 links ok"
+    },
+    {
+      "name": "Reviews list: scope tokens rendered as words, identities named, explicit fallback without a name",
+      "ok": true,
+      "detail": "5/5 links ok"
+    },
+    {
+      "name": "Campaign page: reviewer scopes named from the items, links work",
+      "ok": true,
+      "detail": "15/15 links ok"
+    },
+    {
+      "name": "Campaign page filtered to one identity: heading names it",
+      "ok": true,
+      "detail": "heading \"Items for sec-share-design-read-only\""
+    },
+    {
+      "name": "Identity detail (person): no generic principal, links work",
+      "ok": true,
+      "detail": "12/12 links ok"
+    },
+    {
+      "name": "Group detail: no generic principal, links work",
+      "ok": true,
+      "detail": "24/24 links ok"
+    },
+    {
+      "name": "Findings: redundant routes: no generic principal, links work",
+      "ok": true,
+      "detail": "30/120 links ok"
+    },
+    {
+      "name": "Changes scoped to an identity: the scope line says identity, the query stays principal=",
+      "ok": true,
+      "detail": "7/7 links ok"
+    },
+    {
+      "name": "375px: explain, What-if, reviews and campaign pages do not scroll sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "320px: explain, What-if, reviews and campaign pages do not scroll sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "person": "S-1-5-21-3949361974-1583827165-633756269-1243",
+  "group": "S-1-5-21-3949361974-1583827165-633756269-2471"
+}

@@ -1,0 +1,19 @@
+# wave-d-check: node docs/demo/reports/ADG-UX-WAVE-D-INTEGRATION-01-evidence/wave-d-check.mjs @ 1c53444, 2026-10-31T19:50:23Z, load 4.24 5.38 8.14
+PASS  1. Reviews loads — 4 campaigns
+PASS  2. Reviews: identity scopes show the current display name; unresolved keeps the fallback — Brianna Reddy, sec-share-design-read-only; unresolved 999999 → fallback
+PASS  3. Reviews → campaign by click: client-side, "Review campaign — ADG" — COPY-04 identity review, 4 items
+PASS  4. Campaign: reviewer scopes use the current display names — Brianna Reddy, sec-share-design-read-only
+PASS  5. Campaign → item by click: no document load, "Review item — ADG", no layout re-read, no repeated read — 3 API reads: GET /auth/me | GET /api/v1/governance/items/90cafa7b-9426-4e49-a5b2-a17ab15bfa1e | GET /api/v1/governance/items/90cafa7b-9426-4e49-a5b2-a17ab15bfa1e/context
+PASS  6. Back: the campaign, its title, no document load
+PASS  7. Forward: the item, its title, no document load
+PASS  8. Changes journey on a 2028-01-01 clock: History and "Why access changed", anchored, client-side — 4 window reads moved to 2028-01-01T00:00:00.000Z and anchored to 2026-10-01T12:00:00.000Z
+PASS  9. Reviews and campaign: Wave C web-tier calls, no identity lookup in the web tier or the browser — Reviews 5, campaign 6; 0 identity lookups over 94 browser requests
+PASS  10. 1440px: Reviews → campaign → item stays client-side; no page scrolls sideways
+PASS  11. 1024px: Reviews → campaign → item stays client-side; no page scrolls sideways
+PASS  12. 768px: Reviews → campaign → item stays client-side; no page scrolls sideways
+PASS  13. 375px: Reviews → campaign → item stays client-side; no page scrolls sideways
+PASS  14. 320px: Reviews → campaign → item stays client-side; no page scrolls sideways
+PASS  15. no page error, no hydration error — 0 page errors, 0 hydration; console errors: http://127.0.0.1:3110/governance: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+15/15 checks passed
+# exit=0, load after 3.88 5.27 8.07

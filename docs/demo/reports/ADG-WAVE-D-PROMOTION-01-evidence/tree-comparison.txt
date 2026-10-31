@@ -1,0 +1,57 @@
+# Tree comparison — ADG-WAVE-D-PROMOTION-01 (2026-10-31T19:04:52Z)
+main 9240ff0 tree 7e4444abe26e3aee0bdff37629d0afa313e96837
+Wave D bb370f8 tree 3509c4e1a047a63ba83ed0851aa215b93e7cbee4
+staging docs d60168f tree 435b202126c10becd9d0611d89a2db0ea22c31d2
+promotion merge 1023c7c tree f75aabb5161805a305e185d06f7e57d433a0e3e7
+promotion candidate 1c53444 tree 88421040292c1a0eb69b456a64cda524a6fc408b
+
+## git diff --stat bb370f8 1023c7c   (merge vs Wave D, before any promotion change)
+ .github/workflows/ci.yml | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+## git diff --stat d60168f 1c53444   (candidate vs staging-report branch)
+ .github/workflows/ci.yml | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+## git diff bb370f8 1c53444 -- . ':!docs/demo/reports/ADG-WAVE-D-STAGING-RELEASE-01*'  (everything outside the imported staging report)
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 26bfdf9..04e9063 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -10,7 +10,8 @@ jobs:
+   backend:
+     name: Backend (lint, types, tests)
+     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+-    runs-on: [self-hosted, Linux, X64, docker, adg]
++    # adg-db = the k3s-adg-db runner set, which prefers the bare-metal node (fast fsync) for the PostgreSQL suite.
++    runs-on: [self-hosted, Linux, X64, docker, adg-db]
+     defaults:
+       run:
+         working-directory: backend
+
+## files differing from Wave D, by class
+current-main reconciliation (CI only): .github/workflows/ci.yml
+staging report/evidence: 36 files
+
+## hosting paths vs deployed Wave D bb370f8 (blob equality)
+identical  frontend/cloudflare/worker.ts e60a734eb6f7
+identical  frontend/render bfeed5bfd5f4
+identical  frontend/next.config.mjs c171473072d4
+identical  frontend/wrangler.jsonc 5ee886ded9e6
+identical  docker 2c55ceaa5627
+identical  frontend/lib/config.ts e28dd1e1ecd6
+identical  frontend/lib/api e641d51bc71f
+identical  frontend/app/api 436677c24070
+identical  frontend/app/layout.tsx 333ab406a022
+identical  frontend/app/page.tsx 452c2fe74e25
+identical  frontend/package.json bb2ff98450aa
+identical  frontend/package-lock.json cba9359ca9d2
+identical  backend/pyproject.toml 750ac04d6ea3
+identical  database 1e5bd9a65420
+identical  .github/workflows/cloudflare-staging.yml 361a015bcabc
+identical  frontend/ (tree 9eb2b5185c9d)
+identical  backend/ (tree f0c2fb385139)
+identical  database/ (tree 1e5bd9a65420)
+identical  docker/ (tree 2c55ceaa5627)
+identical  collector/ (tree 644d8cc1a095)
+.dockerignore .editorconfig .env.example .gitattributes .github .gitignore README.md SECURITY.md backend collector database docker-compose.demo.yml docker-compose.yml docker docs frontend scripts 

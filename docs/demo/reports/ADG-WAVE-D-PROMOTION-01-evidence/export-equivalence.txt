@@ -1,0 +1,12 @@
+# Exported genesee-press-2.1.0-bb370f8e4531 manifest (demo-release/files.sha256, 905 entries) vs adg trees, 2026-10-31T19:06:10Z
+export-only (not in adg tree): .github/workflows/demo-release.yml
+export-only (not in adg tree): DEMO-RELEASE.md
+export-only (not in adg tree): demo-release.json
+export-only (not in adg tree): demo-release/verify_release.py
+# bb370f8: 901 identical, 0 differ, 4 export-only, of 905 manifest entries
+export-only (not in adg tree): .github/workflows/demo-release.yml
+export-only (not in adg tree): DEMO-RELEASE.md
+export-only (not in adg tree): demo-release.json
+export-only (not in adg tree): demo-release/verify_release.py
+# 1c53444: 901 identical, 0 differ, 4 export-only, of 905 manifest entries
+ci.yml in manifest: 0

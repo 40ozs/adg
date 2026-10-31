@@ -1,0 +1,22 @@
+{"copy04": {
+  "identity_campaign": "be1a58ea-c9fd-4597-9251-e9f3f16c5a01",
+  "resource_campaign": "5fccb746-b65a-4c29-880a-d272581a81d3",
+  "group": {
+    "kind": "group",
+    "name": "sec-share-design-read-only",
+    "sid": "S-1-5-21-3949361974-1583827165-633756269-2471",
+    "scenario": "A",
+    "resource": "\\\\GP-CORP-FS02\\Design"
+  },
+  "person": {
+    "kind": "person",
+    "name": "Brianna Reddy",
+    "sid": "S-1-5-21-3949361974-1583827165-633756269-1243",
+    "scenario": "F",
+    "resource": "\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue"
+  },
+  "share": "gp-fin-fs01|finance",
+  "resource": "\\\\GP-FIN-FS01\\Finance\\Reports\\Revenue"
+},
+ "proposal": "stored proposal 0f6d63e7-b0b7-4fea-9a1e-12f8754e5f9e",
+ "unresolved": {"campaign_id": "5c247755-a5b2-4a75-bcca-64f4c8478ffd", "unknown_sid": "S-1-5-21-3949361974-1583827165-633756269-999999", "scopes": [{"kind": "principal", "key": "S-1-5-21-3949361974-1583827165-633756269-999999", "display_name": null}, {"kind": "principal", "key": "S-1-5-21-3949361974-1583827165-633756269-1243", "display_name": "Brianna Reddy"}]}}

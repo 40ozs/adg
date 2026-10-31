@@ -1,0 +1,127 @@
+{
+  "web": "http://127.0.0.1:3110",
+  "results": [
+    {
+      "name": "Overview, 4 s review-queue read: streams, Recently viewed in the first HTML outside every busy slot, placed before \"Where to start\"",
+      "ok": true,
+      "detail": "h1 33 ms; Needs attention 1279, Recent changes 1279, Reviews 4030, Data health 1279, Recently viewed 33 ms; queue read ends 4027 ms; order Data health > Needs attention > Recent changes > Reviews > Recently viewed > Where to start > What ADG will not do"
+    },
+    {
+      "name": "client nav to a user: \"Identity — ADG\", identity copy, recorded in this tab with a non-UPN label, no reload",
+      "ok": true,
+      "detail": "title \"Identity — ADG\", recorded \"Nina Coleman\" (heading \"Nina Coleman\")"
+    },
+    {
+      "name": "client nav to Changes, then \"Compare two points in time\": the deep title arrives on the client move, nav marks Changes, no reload",
+      "ok": true,
+      "detail": "title \"Compare two points in time — ADG\", nav current \"Changes\""
+    },
+    {
+      "name": "Back and Forward across identity, Changes and compare: titles and nav state restored, no reload",
+      "ok": true,
+      "detail": "← Changes [Changes] ← Identity [Identities] → Changes [Changes] → Compare two points in time [Changes]"
+    },
+    {
+      "name": "client nav back to the Overview: the identity is listed first, linking to its page, no reload",
+      "ok": true,
+      "detail": "1 row: Identity Nina Coleman"
+    },
+    {
+      "name": "server detail records; access explanation: deep title, backend verdict says identity, removal rows named, not recorded",
+      "ok": true,
+      "detail": "verdict \"This identity holds rights on this object.\"; 19 removal rows, first \"Brianna Reddy is a member of Sales-Opsmembership\"; storage unchanged"
+    },
+    {
+      "name": "Overview reads: the same web-tier API calls with an empty and a populated list; no history path; no request carries the list",
+      "ok": true,
+      "detail": "9 API calls either way; 0 history paths; 184 browser + 55 web-tier requests scanned, 0 carry the list"
+    },
+    {
+      "name": "1440/1024/768/375/320: Overview with the list, identity, server and explanation do not scroll sideways",
+      "ok": true,
+      "detail": "1440 ok, 1024 ok, 768 ok, 375 ok, 320 ok"
+    },
+    {
+      "name": "no page error, no hydration error",
+      "ok": true,
+      "detail": "0 page errors, 1 console errors (0 hydration)"
+    }
+  ],
+  "measurements": {
+    "overviewEmpty": [
+      "GET /auth/config",
+      "GET /runtime",
+      "GET /auth/me",
+      "GET /api/v1/collection/status",
+      "GET /api/v1/risks/summary",
+      "GET /api/v1/risks/rules",
+      "GET /api/v1/changes/summary?from,to",
+      "GET /api/v1/changes?from,limit,to",
+      "GET /api/v1/governance/queue"
+    ],
+    "overview": {
+      "h1": 33,
+      "sections": {
+        "Needs attention": 1279,
+        "Recent changes": 1279,
+        "Reviews": 4030,
+        "Data health": 1279,
+        "Recently viewed": 33
+      },
+      "reviewQueueReadEnd": 4027,
+      "order": [
+        "Data health",
+        "Needs attention",
+        "Recent changes",
+        "Reviews",
+        "Recently viewed",
+        "Where to start",
+        "What ADG will not do"
+      ]
+    },
+    "identity": {
+      "label": "Nina Coleman",
+      "heading": "Nina Coleman"
+    },
+    "overviewPopulated": [
+      "GET /auth/config",
+      "GET /runtime",
+      "GET /auth/me",
+      "GET /api/v1/collection/status",
+      "GET /api/v1/risks/summary",
+      "GET /api/v1/risks/rules",
+      "GET /api/v1/changes/summary?from,to",
+      "GET /api/v1/changes?from,limit,to",
+      "GET /api/v1/governance/queue"
+    ],
+    "documents": [
+      "/login",
+      "/",
+      "/access/explain",
+      "/",
+      "/",
+      "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+      "/resources/server",
+      "/access/explain",
+      "/",
+      "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+      "/resources/server",
+      "/access/explain",
+      "/",
+      "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+      "/resources/server",
+      "/access/explain",
+      "/",
+      "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+      "/resources/server",
+      "/access/explain",
+      "/",
+      "/identities/principal/S-1-5-21-3949361974-1583827165-633756269-1103",
+      "/resources/server",
+      "/access/explain"
+    ],
+    "consoleErrors": [
+      "http://127.0.0.1:3110/login: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  }
+}
