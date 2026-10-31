@@ -193,7 +193,13 @@ test's `PROSE` table mixed key types, and mypy had not been run locally. The fix
 `dict[str, Mapping[Any, str]]`, and local mypy is clean. Frontend, Pester and Compose jobs
 passed on that run.
 
-DB suites were not run. No database logic or schema changed. Every changed sentence is read
+Run `41158333420` on `c04a3e8` then failed only at the Database tests step (1 failed, 1297
+passed): `tests/db/test_change_impact.py:384` still asserted `"principal" in` the
+change-impact NEEDS_A_SUBJECT sentence that §2.1 rewords to "identity". The assertion now
+expects "identity"; it was the only DB test pinning changed wording (found by
+ADG-UX-WAVE-C-INTEGRATION-01, which ran the DB suite).
+
+DB suites were not run locally by this lane. No database logic or schema changed. Every changed sentence is read
 at request time, apart from the stored simulation report covered in §2.1.
 
 Logs: [`backend-gates.txt`](ADG-UX-BACKEND-COPY-04-evidence/backend-gates.txt),
