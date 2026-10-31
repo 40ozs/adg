@@ -245,7 +245,7 @@ fallback.
 | Wave B `ADG-UX-WAVE-B-INTEGRATION-01-evidence/wave-b-check.mjs` | **8/8** | `wave-b-check.txt` |
 | TITLES `cloudflare/checks/titles.mjs` (real API) | **10/10** | `titles-gate.txt` |
 | Backend | not rerun: `backend`, `database`, `docker` and `.github` trees are byte-identical to `10c73d1` | `backend-tree.txt` |
-| CI | see §11 | |
+| CI | runs 41156792963 and 41157026959 green, see §12 | |
 
 Every browser gate ran against the real local stack:
 - the Genesee Press demo database (a copy of the Wave B lane's shut-down data directory) on
@@ -320,8 +320,23 @@ completely (ENOSPC). See `enospc-note.txt`.
   - No other session, worktree, cache or lane was touched.
 - **Run 5 was preserved.** Its output survived in the scratchpad and was copied here.
 
-**CI:** the run for the code commit `7393d03` and the run for this report commit are recorded in
-the follow-up below.
+## 12. CI
+
+Both pushes ran the repository's `CI` workflow on the self-hosted `adg` runners, and both
+passed.
+
+| Run | Head | Result |
+| --- | --- | --- |
+| [41156792963](https://github.com/40ozs/adg/actions/runs/41156792963) | `7393d03` (code) | **success**: Backend, Frontend, Collector (Pester), Compose; Fork PR gates skipped (push event) |
+| [41157026959](https://github.com/40ozs/adg/actions/runs/41157026959) | `9d6a68d` (report and evidence) | **success**: same jobs |
+
+Counts from the `9d6a68d` run:
+- Frontend: vitest 1684/1684 in 49 files (the same count as locally), plus lint, types and the
+  build.
+- Backend: unit tests 6038 passed, 124 skipped; database tests 1298 passed, 1 xfailed.
+- Collector: 1049 passed, 1 skipped.
+
+This section was added by a docs-only follow-up commit after both runs completed.
 
 ## Not done, by design
 
