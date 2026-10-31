@@ -1,0 +1,97 @@
+{
+  "results": [
+    {
+      "name": "API: identity scopes carry display_name; unknown SID null; other kinds null; tokens unchanged",
+      "ok": true,
+      "detail": "COPY-04 identity review: Brianna Reddy, sec-share-design-read-only; REVIEW-NAMES-08 unresolved identity: Brianna Reddy, null"
+    },
+    {
+      "name": "Reviews: identity scopes named from the API, no fallback, no SID, one compact line",
+      "ok": true,
+      "detail": "\"By identity · Identity: Brianna Reddy, Identity: sec-share-design-read-only\", row 63 px"
+    },
+    {
+      "name": "Reviews: the unknown identity keeps the explicit fallback; its known neighbour is named",
+      "ok": true,
+      "detail": "Brianna Reddy, S-1-5-21-3949361974-1583827165-633756269-999999 (name not loaded)"
+    },
+    {
+      "name": "Reviews: resource scopes unchanged",
+      "ok": true,
+      "detail": "2 resource campaigns"
+    },
+    {
+      "name": "Baseline 559dbaf build reads the new API unchanged (ignores display_name)",
+      "ok": true,
+      "detail": "renders the Wave C fallback, as before"
+    },
+    {
+      "name": "Reviews: web-tier API calls identical to Wave C (no per-row request)",
+      "ok": true,
+      "detail": "5 calls on both for 4 rows: GET /api/v1/governance/campaigns?limit | GET /api/v1/governance/queue | GET /auth/config | GET /auth/me | GET /runtime"
+    },
+    {
+      "name": "Campaign: client move from Reviews; title; reviewer scopes named; no fallback",
+      "ok": true,
+      "detail": "Review campaign — ADG; Brianna Reddy, sec-share-design-read-only"
+    },
+    {
+      "name": "Campaign: web-tier API calls identical to Wave C",
+      "ok": true,
+      "detail": "6 calls on both"
+    },
+    {
+      "name": "375px: Reviews and campaign do not scroll sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "320px: Reviews and campaign do not scroll sideways",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "No page errors (this branch)",
+      "ok": true,
+      "detail": "console: 1 (favicon 404 only)"
+    }
+  ],
+  "measurements": {
+    "namedRowHeight": 62.625,
+    "reviews": {
+      "lane": [
+        "GET /api/v1/governance/campaigns?limit",
+        "GET /api/v1/governance/queue",
+        "GET /auth/config",
+        "GET /auth/me",
+        "GET /runtime"
+      ],
+      "baseline": [
+        "GET /api/v1/governance/campaigns?limit",
+        "GET /api/v1/governance/queue",
+        "GET /auth/config",
+        "GET /auth/me",
+        "GET /runtime"
+      ]
+    },
+    "reviewsRows": 4,
+    "campaign": {
+      "lane": [
+        "GET /api/v1/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26/drift?limit",
+        "GET /api/v1/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26/items?limit",
+        "GET /api/v1/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26/status",
+        "GET /auth/config",
+        "GET /auth/me",
+        "GET /runtime"
+      ],
+      "baseline": [
+        "GET /api/v1/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26/drift?limit",
+        "GET /api/v1/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26/items?limit",
+        "GET /api/v1/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26/status",
+        "GET /auth/config",
+        "GET /auth/me",
+        "GET /runtime"
+      ]
+    }
+  }
+}
