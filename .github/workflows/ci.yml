@@ -7,9 +7,41 @@ on:
   pull_request:
 
 jobs:
+  # Decides which suites a change can affect, from everything the branch changes relative to main (not just
+  # the last push), so a branch that touched the backend anywhere always runs the backend. main, workflow
+  # edits, and anything unclear run everything.
+  changes:
+    name: Changed areas
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: [self-hosted, Linux, X64, docker, adg]
+    outputs:
+      backend: ${{ steps.areas.outputs.backend }}
+      frontend: ${{ steps.areas.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: areas
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          all() { echo "backend=true" >> "$GITHUB_OUTPUT"; echo "frontend=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          [ "$GITHUB_REF" = refs/heads/main ] && all
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then range="$PR_BASE...$PR_HEAD"; else range="origin/main...$GITHUB_SHA"; fi
+          files=$(git diff --name-only "$range") || all
+          [ -n "$files" ] || all
+          grep -q '^\.github/' <<<"$files" && all
+          be=false; fe=false
+          grep -qvE '^(frontend/|docs/|collector/)|\.md$' <<<"$files" && be=true
+          grep -qvE '^(backend/|database/|docs/|collector/)|\.md$' <<<"$files" && fe=true
+          echo "backend=$be" >> "$GITHUB_OUTPUT"; echo "frontend=$fe" >> "$GITHUB_OUTPUT"
+          printf 'changed files:\n%s\nbackend=%s frontend=%s\n' "$files" "$be" "$fe"
+
   backend:
     name: Backend (lint, types, tests)
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     # adg-db = the k3s-adg-db runner set, which prefers the bare-metal node (fast fsync) for the PostgreSQL suite.
     runs-on: [self-hosted, Linux, X64, docker, adg-db]
     defaults:
@@ -26,7 +58,9 @@ jobs:
           POSTGRES_DB: adg
         ports:
           - 5432:5432
+        # Data dir on a RAM disk: the database is thrown away after the job, so durable fsyncs only cost time.
         options: >-
+          --tmpfs /var/lib/postgresql/data
           --health-cmd "pg_isready -U adg -d adg"
           --health-interval 5s
           --health-timeout 5s
@@ -57,7 +91,8 @@ jobs:
 
   frontend:
     name: Frontend (lint, types, tests, build)
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: [self-hosted, Linux, X64, docker, adg]
     defaults:
       run:
@@ -116,7 +151,9 @@ jobs:
           POSTGRES_DB: adg
         ports:
           - 5432:5432
+        # Data dir on a RAM disk: the database is thrown away after the job, so durable fsyncs only cost time.
         options: >-
+          --tmpfs /var/lib/postgresql/data
           --health-cmd "pg_isready -U adg -d adg"
           --health-interval 5s
           --health-timeout 5s
