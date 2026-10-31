@@ -1,0 +1,21 @@
+# Sign-out ordering mutation check (2026-10-30, worktree adg-UX-RECENT-05B)
+
+Purpose: prove the SignOutButton tests detect the prohibited order (clearing after the logout
+request instead of before it).
+
+1. Mutation: in frontend/components/SignOutButton.tsx, `clearRecent();` was moved from before
+   `await fetch("/api/auth/logout", { method: "POST" })` to after it.
+2. Ran: npx vitest run tests/recently-viewed.test.tsx -t SignOutButton
+   Output (verbatim excerpt):
+      × SignOutButton > clears the list before the logout request starts 58ms
+      × SignOutButton > leaves no list behind when the logout request hangs 11ms
+      FAIL  tests/recently-viewed.test.tsx > SignOutButton > clears the list before the logout request starts
+      FAIL  tests/recently-viewed.test.tsx > SignOutButton > leaves no list behind when the logout request hangs
+           Tests  2 failed | 12 skipped (14)
+3. The original file was restored byte-for-byte from a copy taken before the mutation
+   (`git diff --stat` afterwards showed only the intended +4 lines), and both tests pass in the
+   full suite (vitest.txt, 1684/1684).
+
+The browser gate checks the same order independently (§38 in recently-viewed-gate.txt): an
+in-page fetch wrapper records sessionStorage at the moment the logout request starts, for a
+hanging, a failing (500) and the real logout.

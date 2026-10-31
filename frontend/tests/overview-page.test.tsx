@@ -729,3 +729,43 @@ describe("progressive rendering (ADG-UX-PERF-01)", () => {
     }
   });
 });
+
+describe("Recently viewed (ADG-UX-RECENT-05B)", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it("sits after the operational sections and the lower Data health, before Where to start", async () => {
+    stub({ capabilities: [...EVERYTHING, "identities:read"] });
+    await renderOverview();
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    const recent = headings.indexOf("Recently viewed");
+    expect(recent).toBeGreaterThan(headings.indexOf("Reviews"));
+    expect(recent).toBeGreaterThan(headings.indexOf("Data health"));
+    expect(headings[recent + 1]).toBe("Where to start");
+    expect(section("Recently viewed")).not.toHaveAttribute("aria-busy");
+  });
+
+  it("is rendered for an account that can open only resources", async () => {
+    stub({ capabilities: ["resources:read"] });
+    await renderOverview();
+    expect(section("Recently viewed")).toBeInTheDocument();
+  });
+
+  it("is omitted when the account can open neither identities nor resources", async () => {
+    stub({ capabilities: ["risks:read", "changes:read", "governance:read"] });
+    await renderOverview();
+    expect(screen.queryByRole("heading", { name: "Recently viewed" })).not.toBeInTheDocument();
+  });
+
+  it("adds no API read", async () => {
+    stub({ capabilities: [...EVERYTHING, "identities:read"] });
+    await renderOverview();
+    const calls = Object.values(adg).reduce(
+      (total, fn) => total + vi.mocked(fn as () => unknown).mock.calls.length,
+      0,
+    );
+    // Collection status, runtime, risk summary, rules, change summary, change feed, queue.
+    expect(calls).toBe(7);
+  });
+});
