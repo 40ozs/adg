@@ -1,0 +1,15 @@
+# Explain removal table width, scenario F person (/access/explain), Wave C build vs Wave B 10c73d1 build, same API and data
+# The table sits in its own .table-scroll container (pre-existing design); 'page overflow' is document scrollWidth - innerWidth.
+# (The diagram's structure table, rendered in a separate 1820 px container that does not affect the page, is omitted.)
+WaveC 1440px: removal table 1006px in .table-scroll 940px → internal scroll +66px; page overflow +0; longest first cell "Finance_Read is a member of sec-share-finance-read-onlymembership"
+WaveC 1024px: removal table 1006px in .table-scroll 700px → internal scroll +306px; page overflow +0; longest first cell "Finance_Read is a member of sec-share-finance-read-onlymembership"
+WaveC 768px: removal table 1006px in .table-scroll 684px → internal scroll +322px; page overflow +0; longest first cell "Finance_Read is a member of sec-share-finance-read-onlymembership"
+WaveC 375px: removal table 1006px in .table-scroll 291px → internal scroll +715px; page overflow +0; longest first cell "Finance_Read is a member of sec-share-finance-read-onlymembership"
+WaveC 320px: removal table 1006px in .table-scroll 236px → internal scroll +770px; page overflow +0; longest first cell "Finance_Read is a member of sec-share-finance-read-onlymembership"
+WaveB-10c73d1 1440px: removal table 1455px in .table-scroll 940px → internal scroll +515px; page overflow +0; longest first cell "principal:S-1-5-21-3949361974-1583827165-633756269-1243 → group:S-1-5-21-3949361974-158382"
+WaveB-10c73d1 1024px: removal table 1455px in .table-scroll 700px → internal scroll +755px; page overflow +0; longest first cell "principal:S-1-5-21-3949361974-1583827165-633756269-1243 → group:S-1-5-21-3949361974-158382"
+WaveB-10c73d1 768px: removal table 1455px in .table-scroll 684px → internal scroll +771px; page overflow +0; longest first cell "principal:S-1-5-21-3949361974-1583827165-633756269-1243 → group:S-1-5-21-3949361974-158382"
+WaveB-10c73d1 375px: removal table 1455px in .table-scroll 291px → internal scroll +1164px; page overflow +0; longest first cell "principal:S-1-5-21-3949361974-1583827165-633756269-1243 → group:S-1-5-21-3949361974-158382"
+WaveB-10c73d1 320px: removal table 1455px in .table-scroll 236px → internal scroll +1219px; page overflow +0; longest first cell "principal:S-1-5-21-3949361974-1583827165-633756269-1243 → group:S-1-5-21-3949361974-158382"
+
+Result: the page never scrolls sideways. Wave B's raw principal:<sid> → group:<sid> labels made the table 1455 px; Wave C's readable labels make it 1006 px (internal scroll at 1440 px: +515 → +66). No raw id or path sets the row width any more; the widest first cell is a readable relationship sentence.

@@ -1,0 +1,18 @@
+load before: 11.65 18.47 23.34
+PASS  admin 1440px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view — 1440 <= 1440
+PASS  admin 1280px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view — 1280 <= 1280
+PASS  admin 1024px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view — 1024 <= 1024
+PASS  admin 768px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view — 768 <= 768
+PASS  admin 375px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view — 375 <= 375
+PASS  admin 320px: Overview shows the four nav groups, Overview current, no sideways scroll, every nav link in view — 320 <= 320
+PASS  terminology: the rendered Overview and nav use no retired user-facing term (UX-01 §3) — 3586 characters scanned; Findings → /risks; backend-supplied rule titles with a retired term: none
+PASS  client navigation: grouped nav from the Overview to Findings and Reviews, no reload, current item follows, Back returns — Findings ↔ Overview, Reviews ↔ Overview
+PASS  keyboard on the Overview: skip link, then the 10 nav links in group order with visible focus, then the Overview body — 10 nav links, then "Check collection status" in #main
+PASS  viewer on the Overview: no Act group, no Reviews section, Overview current — Investigate / Directory / System
+PASS  /runtime: read once per render on /, and again on the next render (request-scoped) — renders read 9 and 9 paths, /runtime once each, no duplicates
+PASS  /runtime: read once per render on /demo, and again on the next render (request-scoped) — renders read 4 and 4 paths, /runtime once each, no duplicates
+PASS  /runtime: read once per render on /access/investigate, and again on the next render (request-scoped) — renders read 3 and 3 paths, /runtime once each, no duplicates
+PASS  no page errors — 1 console error(s): admin: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+14/14 passed
+exit 0 (10 s, load after: 11.86 18.30 23.22)

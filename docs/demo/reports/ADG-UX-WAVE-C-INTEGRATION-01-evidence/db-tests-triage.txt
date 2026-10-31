@@ -1,0 +1,46 @@
+# DB suite triage
+
+## Run 1 — attempt 1 (c9cf188, COPY-04 at c04a3e8), cluster timezone America/Los_Angeles (initdb default on this Mac)
+FAILED tests/db/test_change_impact.py::TestWhatItRefusesToGuess::test_a_directory_change_asks_for_a_principal
+FAILED tests/db/test_collection_status_api.py::TestTheRunList::test_runs_come_back_newest_first
+FAILED tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation::test_every_hop_carries_its_collector_and_scan
+FAILED tests/db/test_genesee_press_demo.py::TestTheCoverageAndRecoveryDemo::test_coverage_names_the_two_scopes_the_history_left_incomplete
+FAILED tests/db/test_genesee_press_demo.py::TestTheCoverageAndRecoveryDemo::test_the_risk_totals_carry_their_coverage_and_snapshot
+FAILED tests/db/test_ingestion.py::TestBatchIdempotency::test_a_stale_observation_does_not_overwrite_a_newer_one
+FAILED tests/db/test_system_mapping_api.py::TestTheDemoQuestion::test_locally_it_is_confirmed_with_provenance[asyncio]
+7 failed, 1291 passed, 6172 deselected, 1 xfailed, 68 warnings in 1359.45s (0:22:39)
+
+Assertion detail (timestamps rendered by the cluster carry -07:00/-08:00; the tests expect UTC):
+E       AssertionError: assert 'principal' in 'This change is about \\\\fs01\\finance, and effective access is always about an identity as well. Name one to see what it could do before and after.'
+E       AssertionError: assert ['2026-09-14T...:00:00-07:00'] == ['2026-09-14T...14T08:00:00Z']
+E         At index 0 diff: '2026-09-14T01:20:00-07:00' != '2026-09-14T08:20:00Z'
+E        +  where False = startswith('2026-09-03')
+E        +  where False = startswith('2026-09-17')
+E        +  where False = startswith('2026-09-17')
+E        +  where False = startswith('2026-01-01')
+E        +  where False = startswith('2026-09-14T09:00:00')
+
+## Run 2 — the 7 tests again, Python TZ=UTC (cluster unchanged): no change
+FAILED tests/db/test_collection_status_api.py::TestTheRunList::test_runs_come_back_newest_first
+FAILED tests/db/test_genesee_press_demo.py::TestTheAccessInvestigation::test_every_hop_carries_its_collector_and_scan
+FAILED tests/db/test_genesee_press_demo.py::TestTheCoverageAndRecoveryDemo::test_coverage_names_the_two_scopes_the_history_left_incomplete
+FAILED tests/db/test_genesee_press_demo.py::TestTheCoverageAndRecoveryDemo::test_the_risk_totals_carry_their_coverage_and_snapshot
+FAILED tests/db/test_ingestion.py::TestBatchIdempotency::test_a_stale_observation_does_not_overwrite_a_newer_one
+FAILED tests/db/test_system_mapping_api.py::TestTheDemoQuestion::test_locally_it_is_confirmed_with_provenance[asyncio]
+FAILED tests/db/test_change_impact.py::TestWhatItRefusesToGuess::test_a_directory_change_asks_for_a_principal
+7 failed, 3 passed in 84.13s (0:01:24)
+
+## Run 3 — the 7 tests again, cluster restarted with -c timezone=UTC (CI's postgres:16-alpine is UTC)
+FAILED tests/db/test_change_impact.py::TestWhatItRefusesToGuess::test_a_directory_change_asks_for_a_principal
+1 failed, 9 passed in 91.88s (0:01:31)
+=> 6 failures were this Mac's cluster timezone; 1 is BACKEND-COPY-04's stale assertion.
+
+## Base compare: that test on the Wave B tree (10c73d1)
+10c73d1
+1 passed in 9.91s
+test_change_impact.py:384 asserted "principal" in the sentence COPY-04 §2.1 reworded to "identity"; CI 41158333420 on c04a3e8 failed on the same test (1 failed, 1297 passed).
+
+## Fix: 9cec0b0 on the COPY-04 branch (owner-approved), test-only; tests/db/test_change_impact.py on the COPY-04 tree: 13 passed
+
+## Run 4 — final head 66f9548, full suite, cluster timezone=UTC
+1298 passed, 6172 deselected, 1 xfailed, 68 warnings in 1001.80s (0:16:41)

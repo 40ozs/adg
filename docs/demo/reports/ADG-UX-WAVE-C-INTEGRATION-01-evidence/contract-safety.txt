@@ -1,0 +1,43 @@
+# Contract safety, integration HEAD 66f9548 vs Wave B 10c73d1
+
+## docs/contracts
+ docs/contracts/v1/derived/examples/access-explanation.json | 2 +-
+ docs/contracts/v1/derived/examples/access-paths.json       | 2 +-
+ docs/contracts/v1/derived/examples/resource-impact.json    | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+-    "reason": "This principal holds rights on this object."
++    "reason": "This identity holds rights on this object."
+-    "reason": "This principal holds rights on this object."
++    "reason": "This identity holds rights on this object."
+-        "reason": "This principal holds rights on this object."
++        "reason": "This identity holds rights on this object."
+
+## database/ (migrations)
+(empty = unchanged)
+
+## backend changes are exactly COPY-04's (tree hash)
+HEAD:backend    afbc6bd053af1baf0c639ad95db01f26dbe3fe57
+9cec0b0:backend afbc6bd053af1baf0c639ad95db01f26dbe3fe57
+
+## backend lines changed that are not string literals or prose (route/Field/Query/enum/rule/version)
+(none)
+
+## redundant_access_paths rule version (backend/app/risk_engine/catalog.py:474-484)
+    ),
+    RuleDefinition(
+        id=RuleId.REDUNDANT_ACCESS_PATHS,
+        version="1.0",
+        title="One identity reaches a resource by several independent routes",
+        detects=(
+            "An identity that belongs to more than the configured number of distinct "
+            "trustees named on one resource's access control lists."
+        ),
+        matters_because=(
+            "Removing one grant changes nothing while another still stands. An access review "
+(catalog.py and rules.py unchanged since Wave B)
+
+## frontend: new API calls or endpoints
+(no change under frontend/lib/api or frontend/app/api)
+
+## storage APIs in product code added since Wave B
+   3 sessionStorage
