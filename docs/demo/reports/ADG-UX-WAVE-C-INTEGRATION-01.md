@@ -1,6 +1,6 @@
 # ADG-UX-WAVE-C-INTEGRATION-01 — UX Wave C integration
 
-**Verdict: pending CI.** Every local gate passes and supports `READY_FOR_ADG_UX_WAVE_D_WITH_LIMITATIONS`, but the verdict is not final until CI is green on the corrected COPY-04 head and on this branch's head (§4, §13). A docs-only follow-up commit records both and sets the verdict. Limitations are in §15.
+**Verdict: `READY_FOR_ADG_UX_WAVE_D_WITH_LIMITATIONS`**. CI is green on every admitted source head and on the integration head (§4, §13). Limitations are in §15.
 
 BACKEND-COPY-04 (identity wording in backend prose, readable removal and scope labels),
 DEEP-TITLES-06 (contextual titles for deeper pages) and RECENT-05B (tab-local Recently viewed)
@@ -39,8 +39,8 @@ MERGE_COPY=a1fcb6c4e9854fd26aa50b06b6845f9c69ba6229
 MERGE_TITLES=4e08956726b1b868c0a8aa5f1469836f25629297
 MERGE_RECENT=66f954897f1aae5c6c0e195b12baeac2bebea548   (last product-code commit)
 GATE_SHA=2e677b1   (combined Wave C gate; test-only)
-REPORT_SHA=the commit that adds this report and its evidence (docs only)
-FINAL_SHA=head of origin/integration/ADG-UX-WAVE-C-01 (docs-only CI record; see "Next UX baseline")
+REPORT_SHA=52024ea722f1bcc2d44f6723d8261935b19e1689   (report + evidence; integration CI 41165819488 success)
+FINAL_SHA=head of origin/integration/ADG-UX-WAVE-C-01 (the docs-only commit after 52024ea that adds §13's results; see "Next UX baseline")
 ```
 
 **Baseline.** On 2026-10-31 (02:35Z), `git fetch --prune` found `10c73d1` still at the head of
@@ -128,7 +128,7 @@ frontend tree, so each one holds for the final head.
 
 | Lane | Brief's final head | Run on that head | Result | Admitted head | Run on admitted head | Admitted |
 |---|---|---|---|---|---|---|
-| BACKEND-COPY-04 | `c04a3e8` | [41158333420](https://github.com/40ozs/adg/actions/runs/41158333420) | **failure**: Database tests 1 failed / 1297 passed (Lint, Type check, Unit tests, Frontend, Pester, Compose passed) | `9cec0b0` | [41164470341](https://github.com/40ozs/adg/actions/runs/41164470341) | pending (in progress when this report was committed) |
+| BACKEND-COPY-04 | `c04a3e8` | [41158333420](https://github.com/40ozs/adg/actions/runs/41158333420) | **failure**: Database tests 1 failed / 1297 passed (Lint, Type check, Unit tests, Frontend, Pester, Compose passed) | `9cec0b0` | [41164470341](https://github.com/40ozs/adg/actions/runs/41164470341) | **success** (Backend incl. DB 1298 passed, Frontend, Pester, Compose) → **YES** |
 | DEEP-TITLES-06 | `c226516` | [41151516361](https://github.com/40ozs/adg/actions/runs/41151516361) | success (Backend, Frontend, Pester, Compose) | `c226516` | same | **YES** |
 | RECENT-05B | `44d1a3c` | [41160309703](https://github.com/40ozs/adg/actions/runs/41160309703) | success (code `7393d03` 41156792963 and report `9d6a68d` 41157026959 also success) | `44d1a3c` | same | **YES** |
 
@@ -353,7 +353,29 @@ items below remain separate lanes:
 
 ## 13. CI on the integration head
 
-Pending when this report was committed. The branch was pushed once, with the merges, the gate commit and this report. The follow-up docs-only commit records the run on that head and on COPY-04's `9cec0b0`.
+The branch was pushed once, with the merges, the gate commit and the report. Run
+[41165819488](https://github.com/40ozs/adg/actions/runs/41165819488) on `52024ea` (the code,
+gate and report head) passed:
+
+| Job | Result |
+|---|---|
+| Backend (lint, types, tests) | **success**: ruff, format, mypy; unit 6048 passed, 124 skipped, 1299 deselected; Database tests 1298 passed, 1 xfailed |
+| Frontend (lint, types, tests, build) | **success**: vitest 49 files, **1691** passed; lint, typecheck, build |
+| Collector (Pester) | success |
+| Docker Compose configuration | success |
+| Fork PR Linux gates | skipped (push event) |
+
+The corrected COPY-04 head `9cec0b0` passed run
+[41164470341](https://github.com/40ozs/adg/actions/runs/41164470341). Its Database tests
+passed 1298 with 1 xfailed, where `c04a3e8` had 1 failed.
+
+CI's unit count (6048 passed, 124 skipped) differs from the local run (6160, 12) only in
+skips that depend on the platform. The DB counts and vitest counts match the local runs
+exactly.
+
+This section and the baseline below were added by a docs-only commit after both runs
+completed. That commit's own CI run is not part of this record. It changes only this
+report, so the verdict rests on run 41165819488.
 
 ## 14. Evidence
 
@@ -390,7 +412,13 @@ desktop width (+66 px at 1440, down from +515 at Wave B). The page itself does n
 
 ## Next UX baseline
 
-Not declared yet. The follow-up docs-only commit declares it once CI on `9cec0b0` and on the integration head is green. Until then, future UX lanes stay on `origin/integration/ADG-UX-WAVE-B-01 @ 10c73d1`.
+**`origin/integration/ADG-UX-WAVE-C-01` at its head**: the docs-only commit that adds this
+section, directly on top of `52024ea`. Its code is identical to `52024ea`, which CI run
+41165819488 validated.
+
+FUTURE ADG UX WORK MUST BRANCH FROM THIS VERIFIED SHA UNLESS SUPERSEDED. That means the
+branch's head as of this commit, not `main`, Wave B `10c73d1` or any individual feature
+branch. If a later commit lands on this branch, check its report before branching from it.
 
 ## Status
 
