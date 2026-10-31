@@ -10,7 +10,8 @@ jobs:
   backend:
     name: Backend (lint, types, tests)
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: [self-hosted, Linux, X64, docker, adg]
+    # adg-db = the k3s-adg-db runner set, which prefers the bare-metal node (fast fsync) for the PostgreSQL suite.
+    runs-on: [self-hosted, Linux, X64, docker, adg-db]
     defaults:
       run:
         working-directory: backend
