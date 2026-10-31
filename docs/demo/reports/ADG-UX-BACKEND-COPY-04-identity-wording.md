@@ -6,7 +6,7 @@
 | --- | --- |
 | Baseline | `origin/integration/ADG-UX-WAVE-B-01` @ `10c73d1fcb5b12b31fa54e57b95da3483c079fba` (fetched 2026-10-30; still the branch head; no newer validated UX baseline in the repository's reports or branches) |
 | Branch | `feature/ADG-UX-BACKEND-COPY-04-identity-wording` (worktree `/Volumes/T5 EVO/mmm/worktrees/adg-UX-BACKEND-COPY-04`) |
-| Code commit | `e8fd2dd` |
+| Code commits | `e8fd2dd` (change), `6ec9c2b` (mypy fix to the new test, §4) |
 | Merged | **No.** Not merged to the UX baseline or to `main` |
 | Deployed | **No.** No hosted service, Render, Worker or Supabase was touched |
 | Evidence | [`ADG-UX-BACKEND-COPY-04-evidence/`](ADG-UX-BACKEND-COPY-04-evidence/) |
@@ -169,6 +169,7 @@ against `e8fd2dd`:
 | Gate | Result |
 | --- | --- |
 | `ruff check app tests` / `ruff format --check` | pass / 415 files formatted |
+| `mypy app tests` | pass, 414 files (after the fix below) |
 | Backend `pytest tests --ignore=tests/db --ignore=tests/benchmarks` | **6130 passed**, 41 skipped (DB-gated) |
 | Backend contract + wording focus (`tests/contracts`, risk model, simulation, verdict, decision rules) | 1076 passed, 1 skipped |
 | `vitest run` | 46 files, **1599/1599** |
@@ -185,6 +186,12 @@ fallback appears without them. Every scope kind is labelled in a campaign row
 (`governance-views`). Updated: two backend assertions on old wording
 (`test_decision_rules.py`, `simulation/test_model.py`) and the frontend factories that mirror
 backend strings.
+
+**CI.** Run `41154343454` on `e8fd2dd` failed only at the Backend mypy step:
+`tests/contracts/test_identity_wording.py:54: "object" has no attribute "items"`. The new
+test's `PROSE` table mixed key types, and mypy had not been run locally. The fix annotates it
+`dict[str, Mapping[Any, str]]`, and local mypy is clean. Frontend, Pester and Compose jobs
+passed on that run.
 
 DB suites were not run. No database logic or schema changed. Every changed sentence is read
 at request time, apart from the stored simulation report covered in §2.1.
@@ -233,8 +240,7 @@ Screens: [`screens/`](ADG-UX-BACKEND-COPY-04-evidence/screens/). The element sho
 3. Stored simulation reports keep their original wording (§2.1).
 4. OpenAPI/schema descriptions and identifier-syntax errors still say "principal" on purpose (§2.4).
 5. No manual screen-reader pass. Accessible names were checked by DOM scan and Testing Library.
-6. DB-backed backend suites were not run (no DB logic change). CI on the pushed branch has not
-   been checked by this lane.
+6. DB-backed backend suites were not run locally (no DB logic change). Branch CI is recorded in §4.
 7. On the reviews list at desktop width, a long identity scope (SID + fallback) still runs past
    the column inside the table's own scroll container. The old `principal:S-1-…` token did the
    same. No page-level overflow.
