@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 /**
+ * Historical (ADG-UX-TEST-STABILITY-09): this gate is Wave B's record, 8/8 at 10c73d1. From Wave C
+ * on it fails checks 4 and 6 by design (DEEP-TITLES-06). The current gate is
+ * ADG-UX-WAVE-C-INTEGRATION-01-evidence/wave-b-check.wave-c.mjs. Only this comment was added.
+ *
  * ADG-UX-WAVE-B-INTEGRATION-01: the cross-lane checks no source gate makes, because each Wave B
  * lane ran without the other two. PERF-01's `frontend/cloudflare/checks/overview.mjs` covers the
  * streamed Overview, ENTITY-02's `ADG-UX-ENTITY-02-evidence/entity-check.mjs` the identity copy,
