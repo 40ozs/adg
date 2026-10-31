@@ -18,6 +18,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PrincipalAccessView, ResourceAccessView } from "@/lib/contracts";
+import type { AccessExplanationResponse } from "@/lib/derived";
 
 import { AccessGraph } from "@/components/AccessGraph";
 import { PrincipalAccessTable, ResourceAccessTable } from "@/components/EffectiveAccess";
@@ -148,6 +149,37 @@ describe("what a removal would do", () => {
     expect(screen.getAllByText("Changes nothing")).toHaveLength(2);
     // The alternative route is the reason it changes nothing, so it is on the row.
     expect(screen.getByText("p0001")).toBeInTheDocument();
+  });
+
+  it("names each relationship as the diagram does, keeping the engine id off the label", () => {
+    const { container } = render(<RemovalPanel explanation={twoRoutes()} />);
+
+    expect(screen.getByText("Alice Smith is a member of Finance-Team")).toBeInTheDocument();
+    expect(screen.getByText("NTFS entry #1 names Alice Smith")).toBeInTheDocument();
+    expect(screen.queryByText(/principal:S-1-/)).toBeNull();
+    // The canonical id is kept on the row for anyone auditing it.
+    expect(container.querySelector('[data-removal-edge="m1"]')).not.toBeNull();
+  });
+
+  it("shows an unresolved identity by its SID, and an edge the graph lacks by its ids", () => {
+    const base = twoRoutes();
+    const unnamed: AccessExplanationResponse = {
+      ...base,
+      graph: {
+        ...base.graph,
+        nodes: base.graph.nodes.map((n) =>
+          n.kind === "principal" ? { ...n, display_name: null } : n,
+        ),
+      },
+      removal_targets: [
+        base.removal_targets[0],
+        removal({ edge_id: "gone", source: "principal:S-1-5-21-9", target: "group:S-1-5-21-8" }),
+      ],
+    };
+    render(<RemovalPanel explanation={unnamed} />);
+
+    expect(screen.getByText(`${ALICE_SID} is a member of Finance-Team`)).toBeInTheDocument();
+    expect(screen.getByText("principal:S-1-5-21-9 → group:S-1-5-21-8")).toBeInTheDocument();
   });
 
   it("calls a removal that would widen access a warning rather than a fix", () => {
@@ -410,6 +442,7 @@ describe("the export", () => {
 
     expect(exported()).toContain("VERDICT: ACCESS");
     expect(exported()).toContain("[p0000]");
+    expect(exported()).toContain("Alice Smith is a member of Finance-Team [m1]");
   });
 
   it("carries the caveats into the exported text", () => {

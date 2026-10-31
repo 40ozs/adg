@@ -168,7 +168,7 @@ QUALIFIER_DESCRIPTIONS: Final[dict[FactQualifier, str]] = {
         "No run has collected the membership of a group this finding reasons about."
     ),
     FactQualifier.PRINCIPAL_UNDESCRIBED: (
-        "No run has described a principal this finding names, so its kind and account "
+        "No run has described an identity this finding names, so its kind and account "
         "status are unknown."
     ),
 }

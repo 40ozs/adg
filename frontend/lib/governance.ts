@@ -30,6 +30,7 @@ import type {
   QueueEntryView,
   ReachView,
   ReviewerProgressView,
+  ScopeView,
 } from "@/lib/contracts";
 
 /* ------------------------------------------------------------------------- decisions */
@@ -309,6 +310,40 @@ export function principalLabel(item: ItemView): string {
 
 export function targetLabel(item: ItemView): string {
   return item.target_path ?? item.target_key;
+}
+
+const SCOPE_KINDS: Record<string, string> = {
+  server: "Server",
+  share: "Share",
+  directory_tree: "Directory tree",
+  principal: "Identity",
+};
+
+/**
+ * A campaign or reviewer scope in words. The `kind:key` token on the wire is unchanged.
+ *
+ * An identity is named only from names the page already holds, never by one lookup per row.
+ * Without one its key is shown and the label says the name was not loaded, rather than
+ * passing a SID off as a name.
+ */
+export function scopeLabel(scope: ScopeView, names?: ReadonlyMap<string, string>): string {
+  const kind = SCOPE_KINDS[scope.kind] ?? scope.kind.replace(/_/g, " ");
+  if (scope.kind !== "principal") {
+    return `${kind}: ${scope.key}`;
+  }
+  const name = names?.get(scope.key);
+  return name === undefined ? `${kind}: ${scope.key} (name not loaded)` : `${kind}: ${name}`;
+}
+
+/** The baseline names of the identities a page of items covers, by principal key. */
+export function itemNames(items: readonly ItemView[]): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const item of items) {
+    if (item.principal_display_name !== null) {
+      names.set(item.principal_key, item.principal_display_name);
+    }
+  }
+  return names;
 }
 
 /* -------------------------------------------------------------------------- progress */

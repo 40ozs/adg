@@ -38,6 +38,7 @@ import {
   queueHeadline,
   reachVerdict,
   reviewersByAttention,
+  scopeLabel,
   targetLabel,
   type Tone,
 } from "@/lib/governance";
@@ -90,7 +91,7 @@ export function CampaignTable({ campaigns }: { campaigns: readonly CampaignView[
             <Link href={`/governance/campaigns/${campaign.campaign_id}`}>{campaign.name}</Link>
             <div className="muted">
               {campaign.focus === "principal" ? "By identity" : "By resource"} ·{" "}
-              {campaign.scopes.map((scope) => `${scope.kind}:${scope.key}`).join(", ")}
+              {campaign.scopes.map((scope) => scopeLabel(scope)).join(", ")}
             </div>
           </>,
           campaign.status,
@@ -166,8 +167,11 @@ export function CampaignProgress({
 /** Who is behind, and by how much. Overdue first; every number is the backend's. */
 export function ReviewerProgressTable({
   reviewers,
+  names,
 }: {
   reviewers: readonly ReviewerProgressView[];
+  /** Identity names the page already holds, for naming identity scopes. */
+  names?: ReadonlyMap<string, string>;
 }): JSX.Element {
   const ordered = reviewersByAttention(reviewers);
   if (ordered.length === 0) {
@@ -195,7 +199,7 @@ export function ReviewerProgressTable({
         const scope =
           reviewer.scope === null
             ? "the whole campaign"
-            : `${reviewer.scope.kind}:${reviewer.scope.key}`;
+            : scopeLabel(reviewer.scope, names);
         return {
           key: reviewer.assignment_id,
           sort: [

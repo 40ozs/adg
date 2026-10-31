@@ -381,7 +381,7 @@ class TestWhatItRefusesToGuess:
             ObservationKind.NTFS_RESOURCE, FINANCE_PATH, h.FRIDAY
         )
         assert impact.verdict is ImpactVerdict.NEEDS_A_SUBJECT
-        assert "principal" in impact.explanation
+        assert "identity" in impact.explanation
 
     async def test_an_instant_that_names_no_change_is_refused(
         self, client: AsyncClient, session: AsyncSession

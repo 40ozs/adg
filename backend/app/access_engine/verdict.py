@@ -87,13 +87,13 @@ UNDERSTATING_CERTAINTIES: Final[frozenset[AccessCertainty]] = frozenset(
 
 
 OUTCOME_DESCRIPTIONS: Final[dict[AccessOutcome, str]] = {
-    AccessOutcome.GRANTED: "This principal holds rights on this object.",
+    AccessOutcome.GRANTED: "This identity holds rights on this object.",
     AccessOutcome.DENIED: (
-        "This principal holds no rights here because a Deny entry withheld them. The Deny "
+        "This identity holds no rights here because a Deny entry withheld them. The Deny "
         "is on an ACL and can be found, changed, or relied upon."
     ),
     AccessOutcome.NO_GRANT: (
-        "This principal holds no rights here and nothing denied any. No entry on either "
+        "This identity holds no rights here and nothing denied any. No entry on either "
         "ACL names it with anything to give."
     ),
     AccessOutcome.INDETERMINATE: (
@@ -106,17 +106,17 @@ OUTCOME_DESCRIPTIONS: Final[dict[AccessOutcome, str]] = {
 
 _NO_GRANT_BETWEEN_LAYERS: Final[dict[tuple[bool, bool], str]] = {
     (True, False): (
-        "This principal holds no rights here and nothing denied any. The NTFS permissions "
+        "This identity holds no rights here and nothing denied any. The NTFS permissions "
         "grant it rights, but the share permissions give it none, so nothing survives both "
         "layers."
     ),
     (False, True): (
-        "This principal holds no rights here and nothing denied any. The share permissions "
+        "This identity holds no rights here and nothing denied any. The share permissions "
         "grant it rights, but the NTFS permissions give it none, so nothing survives both "
         "layers."
     ),
     (True, True): (
-        "This principal holds no rights here and nothing denied any. The NTFS and share "
+        "This identity holds no rights here and nothing denied any. The NTFS and share "
         "permissions each grant it rights, but no right is granted by both, so nothing "
         "survives the intersection."
     ),

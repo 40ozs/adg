@@ -217,7 +217,7 @@ CONDITION_DESCRIPTIONS: Final[dict[AccessCondition, str]] = {
     ),
     AccessCondition.ORDER_DEPENDENT_RESULT: (
         "An Allow entry precedes a Deny entry that would otherwise have removed these "
-        "rights, so this principal's access depends on the order of the entries."
+        "rights, so this identity's access depends on the order of the entries."
     ),
     AccessCondition.ACE_COUNT_MISMATCH: (
         "The descriptor declared a different number of entries than ADG holds, so this "
@@ -250,7 +250,7 @@ CONDITION_DESCRIPTIONS: Final[dict[AccessCondition, str]] = {
         "has identified, so nobody can be ruled out of it."
     ),
     AccessCondition.SUBJECT_UNRESOLVED: (
-        "No run has described this principal, so its memberships may be incomplete and its "
+        "No run has described this identity, so its memberships may be incomplete and its "
         "token had to be assumed."
     ),
     AccessCondition.SUBJECT_IS_A_GROUP: (

@@ -863,6 +863,23 @@ export function describeRemoval(
   };
 }
 
+/**
+ * A removal target in words, as the diagram names the same edge.
+ *
+ * The engine ids (`principal:S-1-…`) stay the row's key and go into the text export; they are
+ * the label only for an edge the graph does not carry.
+ */
+export function removalLabel(
+  explanation: AccessExplanationResponse,
+  target: RemovalTargetView,
+): string {
+  const edge = explanation.graph.edges.find((item) => item.id === target.edge_id);
+  if (edge === undefined) {
+    return `${target.source} → ${target.target}`;
+  }
+  return edgeLabel(edge, new Map(explanation.graph.nodes.map((node) => [node.id, node])));
+}
+
 /** Single removals that end all access here. Empty is the common case, not an error. */
 export function sufficientRemovals(
   explanation: AccessExplanationResponse,
@@ -1147,7 +1164,7 @@ export function explanationText(explanation: AccessExplanationResponse): string 
   }
   for (const target of explanation.removal_targets) {
     const note = describeRemoval(explanation, target);
-    lines.push(`  [${target.edge_id}]`);
+    lines.push(`  ${removalLabel(explanation, target)} [${target.edge_id}]`);
     lines.push(`      ${note.headline}: ${note.detail}`);
     if (note.alternates.length > 0) {
       lines.push(`      alternate routes: ${note.alternates.map((path) => path.id).join(", ")}`);

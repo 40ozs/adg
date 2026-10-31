@@ -1,0 +1,16 @@
+# ADG-UX-BACKEND-COPY-04 frontend gates (Node v22.23.3 arm64, 2026-10-31T00:52:22Z)
+## vitest run
+ Test Files  46 passed (46)
+      Tests  1599 passed (1599)
+   Duration  107.05s (transform 81.59s, setup 98.15s, collect 127.04s, tests 24.10s, environment 272.29s, prepare 39.00s)
+exit 0
+## lint (eslint .)
+exit 0
+## typecheck (tsc --noEmit)
+exit 0
+## cf:typecheck
+exit 0
+## build (ADG_NEXT_OUTPUT=standalone next build --webpack)
+✓ Compiled successfully in 28.5s
+✓ Generating static pages using 7 workers (8/8) in 2.4s
+build exit 0
