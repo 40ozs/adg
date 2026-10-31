@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import { fetchCollectionStatus } from "@/lib/api/adg";
@@ -18,6 +19,9 @@ import { ExplanationExport } from "@/components/ExplanationExport";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
 import { investigateHref } from "@/lib/investigation";
 import Link from "next/link";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Access explanation") };
 
 /**
  * Why one principal can, or cannot, reach one directory.

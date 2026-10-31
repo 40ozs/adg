@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import { fetchCollectionCoverage, fetchCollectionStatus, fetchRuntime } from "@/lib/api/adg";
@@ -18,6 +19,9 @@ import {
   SummaryPanel,
 } from "@/components/Investigation";
 import { SignedOutNotice } from "@/components/SignedOutNotice";
+import { documentTitle } from "@/lib/nav";
+
+export const metadata: Metadata = { title: documentTitle("Access investigation") };
 
 /**
  * Why can this principal access this resource — as a guided investigation (ADG-DEMO-02).
