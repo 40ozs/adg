@@ -501,7 +501,7 @@ def simple_paths(
     """
     if member_key == group_key:
         raise DomainValidationError(
-            "A principal is not a member of itself; give two distinct keys.",
+            "An identity is not a member of itself; give two distinct keys.",
             value=member_key,
             field="group_key",
         )
@@ -575,7 +575,7 @@ async def find_paths(
     """
     if member_key == group_key:
         raise DomainValidationError(
-            "A principal is not a member of itself; give two distinct keys.",
+            "An identity is not a member of itself; give two distinct keys.",
             value=member_key,
             field="group_key",
         )

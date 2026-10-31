@@ -231,7 +231,8 @@ function readScope(params: Record<string, string | string[] | undefined>): Scope
       return {
         query: { [name]: value },
         link: { [name]: value },
-        label: `${name}: ${value}`,
+        // The query parameter stays `principal`; the reader sees the UX-01 word.
+        label: `${name === "principal" ? "identity" : name}: ${value}`,
       };
     }
   }

@@ -89,7 +89,7 @@ class TestTheBaseline:
 class TestTheScope:
     @pytest.mark.parametrize("kind", [ScopeKind.PAIR, ScopeKind.SUBJECT])
     def test_a_subject_scope_must_name_its_subject(self, kind):
-        with pytest.raises(DomainValidationError, match="one principal"):
+        with pytest.raises(DomainValidationError, match="one identity"):
             SimulationScope(kind=kind, resource_key=FINANCE)
 
     @pytest.mark.parametrize("kind", [ScopeKind.PAIR, ScopeKind.RESOURCE])

@@ -478,7 +478,7 @@ class AccessService:
         """
         if shares and path is AccessPath.LOCAL:
             raise DomainValidationError(
-                "A share is a remote access path. Asking which shares a principal can reach "
+                "A share is a remote access path. Asking which shares an identity can reach "
                 "locally answers nothing: local access does not pass through a share ACL, so "
                 "the question is about the directories the shares publish. Ask for those "
                 "instead.",

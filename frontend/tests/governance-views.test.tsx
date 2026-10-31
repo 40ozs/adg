@@ -20,6 +20,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DecisionForm } from "@/components/DecisionForm";
 import {
   CampaignProgress,
+  CampaignTable,
   DecisionHistory,
   DriftNotice,
   DriftSummary,
@@ -337,6 +338,48 @@ describe("the reviewer table", () => {
     const row = screen.getByRole("row", { name: /Alice/ });
     expect(within(row).getByText(/overdue/)).toBeTruthy();
     expect(within(row).getByText("Was due 2026-03-10")).toBeTruthy();
+  });
+});
+
+describe("scopes in words", () => {
+  const SID = "S-1-5-21-1-2-3-1001";
+
+  it("names an identity scope from names the page holds, not by its token", () => {
+    render(
+      <ReviewerProgressTable
+        reviewers={[reviewer({ scope: { kind: "principal", key: SID } })]}
+        names={new Map([[SID, "Jane Smith"]])}
+      />,
+    );
+
+    const row = screen.getByRole("row", { name: /Alice/ });
+    expect(within(row).getByText("Identity: Jane Smith")).toBeTruthy();
+    expect(row.textContent).not.toContain("principal:");
+  });
+
+  it("says the name was not loaded rather than passing the SID off as one", () => {
+    render(<ReviewerProgressTable reviewers={[reviewer({ scope: { kind: "principal", key: SID } })]} />);
+
+    expect(screen.getByText(`Identity: ${SID} (name not loaded)`)).toBeTruthy();
+  });
+
+  it("labels every scope kind in a campaign row", () => {
+    render(
+      <CampaignTable
+        campaigns={[
+          campaign({
+            scopes: [
+              { kind: "share", key: "fs01|finance" },
+              { kind: "directory_tree", key: "\\\\fs01\\finance\\close" },
+            ],
+          }),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Share: fs01\|finance, Directory tree: \\\\fs01\\finance\\close/),
+    ).toBeTruthy();
   });
 });
 

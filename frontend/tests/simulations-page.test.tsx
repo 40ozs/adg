@@ -207,7 +207,7 @@ describe("one proposal", () => {
 
     // Twice: once in the proposal panel, once inside the structured export beneath it.
     expect(screen.getAllByText(/Remove S-1-5-21-1-2-3-1104 from/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Take a principal out of a group.")).toBeInTheDocument();
+    expect(screen.getByText("Remove an identity from a group.")).toBeInTheDocument();
   });
 
   it("offers running it again, and says what that will not do", async () => {

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { fetchCampaignDrift, fetchCampaignItems, fetchCampaignStatus } from "@/lib/api/adg";
 import { currentViewer } from "@/lib/auth/current";
+import { itemNames } from "@/lib/governance";
 import { classify } from "@/lib/state";
 import { StateMessage } from "@/components/Banners";
 import { SelectableItems } from "@/components/DecisionForm";
@@ -85,6 +86,8 @@ export default async function CampaignPage({
     subject: mine ? "items assigned to you in this campaign" : "items in this campaign",
   });
   const driftState = classify(drift, { isEmpty: () => false, subject: "drift" });
+  // Names the items already carry; scopes and the heading are labelled from these, never fetched.
+  const names = itemNames(itemsState.kind === "ready" ? itemsState.data.items : []);
 
   return (
     <div className="shell-body">
@@ -114,7 +117,7 @@ export default async function CampaignPage({
 
       <section aria-labelledby="reviewers">
         <h2 id="reviewers">Reviewers</h2>
-        <ReviewerProgressTable reviewers={report.reviewers} />
+        <ReviewerProgressTable reviewers={report.reviewers} names={names} />
       </section>
 
       {driftView && driftState.kind === "ready" ? (
@@ -145,7 +148,7 @@ export default async function CampaignPage({
         </section>
       ) : (
         <section aria-labelledby="items">
-          <h2 id="items">{itemsHeading({ mine, target, principal, itemStatus })}</h2>
+          <h2 id="items">{itemsHeading({ mine, target, principal, itemStatus }, names)}</h2>
           <p className="filter-strip">
             {mine ? (
               <Link href={`/governance/campaigns/${campaignId}`}>Show every item</Link>
@@ -203,12 +206,15 @@ function single(value: string | string[] | undefined): string | undefined {
  * this product's own failure mode applied to its own interface: a reviewer who sees three
  * rows and does not know a filter is on concludes the campaign has three items.
  */
-function itemsHeading(filters: {
-  mine: boolean;
-  target: string | undefined;
-  principal: string | undefined;
-  itemStatus: string | undefined;
-}): string {
+function itemsHeading(
+  filters: {
+    mine: boolean;
+    target: string | undefined;
+    principal: string | undefined;
+    itemStatus: string | undefined;
+  },
+  names: ReadonlyMap<string, string>,
+): string {
   const parts: string[] = [];
   if (filters.itemStatus === "pending") {
     parts.push("Pending");
@@ -220,7 +226,7 @@ function itemsHeading(filters: {
     parts.push(`on ${filters.target}`);
   }
   if (filters.principal !== undefined) {
-    parts.push(`for ${filters.principal}`);
+    parts.push(`for ${names.get(filters.principal) ?? filters.principal}`);
   }
   const rendered = parts.join(" ");
   return rendered.charAt(0).toUpperCase() + rendered.slice(1);

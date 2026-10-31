@@ -7,6 +7,7 @@ import {
   alternateRouteWarning,
   cautions,
   explanationWording,
+  removalLabel,
   sufficientRemovals,
   systemMapping,
 } from "@/lib/explanation";
@@ -297,19 +298,15 @@ export function RemovalPanel({
             ]}
             rows={explanation.removal_targets.map((target) => {
               const note = describeRemoval(explanation, target);
+              const label = removalLabel(explanation, target);
               return {
                 key: target.edge_id,
-                sort: [
-                  `${target.source} → ${target.target}`,
-                  note.headline,
-                  target.rights_after.label,
-                  note.alternates.length,
-                ],
+                sort: [label, note.headline, target.rights_after.label, note.alternates.length],
                 cells: [
-                  <>
-                    <code>{target.source}</code> → <code>{target.target}</code>
+                  <div key="relationship" data-removal-edge={target.edge_id}>
+                    {label}
                     <div className="ace-notes muted">{target.kind}</div>
-                  </>,
+                  </div>,
                   <>
                     <span className={`verdict verdict-${note.tone}`}>{note.headline}</span>
                     <span className="verdict-note">{note.detail}</span>
