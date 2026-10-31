@@ -2,8 +2,11 @@
 
 ## 1. Verdict
 
-**`READY_FOR_ADG_WAVE_D_MAIN_PROMOTION_WITH_LIMITATIONS`** (promotion candidate; the `main` merge
-and its CI are recorded in §14–§15 by a follow-up docs-only commit).
+**`ADG_WAVE_D_PROMOTED_TO_MAIN_WITH_LIMITATIONS`**. `main` = merge **`e81272d`**, exact-main CI
+[41239013815](https://github.com/40ozs/adg/actions/runs/41239013815) **success** (§15).
+
+The promotion candidate's verdict before the merge was
+`READY_FOR_ADG_WAVE_D_MAIN_PROMOTION_WITH_LIMITATIONS`.
 
 **`STAGING-VERIFIED WAVE D PRODUCT TREE PRESERVED`**
 
@@ -239,7 +242,31 @@ locally) is the known platform-dependent skips. This report is a docs-only commi
 
 ## 15. Main merge and post-merge CI
 
-Recorded by a follow-up docs-only commit on `main` after the merge.
+**Report head.** Run [41236575877](https://github.com/40ozs/adg/actions/runs/41236575877) on
+`d82d477` (this report on top of `1c53444`): **success**, every job.
+
+**Merge.** With `origin/main` re-fetched and still `9240ff0`, the canonical checkout's `main` was
+fast-forwarded to it and then
+`git merge --no-ff origin/integration/ADG-WAVE-D-PROMOTION-01` gave
+**`e81272d120a21668373ae87714dfa74909f448b6`**, "Merge Wave D: ADG UX integration and verified
+staging release" (parents `9240ff0`, `d82d477`). It was pushed normally, `9240ff0..e81272d`; there
+was no force push and no squash, and Wave D's history is reachable unchanged.
+
+**Exact-main CI.** Run [41239013815](https://github.com/40ozs/adg/actions/runs/41239013815) on
+`e81272d`: **success**.
+
+| Job | Result |
+|---|---|
+| Backend (lint, types, tests) | **success**: unit **6052 passed**, 124 skipped; DB **1306 passed**, 1 xfailed (23.2 min) |
+| Frontend (lint, types, tests, build) | **success**: 49 files, **1696** passed |
+| Collector (Pester) | success |
+| Docker Compose configuration | success |
+| Fork PR Linux gates | skipped (push event) |
+
+**Main tree proof.** The tree of `e81272d` is `5f63fc76819317f7bb2cf53a143b6cefb2166b76`, the
+same as the validated promotion head `d82d477`. Its product tree is therefore the one every gate
+above ran on, and the one staging runs. The only later change is this section and §1, made by a
+docs-only commit directly on `main`.
 
 ## 16. Staging correspondence
 
