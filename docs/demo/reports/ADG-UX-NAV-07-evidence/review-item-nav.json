@@ -1,0 +1,132 @@
+{
+  "results": [
+    {
+      "name": "[desktop] Reviews → campaign by click: \"Review campaign — ADG\", no document load",
+      "ok": true,
+      "detail": "/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26; 6 rows, 4 item links"
+    },
+    {
+      "name": "[desktop] direct loads: one server <title> each; the item page's API reads recorded",
+      "ok": true,
+      "detail": "Review campaign: \"Review campaign — ADG\", Review item: \"Review item — ADG\"; item direct load = 5 API reads"
+    },
+    {
+      "name": "[desktop] campaign → item by click: client-side, \"Review item — ADG\", href kept, no extra API read, no prefetch",
+      "ok": true,
+      "detail": "0 document loads; 3 API reads (direct load 5), 0 extra, 0 repeated; 0 item prefetches"
+    },
+    {
+      "name": "[desktop] after the move: focus on a live node, heading in view, no sideways scroll",
+      "ok": true,
+      "detail": "focus BODY, heading at 153 px, scrollWidth fits"
+    },
+    {
+      "name": "[desktop] Back: campaign URL and title, item table unchanged, no sideways scroll",
+      "ok": true,
+      "detail": "6 rows, 4 distinct items, 0 selected"
+    },
+    {
+      "name": "[desktop] Forward: item URL and title, no document load",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "[desktop] Back, then the item link by keyboard (focus + Enter): client-side",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "[desktop] no page error, no hydration error",
+      "ok": true,
+      "detail": "0 page errors, 1 console errors (0 hydration)"
+    },
+    {
+      "name": "[375] Reviews → campaign by click: \"Review campaign — ADG\", no document load",
+      "ok": true,
+      "detail": "/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26; 6 rows, 4 item links"
+    },
+    {
+      "name": "[375] direct loads: one server <title> each; the item page's API reads recorded",
+      "ok": true,
+      "detail": "Review campaign: \"Review campaign — ADG\", Review item: \"Review item — ADG\"; item direct load = 5 API reads"
+    },
+    {
+      "name": "[375] campaign → item by click: client-side, \"Review item — ADG\", href kept, no extra API read, no prefetch",
+      "ok": true,
+      "detail": "0 document loads; 3 API reads (direct load 5), 0 extra, 0 repeated; 0 item prefetches"
+    },
+    {
+      "name": "[375] after the move: focus on a live node, heading in view, no sideways scroll",
+      "ok": true,
+      "detail": "focus BODY, heading at 714 px, scrollWidth fits"
+    },
+    {
+      "name": "[375] Back: campaign URL and title, item table unchanged, no sideways scroll",
+      "ok": true,
+      "detail": "6 rows, 4 distinct items, 0 selected"
+    },
+    {
+      "name": "[375] Forward: item URL and title, no document load",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "[375] Back, then the item link by keyboard (focus + Enter): client-side",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "[375] no page error, no hydration error",
+      "ok": true,
+      "detail": "0 page errors, 0 console errors (0 hydration)"
+    }
+  ],
+  "measurements": {
+    "375": {
+      "directItemReads": [
+        "GET /auth/config",
+        "GET /runtime",
+        "GET /auth/me",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee/context"
+      ],
+      "prefetchesBeforeClick": 0,
+      "moveReads": [
+        "GET /auth/me",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee/context"
+      ],
+      "moveDocuments": 0,
+      "moveExtra": [],
+      "moveDuplicates": [],
+      "focusAfterMove": "BODY",
+      "headingTop": 714,
+      "pageErrors": [],
+      "consoleErrors": []
+    },
+    "desktop": {
+      "directItemReads": [
+        "GET /auth/config",
+        "GET /runtime",
+        "GET /auth/me",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee/context"
+      ],
+      "prefetchesBeforeClick": 0,
+      "moveReads": [
+        "GET /auth/me",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee",
+        "GET /api/v1/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee/context"
+      ],
+      "moveDocuments": 0,
+      "moveExtra": [],
+      "moveDuplicates": [],
+      "focusAfterMove": "BODY",
+      "headingTop": 153,
+      "pageErrors": [],
+      "consoleErrors": [
+        "http://127.0.0.1:3070/governance: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    }
+  }
+}

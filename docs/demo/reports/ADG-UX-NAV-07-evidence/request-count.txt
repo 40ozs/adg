@@ -1,0 +1,10 @@
+document  5 →  5  /governance  "Reviews — ADG" → "Reviews — ADG"
+rsc       5 →  5  /governance  "Reviews — ADG" → "Reviews — ADG"
+document  6 →  6  /governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26  "Review campaign — ADG" → "Review campaign — ADG"
+rsc       6 →  6  /governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26  "Review campaign — ADG" → "Review campaign — ADG"
+document  6 →  6  /governance/campaigns/8ea00a17-bc4f-48e8-a1f7-f2d91a503127  "Review campaign — ADG" → "Review campaign — ADG"
+rsc       6 →  6  /governance/campaigns/8ea00a17-bc4f-48e8-a1f7-f2d91a503127  "Review campaign — ADG" → "Review campaign — ADG"
+document  5 →  5  /governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee  "Review item — ADG" → "Review item — ADG"
+rsc       5 →  5  /governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee  "Review item — ADG" → "Review item — ADG"
+
+8 measurements, 4 pages; additional backend requests: 0

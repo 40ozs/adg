@@ -1,0 +1,20 @@
+load before: { 59.35 22.69 13.57 }
+PASS  [desktop] Reviews → campaign by click: "Review campaign — ADG", no document load — /governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26; 6 rows, 4 item links
+PASS  [desktop] direct loads: one server <title> each; the item page's API reads recorded — Review campaign: "Review campaign — ADG", Review item: "Review item — ADG"; item direct load = 5 API reads
+FAIL  [desktop] campaign → item by click: client-side, "Review item — ADG", href kept, no extra API read, no prefetch — full document reload: http://127.0.0.1:3071/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee
+PASS  [desktop] after the move: focus on a live node, heading in view, no sideways scroll — focus BODY, heading at 153 px, scrollWidth fits
+FAIL  [desktop] Back: campaign URL and title, item table unchanged, no sideways scroll — document load on Back: http://127.0.0.1:3071/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26
+FAIL  [desktop] Forward: item URL and title, no document load — document load on Forward: http://127.0.0.1:3071/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee
+FAIL  [desktop] Back, then the item link by keyboard (focus + Enter): client-side — document load: http://127.0.0.1:3071/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26, http://127.0.0.1:3071/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee
+PASS  [desktop] no page error, no hydration error — 0 page errors, 1 console errors (0 hydration)
+PASS  [375] Reviews → campaign by click: "Review campaign — ADG", no document load — /governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26; 6 rows, 4 item links
+PASS  [375] direct loads: one server <title> each; the item page's API reads recorded — Review campaign: "Review campaign — ADG", Review item: "Review item — ADG"; item direct load = 5 API reads
+FAIL  [375] campaign → item by click: client-side, "Review item — ADG", href kept, no extra API read, no prefetch — full document reload: http://127.0.0.1:3071/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee
+PASS  [375] after the move: focus on a live node, heading in view, no sideways scroll — focus BODY, heading at 714 px, scrollWidth fits
+FAIL  [375] Back: campaign URL and title, item table unchanged, no sideways scroll — document load on Back: http://127.0.0.1:3071/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26
+FAIL  [375] Forward: item URL and title, no document load — document load on Forward: http://127.0.0.1:3071/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee
+FAIL  [375] Back, then the item link by keyboard (focus + Enter): client-side — document load: http://127.0.0.1:3071/governance/campaigns/92aedfde-3aa3-4fe8-b154-2eb82c52cc26, http://127.0.0.1:3071/governance/items/92680699-7f45-4ff2-bc56-b0719dafd6ee
+PASS  [375] no page error, no hydration error — 0 page errors, 0 console errors (0 hydration)
+
+8/16 checks passed
+exit 1, load after: { 113.55 39.98 20.21 }
