@@ -2,8 +2,8 @@
 
 ## 1. Verdict
 
-**`READY_FOR_ADG_UX_WAVE_E_WITH_LIMITATIONS`**. The limitations are in §22. The CI result for the
-integration head is in §24.
+**`READY_FOR_ADG_UX_WAVE_E_WITH_LIMITATIONS`**. The limitations are in §22. CI run 41223498140 on
+the integration head is green (§24).
 
 NAV-07 (client navigation from a campaign to its review item), REVIEW-NAMES-08 (scope display
 names) and TEST-STABILITY-09 (a deterministic titles journey) are merged into
@@ -454,15 +454,32 @@ After Wave D is exported and deployed to staging, that smaller regression should
 
 ## 23. New authoritative baseline
 
-**`origin/integration/ADG-UX-WAVE-D-01` at its final head**. The SHA is recorded in §24 by the
-docs-only commit that follows the report commit.
+**`origin/integration/ADG-UX-WAVE-D-01` at its head**: the docs-only commit that adds §24, directly
+on top of `fc7c7a2`. Its code is identical to `fc7c7a2`, which CI run 41223498140 validated.
 
 FUTURE ADG UX WORK MUST BRANCH FROM THIS VERIFIED SHA UNLESS SUPERSEDED. Wave C (`559dbaf`) is
 now historical baseline context.
 
 ## 24. CI
 
-Filled in by the docs-only commit after the integration CI run.
+The branch was pushed once, with the merges, the test commits and this report. Run
+[41223498140](https://github.com/40ozs/adg/actions/runs/41223498140) on
+`fc7c7a29f7254ae657e37c287ffb4f75f1ef4be5` (code + gates + report head) passed:
+
+| Job | Result |
+|---|---|
+| Backend (lint, types, tests) | **success**: ruff, format, mypy; unit **6052 passed**, 124 skipped, 1307 deselected; Database tests **1306 passed**, 1 xfailed |
+| Frontend (lint, types, tests, build) | **success**: 49 files, **1696** passed; lint, typecheck, cf:typecheck, build |
+| Collector (Pester) | success |
+| Docker Compose configuration | success |
+| Fork PR Linux gates | skipped (push event) |
+
+The DB and vitest counts match the local runs exactly. CI's unit count (6052 passed, 124 skipped)
+differs from the local one (6164, 12) only in platform-dependent skips, the same split as Wave C
+(6048/124 against 6160/12) plus REVIEW-NAMES' 4 tests.
+
+This section and §23 were added by a docs-only commit directly on top of `fc7c7a2`. That commit
+changes only this report, so the verdict rests on run 41223498140.
 
 ## 25. Environment
 
