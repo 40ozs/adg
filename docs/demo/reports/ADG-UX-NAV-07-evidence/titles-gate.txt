@@ -1,0 +1,19 @@
+load before: { 71.62 111.87 82.51 }
+PASS  sign in as admin — login page titled "Sign in — ADG"
+PASS  direct load: the server sends the section title (/risks → Findings) — server <title>Findings — ADG</title>, nav marks Findings
+PASS  client navigation: every primary nav link updates the title — 10 sections, no reload: Overview, Findings, Access, Changes, Identities, Resources, Reviews, What-if, Collectors, Settings
+PASS  Back restores each earlier title — Collectors ← What-if ← Reviews ← Resources
+PASS  Forward restores each later title — Reviews → What-if
+PASS  hard reload keeps the title
+PASS  a filtered list keeps its section title
+PASS  detail route: a generic title, no SID — "Identity — ADG", nav marks Identities
+PASS  an unknown page: a stable not-found title — HTTP 404, server ["Page not found — ADG"], document "Page not found — ADG"
+PASS  deeper pages: each client move titles the page it lands on — 21 moves, no reload
+PASS  deeper pages: Back restores every earlier title — 21 steps back to Overview
+PASS  deeper pages: Forward restores every later title — 21 steps forward, no reload
+PASS  deeper pages: the server sends one matching <title> on a direct load — 18 pages: Findings, Alerts, Changes, History, Why access changed, Compare two points in time, Identities, Users, Groups, Identity, Reviews, Review campaign, Review item, What-if, What-if proposal, Propose a change, Access investigation, Access explanation; History survives a hard reload
+PASS  deeper pages: an unknown or invalid object keeps a coherent title — Review campaign (HTTP 200), Review item (HTTP 200), What-if proposal (HTTP 200), Identity (HTTP 200)
+PASS  no hydration error on any page — 0 page errors, 2 console errors, none about hydration
+
+15/15 passed
+exit 0, load after: { 44.21 100.60 79.58 }
